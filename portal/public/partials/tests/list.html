@@ -1,0 +1,66 @@
+<div class="page-header">
+    <h1>Test List</h1>
+</div>
+<div class="row">
+    <div class="col-xs-5">
+        <a href="#/test_plans/{{test_plan}}/tests/new"
+           class="btn btn-default"><span class="glyphicon
+glyphicon-plus"></span> New Test</a>
+    </div>
+    <div class="col-xs-7">
+        <input type="text" class="form-control" ng-model="query"
+               placeholder="Search for a test"
+               ng-change="getData(tests, query)">
+    </div>
+</div>
+<div class="row">
+    <div class="col-xs-12">
+        <hr>
+    </div>
+</div>
+<div class="row" ng-switch on="tests.length">
+    <div class="col-xs-12"
+         infinite-scroll='moreTests()'
+         infinite-scroll-disabled='busy'
+         infinite-scroll-immediate-check="false"
+         infinite-scroll-distance='1'>
+    <span ng-switch-when="0">
+        <em>No tests in database. Would you like to
+            <a href="#/test_plans{{test_plan}}/tests/new">create one</a>?</em>
+    </span>
+        <table class="table table-hover table-striped table-bordered"
+               ng-switch-default>
+            <thead>
+            <th>#</th>
+            <th>Name</th>
+            <th>Actions</th>
+            </thead>
+            <tbody>
+            <tr ng-repeat="test in tests| filter:query">
+                <td>
+                    {{ test.pk_test }}
+                </td>
+                <td>
+                    {{ test.name }}
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <a class="btn btn-default glyphicon glyphicon-eye-open"
+                           href="#/test_plans/{{test.fk_test_plan}}/tests/{{test.pk_test}}"></a>
+                        <a class="btn btn-default glyphicon glyphicon-pencil"
+                           href="#/test_plans/{{test.fk_test_plan}}/tests/{{test.pk_test}}/edit"></a>
+                        <button class="btn btn-default glyphicon glyphicon-trash"
+                                confirmed-click="deleteTest(test.fk_test_plan,test.pk_test)"
+                                ng-confirm-click="Are you sure you want to delete the test?"></button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="col-xs-6">
+            <a href="#/test_plans" class="btn btn-default" role="button">
+                <span class="glyphicon glyphicon-arrow-left"></span>
+                Back to Test Plans</a>
+        </div>
+    </div>
+</div>

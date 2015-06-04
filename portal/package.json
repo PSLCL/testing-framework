@@ -1,0 +1,39 @@
+{
+  "name": "portal",
+  "version": "0.0.7",
+  "private": true,
+  "scripts": {
+    "watch": "watchify client/main.js -o public/client.js -v",
+    "build": "browserify client/main.js -o public/client.js",
+    "run": "npm run watch | nodemon app"
+  },
+  "dependencies": {
+    "express": "3.5.0",
+    "static-favicon": "~1.0.0",
+    "morgan": "~1.0.0",
+    "passport": "0.2.0",
+    "phantom": "~0.5.7",
+    "gt-passport-http": "0.2.2",
+    "mysql": "~2.0",
+    "squel": "3.1.1",
+    "ldapauth": "~2.2.4",
+    "socket.io": "1.1",
+    "jade": "*",
+    "stylus": "*",
+    "supervisor": "^0.5.7",
+    "phantomjs": "*",
+    "node-phantom": "*",
+    "forever": "*",
+    "async": "*",
+    "angular-promise-tracker": "*",
+    "angular-busy": "*",
+	"tar-stream": "*",
+	"compression": "*"
+  },
+  "devDependencies": {
+    "express-livereload": "*",
+    "watchify": "^0.6.3",
+    "nodemon": "^1.0.17",
+    "browserify": "^3.33.0"
+  }
+}

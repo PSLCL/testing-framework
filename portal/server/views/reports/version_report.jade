@@ -1,0 +1,110 @@
+extends layout
+block content
+    script
+        | var chart_options = { animation: false, animateRotate: false, segmentShowStroke: false, onAnimationComplete: function() { chart_total_pending -= 1; } };
+        | var chart_total_pending = 0;
+        | function pending_graphs() { return chart_total_pending; };
+        | function build_graphs() {
+        | console.log("Building graphs.");
+        each component in items
+            each version in component.versions
+                = 'gen_version_chart_' + version.pk + '();'
+                each test_plan in version.test_plans
+                    = 'gen_test_plan_chart_' + version.pk + '_' + test_plan.pk + '();'
+                    each test in test_plan.tests
+                        = 'gen_test_chart_' + version.pk + '_' + test_plan.pk + '_' + test.pk + '();'
+        | return chart_total_pending;
+        | }
+    each component in items
+        .row
+            .col-xs-12
+                each version in component.versions
+                    h4= component.name + ' ' + version.name + ' (component #' + component.pk + ', version #' + version.pk + ')'
+                    script(type='text/javascript').
+                        function gen_version_chart_!{version.pk}() {
+                            var chart = {
+                                ctx: document.getElementById("vchart!{version.pk}").getContext("2d"),
+                                data: [ { value: !{version.summary.pass}, color:"#00CC00" },
+                                        { value : !{version.summary.fail}, color : "#FF0000" },
+                                        { value : !{version.summary.pending}, color : "#A0A0A0" }
+                                      ]
+                            };
+                            chart_total_pending += 1;
+                            new Chart(chart.ctx).Pie(chart.data, chart_options );
+                        };
+                    .graphblock
+                       .graph
+                            canvas(id='vchart'+version.pk, width='100', height='100')
+                       .graphlegend
+                           p.total= 'Total: ' + version.summary.total
+                           p.passed= 'Pass: ' + version.summary.pass + ' (' + (100*version.summary.pass/version.summary.total).toFixed() + '%)'
+                           p.failed= 'Fail: ' + version.summary.fail + ' (' + (100*version.summary.fail/version.summary.total).toFixed() + '%)'
+                           p.pending= 'Pending: ' + version.summary.pending + ' (' + (100*version.summary.pending/version.summary.total).toFixed() + '%)'
+                    hr
+                    each test_plan in version.test_plans
+                        h5= 'Test Plan #' + test_plan.pk + ' ' + test_plan.name
+                        script(type='text/javascript').
+                            function gen_test_plan_chart_!{version.pk}_!{test_plan.pk}() {
+                                var chart = {
+                                    ctx: document.getElementById('tpchart!{version.pk}_!{test_plan.pk}').getContext("2d"),
+                                    data: [ { value: !{test_plan.summary.pass}, color:"#00CC00" },
+                                            { value : !{test_plan.summary.fail}, color : "#FF0000" },
+                                            { value : !{test_plan.summary.pending}, color : "#A0A0A0" }
+                                          ]
+                                };
+                                chart_total_pending += 1;
+                                new Chart(chart.ctx).Pie(chart.data, chart_options);
+                            };
+                        .graphblock
+                           .graph
+                                canvas(id='tpchart'+version.pk+'_'+test_plan.pk, width='100', height='100')
+                           .graphlegend
+                               p.total= 'Total: ' + test_plan.summary.total
+                               p.passed= 'Pass: ' + test_plan.summary.pass + ' (' + (100*test_plan.summary.pass/test_plan.summary.total).toFixed() + '%)'
+                               p.failed= 'Fail: ' + test_plan.summary.fail + ' (' + (100*test_plan.summary.fail/test_plan.summary.total).toFixed() + '%)'
+                               p.pending= 'Pending: ' + test_plan.summary.pending + ' (' + (100*test_plan.summary.pending/test_plan.summary.total).toFixed() + '%)'
+                        hr
+                        each test in test_plan.tests
+                            h6= 'Test #' + test.pk + ' ' + test.name
+                            script(type='text/javascript').
+                                function gen_test_chart_!{version.pk}_!{test_plan.pk}_!{test.pk}() {
+                                    var chart = {
+                                        ctx: document.getElementById('tchart!{version.pk}_!{test_plan.pk}_!{test.pk}').getContext("2d"),
+                                        data: [ { value: !{test.summary.pass}, color:"#00CC00" },
+                                                { value : !{test.summary.fail}, color : "#FF0000" },
+                                                { value : !{test.summary.pending}, color : "#A0A0A0" }
+                                              ]
+                                    };
+                                    chart_total_pending += 1;
+                                    new Chart(chart.ctx).Pie(chart.data, chart_options);
+                                };
+                            .graphblock
+                               .graph
+                                    canvas(id='tchart'+version.pk+'_'+test_plan.pk+'_'+test.pk, width='100', height='100')
+                               .graphlegend
+                                   p.total= 'Total: ' + test.summary.total
+                                   p.passed= 'Pass: ' + test.summary.pass + ' (' + (100*test.summary.pass/test.summary.total).toFixed() + '%)'
+                                   p.failed= 'Fail: ' + test.summary.fail + ' (' + (100*test.summary.fail/test.summary.total).toFixed() + '%)'
+                                   p.pending= 'Pending: ' + test.summary.pending + ' (' + (100*test.summary.pending/test.summary.total).toFixed() + '%)'
+                            hr
+                            each instance in test.results
+                                table.table.table-striped.table-bordered.table-responsive
+                                    thead
+                                    tr
+                                        th #
+                                        th Result
+                                        th Hash
+                                        th Start
+                                        th End
+                                    tbody
+                                    tr
+                                        td= instance.pk_test_instance
+                                        td= instance.test_passed
+                                        td= instance.hash
+                                        td= instance.start_date
+                                        td= instance.end_date
+                                p Script:
+                                pre.result-test-plan-description= instance.steps
+                                p Instructions:
+                                .result-test-plan-description
+                                    !{instance.description}

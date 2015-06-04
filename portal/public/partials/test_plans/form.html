@@ -1,0 +1,37 @@
+<div class="page-header">
+  <a class='back-btn' href="#/test_plans">
+    <i class='fa fa-arrow-circle-o-left'></i>
+  </a>
+  <h1>{{ heading }}</h1>
+</div>
+<div class='row'>
+  <form role="form" class='general-form' ng-submit="testPlanSubmit()" name="tpf">
+      <div class="form-group"
+              ng-class="{ 'has-error has-feedback' : tpf.testPlanName.$invalid && !tpf.testPlanName.$pristine }">
+          <input type="text" ng-model="test_plan.name" class="form-control"
+                 name="testPlanName"
+                 id="testPlanName"
+                 value="test_plan.name"
+                 placeholder="Enter test plan name"
+                 ng-maxlength="50" required autofocus>
+          <span ng-show="tpf.testPlanName.$error.maxlength"
+                class="glyphicon glyphicon-remove form-control-feedback"></span>
+          <span class="help-block"
+                ng-show="tpf.testPlanName.$error.required">
+              Name is required.
+          </span>
+          <span class="help-block"
+                ng-show="tpf.testPlanName.$error.maxlength">
+              Maximum Length 50 characters.
+          </span>
+      </div>
+      <div class="form-group">
+          <textarea class="form-control" ng-model="test_plan.description"
+                    id="testPlanDescription"
+                    placeholder="Enter test plan description"></textarea>
+      </div>
+      <button class="btn btn-small green"
+              type="submit" ng-disabled="tpf.$invalid">
+          {{ submitLabel }}</button>
+  </form>
+</div>

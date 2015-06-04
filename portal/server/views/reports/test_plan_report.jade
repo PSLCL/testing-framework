@@ -1,0 +1,21 @@
+extends layout
+block content
+  each component in components
+    .row
+      .col-xs-12
+        h3= '#' + component.pk_component + ' ' + component.name
+          small Test Plans
+        hr
+        each test_plan in component.test_plans
+          .row
+            .col-xs-12
+              h3= '#' + test_plan.pk_test_plan + ' ' + test_plan.name
+                small Tests
+              small= test_plan.description
+              hr
+              .list-group
+                each test in test_plan.tests
+                  a.list-group-item(href="javascript:void(0)")
+                    h5.list-group-item-heading
+                      = '#' + test.pk_test + ' ' + test.name
+                    p.list-group-item-text= test.description

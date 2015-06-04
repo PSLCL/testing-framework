@@ -1,0 +1,286 @@
+<div class="page-header">
+    <h1>Reports</h1>
+</div>
+<ul class='reports-nav'>
+    <li ng-class="{active: showR1}"><a
+        ng-click="switchReport('r1')" href>Test Plans</a></li>
+    <li ng-class="{active: showR2}"><a
+        ng-click="switchReport('r2')" href>Test Results</a></li>
+</ul>
+
+<div ng-show="showR1" id="r1" class="row reports-section">
+    <h2>Criteria for Test Plans</h2>
+    <div class='box-container'>
+        <div class="box-left">
+            <label for="availableComponentsR1Selector">Components</label>
+            <select id="availableComponentsR1Selector" class="selector"
+                multiple="multiple" ng-model="selectedComponent"
+                ng-options="c.name for c in availableComponentsR1">
+            </select>
+        </div>
+        <div class="move-arrows">
+            <i class="fa fa-angle-double-right"
+                ng-click="moveSelectedComponentsR1('selected')"></i> <i
+                class="fa fa-angle-double-left"
+                ng-click="moveSelectedComponentsR1('available')"></i>
+        </div>
+        <div class="box-right">
+            <label for="selectedComponentsR1Selector">Selected
+                Components</label> <select id="selectedComponentsR1Selector"
+                ng-model="selectedComponent" multiple="multiple"
+                ng-options="c.name for c in selectedComponentsR1">
+            </select>
+        </div>
+    </div>
+    <button ng-click="getReport('r1')" class="btn btn-small green">Get
+        Report</button>
+    <div ng-show="showR1Results" class="report-results">
+        <div class='results-header'>
+            <h2>Results for Test Plan Report</h2>
+            <button class='btn btn-small blue'
+                ng-click="exportReport('r1')">
+                <i class="fa fa-external-link btn-icon"></i>Export to
+                PDF
+            </button>
+            <div class="">
+                <img src="/images/emit_logo_150.png">
+            </div>
+        </div>
+        <div class='results-results' ng-switch on="components.length">
+            <span ng-switch-when="0"> <em>No components in
+                    database.</em>
+            </span>
+            <div class='result-component'
+                ng-repeat="item in reportR1 track by $index">
+                <h3>
+                    #{{ item.pk_component}} {{item.name}} <span>Test
+                        Plans</span>
+                </h3>
+                <div class='result-test-plan'
+                    ng-repeat="plan in item.test_plans track by $index">
+                    <h3>
+                        #{{plan.test_plan.pk_test_plan}}
+                        {{plan.test_plan.name}} <span>Tests</span>
+                    </h3>
+                    <p class='result-test-plan-description'>{{plan.test_plan.description}}</p>
+                    <ul class='result-test-list'>
+                        <li
+                            ng-repeat="test in plan.tests track by $index">
+                            <h4 class="list-group-item-heading">#{{test.pk_test}}
+                                {{test.name}}</h4>
+                            <p class="list-group-item-text">{{test.description}}</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div ng-show="showR2" id="r2" class="row reports-section">
+    <h2>Criteria for Test Results</h2>
+    <div class='box-container'>
+        <div class='box-left'>
+            <label for="availableComponentsR2Selector">Components</label>
+            <select id="availableComponentsR2Selector" class="selector"
+                multiple="multiple" ng-model="r2.selectedComponent"
+                ng-change="generateAvailableVersionsR2(r2.selectedComponent)"
+                ng-options="c.name for c in availableComponentsR2">
+            </select> <label for="availableVersionsR2Selector">Versions</label> <select
+                id="availableVersionsR2Selector" class="selector"
+                multiple="multiple" ng-model="selectedVersions"
+                ng-options="v.name for v in availableVersionsR2">
+            </select>
+        </div>
+        <div class="move-arrows">
+            <div id="arrow1">
+                <label for="arrow1" style="font-size: 14px">Primary</label>
+                <i class="fa fa-angle-double-right"
+                    ng-click="moveSelectedVersionsR2('selected')"></i> <i
+                    class="fa fa-angle-double-left"
+                    ng-click="moveSelectedVersionsR2('available')"></i>
+            </div>
+        </div>
+        <div class='box-right'>
+            <label for="selectedCombinationsR2Selector">Primary
+                Component/Version</label> <select
+                id="selectedCombinationsR2Selector" class="selector"
+                multiple="multiple" ng-model="selectedVersions"
+                ng-options="v.name for v in selectedCombinationsR2">
+            </select>
+        </div>
+    </div>
+    <div>
+        <input type="checkbox" ng-model="r2.includePassed">Include
+        Passed Tests</input><br /> <input type="checkbox"
+            ng-model="r2.includeFailed">Include Failed Tests</input><br />
+        <input type="checkbox" ng-model="r2.includePending">Include
+        Pending Tests</input>
+    </div>
+    <button ng-click="getReport('r2')" class="btn btn-small green">Get
+        Report</button>
+    <div ng-show="showR2Results" class="report-results"
+        cg-busy="{promise:r2generation.promise}">
+
+        <div class="results-header">
+            <h2>Results for Component/Version Report</h2>
+            <button class='btn btn-small blue'
+                ng-click='exportReport("r2")'>
+                <i class="fa fa-external-link btn-icon"></i>Export to
+                PDF
+            </button>
+            <div class="">
+                <img src="/images/emit_logo_150.png">
+            </div>
+        </div>
+
+        <div class='results-results r2' ng-switch on='components.length'>
+            <span ng-switch-when="0"> <em>No Results.</em>
+            </span>
+            <div class='r2-version'
+                ng-repeat='component in reportR2 track by $index'>
+                <div ng-repeat="version in component.versions">
+                    <h1>Version {{ version.name }}:{{
+                        component.name }} (component {{ component.pk }},
+                        version {{ version.pk}})</h1>
+                    <div style="width: 100%; overflow: hidden;">
+                        <div style="width: 110px; float: left;">
+                            <chart value="version.chart" type="Pie"
+                                width="100" height="100"></chart>
+                        </div>
+                        <div style="margin-left: 110px;">
+                            <p>
+                                <b>Total: {{ version.summary.total
+                                    }}</b>
+                            </p>
+                            <p style="color: #00CC00">Pass: {{
+                                version.summary.pass }} ({{ 100 *
+                                version.summary.pass /
+                                version.summary.total | number:0 }}%)</p>
+                            <p style="color: #FF0000">Fail: {{
+                                version.summary.fail }} ({{ 100 *
+                                version.summary.fail /
+                                version.summary.total | number:0 }}%)</p>
+                            <p style="color: #A0A0A0">Pending: {{
+                                version.summary.pending }} ({{ 100 *
+                                version.summary.pending /
+                                version.summary.total | number:0 }}%)</p>
+                        </div>
+                    </div>
+                    <div class='r2-test-plan'
+                        ng-repeat="test_plan in version.test_plans">
+                        <div
+                            style="width: 32%; overflow: hidden; margin-left: 1%; float: left">
+                            <div style="width: 110px; float: left;">
+                                <chart value="test_plan.chart"
+                                    type="Pie" width="100" height="100"></chart>
+                            </div>
+                            <div style="margin-left: 110px;">
+                                <p>
+                                    <b>{{ test_plan.name }}</b>
+                                </p>
+                                <p>
+                                    <b>Total: {{
+                                        test_plan.summary.total }}</b>
+                                </p>
+                                <p style="color: #00CC00">Pass: {{
+                                    test_plan.summary.pass }} ({{ 100 *
+                                    test_plan.summary.pass /
+                                    test_plan.summary.total | number:0
+                                    }}%)</p>
+                                <p style="color: #FF0000">Fail: {{
+                                    test_plan.summary.fail }} ({{ 100 *
+                                    test_plan.summary.fail /
+                                    test_plan.summary.total | number:0
+                                    }}%)</p>
+                                <p style="color: #A0A0A0">Pending:
+                                    {{ test_plan.summary.pending }} ({{
+                                    100 * test_plan.summary.pending /
+                                    test_plan.summary.total | number:0
+                                    }}%)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="clear: both"></div>
+                    <div ng-repeat="test_plan in version.test_plans">
+                        <h4 ng-show="test_plan.tests">{{
+                            test_plan.name }} (#{{ test_plan.pk }})</h4>
+                        <div class="r2-test"
+                            ng-repeat="test in test_plan.tests">
+                            <h5>Test #{{ test.pk }} {{ test.name}}</h5>
+                            <div ng-repeat="instance in test.results">
+                                <table
+                                    class="table table-hover table-striped table-bordered table-responsive">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Result</th>
+                                            <th>Hash</th>
+                                            <th>Start</th>
+                                            <th>End</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>{{
+                                                instance.pk_test_instance
+                                                }}</td>
+                                            <td align="center">{{
+                                                instance.passed != null
+                                                && (instance.passed == 1
+                                                && 'pass' || 'fail') ||
+                                                'pending' }}
+                                                <div
+                                                    ng-show="currentUser && instance.passed == null">
+                                                    <img
+                                                        ng-click="passIt(instance, test, test_plan, version, component)"
+                                                        src="/stylesheets/images/pass.png" />
+                                                    <img
+                                                        ng-click="failIt(instance, test, test_plan, version, component)"
+                                                        src="/stylesheets/images/fail.png" />
+                                                </div>
+                                            </td>
+                                            <td><a
+                                                ng-click="gotoTemplate(instance.pk_described_template)">{{
+                                                    instance.pk_described_template
+                                                    }}</a></td>
+                                            <td>{{
+                                                instance.start_time |
+                                                date:'yyyy-MM-dd
+                                                HH:mm:ss Z'}}</td>
+                                            <td>{{
+                                                instance.end_time |
+                                                date:'yyyy-MM-dd
+                                                HH:mm:ss Z' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class='r2-template'
+                ng-repeat='template in descriptionsR2'>
+                <h1 id="template{{template.pk}}">Template
+                    {{template.pk}}</h1>
+                <ol>
+                    <li ng-repeat-start='line in template.lines'
+                        ng-bind-html="line.description" />
+                    <p ng-show="line.fk_resource"><em>See <a ng-click="gotoResource(line.fk_resource)">here</a> for the resource definition.</em></p>
+                    <div ng-repeat-end/>
+                </ol>
+            </div>
+            <div class='r2-resource'
+                ng-repeat='resource in r2_resources'>
+                <h1 id="resource{{resource.pk_resource}}">Resource
+                    {{resource.pk_resource}}</h1>
+                <p ng-bind-html="resource.description" />
+            </div>
+            <div style="clear: both"></div>
+        </div>
+    </div>
+</div>
+
+<div style="" class="text-muted small">Copyright © 2014 Panasonic
+    Electric Works Corporation of America, All Rights Reserved.</div>

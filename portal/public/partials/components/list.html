@@ -1,0 +1,80 @@
+<div class="page-header">
+    <h1>Components</h1>
+</div>
+<div class="row page-text">
+    <p></p>
+</div>
+<div class="row list-header">
+    <i class='fa fa-plus-circle {{createComponentClass}}' ng-click='createComponent()'></i>
+    <span>Create a Component</span>
+    <div dropdown-box class='dropdown-box-wrap' ng-click='openSort()'>
+      <ul class='component-sort'>
+        <i class="fa fa-sort"></i>
+        <li>{{selected_filter}}<li>
+        <li ng-click="sort.by('name'); changeFilter('Name');">Name</li>
+        <li ng-click="sort.by('test_plans'); changeFilter('Test Plans');">Test Plans</li>
+        <li ng-click="sort.by('tests'); changeFilter('Tests');">Tests</li>
+      </ul>
+    </div>
+    <input type="text" class="form-control search" ng-model="query"
+           placeholder="Search for a component" ng-change="getData(components, query)">
+</div>
+<div class='row'>
+    <form class='create-component-form {{createComponentClass}} {{displayBlock}}' role="form" ng-controller="ComponentNewCtrl" ng-submit="submitFunction()" name="nComponent">
+        <div class="form-group"
+             ng-class="{ 'has-error has-feedback' : nComponent.componentName.$invalid && !nComponent.componentName.$pristine }">
+            <input type="text" ng-model="component.name" class="form-control create-item"
+                   id="componentName" name="componentName"
+                   value="component.name"
+                   placeholder="Enter component name"
+                   ng-maxlength="50" required>
+            <span ng-show="nComponent.componentName.$error.maxlength"
+                  class="glyphicon glyphicon-remove form-control-feedback"></span>
+            <span class="help-block"
+                  ng-show="nComponent.componentName.$error.required">
+                Name is required.
+            </span>
+            <span class="help-block"
+                  ng-show="nComponent.componentName.$error.maxlength">
+                Maximum Length 50 characters.
+            </span>
+            <button class="btn btn-small green" type="submit"
+                    ng-disabled="nComponent.$invalid" ng-click='createComponent()'>
+                {{ submitLabel }}</button>
+        </div>
+    </form>
+</div>
+
+<div class="row" ng-switch on="components.length">
+    <div class="col-xs-12"
+         infinite-scroll='moreComponents()'
+         infinite-scroll-disabled='busy'
+         infinite-scroll-immediate-check="false"
+         infinite-scroll-distance='1'>
+      <span ng-switch-when="0">
+          <em>No test plans in database. Would you like to
+              <span class='linked' ng-click='createComponent()'>create one</span>?</em>
+      </span>
+      <ul class="list-items" ng-switch-default>
+          <li ng-repeat="component in components| filter:query">
+            <div class='list-header-group'>
+              <h1>
+                <i class='ico-22x22 list-fold'></i>{{ component.name }}
+              </h1>
+              <div class="list-action-btns">
+                  <a href="#/components/{{component.pk_component}}">
+                    <i class='fa fa-gears'></i>
+                  </a>
+                  <i confirmed-click="deleteComponent(component.pk_component)"
+                                  ng-confirm-click="Are you sure you want to delete the component?" 
+                                  class='fa fa-trash-o'></i>
+              </div>
+              <div class='badge-items'>
+                <span>{{ component.test_plans }}</span>
+                <span class='tests-badge'>{{ component.tests }}</span>
+              </div>
+            </div>
+          </li>
+      </ul>
+    </div>
+</div>

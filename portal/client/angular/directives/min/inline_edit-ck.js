@@ -1,0 +1,1 @@
+angular.module("qa-portal.directives",[]).directive("inlineEdit",function(n){return{link:function(n,t,e){n.edit_test_plan=!0,angular.element("click",function(){n.edit_test_plan=!1})}}});
