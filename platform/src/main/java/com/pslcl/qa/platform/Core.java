@@ -71,6 +71,11 @@ public class Core {
     
     // tech spec term of "test run" is this test instance, from table test_instance
     private void loadTestInstances() {
+        if (connect == null) {
+            System.out.println("<internal> Core.loadTestInstances() finds no database connection and exits");
+            return;
+        }
+        
         int testInstanceCount = 0;
         int notYetRunCount = 0;
         Statement statement = null;
@@ -119,6 +124,11 @@ public class Core {
     }
     
     private void loadHashes() {
+        if (connect == null) {
+            System.out.println("<internal> Core.loadHashes() finds no database connection and exits");
+            return;
+        }
+        
         Statement statement = null;
         ResultSet resultSet = null;
 
@@ -167,7 +177,7 @@ public class Core {
     private long pk_target_test = 0;
     private boolean read_only = false;
 
-    Core( long pk_test ) {
+    public Core( long pk_test ) {
         this.pk_target_test = pk_test;
         this.project = System.getenv("DTF_TEST_PROJECT");
         String dir = System.getenv("DTF_TEST_ARTIFACTS");
@@ -175,11 +185,15 @@ public class Core {
             this.artifacts = new File(dir);
 
         openDatabase();
-
-        /* Load the description and template hashes */
-        loadHashes();
         
-        loadTestInstances();
+        if (connect == null) {
+            System.err.println( "Core constructor fails without database connection");
+        } else {
+            /* Load the description and template hashes */
+            loadHashes();
+            
+            loadTestInstances();
+        }
     }
 
     /**
@@ -212,12 +226,12 @@ public class Core {
                 read_only = true;
             }
 
-            Class.forName("com.mysql.jdbc.Driver"); // not required at compile time, but required for .getConnection() to use at run time
+            Class.forName("com.mysql.jdbc.Driver"); // required at run time only for .getConnection(): mysql-connector-java-5.1.35.jar
             connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Could not open database connection, " + e.getMessage() );
             read_only = true;
+            System.err.println( "ERROR: Could not open database connection, " + e.getMessage() );
         }
     }
 
@@ -309,7 +323,7 @@ public class Core {
     /**
      * From a given test instance number, execute the corresponding test instance (aka test run). 
      */
-    void executeTestInstance(long testInstanceNumber) {
+    public void executeTestInstance(long testInstanceNumber) {
         // We are an independent process. We have access to the database,
         //   to a Resource Manager that has access to artifacts and resources,
         //   and to everything else needed to cause our test instance to be executed.

@@ -8,7 +8,7 @@ package com.pslcl.qa.platform;
  * The test platform supports multiple runners, each of which may use a common set of resource providers
  * To distinguish runners, a runner reference is part of this API. Implementing class may set this reference.
  */
-public interface ResourceProvider {
+public interface ResourceProviderInterface {
 
     /**
      *
@@ -52,48 +52,9 @@ public interface ResourceProvider {
      *
      * @param resourceHash
      * @param resourceAttributes
+     * @return MachineResourceInterface, used to control the bound resource
      */
-    void bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
-
-    /** Place an artifact on a machine.
-     *
-     * @param machineRef
-     * @param componentName
-     * @param artifactName
-     * @param artifactHash
-     */
-    void deploy( int machineRef, String componentName, String artifactName, String artifactHash )
-                 throws ResourceNotFoundException, ArtifactNotFoundException;
-
-    /** Ask a person to follow instructions to inspect an artifact.
-     *
-     * @param personRef
-     * @param instructionsHash
-     * @param componentName
-     * @param artifactName
-     * @param artifactHash
-     */
-    void inspect(int personRef, String instructionsHash, String componentName, String artifactName, String artifactHash)
-                 throws ResourceNotFoundException, ArtifactNotFoundException;
-
-    /** Connect a machine to a network.
-     *
-     * @param machineRef
-     * @param networkRef
-     */
-    void connect( int machineRef, String networkRef )  throws ResourceNotFoundException;
-
-    /** Run a program artifact on a machine.
-     *
-     * @param machineRef
-     * @param componentName
-     * @param artifactName
-     * @param artifactHash
-     * @param params
-     * @return
-     */
-    boolean run( int machineRef, String componentName, String artifactName, String artifactHash, String params )
-                 throws ResourceNotFoundException, ArtifactNotFoundException;
+    MachineResourceInterface bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
 
     /** Cancel resource requests associated with this runner instance  */
     void cancel();

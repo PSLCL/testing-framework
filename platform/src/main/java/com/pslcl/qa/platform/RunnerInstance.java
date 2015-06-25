@@ -116,7 +116,7 @@ public class RunnerInstance implements Runnable {
     /**
      * Get name of this thread that executes the test instance of the given testInstanceNumber
      */
-    public String geThreadtName() {
+    public String getThreadtName() {
         return testrunThreadName;
     }
 

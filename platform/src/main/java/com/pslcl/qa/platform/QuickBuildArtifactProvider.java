@@ -1141,9 +1141,9 @@ public class QuickBuildArtifactProvider implements ArtifactProvider {
      */
     private void getPlatforms() {
         try {
-            Class.forName("org.apache.commons.logging.LogFactory"); // not required at compile time, but required for DefaultHttpClient() jars 4.3.2 and 4.3.5 to use at run time 
+            Class.forName("org.apache.commons.logging.LogFactory"); // required at run time only for DefaultHttpClient(): httpcore-4.3.2.jar and httpclient-4.3.5.jar 
             DefaultHttpClient client = new DefaultHttpClient();
-            HttpGet request = new HttpGet( endpoint + "/rest/buildagents/active" );
+            HttpGet request = new HttpGet( endpoint + "/rest/buildagents/active" ); // requires command line entry (for generator): --artifact-endpoint https://builds.emit-networking.org
             String auth = "qauser" + ":" + "qauser";
             byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(Charset.forName("US-ASCII")));
             String authHeader = "Basic " + new String(encodedAuth);

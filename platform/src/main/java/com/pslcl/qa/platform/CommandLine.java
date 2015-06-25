@@ -15,11 +15,10 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.jms.JMSException;
-
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.eclipse.jetty.client.HttpClient;
 
 public class CommandLine {
     private static <T extends Comparable<? super T>> List<T> asSortedList( Collection<T> c ) {
@@ -401,69 +400,80 @@ public class CommandLine {
         if (help == true)
             runHelp(); // exits app
         
-        
-        // connect to our message queue
-        MessageQueueDao mq = new Sqs(); // class Sqs can be replaced with another implementation of MessageQueueDao
+        // setup http client
+        HttpClient httpClient = new HttpClient();
+        httpClient.setFollowRedirects(false); // an example of configuring the client
         try {
-            mq.connect();
-        } catch (JMSException e1) {
+            httpClient.start();
+            httpClient.stop();
+        } catch (Exception e) {
             // TODO Auto-generated catch block
-            e1.printStackTrace();
+            e.printStackTrace();
         }
         
-        
-        
-        
-        
-        
-        
-        Core core = null;
-        // run something
-        if (!manual) {
-            // ask for runcount prioritized tests and run them in the order received
-                // TODO decide: we analyze priority first, then take top runcount of them?
-                //              or, a separate process analyzes priority in real time, and we ask it for the top runcount of them.
-            System.out.println( "run " + runCount + " tests. Not implemented- use 'run --manual' command line with its options for now.");
-        } else {
-            // manual: Run the indicated test, according to its manualTestID. This will execute as many associated tests runs as are found in the database.
-            if (manualTestInstanceNumber != -1)
-                System.out.println( "runner: Run test number " + manualTestNumber + " on test instance number " + manualTestInstanceNumber );
-            else
-                System.out.println( "runner: Run all ready test instances, for test number " + manualTestNumber);
-            try {
-                /* Instantiate the platform and test instance access. */
-                core = new Core( manualTestNumber );
+        System.out.println( "manual runner has setup the http client and exits" );
 
-                // read information about the set of test instances (aka test runs), to match command-line specified manualTestNumber
-                Set<Long> set;
-                if (manualTestInstanceNumber != -1) {
-                    set = core.readReadyTestInstances_test(manualTestNumber, manualTestInstanceNumber);
-                    System.out.println( "For test number " + manualTestNumber + " and test instance number " + manualTestInstanceNumber + ", " + set.size() + " test instance(s) is/are ready and not yet run");                
-                } else {
-                    set = core.readReadyTestInstances_test(manualTestNumber);
-                    System.out.println( "For test number " + manualTestNumber + ", " + set.size() + " test run(s) is/are ready and not yet run");
-                }
-                System.out.println("");
-                
-                // schedule running the n test instances in set: each becomes an independent thread
-                int setupFailure = 0;
-                for (Long setMember: set) {
-                    try {
-                        new RunnerInstance(core, setMember.longValue()); // launch independent thread, self closing
-                    } catch (Exception e) {
-                        setupFailure++;
-                    }
-                }
-                System.out.println( "manual runner launched " + set.size() + " test run(s)" + (setupFailure==0 ? "" : (" ********** but " + setupFailure + " failed in the setup phase")) );
-                
-                // This must be called, but only after every test instance has been scheduled. 
-                RunnerInstance.setupAutoThreadCleanup(); // non-blocking
-                // this app concludes, but n processes will continue to run until their work is complete
-            } catch (Exception e) {
-                System.out.println( "manual runner sees Exception " + e);
-                // TODO: kill runner thread with its thread pool executor
-            }
-        }
+        
+        
+        
+        
+        
+//        // connect to our message queue
+//        MessageQueueDao mq = new Sqs(); // class Sqs can be replaced with another implementation of MessageQueueDao
+//        try {
+//            mq.connect();
+//        } catch (JMSException e1) {
+//            // TODO Auto-generated catch block
+//            e1.printStackTrace();
+//        }
+//        
+//        Core core = null;
+//        // run something
+//        if (!manual) {
+//            // ask for runcount prioritized tests and run them in the order received
+//                // TODO decide: we analyze priority first, then take top runcount of them?
+//                //              or, a separate process analyzes priority in real time, and we ask it for the top runcount of them.
+//            System.out.println( "run " + runCount + " tests. Not implemented- use 'run --manual' command line with its options for now.");
+//        } else {
+//            // manual: Run the indicated test, according to its manualTestID. This will execute as many associated tests runs as are found in the database.
+//            if (manualTestInstanceNumber != -1)
+//                System.out.println( "runner: Run test number " + manualTestNumber + " on test instance number " + manualTestInstanceNumber );
+//            else
+//                System.out.println( "runner: Run all ready test instances, for test number " + manualTestNumber);
+//            try {
+//                /* Instantiate the platform and test instance access. */
+//                core = new Core( manualTestNumber );
+//
+//                // read information about the set of test instances (aka test runs), to match command-line specified manualTestNumber
+//                Set<Long> set;
+//                if (manualTestInstanceNumber != -1) {
+//                    set = core.readReadyTestInstances_test(manualTestNumber, manualTestInstanceNumber);
+//                    System.out.println( "For test number " + manualTestNumber + " and test instance number " + manualTestInstanceNumber + ", " + set.size() + " test instance(s) is/are ready and not yet run");                
+//                } else {
+//                    set = core.readReadyTestInstances_test(manualTestNumber);
+//                    System.out.println( "For test number " + manualTestNumber + ", " + set.size() + " test run(s) is/are ready and not yet run");
+//                }
+//                System.out.println("");
+//                
+//                // schedule running the n test instances in set: each becomes an independent thread
+//                int setupFailure = 0;
+//                for (Long setMember: set) {
+//                    try {
+//                        new RunnerInstance(core, setMember.longValue()); // launch independent thread, self closing
+//                    } catch (Exception e) {
+//                        setupFailure++;
+//                    }
+//                }
+//                System.out.println( "manual runner launched " + set.size() + " test run(s)" + (setupFailure==0 ? "" : (" ********** but " + setupFailure + " failed in the setup phase")) );
+//                
+//                // This must be called, but only after every test instance has been scheduled. 
+//                RunnerInstance.setupAutoThreadCleanup(); // non-blocking
+//                // this app concludes, but n processes will continue to run until their work is complete
+//            } catch (Exception e) {
+//                System.out.println( "manual runner sees Exception " + e);
+//                // TODO: kill runner thread with its thread pool executor
+//            }
+//        }
         System.out.println( "runner() exits");
     }
     
@@ -525,5 +535,7 @@ public class CommandLine {
         else if ( args[0].compareTo( "result" ) == 0 ) {
             result( args );
         }
+        System.exit(0);
     }
+    
 }
