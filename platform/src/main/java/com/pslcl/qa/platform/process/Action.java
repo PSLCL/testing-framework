@@ -1,6 +1,5 @@
 package com.pslcl.qa.platform.process;
 
-import com.pslcl.qa.platform.Core;
 import com.pslcl.qa.platform.RunnerService;
 
 /**
@@ -21,7 +20,7 @@ public enum Action implements Actions {
 //    },
 
     INITIALIZE_INSTANCE {
-        Action act(InstanceState iState, Core core, RunnerService runnerService) {
+        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
             long iNum = iState.getInstanceNumber();
 
             Action retAction = iState.getInstanceAction();
@@ -39,20 +38,21 @@ public enum Action implements Actions {
     },
     
     ANALYZE {
-        Action act(InstanceState iState, Core core, RunnerService runnerService) {
+        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
             long iNum = iState.getInstanceNumber();
             
             // TODO. Determine a priority
             // int priority = determineAndStorePriority(iNum, iState);
+            // TODO: assess other things, also
             iState.setInstanceAction(DO);
             return iState.getInstanceAction();
         }
     },
     
     DO {
-        Action act(InstanceState iState, Core core, RunnerService runnerService) {
+        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
             long iNum = iState.getInstanceNumber();
-            core.executeTestInstance(iNum);
+            iCore.executeTestInstance(iNum,  iCore);
             iState.setInstanceAction(REMOVE);
             return iState.getInstanceAction();
         }
@@ -61,7 +61,7 @@ public enum Action implements Actions {
 //  STORE_RESULT,
     
     REMOVE {
-        Action act(InstanceState iState, Core core, RunnerService runnerService) {
+        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
             long iNum = iState.getInstanceNumber();
             runnerService.actionStore.remove(iNum);
             iState.setInstanceAction(DISCARDED);
@@ -71,13 +71,13 @@ public enum Action implements Actions {
 
     // if called, remove iState from actionStore; try to code in a way that "DISCARDED" is never called
     DISCARDED {
-        Action act(InstanceState iState, Core core, RunnerService runnerService) {
+        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
             long iNum = iState.getInstanceNumber();
             runnerService.actionStore.remove(iNum);
             return iState.getInstanceAction();
         }
     };
 
-    abstract Action act(InstanceState is, Core core, RunnerService runnerService);
+    abstract Action act(InstanceState is, InstanceCore iCore, RunnerService runnerService);
     
 }

@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.eclipse.jetty.client.HttpClient;
+//import org.eclipse.jetty.client.HttpClient;
 
 public class CommandLine {
     private static <T extends Comparable<? super T>> List<T> asSortedList( Collection<T> c ) {
@@ -400,18 +400,18 @@ public class CommandLine {
         if (help == true)
             runHelp(); // exits app
         
-        // setup http client
-        HttpClient httpClient = new HttpClient();
-        httpClient.setFollowRedirects(false); // an example of configuring the client
-        try {
-            httpClient.start();
-            httpClient.stop();
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        
-        System.out.println( "manual runner has setup the http client and exits" );
+//        // setup http client
+//        HttpClient httpClient = new HttpClient();
+//        httpClient.setFollowRedirects(false); // an example of configuring the client
+//        try {
+//            httpClient.start();
+//            httpClient.stop();
+//        } catch (Exception e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }
+//        
+//        System.out.println( "manual runner has setup the http client and exits" );
 
         
         

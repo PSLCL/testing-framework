@@ -5,6 +5,7 @@ import com.pslcl.qa.platform.Core;
 public class InstanceTask implements Runnable {
     private RunnerMachine runnerMachine;
     private Core core;
+    private InstanceCore iCore;
     private long iNum;
     private String instanceThreadName;
 
@@ -22,8 +23,9 @@ public class InstanceTask implements Runnable {
         this.iNum = iNum;
         this.instanceThreadName = new String("instance " + iNum);
         
-        // HACK: fixed test number for initial testing purposes; test instance number is what came out of the InstanceStore
-        this.core = new Core(71);
+//        // HACK: fixed test number for initial testing purposes; test instance number is what came out of the InstanceStore
+//        this.core = new Core(71);
+        this.iCore = new InstanceCore(iNum);
         
         try {
             runnerMachine.instanceExecutorService.execute(this); // schedules call to this.run(); this is the full execution of the specified test instance
@@ -46,11 +48,10 @@ public class InstanceTask implements Runnable {
         while(true) {
             InstanceState iState = runnerMachine.runnerService.actionStore.get(iNum);
             Action action = iState.getInstanceAction();
-            Action nextAction = action.act(iState, core, runnerMachine.runnerService);
+            Action nextAction = action.act(iState, iCore, runnerMachine.runnerService);
             System.out.println("InstanceTask.run() ran Action " + action.toString() + " for instance number " + iNum + ", finds next action to be " + nextAction.toString());
             if (nextAction == Action.DISCARDED)
                 break;
-            
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

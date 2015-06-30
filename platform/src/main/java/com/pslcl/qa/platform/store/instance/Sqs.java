@@ -103,6 +103,7 @@ public class Sqs extends MessageQueueDaoAbstract {
 
             try {
                 Class.forName("org.apache.commons.logging.LogFactory");           // required at run time for new ClientConfiguration()
+                Class.forName("com.fasterxml.jackson.core.Versioned");            // required at run time for SQS connect, below
                 Class.forName("com.fasterxml.jackson.databind.ObjectMapper");     // required at run time for new ClientConfiguration()
                 Class.forName("com.fasterxml.jackson.annotation.JsonAutoDetect"); // required at run time for new ClientConfiguration()
                 Class.forName("com.amazonaws.services.sqs.AmazonSQS"); // required at run time for SQSConnectionFactory.builder()

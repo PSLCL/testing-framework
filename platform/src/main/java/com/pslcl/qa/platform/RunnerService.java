@@ -1,6 +1,5 @@
 package com.pslcl.qa.platform;
 
-import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
@@ -10,25 +9,21 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.daemon.Daemon;
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonInitException;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+//import org.eclipse.jetty.server.Connector;
+//import org.eclipse.jetty.server.HttpConfiguration;
+//import org.eclipse.jetty.server.HttpConnectionFactory;
+//import org.eclipse.jetty.server.SecureRequestCustomizer;
+//import org.eclipse.jetty.server.Server;
+//import org.eclipse.jetty.server.ServerConnector;
+//import org.eclipse.jetty.server.SslConnectionFactory;
+//import org.eclipse.jetty.server.handler.ContextHandler;
+//import org.eclipse.jetty.servlet.ServletHandler;
+//import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,18 +47,18 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     /** The logger used to log any messages. */
     private static final Logger logger = LoggerFactory.getLogger(RunnerService.class); // setup the SLF4J logger
 
-    /**
-     *
-     */
-    public static class HelloServlet extends HttpServlet {
-        @Override
-        protected void doGet( HttpServletRequest request, HttpServletResponse response ) throws ServletException, IOException {
-            response.setContentType("text/html");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println("<h1>Hello World from 'HelloServlet'</h1>");
-        }
-           
-    }
+//    /**
+//     *
+//     */
+//    public static class HelloServlet extends HttpServlet {
+//        @Override
+//        protected void doGet( HttpServletRequest request, HttpServletResponse response ) throws ServletException, IOException {
+//            response.setContentType("text/html");
+//            response.setStatus(HttpServletResponse.SC_OK);
+//            response.getWriter().println("<h1>Hello World from 'HelloServlet'</h1>");
+//        }
+//           
+//    }
 
     
     // class variables
@@ -114,17 +109,8 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
             
             // init access to Test Instances DAO-referenced database (one is common to all instances of RunnerService)
             
-              // jetty specific 
-//            try {
-//                Class.forName("org.eclipse.jetty.http.HttpField"); // not required at compile time, but required for jetty Server constructor to use at run time
-//                Class.forName("org.eclipse.jetty.io.ByteBufferPool"); // not required at compile time, but required for jetty Server constructor to use at run time
-//            } catch (Exception e2) {
-//                logger.debug("RunnerService.init() finds unavailable class object: " + e2.getMessage());
-//                throw e2;
-//            }
-            
-            // init web server to accept incoming test instance requests
-            Server server = new Server(); // If port 8080 is supplied, this would create a default Connector that listens for requests on port 8080
+//            // init web server to accept incoming test instance requests
+//            Server server = new Server(); // If port 8080 is supplied, this would create a default Connector that listens for requests on port 8080
 
             // keystoreFile to use
             String keystorePath = null; // TODO: access to our real keystore
@@ -132,43 +118,43 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 //            if (!keystoreFile.exists())
 //                throw new FileNotFoundException(keystoreFile.getAbsolutePath());
             
-            // setup a config object to be used in two separate Connectors
-            HttpConfiguration httpConfig = new HttpConfiguration();
-            httpConfig.setSecureScheme("https");
-            httpConfig.setSecurePort(8443);
-            httpConfig.setOutputBufferSize(32768);
+//            // setup a config object to be used in two separate Connectors
+//            HttpConfiguration httpConfig = new HttpConfiguration();
+//            httpConfig.setSecureScheme("https");
+//            httpConfig.setSecurePort(8443);
+//            httpConfig.setOutputBufferSize(32768);
+//            
+//            // an http Connector, with full configuration
+//            ServerConnector httpConn = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
+//            httpConn.setHost("localhost");
+//            httpConn.setPort(8080);
+//            httpConn.setIdleTimeout(30000);
             
-            // an http Connector, with full configuration
-            ServerConnector httpConn = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
-            httpConn.setHost("localhost");
-            httpConn.setPort(8080);
-            httpConn.setIdleTimeout(30000);
+//            // an https Connector, with full configuration
+//            SslContextFactory sslContextFactory = new SslContextFactory();
+////            sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
+////            sslContextFactory.setKeyStorePassword(null); // these nulls are temporary, they mean: accept console input
+////            sslContextFactory.setKeyManagerPassword(null); // TODO: supply real string passwords here
             
-            // an https Connector, with full configuration
-            SslContextFactory sslContextFactory = new SslContextFactory();
-//            sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
-//            sslContextFactory.setKeyStorePassword(null); // these nulls are temporary, they mean: accept console input
-//            sslContextFactory.setKeyManagerPassword(null); // TODO: supply real string passwords here
-            
-            HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
-            httpsConfig.addCustomizer(new SecureRequestCustomizer());
-            ServerConnector httpsConn = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(httpsConfig));
-            httpsConn.setPort(8443);
-            httpsConn.setIdleTimeout(600000);
-            
-            // set both connectors
-            server.setConnectors(new Connector[] {httpConn, httpsConn});
-
-            // Set server handler, on context "/hello". Handler therefore responds only to requests from any URI beginning with /hello.
-            ContextHandler context = new ContextHandler();
-            context.setContextPath("/hello");
-            context.setHandler(new ExampleHandler()); // TODO: in order to handle incoming requests, decide if we even want a "handler," since our servlet might give enough capability  
-            server.setHandler(context);
-            
-            // set a minimal raw servlet
-            ServletHandler servletHandler = new ServletHandler();
-            server.setHandler(servletHandler);
-            servletHandler.addServletWithMapping(HelloServlet.class, "/*");
+//            HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+//            httpsConfig.addCustomizer(new SecureRequestCustomizer());
+//            ServerConnector httpsConn = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(httpsConfig));
+//            httpsConn.setPort(8443);
+//            httpsConn.setIdleTimeout(600000);
+//            
+//            // set both connectors
+//            server.setConnectors(new Connector[] {httpConn, httpsConn});
+//
+//            // Set server handler, on context "/hello". Handler therefore responds only to requests from any URI beginning with /hello.
+//            ContextHandler context = new ContextHandler();
+//            context.setContextPath("/hello");
+//            context.setHandler(new ExampleHandler()); // TODO: in order to handle incoming requests, decide if we even want a "handler," since our servlet might give enough capability  
+//            server.setHandler(context);
+//            
+//            // set a minimal raw servlet
+//            ServletHandler servletHandler = new ServletHandler();
+//            server.setHandler(servletHandler);
+//            servletHandler.addServletWithMapping(HelloServlet.class, "/*");
             
 //            WebSocketHandler wsHandler = new WebSocketHandler()
 //                {
@@ -181,8 +167,8 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 //            server.setHandler(wsHandler);
             
             
-            server.start();
-            server.stop(); // temporary
+//            server.start();
+//            server.stop(); // temporary
             
             // init connection to one or more DAO-referenced message queues (these are to be common to all instances of RunnerService)
             //     note: the intent is that this or these queues not be created by project code- it is or they are separately created at install time
