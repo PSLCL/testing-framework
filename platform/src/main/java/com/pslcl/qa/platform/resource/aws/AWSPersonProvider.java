@@ -28,18 +28,6 @@ public class AWSPersonProvider implements PersonProvider {
 	}
 
 	@Override
-	public void setRunnerRef(int runnerRef) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public int getRunnerRef() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
 	public void setResource(String resourceHash, String resourceDescription) {
 		// TODO Auto-generated method stub
 

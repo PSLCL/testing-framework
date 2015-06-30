@@ -37,13 +37,6 @@ public interface ResourceProvider {
      */
     void invalidateArtifacts( String component, String version );
 
-    /** A runner is identified with this number by the resource manager.
-     *
-     * @param runnerRef
-     */
-    void setRunnerRef( int runnerRef );
-    int getRunnerRef();
-
     /** Set a resource definition.
      *
      * @param resourceHash
