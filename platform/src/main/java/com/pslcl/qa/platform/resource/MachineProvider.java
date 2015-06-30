@@ -4,9 +4,7 @@ import com.pslcl.qa.platform.ResourceNotFoundException;
 
 
 /**
- * 
- * 
- *
+ * A Resource provider which allows binding of Machine resource types.
  */
 public interface MachineProvider extends ResourceProvider {
     

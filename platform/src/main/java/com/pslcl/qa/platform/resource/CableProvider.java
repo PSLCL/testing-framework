@@ -4,9 +4,7 @@ import com.pslcl.qa.platform.ResourceNotFoundException;
 
 
 /**
- * 
- * 
- *
+ * A Resource provider which allows binding of Cable resource types.
  */
 public interface CableProvider extends ResourceProvider {
 	/** 

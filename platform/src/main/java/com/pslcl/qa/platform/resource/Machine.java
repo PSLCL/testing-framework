@@ -4,9 +4,7 @@ import com.pslcl.qa.platform.ArtifactNotFoundException;
 import com.pslcl.qa.platform.ResourceNotFoundException;
 
 /**
- * 
- * 
- *
+ * Represents a Machine Resource instance.
  */
 public interface Machine extends Resource {
     

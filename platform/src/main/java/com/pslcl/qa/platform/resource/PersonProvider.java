@@ -4,9 +4,7 @@ import com.pslcl.qa.platform.ResourceNotFoundException;
 
 
 /**
- * 
- * 
- *
+ *  A Resource provider which allows binding of Person resource types.
  */
 public interface PersonProvider extends ResourceProvider {
     
