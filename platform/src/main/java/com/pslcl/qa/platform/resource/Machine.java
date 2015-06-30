@@ -1,7 +1,6 @@
 package com.pslcl.qa.platform.resource;
 
 import com.pslcl.qa.platform.ArtifactNotFoundException;
-import com.pslcl.qa.platform.ResourceNotFoundException;
 
 /**
  * Represents a Machine Resource instance.

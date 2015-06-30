@@ -1,6 +1,5 @@
 package com.pslcl.qa.platform.resource;
 
-import com.pslcl.qa.platform.ResourceNotFoundException;
 
 /**
  * This interface defines interactions with a resource provider. The primary responsibility of a resource provider

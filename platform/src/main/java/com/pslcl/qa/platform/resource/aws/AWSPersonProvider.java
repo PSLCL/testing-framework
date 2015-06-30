@@ -1,10 +1,10 @@
 package com.pslcl.qa.platform.resource.aws;
 
 import com.pslcl.qa.platform.Hash;
-import com.pslcl.qa.platform.ResourceNotFoundException;
 import com.pslcl.qa.platform.resource.Person;
 import com.pslcl.qa.platform.resource.PersonProvider;
 import com.pslcl.qa.platform.resource.Resource;
+import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 
 public class AWSPersonProvider implements PersonProvider {
 

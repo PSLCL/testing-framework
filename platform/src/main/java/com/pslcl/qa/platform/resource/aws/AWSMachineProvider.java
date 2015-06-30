@@ -1,10 +1,10 @@
 package com.pslcl.qa.platform.resource.aws;
 
 import com.pslcl.qa.platform.Hash;
-import com.pslcl.qa.platform.ResourceNotFoundException;
 import com.pslcl.qa.platform.resource.Machine;
 import com.pslcl.qa.platform.resource.MachineProvider;
 import com.pslcl.qa.platform.resource.Resource;
+import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 
 public class AWSMachineProvider implements MachineProvider {
 

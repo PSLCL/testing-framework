@@ -1,6 +1,5 @@
 package com.pslcl.qa.platform.resource;
 
-import com.pslcl.qa.platform.ResourceNotFoundException;
 
 
 /**
