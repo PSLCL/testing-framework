@@ -1,5 +1,7 @@
 package com.pslcl.qa.platform;
 
+import com.pslcl.qa.platform.resource.MachineResourceInterface;
+
 /**
  * This interface defines interactions with a resource provider. The primary responsibility of a resource provider
  * is to instantiate resources. However, all interactions between the platform and the resource is brokered through
