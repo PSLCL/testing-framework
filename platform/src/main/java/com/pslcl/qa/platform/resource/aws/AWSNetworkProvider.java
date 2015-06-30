@@ -1,9 +1,9 @@
 package com.pslcl.qa.platform.resource.aws;
 
-import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.ResourceNotFoundException;
 import com.pslcl.qa.platform.resource.Network;
 import com.pslcl.qa.platform.resource.NetworkProvider;
+import com.pslcl.qa.platform.resource.Resource;
 
 public class AWSNetworkProvider implements NetworkProvider {
 
@@ -28,9 +28,9 @@ public class AWSNetworkProvider implements NetworkProvider {
 	}
 
 	@Override
-	public void cancel() {
+	public void release(Resource resource) {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 }

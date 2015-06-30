@@ -4,6 +4,7 @@ import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.ResourceNotFoundException;
 import com.pslcl.qa.platform.resource.Machine;
 import com.pslcl.qa.platform.resource.MachineProvider;
+import com.pslcl.qa.platform.resource.Resource;
 
 public class AWSMachineProvider implements MachineProvider {
 
@@ -48,9 +49,9 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public void cancel() {
+	public void release(Resource resource) {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 }
