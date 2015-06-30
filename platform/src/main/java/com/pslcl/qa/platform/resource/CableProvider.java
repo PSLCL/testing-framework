@@ -1,20 +1,18 @@
 package com.pslcl.qa.platform.resource;
 
-import com.pslcl.qa.platform.Hash;
-import com.pslcl.qa.platform.ResourceProviderInterface;
 
 /**
  * 
  * 
  *
  */
-public interface CableProvider extends ResourceProviderInterface {
+public interface CableProvider extends ResourceProvider {
 
     /**
      * 
      * @param cableDescription
      * @return
      */
-    Hash getMachine(String cableDescription);
+    Machine getMachine(String cableDescription);
     
 }

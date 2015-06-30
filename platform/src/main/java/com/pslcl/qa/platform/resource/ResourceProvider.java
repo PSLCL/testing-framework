@@ -1,6 +1,7 @@
-package com.pslcl.qa.platform;
+package com.pslcl.qa.platform.resource;
 
-import com.pslcl.qa.platform.resource.MachineResource;
+import com.pslcl.qa.platform.Hash;
+import com.pslcl.qa.platform.ResourceNotFoundException;
 
 /**
  * This interface defines interactions with a resource provider. The primary responsibility of a resource provider
@@ -10,7 +11,7 @@ import com.pslcl.qa.platform.resource.MachineResource;
  * The test platform supports multiple runners, each of which may use a common set of resource providers
  * To distinguish runners, a runner reference is part of this API. Implementing class may set this reference.
  */
-public interface ResourceProviderInterface {
+public interface ResourceProvider {
 
     /**
      *
