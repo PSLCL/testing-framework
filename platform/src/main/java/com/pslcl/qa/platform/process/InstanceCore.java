@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class InstanceCore {
 
@@ -21,17 +23,29 @@ public class InstanceCore {
         int phase;                  // INT in test_instance TODO: double check needed Java type
         boolean iSynchronized;      // BOOLEAN synchronized in test_instance TODO: double check needed Java type
 
+        // from described_template
         byte[] fk_version_set;      // BINARY(32) 32 byte array in described_template; use ResultSet.getBytes()
         long fk_template;           // INT(11) in described_template
         byte[] description_hash;    // BINARY(32) 32 byte array in described_template
         boolean dtSynchronized;     // BOOLEAN synchronized in described_template TODO: double check needed Java type
 
+        // from template
         byte [] hash;               // BINARY(32) 32 byte array in template
         boolean enabled;            // BOOLEAN in template
         String steps;               // MEDIUMTEXT in template
 
+        // to multiple instances of dt_line
+        Map<Long,DBDTLine> pkToDTLine = new HashMap<Long,DBDTLine>();
+        
     }
 
+    private class DBDTLine {
+        // from dt_line
+        byte[] pk_dt_line;          // INT(11) in dt_line
+        int line;                   // INT in dt_line
+        String description;         // MEDIUMTEXT in dt_line
+    }
+    
 
     // class members
 
@@ -56,12 +70,16 @@ public class InstanceCore {
         try {
             statement = connect.createStatement();
             String strINum = String.valueOf(pk_test_instance);
-            resultSet = statement.executeQuery( "SELECT fk_described_template, fk_run, due_date, phase, test_instance.synchronized, fk_version_set, fk_template, description_hash, described_template.synchronized, hash, enabled, steps FROM test_instance JOIN described_template ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance =" + strINum );
+            resultSet = statement.executeQuery( "SELECT test_instance.fk_described_template, fk_run, due_date, phase, test_instance.synchronized, fk_version_set, fk_template, description_hash, described_template.synchronized, hash, enabled, steps "/*, pk_dt_line, line, description "*/ +
+                                                "FROM test_instance " +
+                                                "JOIN described_template ON test_instance.fk_described_template = pk_described_template " +
+                                                "JOIN template ON fk_template = pk_template " +
+                                                "WHERE pk_test_instance =" + strINum );
             // everything is 1:1 relationship, so resultSet has exactly 1 or 0 entry
 
             if ( resultSet.next() ) {
                 dbTestInstance = new DBTestInstance();
-                dbTestInstance.fk_described_template = resultSet.getLong("fk_described_template"); // null table entry returns 0
+                dbTestInstance.fk_described_template = resultSet.getLong("test_instance.fk_described_template"); // null table entry returns 0
                 dbTestInstance.fk_run = resultSet.getLong("fk_run"); // null table entry returns 0
                 dbTestInstance.due_date = resultSet.getDate("due_date");
                 dbTestInstance.phase = resultSet.getInt("phase");
@@ -75,11 +93,30 @@ public class InstanceCore {
                 dbTestInstance.hash = resultSet.getBytes("hash");
                 dbTestInstance.enabled = resultSet.getBoolean("enabled");
                 dbTestInstance.steps = resultSet.getString("steps");
+                
+//                dbTestInstance.pk_dt_line = resultSet.getBytes("pk_dt_line");
+//                dbTestInstance.line = resultSet.getInt("line");
+//                dbTestInstance.description = resultSet.getString("description");
 
-                System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads full data, including fk_described_template " + dbTestInstance.fk_described_template +
-                                                     ", pk_template " + dbTestInstance.fk_template + (dbTestInstance.fk_run!=0 ? ", TEST RESULT ALREADY STORED" : ""));
-                if (resultSet.next())
-                    throw new Exception("resultSet wrongly has more than one entry");
+//                System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads full data, including test_instance.fk_described_template " + dbTestInstance.fk_described_template +
+//                                                     ", pk_template " + dbTestInstance.fk_template + (dbTestInstance.fk_run!=0 ? ", TEST RESULT ALREADY STORED" : ""));
+//                if (resultSet.next())
+//                    throw new Exception("resultSet wrongly has more than one entry");
+//
+//                // obtain all matching dt_line entries
+//                resultSet = statement.executeQuery( "SELECT test_instance.fk_described_template, fk_run, due_date, phase, test_instance.synchronized, fk_version_set, fk_template, description_hash, described_template.synchronized, hash, enabled, steps "/*, pk_dt_line, line, description "*/ +
+//                        "FROM test_instance " +
+//                        "JOIN described_template ON test_instance.fk_described_template = pk_described_template " +
+//                        "JOIN template ON fk_template = pk_template " +
+//                        
+//                      //"JOIN dt_line ON dt_line.fk_described_template = pk_described_template " +
+//                        
+//                        "WHERE pk_test_instance =" + strINum );
+//                // everything is 1:1 relationship, so resultSet has exactly 1 or 0 entry
+
+                
+                
+                
             } else {
                 throw new Exception("instance data not present");
             }
