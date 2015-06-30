@@ -8,7 +8,7 @@ import com.pslcl.qa.platform.ResourceProviderInterface;
  * 
  *
  */
-public interface CableProviderInterface extends ResourceProviderInterface {
+public interface CableProvider extends ResourceProviderInterface {
 
     /**
      * 

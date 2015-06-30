@@ -1,6 +1,6 @@
 package com.pslcl.qa.platform;
 
-import com.pslcl.qa.platform.resource.MachineResourceInterface;
+import com.pslcl.qa.platform.resource.MachineResource;
 
 /**
  * This interface defines interactions with a resource provider. The primary responsibility of a resource provider
@@ -56,7 +56,7 @@ public interface ResourceProviderInterface {
      * @param resourceAttributes
      * @return MachineResourceInterface, used to control the bound resource
      */
-    MachineResourceInterface bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+    MachineResource bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
 
     /** Cancel resource requests associated with this runner instance  */
     void cancel();

@@ -8,13 +8,13 @@ import com.pslcl.qa.platform.ResourceProviderInterface;
  * 
  *
  */
-public interface MachineProviderInterface extends ResourceProviderInterface {
+public interface PersonProvider extends ResourceProviderInterface {
     
     /**
      * 
-     * @param machineDescription
+     * @param personDescription
      * @return
      */
-    Hash getMachine(String machineDescription);
-    
+    Hash getMachine(String personDescription);
+
 }
