@@ -8,26 +8,6 @@ import com.pslcl.qa.platform.resource.NetworkProvider;
 public class AWSNetworkProvider implements NetworkProvider {
 
 	@Override
-	public void updateArtifact(String component, String version,
-			String platform, String name, Hash hash) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void removeArtifact(String component, String version,
-			String platform, String name) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void invalidateArtifacts(String component, String version) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public void setResource(String resourceHash, String resourceDescription) {
 		// TODO Auto-generated method stub
 
