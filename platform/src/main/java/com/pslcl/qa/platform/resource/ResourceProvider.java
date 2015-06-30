@@ -1,6 +1,5 @@
 package com.pslcl.qa.platform.resource;
 
-import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.ResourceNotFoundException;
 
 /**
@@ -18,16 +17,25 @@ public interface ResourceProvider {
      * @param resourceHash
      * @param resourceDescription
      */
-    void setResource( String resourceHash, String resourceDescription);
+    public void setResource( String resourceHash, String resourceDescription);
 
     /** 
      * Acquire a resource.
+     * 
+     * The resource must be released once it is no longer needed.
      *
      * @param resourceHash
      * @param resourceAttributes
      * @return Resource object which represents the Resource Instance.
      */
-    Resource bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+    public Resource bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+    
+    /**
+     * Release a resource.
+     * 
+     * @param resource The resource to release.
+     */
+    public void release(Resource resource);
     
     /**
      * Check whether the specified resource is available.
@@ -39,8 +47,5 @@ public interface ResourceProvider {
      * 
      * @throws ResourceNotFoundException
      */
-    boolean isAvailable( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
-
-    /** Cancel resource requests associated with this runner instance  */
-    void cancel();
+    public boolean isAvailable( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
 }
