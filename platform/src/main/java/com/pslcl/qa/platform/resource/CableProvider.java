@@ -13,6 +13,6 @@ public interface CableProvider extends ResourceProvider {
      * @param cableDescription
      * @return
      */
-    Machine getMachine(String cableDescription);
+    Cable getCable(String cableDescription);
     
 }

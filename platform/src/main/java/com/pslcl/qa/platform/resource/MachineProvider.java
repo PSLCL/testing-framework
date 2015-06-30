@@ -14,6 +14,6 @@ public interface MachineProvider extends ResourceProvider {
      * @param machineDescription
      * @return
      */
-    Hash getMachine(String machineDescription);
+    Machine getMachine(String machineDescription);
     
 }

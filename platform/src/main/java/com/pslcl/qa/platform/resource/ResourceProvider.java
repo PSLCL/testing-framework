@@ -57,7 +57,7 @@ public interface ResourceProvider {
      * @param resourceAttributes
      * @return MachineResourceInterface, used to control the bound resource
      */
-    MachineResource bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+    Machine bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
 
     /** Cancel resource requests associated with this runner instance  */
     void cancel();

@@ -14,6 +14,6 @@ public interface PersonProvider extends ResourceProvider {
      * @param personDescription
      * @return
      */
-    Hash getMachine(String personDescription);
+    Person getPerson(String personDescription);
 
 }

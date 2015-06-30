@@ -8,7 +8,7 @@ import com.pslcl.qa.platform.ResourceNotFoundException;
  * 
  *
  */
-public interface MachineResource {
+public interface Machine extends Resource {
     
     /** Place an artifact on a machine.
     *

@@ -14,6 +14,6 @@ public interface NetworkProvider extends ResourceProvider {
      * @param networkDescription
      * @return
      */
-    Hash getMachine(String networkDescription);
+    Network getNetwork(String networkDescription);
 
 }
