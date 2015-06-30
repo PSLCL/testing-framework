@@ -51,11 +51,12 @@ public interface ResourceProvider {
      */
     void setResource( String resourceHash, String resourceDescription);
 
-    /** Acquire a resource.
+    /** 
+     * Acquire a resource.
      *
      * @param resourceHash
      * @param resourceAttributes
-     * @return MachineResourceInterface, used to control the bound resource
+     * @return Resource object which represents the Resource Instance.
      */
     Resource bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
     
