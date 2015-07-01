@@ -16,7 +16,7 @@ public class InstanceCore {
      * Relevant data base info for this test instance
      */
     private class DBTestInstance {
-      //long pk_test_instance;  note: this is held in parent class as InstanceCore.pk_test_instance
+        long pk_test_instance;      // INT(11) in test_instance; note: this is also held in parent class as InstanceCore.pk_test_instance
         long fk_described_template; // INT(11) in described_template
         long fk_run;                // INT(11) in run
         Date due_date;              // DATETIME in test_instance TODO: double check needed Java type
@@ -37,6 +37,10 @@ public class InstanceCore {
         // to multiple instances of dt_line
         Map<Long,DBDTLine> pkToDTLine = new HashMap<Long,DBDTLine>();
         
+        DBTestInstance(long pk_test_instance) {
+            this.pk_test_instance = pk_test_instance;
+        }
+        
     }
 
     private class DBDTLine {
@@ -52,9 +56,9 @@ public class InstanceCore {
     /**
      * The connection to the database.
      */
+    private long pk_test_instance;
     private Connection connect = null;
     private boolean read_only = true;
-    private long pk_test_instance;
     private DBTestInstance dbTestInstance = null;
 
     // private methods
@@ -78,7 +82,7 @@ public class InstanceCore {
             // everything is 1:1 relationship, so resultSet has exactly 1 or 0 entry
 
             if ( resultSet.next() ) {
-                dbTestInstance = new DBTestInstance();
+                dbTestInstance = new DBTestInstance(pk_test_instance);
                 dbTestInstance.fk_described_template = resultSet.getLong("test_instance.fk_described_template"); // null table entry returns 0
                 dbTestInstance.fk_run = resultSet.getLong("fk_run"); // null table entry returns 0
                 dbTestInstance.due_date = resultSet.getDate("due_date");
@@ -237,6 +241,8 @@ public class InstanceCore {
         //   to a Resource Manager that has access to artifacts and resources,
         //   and to everything else needed to cause our test instance to be executed.
 
+        // REVIEW: all these needed? testInstanceNumber same as iCore.pk_test_instance same as this.dbTestInstance.pk_test_instance
+        
         // this.dbTestInstance is used to execute this test instance by following steps; aka instantiate this test run to generate a test result
         System.out.println( "executeTestInstance() has data base info for test instance " + iCore.pk_test_instance + ", finding described_template " + this.dbTestInstance.fk_described_template + " and template " + this.dbTestInstance.fk_template );
         System.out.println( "executeTestInstance() finds run: " + this.dbTestInstance.fk_run);
