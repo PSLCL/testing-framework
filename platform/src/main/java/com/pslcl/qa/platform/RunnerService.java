@@ -344,44 +344,69 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     /**
      * 
-     * @note Instance number comes from hex string of even length from 2 to 16 chars, parsing to byte array of 1 to 8 bytes, converting to a Java long, treated as unsigned long. 
-     * @param hexStrInstanceNumber Representation of test instance number.
+     * @param strInstanceNumber Representation of test instance number.
      * @param message JMS message associated with the instance number, used for eventual message ack
      * @throws Exception
      */
-    public void submitInstanceNumber_Store(String hexStrInstanceNumber, Message message) throws Exception {
+    public void submitInstanceNumber_Store(String strInstanceNumber, Message message) throws Exception {
         try {
-            // early tests- does hexStrInstanceNumber produce a valid long integer? And is resulting iNum already completed or in process? 
-            byte [] bytes = DatatypeConverter.parseHexBinary(hexStrInstanceNumber);
-            if (bytes.length <= 8 && bytes.length > 0) {
-                // use ByteBuffer class to compute long instanceNumber; first form eight byte array
-                byte [] eightBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0};
-                int lengthDif = eightBytes.length - bytes.length;
-                for (int i=bytes.length-1; i>=0; i--)
-                    eightBytes[i+lengthDif] = bytes[i];
-                ByteBuffer bb = ByteBuffer.wrap(eightBytes);
-                long iNum = bb.getLong(); // 
-                logger.debug("RunnerService.submitInstanceNumber() converts hex string to " + bytes.length + " bytes. Computed instance number is " + iNum + " (0x" + hexStrInstanceNumber + ")");
-                try {
-                    if (ProcessTracker.resultStored(iNum)) {
-                        ackInstanceEntry(message);
-                        System.out.println("RunnerService.submitInstanceNumber_Store() finds instanceNumber " + iNum + ", result already stored. Acking this iNum now.");
-                    } else if (processTracker.inProcess(iNum)) {
-                        System.out.println("RunnerService.submitInstanceNumber_Store() finds instanceNumber " + iNum + ", work already processing");
-                    } else {
-                        // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this instanceNumber.
-                        runnerMachine.initiateProcessing(iNum, message);
-                    }
-                } catch (Exception e) {
-                    // do nothing; iNum remains in InstanceStore, we will see it again
-                    System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for instanceNumber " + iNum + ". Leave iNum in InstanceStore. Exception msg: " + e);
+            // early tests- does strInstanceNumber produce a valid long integer? And is resulting iNum already completed or in process?
+            
+            // the ordinary method
+            long iNum = Long.parseLong(strInstanceNumber);
+            logger.debug("RunnerService.submitInstanceNumber() finds instance number is " + iNum);
+            try {
+                if (ProcessTracker.resultStored(iNum)) {
+                    ackInstanceEntry(message);
+                    System.out.println("RunnerService.submitInstanceNumber_Store() finds instanceNumber " + iNum + ", result already stored. Acking this iNum now.");
+                } else if (processTracker.inProcess(iNum)) {
+                    System.out.println("RunnerService.submitInstanceNumber_Store() finds instanceNumber " + iNum + ", work already processing");
+                } else {
+                    // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this instanceNumber.
+                    runnerMachine.initiateProcessing(iNum, message);
                 }
-            } else {
-                throw new Exception("RunnerService.submitInstanceNumber_Store() rejects converted hex string byte [] of length " + bytes.length + ". Length must be from 1 to 8.");
+            } catch (Exception e) {
+                // do nothing; iNum remains in InstanceStore, we will see it again
+                System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for instanceNumber " + iNum + ". Leave iNum in InstanceStore. Exception msg: " + e);
             }
         } catch (Exception e) {
             throw e; // recipient must ack the message
         }
+            
+        // the hexStr method
+//      * @note Instance number comes from hex string of even length from 2 to 16 chars, parsing to byte array of 1 to 8 bytes, converting to a Java long, treated as unsigned long. 
+//        try {
+//            // early tests- does hexStrInstanceNumber produce a valid long integer? And is resulting iNum already completed or in process?
+//            byte [] bytes = DatatypeConverter.parseHexBinary(hexStrInstanceNumber);
+//            if (bytes.length <= 8 && bytes.length > 0) {
+//                // use ByteBuffer class to compute long instanceNumber; first form eight byte array
+//                byte [] eightBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0};
+//                int lengthDif = eightBytes.length - bytes.length;
+//                for (int i=bytes.length-1; i>=0; i--)
+//                    eightBytes[i+lengthDif] = bytes[i];
+//                ByteBuffer bb = ByteBuffer.wrap(eightBytes);
+//                long iNum = bb.getLong(); // 
+//                logger.debug("RunnerService.submitInstanceNumber() converts hex string to " + bytes.length + " bytes. Computed instance number is " + iNum + " (0x" + hexStrInstanceNumber + ")");
+//                try {
+//                    if (ProcessTracker.resultStored(iNum)) {
+//                        ackInstanceEntry(message);
+//                        System.out.println("RunnerService.submitInstanceNumber_Store() finds instanceNumber " + iNum + ", result already stored. Acking this iNum now.");
+//                    } else if (processTracker.inProcess(iNum)) {
+//                        System.out.println("RunnerService.submitInstanceNumber_Store() finds instanceNumber " + iNum + ", work already processing");
+//                    } else {
+//                        // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this instanceNumber.
+//                        runnerMachine.initiateProcessing(iNum, message);
+//                    }
+//                } catch (Exception e) {
+//                    // do nothing; iNum remains in InstanceStore, we will see it again
+//                    System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for instanceNumber " + iNum + ". Leave iNum in InstanceStore. Exception msg: " + e);
+//                }
+//            } else {
+//                throw new Exception("RunnerService.submitInstanceNumber_Store() rejects converted hex string byte [] of length " + bytes.length + ". Length must be from 1 to 8.");
+//            }
+//        } catch (Exception e) {
+//            throw e; // recipient must ack the message
+//        }
     }
 
     /**
