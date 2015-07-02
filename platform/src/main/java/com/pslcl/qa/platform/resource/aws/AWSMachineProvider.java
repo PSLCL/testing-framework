@@ -1,5 +1,7 @@
 package com.pslcl.qa.platform.resource.aws;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.resource.MachineInstance;
 import com.pslcl.qa.platform.resource.MachineProvider;
@@ -7,6 +9,14 @@ import com.pslcl.qa.platform.resource.ResourceInstance;
 import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 
 public class AWSMachineProvider implements MachineProvider {
+	private final AmazonEC2Client ec2Client;
+	private final AWSResourceProviderProperties properties;
+	
+	public AWSMachineProvider(AWSResourceProviderProperties properties){
+		this.properties = properties;
+		DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain();
+		ec2Client = new AmazonEC2Client(providerChain);		
+	}
 
 	@Override
 	public void updateArtifact(String component, String version,
