@@ -6,7 +6,7 @@ import javax.jms.Message;
 import com.pslcl.qa.platform.RunnerService;
 
 /**
- * This DAO layer knows about JMS. Using this DAO enforces behavior to be JMS compatible.
+ * This DAO layer knows about JMS. Using this DAO enforces JMS compatibility.
  * 
  *
  */
@@ -36,5 +36,5 @@ public abstract class MessageQueueDaoAbstract implements InstanceStoreDao {
     public void ackInstanceEntry(Message message) throws JMSException {
         // this call does the actual work
         message.acknowledge();
-    }   
+    }
 }
