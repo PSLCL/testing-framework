@@ -4,7 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import com.pslcl.qa.platform.Core;
 import com.pslcl.qa.platform.RunnerService;
 
 
@@ -41,7 +40,7 @@ public class RunnerMachine {
      * 
      * @param runnerService
      */
-    public RunnerMachine(RunnerService runnerService, Core core) {
+    public RunnerMachine(RunnerService runnerService) {
         this.runnerService = runnerService;
         instanceExecutorService = Executors.newCachedThreadPool(new InstanceThreadFactory());
     }

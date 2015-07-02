@@ -1,10 +1,8 @@
 package com.pslcl.qa.platform.process;
 
-import com.pslcl.qa.platform.Core;
 
 public class InstanceTask implements Runnable {
     private RunnerMachine runnerMachine;
-    private Core core;
     private InstanceCore iCore;
     private long iNum;
     private String instanceThreadName;

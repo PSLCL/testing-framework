@@ -3,13 +3,11 @@ package com.pslcl.qa.platform;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
-import java.nio.ByteBuffer;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.daemon.Daemon;
 import org.apache.commons.daemon.DaemonContext;
@@ -212,7 +210,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 
             // instantiate the process classes 
             actionStore = new ActionStore(); // TODO: any order required?
-            runnerMachine = new RunnerMachine(this, null);
+            runnerMachine = new RunnerMachine(this);
             processTracker = new ProcessTracker(this);
             
             if (mq.instanceStoreExists()) {

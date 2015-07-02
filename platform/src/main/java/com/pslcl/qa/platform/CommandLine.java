@@ -20,6 +20,11 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 //import org.eclipse.jetty.client.HttpClient;
 
+import com.pslcl.qa.platform.generator.ArtifactProvider;
+import com.pslcl.qa.platform.generator.ArtifactSink;
+import com.pslcl.qa.platform.generator.Core;
+import com.pslcl.qa.platform.generator.QuickBuildArtifactProvider;
+
 public class CommandLine {
     private static <T extends Comparable<? super T>> List<T> asSortedList( Collection<T> c ) {
         List<T> list = new ArrayList<T>(c);
