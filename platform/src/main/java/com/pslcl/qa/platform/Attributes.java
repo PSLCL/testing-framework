@@ -1,4 +1,4 @@
-package com.pslcl.qa.platform.generator;
+package com.pslcl.qa.platform;
 
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -13,8 +13,8 @@ import java.util.TreeMap;
  * The format of the string is always attribute=value&attribute=value where each value is URL encoded.
  */
 public class Attributes {
-    SortedMap<String,String> map = null;
-    String value = null;
+    private SortedMap<String,String> map = new TreeMap<String, String>();
+    private String value = null;
 
     public Attributes() {
     }
@@ -42,9 +42,7 @@ public class Attributes {
         value = sb.toString();
     }
 
-    private void valueToMap() {
-        map = new TreeMap<String, String>();
-
+    private void valueToMap() {    	
         try {
             if ( value != null ) {
                 String[] elements = value.split("&");
@@ -75,18 +73,16 @@ public class Attributes {
     }
 
     public void put( String attribute, String value ) {
-        if ( map == null )
-            valueToMap();
-
         map.put( attribute, value );
-        this.value = null;
+        mapToValue();
     }
 
     public String get( String attribute ) {
-        if ( map == null )
-            valueToMap();
-
         return map.get( attribute );
+    }
+    
+    public Map<String, String> getAttributes(){
+    	return new TreeMap<String, String>(map);
     }
 
     public String toString() {

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
 
 /**

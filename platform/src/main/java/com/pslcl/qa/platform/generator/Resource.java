@@ -2,6 +2,7 @@ package com.pslcl.qa.platform.generator;
 
 import java.util.UUID;
 
+import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
 
 /**
@@ -36,7 +37,7 @@ abstract class Resource {
             sb.append( "</tt> (" );
             sb.append( r.getDescription() );
             sb.append( ")" );
-            if ( a != null && a.map != null && a.map.size() > 0 ) {
+            if ( a != null && a.getAttributes().size() > 0 ) {
                 sb.append( " having attributes <tt>" );
                 sb.append( a );
                 sb.append( "</tt>" );
