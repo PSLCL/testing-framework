@@ -3,7 +3,7 @@ package com.pslcl.qa.platform.resource;
 /**
  * Represents a Cable Resource instance
  */
-public interface Cable extends Resource {
+public interface CableInstance extends ResourceInstance {
 	
 	/**
 	 * The IP address associated with this cable.

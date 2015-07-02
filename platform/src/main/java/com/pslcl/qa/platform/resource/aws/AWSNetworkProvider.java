@@ -1,8 +1,8 @@
 package com.pslcl.qa.platform.resource.aws;
 
-import com.pslcl.qa.platform.resource.Network;
+import com.pslcl.qa.platform.resource.NetworkInstance;
 import com.pslcl.qa.platform.resource.NetworkProvider;
-import com.pslcl.qa.platform.resource.Resource;
+import com.pslcl.qa.platform.resource.ResourceInstance;
 import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 
 public class AWSNetworkProvider implements NetworkProvider {
@@ -14,7 +14,7 @@ public class AWSNetworkProvider implements NetworkProvider {
 	}
 
 	@Override
-	public Network bind(String resourceHash, String resourceAttributes)
+	public NetworkInstance bind(String resourceHash, String resourceAttributes)
 			throws ResourceNotFoundException {
 		// TODO Auto-generated method stub
 		return null;
@@ -28,7 +28,7 @@ public class AWSNetworkProvider implements NetworkProvider {
 	}
 
 	@Override
-	public void release(Resource resource) {
+	public void release(ResourceInstance resource) {
 		// TODO Auto-generated method stub
 		
 	}

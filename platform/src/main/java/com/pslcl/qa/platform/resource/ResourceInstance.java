@@ -5,7 +5,7 @@ import com.pslcl.qa.platform.Hash;
 /**
  * Represents a Resource Instance.
  */
-public interface Resource {
+public interface ResourceInstance {
 
 	/**
 	 * Get the hash of this resource.

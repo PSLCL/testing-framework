@@ -27,14 +27,14 @@ public interface ResourceProvider {
      * @param resourceAttributes
      * @return Resource object which represents the Resource Instance.
      */
-    public Resource bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+    public ResourceInstance bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
     
     /**
      * Release a resource.
      * 
      * @param resource The resource to release.
      */
-    public void release(Resource resource);
+    public void release(ResourceInstance resource);
     
     /**
      * Check whether the specified resource is available.

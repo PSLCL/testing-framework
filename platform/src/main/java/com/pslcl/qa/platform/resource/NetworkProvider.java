@@ -15,6 +15,6 @@ public interface NetworkProvider extends ResourceProvider {
      * @return Network object which represents the Network Resource Instance.
      */
 	@Override
-	public Network bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+	public NetworkInstance bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
 
 }

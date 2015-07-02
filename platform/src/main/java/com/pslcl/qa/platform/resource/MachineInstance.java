@@ -5,7 +5,7 @@ import com.pslcl.qa.platform.ArtifactNotFoundException;
 /**
  * Represents a Machine Resource instance.
  */
-public interface Machine extends Resource {
+public interface MachineInstance extends ResourceInstance {
     
     /** Place an artifact on a machine.
     *

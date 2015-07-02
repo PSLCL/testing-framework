@@ -15,5 +15,5 @@ public interface MachineProvider extends ResourceProvider, ArtifactConsumer {
      * @return Machine object which represents the Machine Resource Instance.
      */
 	@Override
-	public Machine bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+	public MachineInstance bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
 }

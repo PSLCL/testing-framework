@@ -1,9 +1,9 @@
 package com.pslcl.qa.platform.resource.aws;
 
 import com.pslcl.qa.platform.Hash;
-import com.pslcl.qa.platform.resource.Person;
+import com.pslcl.qa.platform.resource.PersonInstance;
 import com.pslcl.qa.platform.resource.PersonProvider;
-import com.pslcl.qa.platform.resource.Resource;
+import com.pslcl.qa.platform.resource.ResourceInstance;
 import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 
 public class AWSPersonProvider implements PersonProvider {
@@ -35,7 +35,7 @@ public class AWSPersonProvider implements PersonProvider {
 	}
 
 	@Override
-	public Person bind(String resourceHash, String resourceAttributes)
+	public PersonInstance bind(String resourceHash, String resourceAttributes)
 			throws ResourceNotFoundException {
 		// TODO Auto-generated method stub
 		return null;
@@ -49,7 +49,7 @@ public class AWSPersonProvider implements PersonProvider {
 	}
 
 	@Override
-	public void release(Resource resource) {
+	public void release(ResourceInstance resource) {
 		// TODO Auto-generated method stub
 		
 	}

@@ -15,5 +15,5 @@ public interface PersonProvider extends ResourceProvider, ArtifactConsumer {
      * @return Person object which represents the Person Resource Instance.
      */
 	@Override
-	public Person bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+	public PersonInstance bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
 }

@@ -1,9 +1,9 @@
 package com.pslcl.qa.platform.resource.aws;
 
 import com.pslcl.qa.platform.Hash;
-import com.pslcl.qa.platform.resource.Machine;
+import com.pslcl.qa.platform.resource.MachineInstance;
 import com.pslcl.qa.platform.resource.MachineProvider;
-import com.pslcl.qa.platform.resource.Resource;
+import com.pslcl.qa.platform.resource.ResourceInstance;
 import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 
 public class AWSMachineProvider implements MachineProvider {
@@ -35,7 +35,7 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public Machine bind(String resourceHash, String resourceAttributes)
+	public MachineInstance bind(String resourceHash, String resourceAttributes)
 			throws ResourceNotFoundException {
 		// TODO Auto-generated method stub
 		return null;
@@ -49,7 +49,7 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public void release(Resource resource) {
+	public void release(ResourceInstance resource) {
 		// TODO Auto-generated method stub
 		
 	}
