@@ -1,5 +1,8 @@
 package com.pslcl.qa.platform.resource.aws;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.pslcl.qa.platform.Hash;
@@ -11,6 +14,7 @@ import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 public class AWSMachineProvider implements MachineProvider {
 	private final AmazonEC2Client ec2Client;
 	private final AWSResourceProviderProperties properties;
+	private final List<AWSMachineInstance> instances = new ArrayList<AWSMachineInstance>();
 	
 	public AWSMachineProvider(AWSResourceProviderProperties properties){
 		this.properties = properties;
@@ -19,15 +23,13 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public void updateArtifact(String component, String version,
-			String platform, String name, Hash hash) {
+	public void updateArtifact(String component, String version, String platform, String name, Hash hash) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void removeArtifact(String component, String version,
-			String platform, String name) {
+	public void removeArtifact(String component, String version, String platform, String name) {
 		// TODO Auto-generated method stub
 
 	}
@@ -45,15 +47,13 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public MachineInstance bind(String resourceHash, String resourceAttributes)
-			throws ResourceNotFoundException {
+	public MachineInstance bind(String resourceHash, String resourceAttributes) throws ResourceNotFoundException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public boolean isAvailable(String resourceHash, String resourceAttributes)
-			throws ResourceNotFoundException {
+	public boolean isAvailable(String resourceHash, String resourceAttributes) throws ResourceNotFoundException {
 		// TODO Auto-generated method stub
 		return false;
 	}
