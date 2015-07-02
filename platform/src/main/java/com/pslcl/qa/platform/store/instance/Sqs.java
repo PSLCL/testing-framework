@@ -51,20 +51,20 @@ public class Sqs extends MessageQueueDaoAbstract {
                 try {
                     // jmsMessageID is set unique by JMS producer, as for example: UUID jmsMessageID = "ID:" + java.util.UUID.randomUUID(); 
                     String jmsMessageID = message.getJMSMessageID(); // begins with "ID:", by JMS specification
-                    String hexStrInstanceNumber = ((TextMessage)message).getText();
+                    String strInstanceNumber = ((TextMessage)message).getText();
                     System.out.println("\n");
-                    prependString += " msgID " + jmsMessageID + ", hexStrInstanceNumber " +  hexStrInstanceNumber + ". ";
-                    if (jmsMessageID != null && hexStrInstanceNumber != null) {
+                    prependString += " msgID " + jmsMessageID + ", stringInstanceNumber " +  strInstanceNumber + ". ";
+                    if (jmsMessageID != null && strInstanceNumber != null) {
                         System.out.println(prependString);
                         // design decision: Object message will not be stored as key value pair "jmsMessageID/hexStrInstanceNumber." message instead passes out here, as state for eventual ack
-                        if (sqs.submitInstanceNumber_Store(hexStrInstanceNumber, message)) // choose to pass message via DAO
+                        if (sqs.submitInstanceNumber_Store(strInstanceNumber, message)) // choose to pass message via DAO
                         {
                             System.out.println(prependString + "Submitted to RunnerService");
                             return;
                         }
                         System.out.println(prependString + "Drop - rejected by RunnerService");
                     } else {
-                        System.out.println(prependString + "Drop - jmsMessageID or hexStrInstanceNumber are null");
+                        System.out.println(prependString + "Drop - jmsMessageID or strInstanceNumber are null");
                     }
                 } catch (JMSException e) {
                     e.printStackTrace();

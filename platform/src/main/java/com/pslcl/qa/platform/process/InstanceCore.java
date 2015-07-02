@@ -30,7 +30,7 @@ public class InstanceCore {
         boolean dtSynchronized;     // BOOLEAN synchronized in described_template TODO: double check needed Java type
 
         // from template
-        byte [] hash;               // BINARY(32) 32 byte array in template
+        byte [] template_hash;      // BINARY(32) 32 byte array in template
         boolean enabled;            // BOOLEAN in template
         String steps;               // MEDIUMTEXT in template
 
@@ -54,7 +54,7 @@ public class InstanceCore {
         // from dt_line
         long pk_dt_line;            // INT(11) in dt_line
         int line;                   // INT in dt_line
-        String description;         // MEDIUMTEXT in dt_line
+        String dtLineDescription;   // MEDIUMTEXT in dt_line
 
         // from artifact_to_dt_line
         boolean is_primary;         // BOOLEAN
@@ -65,7 +65,7 @@ public class InstanceCore {
         boolean aSynchronized;      // BOOLEAN
         String platform;            // VARCHAR(45)
         String internal_build;      // VARCHAR(45)
-        String name;                // VARCHAR(45)
+        String artifactName;        // VARCHAR(45)
 
         // from version
         long pk_version;            // INT(11)
@@ -77,6 +77,11 @@ public class InstanceCore {
         // from content
         byte[] pk_content;          // BINARY(32)
         boolean is_generated;       // BOOLEAN
+        
+        // from resource
+        byte[] resourceHash;        // BINARY(32)
+        String resourceName;        // VARCHAR(45)
+        String resourceDescription; // LONGTEXT
 
         /**
          *  Constructor
@@ -87,13 +92,16 @@ public class InstanceCore {
             aSynchronized = false;
             platform = null;
             internal_build = null;
-            name = null;
+            artifactName = null;
             version = null;
             scheduled_release = null;
             actual_release = null;
             sort_order = -1;
             pk_content = null;
             is_generated = false;
+            resourceHash = null;
+            resourceName = null;
+            resourceDescription = null;
         }
 
     }
@@ -143,7 +151,7 @@ public class InstanceCore {
                 dbTestInstance.description_hash = resultSet.getBytes("description_hash");
                 dbTestInstance.dtSynchronized = resultSet.getBoolean("described_template.synchronized");
 
-                dbTestInstance.hash = resultSet.getBytes("hash");
+                dbTestInstance.template_hash = resultSet.getBytes("hash");
                 dbTestInstance.enabled = resultSet.getBoolean("enabled");
                 dbTestInstance.steps = resultSet.getString("steps");
 
@@ -172,7 +180,7 @@ public class InstanceCore {
                 DBDTLine dtLine = new DBDTLine();
                 dtLine.pk_dt_line = resultSet.getLong("pk_dt_line"); // null entry returns 0
                 dtLine.line = resultSet.getInt("line");
-                dtLine.description = resultSet.getString("description");
+                dtLine.dtLineDescription = resultSet.getString("description");
                 System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads line data from dt_line " + dtLine.pk_dt_line);
 
                 dbTestInstance.pkToDTLine.put(dtLine.pk_dt_line, dtLine);
@@ -260,7 +268,33 @@ public class InstanceCore {
                 safeClose( resultSet ); resultSet = null;
                 safeClose( statement ); statement = null;
             }
-        } // end for()         
+        } // end for()
+        
+        // get corresponding resource information; not every dtLine has corresponding resource information
+        for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
+            try {
+                String strPKDTLine = String.valueOf(dtLine.pk_dt_line);
+                statement = connect.createStatement();
+                resultSet = statement.executeQuery( "SELECT hash, name, resource.description " +
+                                                    "FROM dt_line " +
+                                                    "JOIN resource ON fk_resource = pk_resource " + 
+                                                    "WHERE pk_dt_line =" + strPKDTLine );
+                if ( resultSet.next() ) {
+                    dtLine.resourceHash = resultSet.getBytes("hash");
+                    dtLine.resourceName = resultSet.getString("name");
+                    dtLine.resourceDescription = resultSet.getString("description");
+                    System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads resource data for dt_line " + dtLine.pk_dt_line);
+
+                    if (resultSet.next())
+                        throw new Exception("resultSet wrongly has more than one entry");
+                }
+            } catch(Exception e) {
+                System.out.println("InstanceCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
+            } finally {
+                safeClose( resultSet ); resultSet = null;
+                safeClose( statement ); statement = null;
+            }
+        } // end for()
     }
 
     /**
@@ -384,16 +418,17 @@ public class InstanceCore {
         System.out.println( "executeTestInstance() finds description_hash: " + this.dbTestInstance.description_hash);
         System.out.println( "executeTestInstance() finds dtSynchronized: " + this.dbTestInstance.dtSynchronized);
 
-        System.out.println( "executeTestInstance() finds hash: " + this.dbTestInstance.hash);
+        System.out.println( "executeTestInstance() finds template_hash: " + this.dbTestInstance.template_hash);
         System.out.println( "executeTestInstance() finds enabled: " + this.dbTestInstance.enabled);
         System.out.println( "executeTestInstance() finds steps:\n" + this.dbTestInstance.steps);
 
         for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
-            System.out.println("\nexecuteTestInstance() finds line data from pk_dt_line " + dtLine.pk_dt_line + ", line " + dtLine.line + "\nDescription " + dtLine.description +
+            System.out.println("\nexecuteTestInstance() finds line data from pk_dt_line " + dtLine.pk_dt_line + ", line " + dtLine.line + "\nDtLineDescription " + dtLine.dtLineDescription +
                                "\nReason for artifact: " + dtLine.reason + "\nArtifact Info: is_primary " + dtLine.is_primary +
-                               ", synchronized " + dtLine.aSynchronized + ", platform " + dtLine.platform +", internal_build " + dtLine.internal_build + ", name " + dtLine.name +
+                               ", synchronized " + dtLine.aSynchronized + ", platform " + dtLine.platform +", internal_build " + dtLine.internal_build + ", artifactName " + dtLine.artifactName +
                                "\nVersion of artifact: " + dtLine.version + ", scheduled_release " + dtLine.scheduled_release + ", actual_release " + dtLine.actual_release + ", sort_order " + dtLine.sort_order +
-                               "\nContent of artifact: " + dtLine.pk_content + ", is_generated " + dtLine.is_generated);
+                               "\nContent of artifact: " + dtLine.pk_content + ", is_generated " + dtLine.is_generated +
+                               "\nResource of dtLine, hash: " + dtLine.resourceHash + ", name " + dtLine.resourceName + ", description " + dtLine.resourceDescription);
         }
         System.out.println();
    }

@@ -6,7 +6,7 @@ import javax.jms.Message;
 import com.pslcl.qa.platform.RunnerService;
 
 /**
- * This DAO layer knows about JMS. Using this DAO enforces behavior to be JMS compatible.
+ * This DAO layer knows about JMS. Using this DAO enforces JMS compatibility.
  * 
  *
  */
@@ -19,13 +19,13 @@ public abstract class MessageQueueDaoAbstract implements InstanceStoreDao {
     
     /**
      * @note if return true, must eventually call ack. TODO: how to call ack through this abstract class? Or is that appropriate, since we have an interface?
-     * @param hexStrInstanceNumber
+     * @param strInstanceNumber
      * @param message
      * @return
      */
-    boolean submitInstanceNumber_Store(String hexStrInstanceNumber, Message message) throws Exception {
+    boolean submitInstanceNumber_Store(String strInstanceNumber, Message message) throws Exception {
         try {
-            runnerService.submitInstanceNumber_Store(hexStrInstanceNumber, message);
+            runnerService.submitInstanceNumber_Store(strInstanceNumber, message);
             return true;
         } catch (Exception e) {
             return false;
@@ -36,5 +36,5 @@ public abstract class MessageQueueDaoAbstract implements InstanceStoreDao {
     public void ackInstanceEntry(Message message) throws JMSException {
         // this call does the actual work
         message.acknowledge();
-    }   
+    }
 }
