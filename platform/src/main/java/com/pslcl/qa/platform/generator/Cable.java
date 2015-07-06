@@ -8,7 +8,11 @@ import java.util.UUID;
  * control during the running of a test.
  */
 public class Cable implements Template.Exportable {
-    private class IPReference implements Template.Parameter {
+	
+	/**
+	 * This class represents a reference to an IP address. This reference is evaluated when the test is run.
+	 */
+    public class IPReference implements Template.Parameter {
         private Machine machine;
         private Network network;
 
