@@ -17,7 +17,7 @@ public class InstanceCore {
      */
     private class DBTestInstance {
         long pk_test_instance;      // INT(11) in test_instance; note: this is also held in parent class as InstanceCore.pk_test_instance
-        long fk_described_template; // INT(11) in described_template
+        long pk_described_template; // INT(11) in described_template; stored only for matching dt_line columns to correct column in described_template
         long fk_run;                // INT(11) in run
         Date due_date;              // DATETIME in test_instance TODO: double check needed Java type
         int phase;                  // INT in test_instance TODO: double check needed Java type
@@ -61,27 +61,31 @@ public class InstanceCore {
         String reason;              // VARCHAR(45)
 
         // from artifact
-        long pk_artifact;           // INT(11)
+        long pk_artifact;           // INT(11); stored only for matching content column to correct column in artifact
         boolean aSynchronized;      // BOOLEAN
         String platform;            // VARCHAR(45)
         String internal_build;      // VARCHAR(45)
         String artifactName;        // VARCHAR(45)
 
         // from version
-        long pk_version;            // INT(11)
+        long pk_version;            // INT(11); stored only for matching version column to correct column in artifact
         String version;             // VARCHAR(45)
         Date scheduled_release;     // DATE
         Date actual_release;        // DATE
         int sort_order;             // INT
-        
+
         // from content
         byte[] pk_content;          // BINARY(32)
         boolean is_generated;       // BOOLEAN
-        
+
+        // from component
+        String componentName;       // VARCHAR(50)
+
         // from resource
         byte[] resourceHash;        // BINARY(32)
         String resourceName;        // VARCHAR(45)
         String resourceDescription; // LONGTEXT
+
 
         /**
          *  Constructor
@@ -102,6 +106,7 @@ public class InstanceCore {
             resourceHash = null;
             resourceName = null;
             resourceDescription = null;
+            componentName = null;
         }
 
     }
@@ -136,11 +141,11 @@ public class InstanceCore {
                                                 "FROM test_instance " +
                                                 "JOIN described_template ON fk_described_template = pk_described_template " +
                                                 "JOIN template           ON fk_template = pk_template " +
-                                                "WHERE pk_test_instance =" + strINum );
+                                                "WHERE pk_test_instance = " + strINum );
             // everything in this query is 1:1 relationship, so resultSet has exactly 1 or 0 entry
 
             if ( resultSet.next() ) {
-                dbTestInstance.fk_described_template = resultSet.getLong("fk_described_template"); // null entry returns 0
+                dbTestInstance.pk_described_template = resultSet.getLong("fk_described_template"); // null entry returns 0
                 dbTestInstance.fk_run = resultSet.getLong("fk_run");                               // null entry returns 0
                 dbTestInstance.due_date = resultSet.getDate("due_date");
                 dbTestInstance.phase = resultSet.getInt("phase");
@@ -155,7 +160,7 @@ public class InstanceCore {
                 dbTestInstance.enabled = resultSet.getBoolean("enabled");
                 dbTestInstance.steps = resultSet.getString("steps");
 
-                System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads 1:1 data from test_instance " + dbTestInstance.pk_test_instance + ", fk_described_template " + dbTestInstance.fk_described_template +
+                System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads 1:1 data from test_instance " + dbTestInstance.pk_test_instance + ", pk_described_template " + dbTestInstance.pk_described_template +
                                                                                                                            ", pk_template " + dbTestInstance.fk_template + (dbTestInstance.fk_run!=0 ? ", TEST RESULT ALREADY STORED" : ""));
                 if (resultSet.next())
                     throw new Exception("resultSet wrongly has more than one entry");
@@ -171,11 +176,11 @@ public class InstanceCore {
 
         // get corresponding multiple lines of data
         try {
-            String strFKDT = String.valueOf(dbTestInstance.fk_described_template);
+            String strPKDT = String.valueOf(dbTestInstance.pk_described_template);
             statement = connect.createStatement();
             resultSet = statement.executeQuery( "SELECT pk_dt_line, line, description " +
                                                 "FROM dt_line " +
-                                                "WHERE fk_described_template =" + strFKDT );
+                                                "WHERE fk_described_template = " + strPKDT );
             while ( resultSet.next() ) {
                 DBDTLine dtLine = new DBDTLine();
                 dtLine.pk_dt_line = resultSet.getLong("pk_dt_line"); // null entry returns 0
@@ -200,7 +205,7 @@ public class InstanceCore {
                 resultSet = statement.executeQuery( "SELECT is_primary, reason, pk_artifact, fk_version, fk_content, synchronized, platform, internal_build, name " +
                                                     "FROM artifact_to_dt_line " +
                                                     "JOIN artifact ON fk_artifact = pk_artifact " +
-                                                    "WHERE fk_dt_line =" + strPKDTLine );
+                                                    "WHERE fk_dt_line = " + strPKDTLine );
                 if ( resultSet.next() ) {
                     dtLine.is_primary = resultSet.getBoolean("is_primary");
                     dtLine.reason = resultSet.getString("reason");
@@ -218,7 +223,7 @@ public class InstanceCore {
                 safeClose( statement ); statement = null;
             }
         } // end for()
-        
+
         // get corresponding version information; not every dtLine has corresponding version information
         for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
             try {
@@ -226,7 +231,7 @@ public class InstanceCore {
                 statement = connect.createStatement();
                 resultSet = statement.executeQuery( "SELECT version, scheduled_release, actual_release, sort_order " +
                                                     "FROM version " +
-                                                    "WHERE pk_version =" + strPKVersion );
+                                                    "WHERE pk_version = " + strPKVersion );
                 if ( resultSet.next() ) {
                     dtLine.version = resultSet.getString("version");
                     dtLine.scheduled_release = resultSet.getDate("scheduled_release");
@@ -244,7 +249,7 @@ public class InstanceCore {
                 safeClose( statement ); statement = null;
             }
         } // end for()
-        
+
         // get corresponding content information; not every dtLine has corresponding content information
         for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
             try {
@@ -252,8 +257,8 @@ public class InstanceCore {
                 statement = connect.createStatement();
                 resultSet = statement.executeQuery( "SELECT pk_content, is_generated " +
                                                     "FROM content " +
-                                                    "JOIN artifact ON fk_content = pk_content " + 
-                                                    "WHERE pk_artifact =" + strPKArtifact );
+                                                    "JOIN artifact ON fk_content = pk_content " +
+                                                    "WHERE pk_artifact = " + strPKArtifact );
                 if ( resultSet.next() ) {
                     dtLine.pk_content = resultSet.getBytes("pk_content");
                     dtLine.is_generated = resultSet.getBoolean("is_generated");
@@ -269,7 +274,31 @@ public class InstanceCore {
                 safeClose( statement ); statement = null;
             }
         } // end for()
-        
+
+        // get corresponding component information
+        for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
+            try {
+                String strPKVersion = String.valueOf(dtLine.pk_version);
+                statement = connect.createStatement();
+                resultSet = statement.executeQuery( "SELECT name " +
+                                                    "FROM component " +
+                                                    "JOIN version ON fk_component = pk_component " +
+                                                    "WHERE pk_version = " + strPKVersion );
+                if ( resultSet.next() ) {
+                    dtLine.componentName = resultSet.getString("name");
+                    System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads component data for dt_line " + dtLine.pk_dt_line);
+
+                    if (resultSet.next())
+                        throw new Exception("resultSet wrongly has more than one entry");
+                }
+            } catch(Exception e) {
+                System.out.println("InstanceCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
+            } finally {
+                safeClose( resultSet ); resultSet = null;
+                safeClose( statement ); statement = null;
+            }
+        }
+
         // get corresponding resource information; not every dtLine has corresponding resource information
         for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
             try {
@@ -277,8 +306,8 @@ public class InstanceCore {
                 statement = connect.createStatement();
                 resultSet = statement.executeQuery( "SELECT hash, name, resource.description " +
                                                     "FROM dt_line " +
-                                                    "JOIN resource ON fk_resource = pk_resource " + 
-                                                    "WHERE pk_dt_line =" + strPKDTLine );
+                                                    "JOIN resource ON fk_resource = pk_resource " +
+                                                    "WHERE pk_dt_line = " + strPKDTLine );
                 if ( resultSet.next() ) {
                     dtLine.resourceHash = resultSet.getBytes("hash");
                     dtLine.resourceName = resultSet.getString("name");
@@ -408,7 +437,7 @@ public class InstanceCore {
         // REVIEW: all these needed? testInstanceNumber same as iCore.pk_test_instance same as this.dbTestInstance.pk_test_instance
 
         // this.dbTestInstance is used to execute this test instance by following steps; aka instantiate this test run to generate a test result
-        System.out.println( "executeTestInstance() has data base info for test instance " + iCore.pk_test_instance + ", finding described_template " + this.dbTestInstance.fk_described_template + " and template " + this.dbTestInstance.fk_template );
+        System.out.println( "executeTestInstance() has data base info for test instance " + iCore.pk_test_instance + ", finding described_template " + this.dbTestInstance.pk_described_template + " and template " + this.dbTestInstance.fk_template );
         System.out.println( "executeTestInstance() finds run: " + this.dbTestInstance.fk_run);
         System.out.println( "executeTestInstance() finds due date: " + this.dbTestInstance.due_date);
         System.out.println( "executeTestInstance() finds phase: " + this.dbTestInstance.phase);
@@ -423,11 +452,16 @@ public class InstanceCore {
         System.out.println( "executeTestInstance() finds steps:\n" + this.dbTestInstance.steps);
 
         for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
-            System.out.println("\nexecuteTestInstance() finds line data from pk_dt_line " + dtLine.pk_dt_line + ", line " + dtLine.line + "\nDtLineDescription " + dtLine.dtLineDescription +
-                               "\nReason for artifact: " + dtLine.reason + "\nArtifact Info: is_primary " + dtLine.is_primary +
-                               ", synchronized " + dtLine.aSynchronized + ", platform " + dtLine.platform +", internal_build " + dtLine.internal_build + ", artifactName " + dtLine.artifactName +
+            String strReason = dtLine.reason;
+            if (strReason!=null && strReason.isEmpty())
+                strReason = "Unspecified as empty string";
+            System.out.println("\nexecuteTestInstance() finds line data from pk_dt_line " + dtLine.pk_dt_line + ", line " + dtLine.line +
+                               "\nDtLineDescription " + dtLine.dtLineDescription +
+                               "\nReason for artifact: " + strReason +
+                               "\nArtifact Info: is_primary " + dtLine.is_primary + ", synchronized " + dtLine.aSynchronized + ", platform " + dtLine.platform +", internal_build " + dtLine.internal_build + ", artifactName " + dtLine.artifactName +
                                "\nVersion of artifact: " + dtLine.version + ", scheduled_release " + dtLine.scheduled_release + ", actual_release " + dtLine.actual_release + ", sort_order " + dtLine.sort_order +
                                "\nContent of artifact: " + dtLine.pk_content + ", is_generated " + dtLine.is_generated +
+                               "\nComponent of artifact: " + dtLine.componentName +
                                "\nResource of dtLine, hash: " + dtLine.resourceHash + ", name " + dtLine.resourceName + ", description " + dtLine.resourceDescription);
         }
         System.out.println();
