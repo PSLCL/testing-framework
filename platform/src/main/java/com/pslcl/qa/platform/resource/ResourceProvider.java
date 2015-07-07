@@ -5,14 +5,12 @@ package com.pslcl.qa.platform.resource;
  * This interface defines interactions with a resource provider. The primary responsibility of a resource provider
  * is to instantiate resources. However, all interactions between the platform and the resource is brokered through
  * the provider.
- *
- * The test platform supports multiple runners, each of which may use a common set of resource providers
- * To distinguish runners, a runner reference is part of this API. Implementing class may set this reference.
  */
 public interface ResourceProvider {
 
-    /** Set a resource definition.
+    /** Set a resource description.
      *
+     * @note resourceHash is used in the other api calls. If this method is called prior, an associated description is then available.
      * @param resourceHash
      * @param resourceDescription
      */

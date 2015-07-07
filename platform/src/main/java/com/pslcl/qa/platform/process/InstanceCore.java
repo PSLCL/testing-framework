@@ -4,113 +4,15 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+
+import com.pslcl.qa.platform.Hash;
+import com.pslcl.qa.platform.resource.MachineInstance;
+import com.pslcl.qa.platform.resource.MachineProvider;
+import com.pslcl.qa.platform.resource.ResourceInstance;
+import com.pslcl.qa.platform.resource.ResourceNotFoundException;
+import com.pslcl.qa.platform.template.TemplateInstance;
 
 public class InstanceCore {
-
-    // sub classes
-
-    /**
-     * Relevant data base info for this test instance
-     */
-    private class DBTestInstance {
-        long pk_test_instance;      // INT(11) in test_instance; note: this is also held in parent class as InstanceCore.pk_test_instance
-        long pk_described_template; // INT(11) in described_template; stored only for matching dt_line columns to correct column in described_template
-        long fk_run;                // INT(11) in run
-        Date due_date;              // DATETIME in test_instance TODO: double check needed Java type
-        int phase;                  // INT in test_instance TODO: double check needed Java type
-        boolean iSynchronized;      // BOOLEAN synchronized in test_instance TODO: double check needed Java type
-
-        // from described_template
-        byte[] fk_version_set;      // BINARY(32) 32 byte array in described_template; use ResultSet.getBytes()
-        long fk_template;           // INT(11) in described_template
-        byte[] description_hash;    // BINARY(32) 32 byte array in described_template
-        boolean dtSynchronized;     // BOOLEAN synchronized in described_template TODO: double check needed Java type
-
-        // from template
-        byte [] template_hash;      // BINARY(32) 32 byte array in template
-        boolean enabled;            // BOOLEAN in template
-        String steps;               // MEDIUMTEXT in template
-
-        // holds multiple instances of dt_line
-        Map<Long,DBDTLine> pkToDTLine;
-
-        /**
-         *  Constructor
-         */
-        DBTestInstance(long pk_test_instance) {
-            this.pk_test_instance = pk_test_instance;
-            pkToDTLine = new HashMap<Long,DBDTLine>();
-        }
-
-    }
-
-    /**
-     * Relevant data base info for this test instance
-     */
-    private class DBDTLine {
-        // from dt_line
-        long pk_dt_line;            // INT(11) in dt_line
-        int line;                   // INT in dt_line
-        String dtLineDescription;   // MEDIUMTEXT in dt_line
-
-        // from artifact_to_dt_line
-        boolean is_primary;         // BOOLEAN
-        String reason;              // VARCHAR(45)
-
-        // from artifact
-        long pk_artifact;           // INT(11); stored only for matching content column to correct column in artifact
-        boolean aSynchronized;      // BOOLEAN
-        String platform;            // VARCHAR(45)
-        String internal_build;      // VARCHAR(45)
-        String artifactName;        // VARCHAR(45)
-
-        // from version
-        long pk_version;            // INT(11); stored only for matching version column to correct column in artifact
-        String version;             // VARCHAR(45)
-        Date scheduled_release;     // DATE
-        Date actual_release;        // DATE
-        int sort_order;             // INT
-
-        // from content
-        byte[] pk_content;          // BINARY(32)
-        boolean is_generated;       // BOOLEAN
-
-        // from component
-        String componentName;       // VARCHAR(50)
-
-        // from resource
-        byte[] resourceHash;        // BINARY(32)
-        String resourceName;        // VARCHAR(45)
-        String resourceDescription; // LONGTEXT
-
-
-        /**
-         *  Constructor
-         */
-        DBDTLine() {
-            is_primary = false;
-            reason = null;
-            aSynchronized = false;
-            platform = null;
-            internal_build = null;
-            artifactName = null;
-            version = null;
-            scheduled_release = null;
-            actual_release = null;
-            sort_order = -1;
-            pk_content = null;
-            is_generated = false;
-            resourceHash = null;
-            resourceName = null;
-            resourceDescription = null;
-            componentName = null;
-        }
-
-    }
-
 
     // class members
 
@@ -404,14 +306,10 @@ public class InstanceCore {
         dbTestInstance = new DBTestInstance(this.pk_test_instance);
         openDatabase();
 
-        if (connect == null) {
-            System.err.println( "Core constructor fails without database connection");
-        } else {
-//            /* Load the description and template hashes */
-//            loadHashes();
-
+        if (connect == null)
+            System.err.println( "InstanceCore constructor fails without database connection");
+        else
             loadTestInstanceData();
-        }
     }
 
     /**
@@ -430,9 +328,10 @@ public class InstanceCore {
      * @param iCore TODO
      */
     public void executeTestInstance(long testInstanceNumber, InstanceCore iCore) {
-        // We are an independent process. We have access to the database,
+        // We are an independent process. We have access
         //   to a Resource Manager that has access to artifacts and resources,
         //   and to everything else needed to cause our test instance to be executed.
+        // We might have access to the database but the goal is not to access it- everything is found in this.dbTestInstance.
 
         // REVIEW: all these needed? testInstanceNumber same as iCore.pk_test_instance same as this.dbTestInstance.pk_test_instance
 
@@ -452,9 +351,16 @@ public class InstanceCore {
         System.out.println( "executeTestInstance() finds steps:\n" + this.dbTestInstance.steps);
 
         for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
-            String strReason = dtLine.reason;
+            String strReason = dtLine.reason; // found sometimes as null, sometimes as empty string
             if (strReason!=null && strReason.isEmpty())
                 strReason = "Unspecified as empty string";
+            
+            if (dtLine.platform == null) {
+                int x = 30; // this happens every time
+            } else {
+                int x = 30; // this never happens
+            }
+            
             System.out.println("\nexecuteTestInstance() finds line data from pk_dt_line " + dtLine.pk_dt_line + ", line " + dtLine.line +
                                "\nDtLineDescription " + dtLine.dtLineDescription +
                                "\nReason for artifact: " + strReason +
@@ -465,6 +371,113 @@ public class InstanceCore {
                                "\nResource of dtLine, hash: " + dtLine.resourceHash + ", name " + dtLine.resourceName + ", description " + dtLine.resourceDescription);
         }
         System.out.println();
-   }
 
+        if (dbTestInstance.enabled) {
+            if (dbTestInstance.template_hash != null && dbTestInstance.steps != null) {
+                System.out.println("executeTestInstance() finds enabled template of hash " + dbTestInstance.template_hash + ", with steps\n");
+                TemplateInstance ti = new TemplateInstance(dbTestInstance);
+                ti.instantiate();
+            } else {
+                System.out.println("executeTestInstance() finds enabled template wrongly with null hash or null steps");
+            }
+        } else {
+            System.out.println("executeTestInstance() finds disabled template of hash " + dbTestInstance.template_hash + ", with steps\n");
+        }
+
+        
+        
+        
+        // unneeded- our real approach involves instantiating templates
+//        for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
+//            if (dtLine.resourceHash!=null && dtLine.resourceDescription!=null && !dtLine.resourceDescription.isEmpty()) {
+//                System.out.println("executeTestInstance() finds valid resource hash " + dtLine.resourceHash + ", resource description " + dtLine.resourceDescription + ", of resource name " + dtLine.resourceName + "\n");
+//                ResourceProvider rp = new Machine();
+//            }
+//        }
+        
+        
+        
+        // unneeded- our real approach involves an api to come to us soon
+//        // prove that api works to get files from the build machine
+//        String endpoint = null;
+//        QuickBuildArtifactProvider qbap = new QuickBuildArtifactProvider(endpoint);
+//        try {
+//            qbap.init();
+//        } catch (Exception e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }
+//        ArtifactNotifier artifactFoundCallback = new ArtifactFoundCallback();
+//                
+//        for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
+//        if (dtLine.componentName != null && !dtLine.componentName.isEmpty() && dtLine.version != null && !dtLine.version.isEmpty()) {
+//                System.out.println("executeTestInstance() finds valid component name " + dtLine.componentName + " and version " + dtLine.version + "\n");
+//                
+//                qbap.iterateArtifacts(null, dtLine.componentName, dtLine.version, dtLine.platform, artifactFoundCallback);
+//            }
+//        }
+    }
+    
+    
+//    private class Machine implements MachineProvider {
+//        
+//        private String resourceHash = null;
+//        private String resourceDescription;
+//        // or maybe instead the private member is a map or list of setResource() calls
+//        
+//        @Override
+//        public MachineInstance bind(String resourceHash, String resourceAttributes) throws ResourceNotFoundException {
+//            // TODO Auto-generated method stub
+//            return null;
+//        }
+//        
+//        @Override
+//        public void release(ResourceInstance resource) {
+//            // TODO Auto-generated method stub
+//            
+//        }
+//
+//        @Override
+//        public void setResource(String resourceHash, String resourceDescription) {
+//            // TODO Auto-generated method stub
+//            
+//        }
+//        
+//        @Override
+//        public boolean isAvailable(String resourceHash, String resourceAttributes) throws ResourceNotFoundException {
+//            // TODO Auto-generated method stub
+//            return false;
+//        }
+//
+//        @Override
+//        public void updateArtifact(String component, String version, String platform, String name, Hash hash) {
+//            // TODO Auto-generated method stub
+//            
+//        }
+//
+//        @Override
+//        public void removeArtifact(String component, String version, String platform, String name) {
+//            // TODO Auto-generated method stub
+//            
+//        }
+//
+//        @Override
+//        public void invalidateArtifacts(String component, String version) {
+//            // TODO Auto-generated method stub
+//            
+//        }
+//        
+//    }
+
+    
+//    private class ArtifactFoundCallback implements ArtifactNotifier {
+//
+//        @Override
+//        public void artifact(String project, String component, String version, String platform, String internal_build, String name, Hash hash, Content content) {
+//            // TODO Auto-generated method stub
+//            
+//        }
+//        
+//    }
+    
 }
