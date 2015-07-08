@@ -5,11 +5,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import com.pslcl.qa.platform.Hash;
-import com.pslcl.qa.platform.resource.MachineInstance;
-import com.pslcl.qa.platform.resource.MachineProvider;
-import com.pslcl.qa.platform.resource.ResourceInstance;
-import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 import com.pslcl.qa.platform.template.TemplateInstance;
 
 public class InstanceCore {

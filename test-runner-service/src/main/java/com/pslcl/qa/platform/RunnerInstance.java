@@ -5,8 +5,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import com.pslcl.qa.platform.generator.Core;
-
 public class RunnerInstance implements Runnable {
    
     /**
@@ -111,7 +109,6 @@ public class RunnerInstance implements Runnable {
     private static boolean testrunExecutorTaskShutdownRequested = false;
     private static boolean allTasksComplete = false;
 
-    private final Core core;
     private final long testInstanceNumber;
     private String testrunThreadName;
     
@@ -131,11 +128,10 @@ public class RunnerInstance implements Runnable {
      * @param core The database and business logic class
      * @param testInstanceNumber identifies test instance to execute
      */
-    public RunnerInstance(Core core, long testInstanceNumber) throws Exception {
+    public RunnerInstance(long testInstanceNumber) throws Exception {
 
         // note: testrunExecutorSynchObj not required here if constructor is guaranteed to be called from only one thread
         synchronized (testrunExecutorSynchObj) {
-            this.core = core;
             this.testInstanceNumber = testInstanceNumber;
             if (testrunExecutorTask == null) {
                 // first time setup and brief delay; blocks follow on constructor calls
@@ -167,7 +163,7 @@ public class RunnerInstance implements Runnable {
     public void run() {
         // this thread can block for possibly days at a time while waiting for the test run to return a test result and otherwise complete itself
         System.out.println( "RunnerInstance.run() executes test instance number " + testInstanceNumber);
-        core.executeTestInstance(testInstanceNumber);
+        //core.executeTestInstance(testInstanceNumber); TODO: fix - core no longer available to test runner. 
         System.out.println( "RunnerInstance.run() exits for test instance number " + testInstanceNumber);
     }
     

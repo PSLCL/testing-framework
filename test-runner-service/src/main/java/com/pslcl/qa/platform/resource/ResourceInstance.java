@@ -1,6 +1,5 @@
 package com.pslcl.qa.platform.resource;
 
-import com.pslcl.qa.platform.Hash;
 
 /**
  * Represents a Resource Instance.
@@ -10,9 +9,9 @@ public interface ResourceInstance {
 	/**
 	 * Get the hash of this resource.
 	 * 
-	 * @return The hash of the resource.
+	 * @return A hex string representing the hash of the resource.
 	 */
-	Hash getHash();
+	String getHash();
 	
 	/**
 	 * Get the description of this resource.

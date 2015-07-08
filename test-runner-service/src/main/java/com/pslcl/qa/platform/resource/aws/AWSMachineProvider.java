@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.resource.MachineInstance;
 import com.pslcl.qa.platform.resource.MachineProvider;
 import com.pslcl.qa.platform.resource.ResourceInstance;
@@ -23,7 +22,7 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public void updateArtifact(String component, String version, String platform, String name, Hash hash) {
+	public void updateArtifact(String component, String version, String platform, String name, String artifactHash) {
 		// TODO Auto-generated method stub
 
 	}

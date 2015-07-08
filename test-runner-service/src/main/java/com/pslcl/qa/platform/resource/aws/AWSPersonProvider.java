@@ -1,6 +1,5 @@
 package com.pslcl.qa.platform.resource.aws;
 
-import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.resource.PersonInstance;
 import com.pslcl.qa.platform.resource.PersonProvider;
 import com.pslcl.qa.platform.resource.ResourceInstance;
@@ -10,7 +9,7 @@ public class AWSPersonProvider implements PersonProvider {
 
 	@Override
 	public void updateArtifact(String component, String version,
-			String platform, String name, Hash hash) {
+			String platform, String name, String artifactHash) {
 		// TODO Auto-generated method stub
 
 	}

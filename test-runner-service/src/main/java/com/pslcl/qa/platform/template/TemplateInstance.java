@@ -1,7 +1,6 @@
 package com.pslcl.qa.platform.template;
 
 import com.pslcl.qa.platform.process.DBTestInstance;
-import com.pslcl.qa.platform.process.MachineImpl;
 
 public class TemplateInstance {
     
@@ -22,7 +21,7 @@ public class TemplateInstance {
             step = steps.substring(offset, termOffset);
             System.out.println("TemplateInstance.instantiate() finds step " + step);
             
-            MachineImpl mi = new MachineImpl();
+            //MachineImpl mi = new MachineImpl(); TODO: MachineImpl deleted
             
         }
     }

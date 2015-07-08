@@ -1,14 +1,13 @@
 package com.pslcl.qa.platform.resource.aws;
 
 import com.pslcl.qa.platform.ArtifactNotFoundException;
-import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.resource.MachineInstance;
 import com.pslcl.qa.platform.resource.ResourceNotFoundException;
 
 public class AWSMachineInstance implements MachineInstance {
 
 	@Override
-	public Hash getHash() {
+	public String getHash() {
 		// TODO Auto-generated method stub
 		return null;
 	}

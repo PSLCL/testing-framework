@@ -1,6 +1,5 @@
 package com.pslcl.qa.platform.resource;
 
-import com.pslcl.qa.platform.Hash;
 
 /**
  *  A consumer of Artifacts.
@@ -12,9 +11,9 @@ public interface ArtifactConsumer  {
     * @param version
     * @param platform
     * @param name
-    * @param hash
+    * @param artifactHash
     */
-   void updateArtifact( String component, String version, String platform, String name, Hash hash );
+   void updateArtifact( String component, String version, String platform, String name, String artifactHash );
 
    /**
     * @param component

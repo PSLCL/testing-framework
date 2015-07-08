@@ -12,7 +12,7 @@ public class Cable implements Template.Exportable {
 	/**
 	 * This class represents a reference to an IP address. This reference is evaluated when the test is run.
 	 */
-    public class IPReference implements Template.Parameter {
+    private class IPReference implements Template.Parameter {
         private Machine machine;
         private Network network;
 
