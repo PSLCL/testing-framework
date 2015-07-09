@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.qa.runner.process.ActionStore;
 import com.pslcl.qa.runner.process.ProcessTracker;
 import com.pslcl.qa.runner.process.RunnerMachine;
-import com.pslcl.qa.runner.store.instance.InstanceStoreDao;
+import com.pslcl.qa.runner.store.instance.QueueStoreDao;
 import com.pslcl.qa.runner.store.instance.Sqs;
 
 
@@ -36,7 +36,7 @@ import com.pslcl.qa.runner.store.instance.Sqs;
  * Control the Runner Service startup and shutdown.
  * 
  * RunnerService has no requirement that it be instantiated more than once, but it is coded to allow that possibility.
- * Static references are limited to the Action enum (holds pure code), the InstanceStore (one only), and the test Instance database (one only).
+ * Static references are limited to the Action enum (holds pure code), the QueueStore (one only), and the template database (one only).
  */
 public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExceptionHandler {
     
@@ -61,7 +61,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     // class variables
     
-    private InstanceStoreDao mq = null;
+    private QueueStoreDao mq = null;
     
     
     /** The status tracker */
@@ -70,7 +70,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     /** the process classes */
     public RunnerMachine runnerMachine = null;
-    public ActionStore actionStore = null;  /** holds state of each test instance */
+    public ActionStore actionStore = null;  /** holds state of each template */
     public ProcessTracker processTracker = null;
     
     // public class methods
@@ -81,7 +81,6 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     public RunnerService() {
         // Setup what we can, prior to knowing configuration
         Thread.setDefaultUncaughtExceptionHandler(this);
-
     }
     
     
@@ -105,13 +104,13 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
                 logger.debug(".registerMBean() failed: " + e.getMessage());
             }
             
-            // init access to Test Instances DAO-referenced database (one is common to all instances of RunnerService)
+            // init access to the template DAO-referenced database (one is common to all instances of RunnerService)
             
-//            // init web server to accept incoming test instance requests
+//            // init web server to accept incoming template requests
 //            Server server = new Server(); // If port 8080 is supplied, this would create a default Connector that listens for requests on port 8080
 
-            // keystoreFile to use
-            String keystorePath = null; // TODO: access to our real keystore
+//            // keystoreFile to use
+//            String keystorePath = null; // TODO: access to our real keystore
 //            File keystoreFile = new File(keystorePath);
 //            if (!keystoreFile.exists())
 //                throw new FileNotFoundException(keystoreFile.getAbsolutePath());
@@ -213,12 +212,12 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
             runnerMachine = new RunnerMachine(this);
             processTracker = new ProcessTracker(this);
             
-            if (mq.instanceStoreExists()) {
-                // Setup InstanceStore DAO-referenced message handler (a standard callback from the JMS spec)
-                mq.initInstanceStoreGet();
+            if (mq.queueStoreExists()) {
+                // Setup QueueStore DAO-referenced message handler (a standard callback from the JMS spec)
+                mq.initQueueStoreGet();
             } else {
-                logger.warn("RunnerService.start exits- InstanceStore message queue not available.");
-                throw new Exception("InstanceStore not available");
+                logger.warn("RunnerService.start exits- QueueStore message queue not available.");
+                throw new Exception("QueueStore not available");
             }
             
             
@@ -342,30 +341,30 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     /**
      * 
-     * @param strInstanceNumber Representation of test instance number.
-     * @param message JMS message associated with the instance number, used for eventual message ack
+     * @param strTemplateNumber Representation of template number.
+     * @param message JMS message associated with the template number, used for eventual message ack
      * @throws Exception
      */
-    public void submitInstanceNumber_Store(String strInstanceNumber, Message message) throws Exception {
+    public void submitQueueStoreNumber(String strTemplateNumber, Message message) throws Exception {
         try {
-            // early tests- does strInstanceNumber produce a valid long integer? And is resulting iNum already completed or in process?
+            // early tests- does strTemplateNumber produce a valid long integer? And is resulting iNum already completed or in process?
             
             // the ordinary method
-            long iNum = Long.parseLong(strInstanceNumber);
-            logger.debug("RunnerService.submitInstanceNumber() finds instance number is " + iNum);
+            long tNum = Long.parseLong(strTemplateNumber);
+            logger.debug("RunnerService.submitQueueStoreNumber() finds template number is " + tNum);
             try {
-                if (ProcessTracker.resultStored(iNum)) {
-                    ackInstanceEntry(message);
-                    System.out.println("RunnerService.submitInstanceNumber_Store() finds instanceNumber " + iNum + ", result already stored. Acking this iNum now.");
-                } else if (processTracker.inProcess(iNum)) {
-                    System.out.println("RunnerService.submitInstanceNumber_Store() finds instanceNumber " + iNum + ", work already processing");
+                if (ProcessTracker.resultStored(tNum)) {
+                    ackTemplateEntry(message);
+                    System.out.println("RunnerService.submitQueueStoreNumber() finds templateNumber " + tNum + ", result already stored. Acking this tNum now.");
+                } else if (processTracker.inProcess(tNum)) {
+                    System.out.println("RunnerService.submitInstanceNumber_Store() finds templateNumber " + tNum + ", work already processing");
                 } else {
-                    // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this instanceNumber.
-                    runnerMachine.initiateProcessing(iNum, message);
+                    // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this  template number.
+                    runnerMachine.initiateProcessing(tNum, message);
                 }
             } catch (Exception e) {
                 // do nothing; iNum remains in InstanceStore, we will see it again
-                System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for instanceNumber " + iNum + ". Leave iNum in InstanceStore. Exception msg: " + e);
+                System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for template number " + tNum + ". Leave tNum in QueueStore. Exception msg: " + e);
             }
         } catch (Exception e) {
             throw e; // recipient must ack the message
@@ -409,12 +408,12 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 
     /**
      * 
-     * @param message Original opaque message associated with the instance number, used now to ack the message
+     * @param message Original opaque message associated with the template number, used now to ack the message
      * @throws JMSException
      */
-    private void ackInstanceEntry(Object message) throws JMSException {
+    private void ackTemplateEntry(Object message) throws JMSException {
         // this call is for classes that do not know about JMS
-        mq.ackInstanceEntry((Message)message);
+        mq.ackQueueStoreEntry((Message)message);
     }
     
 }

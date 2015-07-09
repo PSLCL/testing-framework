@@ -1,9 +1,9 @@
 package com.pslcl.qa.runner.process;
 
 
-public class InstanceTask implements Runnable {
+public class TemplateTask implements Runnable {
     private RunnerMachine runnerMachine;
-    private InstanceCore iCore;
+    private TemplateCore iCore;
     private long iNum;
     private String instanceThreadName;
 
@@ -16,17 +16,17 @@ public class InstanceTask implements Runnable {
      * @param core The database and business logic class
      * @param testInstanceNumber identifies test instance to execute
      */
-    public InstanceTask(RunnerMachine runnerMachine, long iNum) throws Exception {
+    public TemplateTask(RunnerMachine runnerMachine, long iNum) throws Exception {
         this.runnerMachine = runnerMachine;
         this.iNum = iNum;
         this.instanceThreadName = new String("instance " + iNum);
         
 //        // HACK: fixed test number for initial testing purposes; test instance number is what came out of the InstanceStore
 //        this.core = new Core(71);
-        this.iCore = new InstanceCore(iNum);
+        this.iCore = new TemplateCore(iNum);
         
         try {
-            runnerMachine.instanceExecutorService.execute(this); // schedules call to this.run(); this is the full execution of the specified test instance
+            runnerMachine.templateExecutorService.execute(this); // schedules call to this.run(); this is the full execution of the specified test instance
         } catch (Exception e) {
             System.out.println("InstanceTask constructor failed for instance number " + iNum + ", with Exception " + e);
             throw e;
@@ -44,8 +44,8 @@ public class InstanceTask implements Runnable {
         System.out.println( "InstanceTask.run() opens instance number " + iNum);
         
         while(true) {
-            InstanceState iState = runnerMachine.runnerService.actionStore.get(iNum);
-            Action action = iState.getInstanceAction();
+            TemplateState iState = runnerMachine.runnerService.actionStore.get(iNum);
+            Action action = iState.getAction();
             Action nextAction = action.act(iState, iCore, runnerMachine.runnerService);
             System.out.println("InstanceTask.run() ran Action " + action.toString() + " for instance number " + iNum + ", finds next action to be " + nextAction.toString());
             if (nextAction == Action.DISCARDED)

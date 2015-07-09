@@ -10,7 +10,7 @@ import com.pslcl.qa.runner.RunnerService;
  * 
  *
  */
-public abstract class MessageQueueDaoAbstract implements InstanceStoreDao {
+public abstract class MessageQueueDaoAbstract implements QueueStoreDao {
     private final RunnerService runnerService;
     
     public MessageQueueDaoAbstract(RunnerService runnerService) {
@@ -19,13 +19,13 @@ public abstract class MessageQueueDaoAbstract implements InstanceStoreDao {
     
     /**
      * @note if return true, must eventually call ack. TODO: how to call ack through this abstract class? Or is that appropriate, since we have an interface?
-     * @param strInstanceNumber
+     * @param strQueueStoreEntryNumber
      * @param message
      * @return
      */
-    boolean submitInstanceNumber_Store(String strInstanceNumber, Message message) throws Exception {
+    boolean submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Exception {
         try {
-            runnerService.submitInstanceNumber_Store(strInstanceNumber, message);
+            runnerService.submitQueueStoreNumber(strQueueStoreEntryNumber, message);
             return true;
         } catch (Exception e) {
             return false;
@@ -33,7 +33,7 @@ public abstract class MessageQueueDaoAbstract implements InstanceStoreDao {
     }
     
     @Override
-    public void ackInstanceEntry(Message message) throws JMSException {
+    public void ackQueueStoreEntry(Message message) throws JMSException {
         // this call does the actual work
         message.acknowledge();
     }

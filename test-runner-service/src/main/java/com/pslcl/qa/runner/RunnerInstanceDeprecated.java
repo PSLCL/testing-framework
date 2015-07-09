@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-public class RunnerInstance implements Runnable {
+public class RunnerInstanceDeprecated implements Runnable {
    
     /**
      * Instantiate testrunExecutorService.
@@ -128,7 +128,7 @@ public class RunnerInstance implements Runnable {
      * @param core The database and business logic class
      * @param testInstanceNumber identifies test instance to execute
      */
-    public RunnerInstance(long testInstanceNumber) throws Exception {
+    public RunnerInstanceDeprecated(long testInstanceNumber) throws Exception {
 
         // note: testrunExecutorSynchObj not required here if constructor is guaranteed to be called from only one thread
         synchronized (testrunExecutorSynchObj) {

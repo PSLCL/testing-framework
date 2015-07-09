@@ -7,7 +7,7 @@ import java.sql.Statement;
 
 import com.pslcl.qa.runner.template.TemplateInstance;
 
-public class InstanceCore {
+public class TemplateCore {
 
     // class members
 
@@ -25,7 +25,7 @@ public class InstanceCore {
     // meant to be called once only; if more than once becomes useful, might work but review
     private void loadTestInstanceData() {
         if (connect == null) {
-            System.out.println("<internal> InstanceCore.loadTestInstance() finds no database connection and exits");
+            System.out.println("<internal> TemplateCore.loadTestInstanceData() finds no database connection and exits");
             return;
         }
 
@@ -57,7 +57,7 @@ public class InstanceCore {
                 dbTestInstance.enabled = resultSet.getBoolean("enabled");
                 dbTestInstance.steps = resultSet.getString("steps");
 
-                System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads 1:1 data from test_instance " + dbTestInstance.pk_test_instance + ", pk_described_template " + dbTestInstance.pk_described_template +
+                System.out.println("      <internal> TemplateCore.loadTestInstanceData() loads 1:1 data from test_instance " + dbTestInstance.pk_test_instance + ", pk_described_template " + dbTestInstance.pk_described_template +
                                                                                                                            ", pk_template " + dbTestInstance.fk_template + (dbTestInstance.fk_run!=0 ? ", TEST RESULT ALREADY STORED" : ""));
                 if (resultSet.next())
                     throw new Exception("resultSet wrongly has more than one entry");
@@ -65,7 +65,7 @@ public class InstanceCore {
                 throw new Exception("instance data not present");
             }
         } catch(Exception e) {
-            System.out.println("InstanceCore.loadTestInstanceData() exception for iNum " + pk_test_instance + ": "+ e);
+            System.out.println("TemplateCore.loadTestInstanceData() exception for iNum " + pk_test_instance + ": "+ e);
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
@@ -83,12 +83,12 @@ public class InstanceCore {
                 dtLine.pk_dt_line = resultSet.getLong("pk_dt_line"); // null entry returns 0
                 dtLine.line = resultSet.getInt("line");
                 dtLine.dtLineDescription = resultSet.getString("description");
-                System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads line data from dt_line " + dtLine.pk_dt_line);
+                System.out.println("      <internal> TemplateCore.loadTestInstanceData() loads line data from dt_line " + dtLine.pk_dt_line);
 
                 dbTestInstance.pkToDTLine.put(dtLine.pk_dt_line, dtLine);
             }
         } catch(Exception e) {
-            System.out.println("InstanceCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
+            System.out.println("TemplateCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
@@ -108,13 +108,13 @@ public class InstanceCore {
                     dtLine.reason = resultSet.getString("reason");
                     dtLine.pk_artifact = resultSet.getLong("pk_artifact");
                     dtLine.pk_version = resultSet.getLong("fk_version");
-                    System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads artifact data for dt_line " + dtLine.pk_dt_line);
+                    System.out.println("      <internal> TemplateCore.loadTestInstanceData() loads artifact data for dt_line " + dtLine.pk_dt_line);
 
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
                 }
             } catch(Exception e) {
-                System.out.println("InstanceCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
+                System.out.println("TemplateCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
             } finally {
                 safeClose( resultSet ); resultSet = null;
                 safeClose( statement ); statement = null;
@@ -134,13 +134,13 @@ public class InstanceCore {
                     dtLine.scheduled_release = resultSet.getDate("scheduled_release");
                     dtLine.actual_release = resultSet.getDate("actual_release");
                     dtLine.sort_order = resultSet.getInt("sort_order");
-                    System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads version data for dt_line " + dtLine.pk_dt_line);
+                    System.out.println("      <internal> TemplateCore.loadTestInstanceData() loads version data for dt_line " + dtLine.pk_dt_line);
 
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
                 }
             } catch(Exception e) {
-                System.out.println("InstanceCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
+                System.out.println("TemplateCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
             } finally {
                 safeClose( resultSet ); resultSet = null;
                 safeClose( statement ); statement = null;
@@ -159,13 +159,13 @@ public class InstanceCore {
                 if ( resultSet.next() ) {
                     dtLine.pk_content = resultSet.getBytes("pk_content");
                     dtLine.is_generated = resultSet.getBoolean("is_generated");
-                    System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads content data for dt_line " + dtLine.pk_dt_line);
+                    System.out.println("      <internal> TemplateCore.loadTestInstanceData() loads content data for dt_line " + dtLine.pk_dt_line);
 
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
                 }
             } catch(Exception e) {
-                System.out.println("InstanceCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
+                System.out.println("TemplateCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
             } finally {
                 safeClose( resultSet ); resultSet = null;
                 safeClose( statement ); statement = null;
@@ -183,13 +183,13 @@ public class InstanceCore {
                                                     "WHERE pk_version = " + strPKVersion );
                 if ( resultSet.next() ) {
                     dtLine.componentName = resultSet.getString("name");
-                    System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads component data for dt_line " + dtLine.pk_dt_line);
+                    System.out.println("      <internal> TemplateCore.loadTestInstanceData() loads component data for dt_line " + dtLine.pk_dt_line);
 
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
                 }
             } catch(Exception e) {
-                System.out.println("InstanceCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
+                System.out.println("TemplateCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
             } finally {
                 safeClose( resultSet ); resultSet = null;
                 safeClose( statement ); statement = null;
@@ -209,13 +209,13 @@ public class InstanceCore {
                     dtLine.resourceHash = resultSet.getBytes("hash");
                     dtLine.resourceName = resultSet.getString("name");
                     dtLine.resourceDescription = resultSet.getString("description");
-                    System.out.println("      <internal> InstanceCore.loadTestInstanceData() loads resource data for dt_line " + dtLine.pk_dt_line);
+                    System.out.println("      <internal> TemplateCore.loadTestInstanceData() loads resource data for dt_line " + dtLine.pk_dt_line);
 
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
                 }
             } catch(Exception e) {
-                System.out.println("InstanceCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
+                System.out.println("TemplateCore.loadTestInstanceData() exception on dtLine access for iNum " + pk_test_instance + ": "+ e);
             } finally {
                 safeClose( resultSet ); resultSet = null;
                 safeClose( statement ); statement = null;
@@ -250,7 +250,7 @@ public class InstanceCore {
             Class.forName("com.mysql.jdbc.Driver"); // required at run time only for .getConnection(): mysql-connector-java-5.1.35.jar
             connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
         } catch ( Exception e ) {
-            System.err.println( "ERROR: InstanceCore.openDatabase() could not open database connection, " + e.getMessage() );
+            System.err.println( "ERROR: TemplateCore.openDatabase() could not open database connection, " + e.getMessage() );
         }
     }
 
@@ -296,19 +296,19 @@ public class InstanceCore {
      *
      * @param pk_test_instance
      */
-    public InstanceCore( long pk_test_instance ) {
+    public TemplateCore( long pk_test_instance ) {
         this.pk_test_instance = pk_test_instance;
         dbTestInstance = new DBTestInstance(this.pk_test_instance);
         openDatabase();
 
         if (connect == null)
-            System.err.println( "InstanceCore constructor fails without database connection");
+            System.err.println( "TemplateCore constructor fails without database connection");
         else
             loadTestInstanceData();
     }
 
     /**
-     * Close the InstanceCore object, releasing any resources.
+     * Close the TemplateCore object, releasing any resources.
      */
     public void close() {
         closeDatabase();
@@ -319,10 +319,10 @@ public class InstanceCore {
     }
 
     /**
-     * From a given test instance number, execute the corresponding test instance (aka test run).
+     * From a given template number, process the template to form a test run.
      * @param iCore TODO
      */
-    public void executeTestInstance(long testInstanceNumber, InstanceCore iCore) {
+    public void processTemplate(long testInstanceNumber, TemplateCore iCore) {
         // We are an independent process. We have access
         //   to a Resource Manager that has access to artifacts and resources,
         //   and to everything else needed to cause our test instance to be executed.

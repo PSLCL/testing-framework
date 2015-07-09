@@ -10,74 +10,74 @@ import com.pslcl.qa.runner.RunnerService;
 public enum Action implements Actions {
     // note: enums are static
     
-    // See at bottom: abstract Action act(InstanceState is);
+    // See at bottom: abstract Action act(TemplateState ts);
   
 //    UNKNOWN {
-//        Action act(InstanceState iState) {
-//            long iNum = iState.getInstanceNumber();
+//        Action act(TemplateState tState) {
+//            long tNum = tState.getTemplateNumber();
 //            return this;
 //        }
 //    },
 
-    INITIALIZE_INSTANCE {
-        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
-            long iNum = iState.getInstanceNumber();
+    INITIALIZE {
+        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
+            long tNum = tState.getTemplateNumber();
 
-            Action retAction = iState.getInstanceAction();
-            if (retAction == INITIALIZE_INSTANCE) {
-                iState.setInstanceAction(ANALYZE);
-                // put new iState object to ActionStore as kvp iNum/iState
-                runnerService.runnerMachine.addNewInstance(iNum, iState);
+            Action retAction = tState.getAction();
+            if (retAction == INITIALIZE) {
+                tState.setAction(ANALYZE);
+                // put new tState object to ActionStore as kvp tNum/tState
+                runnerService.runnerMachine.addNewTemplate(tNum, tState);
             } else {
-                System.out.println("Internal Error. Action.INITIALIZE_INSTANCE() rejects iState for instance number " + iNum + ". Action wrongly shown to be " + retAction);
+                System.out.println("Internal Error. Action.INITIALIZE() rejects tState for template number " + tNum + ". Action wrongly shown to be " + retAction);
             }
             
-            // This return value for INITIALIZE_INSTANCE is only for form; the separate ActionPipe mechanism can be moving iState forward right now, even dramatically. 
+            // This return value for INITIALIZE is only for form; the separate ActionPipe mechanism can be moving tState forward right now, even dramatically. 
             return retAction;
         }
     },
     
     ANALYZE {
-        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
-            long iNum = iState.getInstanceNumber();
+        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
+            long tNum = tState.getTemplateNumber();
             
             // TODO. Determine a priority
-            // int priority = determineAndStorePriority(iNum, iState);
+            // int priority = determineAndStorePriority(iNum, tState);
             // TODO: assess other things, also
-            iState.setInstanceAction(DO);
-            return iState.getInstanceAction();
+            tState.setAction(DO);
+            return tState.getAction();
         }
     },
     
     DO {
-        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
-            long iNum = iState.getInstanceNumber();
-            iCore.executeTestInstance(iNum,  iCore);
-            iState.setInstanceAction(REMOVE);
-            return iState.getInstanceAction();
+        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
+            long tNum = tState.getTemplateNumber();
+            tCore.processTemplate(tNum,  tCore);
+            tState.setAction(REMOVE);
+            return tState.getAction();
         }
     },
     
 //  STORE_RESULT,
     
     REMOVE {
-        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
-            long iNum = iState.getInstanceNumber();
-            runnerService.actionStore.remove(iNum);
-            iState.setInstanceAction(DISCARDED);
-            return iState.getInstanceAction();
+        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
+            long tNum = tState.getTemplateNumber();
+            runnerService.actionStore.remove(tNum);
+            tState.setAction(DISCARDED);
+            return tState.getAction();
         }
     },
 
-    // if called, remove iState from actionStore; try to code in a way that "DISCARDED" is never called
+    // if called, remove tState from actionStore; try to code in a way that "DISCARDED" is never called
     DISCARDED {
-        Action act(InstanceState iState, InstanceCore iCore, RunnerService runnerService) {
-            long iNum = iState.getInstanceNumber();
-            runnerService.actionStore.remove(iNum);
-            return iState.getInstanceAction();
+        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
+            long tNum = tState.getTemplateNumber();
+            runnerService.actionStore.remove(tNum);
+            return tState.getAction();
         }
     };
 
-    abstract Action act(InstanceState is, InstanceCore iCore, RunnerService runnerService);
+    abstract Action act(TemplateState ts, TemplateCore tCore, RunnerService runnerService);
     
 }
