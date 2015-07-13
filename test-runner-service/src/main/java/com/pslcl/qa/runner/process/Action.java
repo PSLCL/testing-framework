@@ -52,7 +52,7 @@ public enum Action implements Actions {
     DO {
         Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
             long dtNum = dtState.getDescribedTemplateNumber();
-            dtCore.processTemplate(dtNum, dtCore);
+            dtCore.processDescribedTemplate(dtNum, dtCore);
             dtState.setAction(REMOVE);
             return dtState.getAction();
         }
