@@ -1,24 +1,24 @@
 package com.pslcl.qa.runner.process;
 
-public class TemplateState {
+public class DescribedTemplateState {
     
-    private final long templateNumber;
+    private final long dtNum;
     private Object message;
     private Action action;
     
     /**
      * Constructor
-     * @param templateNumber
+     * @param dtNum
      * @param message Opaque object used eventually to ack the templateNumber held in the QueueStore
      */
-    public TemplateState(long templateNumber, Object message) {
-        this.templateNumber = templateNumber;
+    public DescribedTemplateState(long dtNum, Object message) {
+        this.dtNum = dtNum;
         this.message = message;
         this.action = Action.INITIALIZE;
     }
 
-    public long getTemplateNumber() {
-        return templateNumber;
+    public long getDescribedTemplateNumber() {
+        return dtNum;
     }
     
     public Object getMessage() {

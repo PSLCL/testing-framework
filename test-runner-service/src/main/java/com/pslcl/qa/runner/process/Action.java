@@ -20,16 +20,16 @@ public enum Action implements Actions {
 //    },
 
     INITIALIZE {
-        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
-            long tNum = tState.getTemplateNumber();
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+            long dtNum = dtState.getDescribedTemplateNumber();
 
-            Action retAction = tState.getAction();
+            Action retAction = dtState.getAction();
             if (retAction == INITIALIZE) {
-                tState.setAction(ANALYZE);
+                dtState.setAction(ANALYZE);
                 // put new tState object to ActionStore as kvp tNum/tState
-                runnerService.runnerMachine.addNewTemplate(tNum, tState);
+                runnerService.runnerMachine.addNewTemplate(dtNum, dtState);
             } else {
-                System.out.println("Internal Error. Action.INITIALIZE() rejects tState for template number " + tNum + ". Action wrongly shown to be " + retAction);
+                System.out.println("Internal Error. Action.INITIALIZE() rejects dtState for dtNum " + dtNum + ". Action wrongly shown to be " + retAction);
             }
             
             // This return value for INITIALIZE is only for form; the separate ActionPipe mechanism can be moving tState forward right now, even dramatically. 
@@ -38,46 +38,46 @@ public enum Action implements Actions {
     },
     
     ANALYZE {
-        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
-            long tNum = tState.getTemplateNumber();
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+            long dtNum = dtState.getDescribedTemplateNumber();
             
             // TODO. Determine a priority
-            // int priority = determineAndStorePriority(iNum, tState);
+            // int priority = determineAndStorePriority(dtNum, dtState);
             // TODO: assess other things, also
-            tState.setAction(DO);
-            return tState.getAction();
+            dtState.setAction(DO);
+            return dtState.getAction();
         }
     },
     
     DO {
-        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
-            long tNum = tState.getTemplateNumber();
-            tCore.processTemplate(tNum,  tCore);
-            tState.setAction(REMOVE);
-            return tState.getAction();
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+            long dtNum = dtState.getDescribedTemplateNumber();
+            dtCore.processTemplate(dtNum, dtCore);
+            dtState.setAction(REMOVE);
+            return dtState.getAction();
         }
     },
     
 //  STORE_RESULT,
     
     REMOVE {
-        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
-            long tNum = tState.getTemplateNumber();
-            runnerService.actionStore.remove(tNum);
-            tState.setAction(DISCARDED);
-            return tState.getAction();
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+            long dtNum = dtState.getDescribedTemplateNumber();
+            runnerService.actionStore.remove(dtNum);
+            dtState.setAction(DISCARDED);
+            return dtState.getAction();
         }
     },
 
     // if called, remove tState from actionStore; try to code in a way that "DISCARDED" is never called
     DISCARDED {
-        Action act(TemplateState tState, TemplateCore tCore, RunnerService runnerService) {
-            long tNum = tState.getTemplateNumber();
-            runnerService.actionStore.remove(tNum);
-            return tState.getAction();
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+            long dtNum = dtState.getDescribedTemplateNumber();
+            runnerService.actionStore.remove(dtNum);
+            return dtState.getAction();
         }
     };
 
-    abstract Action act(TemplateState ts, TemplateCore tCore, RunnerService runnerService);
+    abstract Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService);
     
 }

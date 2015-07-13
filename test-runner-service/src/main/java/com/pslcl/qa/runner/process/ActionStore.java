@@ -9,7 +9,7 @@ public class ActionStore {
      *  Neither Long key nor InstanceState value may be null.
      *  Writes by any one thread locks only the relevant element, other threads freely access other elements
      */
-    ConcurrentHashMap<Long, TemplateState> map; 
+    ConcurrentHashMap<Long, DescribedTemplateState> map; 
     
     public ActionStore() {
         map = new ConcurrentHashMap<>();
@@ -22,7 +22,7 @@ public class ActionStore {
      * @param iState
      * @return Previously stored InstanceState when put overwrites it, null otherwise. 
      */
-    TemplateState put(long iNum, TemplateState iState) {
+    DescribedTemplateState put(long iNum, DescribedTemplateState iState) {
         return map.put(Long.valueOf(iNum), iState);
     }
     
@@ -31,7 +31,7 @@ public class ActionStore {
      * @param iNum
      * @return
      */
-    TemplateState get(long iNum) {
+    DescribedTemplateState get(long iNum) {
         return map.get(Long.valueOf(iNum));
     }
     
@@ -41,7 +41,7 @@ public class ActionStore {
      * @param iNum
      * @return The removed InstanceState
      */
-    TemplateState remove(long iNum) {
+    DescribedTemplateState remove(long iNum) {
         return map.remove(Long.valueOf(iNum));
     }
 

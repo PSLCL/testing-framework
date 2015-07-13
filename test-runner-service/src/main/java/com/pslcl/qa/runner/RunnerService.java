@@ -341,30 +341,30 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     /**
      * 
-     * @param strTemplateNumber Representation of template number.
-     * @param message JMS message associated with the template number, used for eventual message ack
+     * @param strDescribedTemplateNumber Representation of described template number (the dt number).
+     * @param message JMS message associated with the dt number, used for eventual message ack
      * @throws Exception
      */
-    public void submitQueueStoreNumber(String strTemplateNumber, Message message) throws Exception {
+    public void submitQueueStoreNumber(String strDescribedTemplateNumber, Message message) throws Exception {
         try {
-            // early tests- does strTemplateNumber produce a valid long integer? And is resulting iNum already completed or in process?
+            // early tests- does strTemplateNumber produce a valid long integer? And is resulting dtNum already completed or in process?
             
             // the ordinary method
-            long tNum = Long.parseLong(strTemplateNumber);
-            logger.debug("RunnerService.submitQueueStoreNumber() finds template number is " + tNum);
+            long dtNum = Long.parseLong(strDescribedTemplateNumber);
+            logger.debug("RunnerService.submitQueueStoreNumber() finds described template number is " + dtNum);
             try {
-                if (ProcessTracker.resultStored(tNum)) {
+                if (ProcessTracker.resultStored(dtNum)) {
                     ackTemplateEntry(message);
-                    System.out.println("RunnerService.submitQueueStoreNumber() finds templateNumber " + tNum + ", result already stored. Acking this tNum now.");
-                } else if (processTracker.inProcess(tNum)) {
-                    System.out.println("RunnerService.submitInstanceNumber_Store() finds templateNumber " + tNum + ", work already processing");
+                    System.out.println("RunnerService.submitQueueStoreNumber() finds dtNum " + dtNum + ", result already stored. Acking this dtNum now.");
+                } else if (processTracker.inProcess(dtNum)) {
+                    System.out.println("RunnerService.submitInstanceNumber_Store() finds dtNum " + dtNum + ", work already processing");
                 } else {
                     // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this  template number.
-                    runnerMachine.initiateProcessing(tNum, message);
+                    runnerMachine.initiateProcessing(dtNum, message);
                 }
             } catch (Exception e) {
-                // do nothing; iNum remains in InstanceStore, we will see it again
-                System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for template number " + tNum + ". Leave tNum in QueueStore. Exception msg: " + e);
+                // do nothing; dtNum remains in InstanceStore, we will see it again
+                System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for dtNum " + dtNum + ". Leave dtNum in QueueStore. Exception msg: " + e);
             }
         } catch (Exception e) {
             throw e; // recipient must ack the message

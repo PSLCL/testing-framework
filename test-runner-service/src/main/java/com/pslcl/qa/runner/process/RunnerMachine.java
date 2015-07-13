@@ -24,7 +24,7 @@ public class RunnerMachine {
     /**
      * For threads created by templateExecutorService, specify thread name and sets daemon true
      */
-    private class TemplateThreadFactory implements ThreadFactory {
+    private class DescribedTemplateThreadFactory implements ThreadFactory {
         
         @Override
         public Thread newThread(Runnable r) {
@@ -42,7 +42,7 @@ public class RunnerMachine {
      */
     public RunnerMachine(RunnerService runnerService) {
         this.runnerService = runnerService;
-        templateExecutorService = Executors.newCachedThreadPool(new TemplateThreadFactory());
+        templateExecutorService = Executors.newCachedThreadPool(new DescribedTemplateThreadFactory());
     }
     
     /**
@@ -52,31 +52,31 @@ public class RunnerMachine {
      * @param message An opaque Java object, used to acknowledge the message when processing is complete
      * @throws Exception
      */
-    public void initiateProcessing(long tNum, Object message) {
+    public void initiateProcessing(long dtNum, Object message) {
         try {
-            TemplateState tState = new TemplateState(tNum, message);
-            Action action = tState.getAction();  // Action.INITIALIZE_INSTANCE
-            Action nextAction = action.act(tState, null, runnerService);            
-            // for anything returned except ACTION.DISCARDED: the new tState is stored in ActionStore
+            DescribedTemplateState dtState = new DescribedTemplateState(dtNum, message);
+            Action action = dtState.getAction();  // Action.INITIALIZE_INSTANCE
+            Action nextAction = action.act(dtState, null, runnerService);            
+            // for anything returned except ACTION.DISCARDED: the new dtState is stored in ActionStore
         } catch (Exception e) {
-            System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling template number " + tNum + ": " + e + ". Message remains in the QueueStore.");
+            System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling dtNum " + dtNum + ": " + e + ". Message remains in the QueueStore.");
         }
     }
     
     /**
-     * @param tNum
+     * @param dtNum
      */
-    void addNewTemplate(long tNum, TemplateState tState) {
+    void addNewTemplate(long dtNum, DescribedTemplateState dtState) {
         // TODO. May choose to not process this new template; would be because this RunnerService node is overloaded
         // boolean doProcess = determineDoProcess(tNum, iState);
         // if (doProcess)
         {
-            TemplateState tStateOld = runnerService.actionStore.put(tNum, tState);
-            // TODO: For tStateOld not null, consider: is this a bug, or shall we cleanup whatever it is that tStateOld shows has been allocated or started or whatever?
+            DescribedTemplateState dtStateOld = runnerService.actionStore.put(dtNum, dtState);
+            // TODO: For dtStateOld not null, consider: is this a bug, or shall we cleanup whatever it is that tStateOld shows has been allocated or started or whatever?
         }
         
         try {
-            new TemplateTask(this, tNum);
+            new DescribedTemplateTask(this, dtNum);
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -85,11 +85,11 @@ public class RunnerMachine {
 
     /**
      * 
-     * @param tNum
+     * @param dtNum
      */
-    void removeTemplate(long tNum) {
-        TemplateState iStateOld = runnerService.actionStore.remove(tNum);
-        // TODO: Shall we cleanup whatever it is that tStateOld shows has been allocated or started or whatever?
+    void removeTemplate(long dtNum) {
+        DescribedTemplateState dtStateOld = runnerService.actionStore.remove(dtNum);
+        // TODO: Shall we cleanup whatever it is that dtStateOld shows has been allocated or started or whatever?
     }
     
 }

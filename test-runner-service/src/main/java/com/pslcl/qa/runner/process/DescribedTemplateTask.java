@@ -1,14 +1,14 @@
 package com.pslcl.qa.runner.process;
 
 
-public class TemplateTask implements Runnable {
+public class DescribedTemplateTask implements Runnable {
     private RunnerMachine runnerMachine;
-    private TemplateCore iCore;
-    private long iNum;
+    private DescribedTemplateCore tCore;
+    private long dtNum;
     private String instanceThreadName;
 
     /**
-     * Constructor: From a given test instance number, initiate execution of the corresponding test instance (aka test run).
+     * Constructor: From a given described template number, initiate execution of its corresponding test instance (aka test run).
      * 
      * @note Step 1 Check to see if first time setup is accomplished; if not, setup our testrunExecutor.
      * @note Step 2 Submit this test instance to the testRunExecutorService for future execution.
@@ -16,19 +16,16 @@ public class TemplateTask implements Runnable {
      * @param core The database and business logic class
      * @param testInstanceNumber identifies test instance to execute
      */
-    public TemplateTask(RunnerMachine runnerMachine, long iNum) throws Exception {
+    public DescribedTemplateTask(RunnerMachine runnerMachine, long dtNum) throws Exception {
         this.runnerMachine = runnerMachine;
-        this.iNum = iNum;
-        this.instanceThreadName = new String("instance " + iNum);
-        
-//        // HACK: fixed test number for initial testing purposes; test instance number is what came out of the InstanceStore
-//        this.core = new Core(71);
-        this.iCore = new TemplateCore(iNum);
+        this.dtNum = dtNum;
+        this.instanceThreadName = new String("instance " + dtNum);
+        this.tCore = new DescribedTemplateCore(dtNum);
         
         try {
             runnerMachine.templateExecutorService.execute(this); // schedules call to this.run(); this is the full execution of the specified test instance
         } catch (Exception e) {
-            System.out.println("InstanceTask constructor failed for instance number " + iNum + ", with Exception " + e);
+            System.out.println("InstanceTask constructor failed for instance number " + dtNum + ", with Exception " + e);
             throw e;
         }
     }
@@ -41,13 +38,13 @@ public class TemplateTask implements Runnable {
     @Override
     public void run() {
         // this thread can block for possibly days at a time while waiting for the test run to return a test result and otherwise complete itself
-        System.out.println( "InstanceTask.run() opens instance number " + iNum);
+        System.out.println( "InstanceTask.run() opens instance number " + dtNum);
         
         while(true) {
-            TemplateState iState = runnerMachine.runnerService.actionStore.get(iNum);
+            DescribedTemplateState iState = runnerMachine.runnerService.actionStore.get(dtNum);
             Action action = iState.getAction();
-            Action nextAction = action.act(iState, iCore, runnerMachine.runnerService);
-            System.out.println("InstanceTask.run() ran Action " + action.toString() + " for instance number " + iNum + ", finds next action to be " + nextAction.toString());
+            Action nextAction = action.act(iState, tCore, runnerMachine.runnerService);
+            System.out.println("InstanceTask.run() ran Action " + action.toString() + " for instance number " + dtNum + ", finds next action to be " + nextAction.toString());
             if (nextAction == Action.DISCARDED)
                 break;
             try {
@@ -58,7 +55,7 @@ public class TemplateTask implements Runnable {
             }
         }
         
-        System.out.println( "InstanceTask.run() closes instance number " + iNum);
+        System.out.println( "DescribedTemplateTask.run() closes instance number " + dtNum);
     }
     
 }
