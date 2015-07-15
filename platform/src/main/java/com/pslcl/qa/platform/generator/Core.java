@@ -766,10 +766,37 @@ public class Core {
 
         try {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( String.format( "SELECT component.name," +
-                    " version.version" +
+            resultSet = statement.executeQuery( String.format( "SELECT component.name, version.version" +
                     " FROM component" +
                     " JOIN version ON component.pk_component = version.fk_component" ) );
+            while ( resultSet.next() ) {
+                Version V = new Version( this, resultSet.getString(1), resultSet.getString(2) );
+                set.add( V );
+            }
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Exception " + e.getMessage() );
+            e.printStackTrace( System.err );
+        }
+        finally {
+            safeClose( resultSet ); resultSet = null;
+            safeClose( statement ); statement = null;
+        }
+
+        return set;
+    }
+
+    Iterable<Version> createVersionSet(String component) {
+        List<Version> set = new ArrayList<Version>();
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            statement = connect.createStatement();
+            resultSet = statement.executeQuery( String.format( "SELECT name, version" +
+                    " FROM component" +
+                    " JOIN version ON pk_component = fk_component" ) +
+                    " WHERE name = " + component );
             while ( resultSet.next() ) {
                 Version V = new Version( this, resultSet.getString(1), resultSet.getString(2) );
                 set.add( V );

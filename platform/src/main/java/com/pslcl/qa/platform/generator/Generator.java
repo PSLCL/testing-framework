@@ -83,6 +83,14 @@ public class Generator {
     }
 
     /**
+     * Create an iterable set of all versions known to the generator for a specific component.
+     * @return An iterable set of versions.
+     */
+    public Iterable<Version> createVersionSet(String component) {
+        return core.createVersionSet(component);
+    }
+    
+    /**
      * Create an iterator over the dependencies of a particular artifact.
      * @param artifact The artifact to find the dependencies of.
      * @return An iterator over the set of dependent artifacts.
