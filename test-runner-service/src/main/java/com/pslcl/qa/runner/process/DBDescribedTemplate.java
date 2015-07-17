@@ -21,19 +21,23 @@ public class DBDescribedTemplate {
     public boolean enabled = false;         // BOOLEAN
     public String steps = null;             // MEDIUMTEXT
 
-    // map of corresponding records in table test_instance
-    public Map<Long, DBTestInstance> pkdtToDBTestInstance;
-
     // map of corresponding records in table run
     public Map<Long, DBRun> pkdtToDBRun;
+
+    // map of corresponding records in table test_instance
+    public Map<Long, DBTestInstance> pkdtToDBTestInstance;
+    
+    // map of corresponding records in table dt_line
+    public Map<Long, DBDTLine> pkdtToDTLine;
 
     /**
      *  Constructor
      */
     DBDescribedTemplate(long pk_described_template) {
         this.pk_described_template = pk_described_template;
-        pkdtToDBTestInstance = new HashMap<Long,DBTestInstance>();
         pkdtToDBRun = new HashMap<Long,DBRun>();
+        pkdtToDBTestInstance = new HashMap<Long,DBTestInstance>();
+        pkdtToDTLine = new HashMap<Long,DBDTLine>();
     }
 
 }

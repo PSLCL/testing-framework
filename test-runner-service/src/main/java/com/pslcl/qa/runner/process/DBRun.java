@@ -17,7 +17,6 @@ public class DBRun {
     public Date end_time = null;        // DATETIME
     public boolean passed = false;      // BOOLEAN
 
-
     /**
      *  Constructor
      */
