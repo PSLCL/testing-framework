@@ -7,8 +7,11 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.MachineProvider;
+import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.ResourceQueryResult;
+import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
 public class AWSMachineProvider implements MachineProvider {
 	private final AmazonEC2Client ec2Client;
@@ -46,21 +49,49 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public MachineInstance bind(String resourceHash, String resourceAttributes) throws ResourceNotFoundException {
+	public void release(ResourceInstance resource) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<ResourceInstance> bind(List<ResourceWithAttributes> resources) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public boolean isAvailable(String resourceHash, String resourceAttributes) throws ResourceNotFoundException {
+	public void releaseReservedResource(ReservedResourceWithAttributes resource) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean isAvailable(ResourceWithAttributes resource)
+			throws ResourceNotFoundException {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public void release(ResourceInstance resource) {
+	public ResourceQueryResult queryResourceAvailability(
+			List<ResourceWithAttributes> resources) {
 		// TODO Auto-generated method stub
-		
+		return null;
+	}
+
+	@Override
+	public ResourceQueryResult reserveIfAvailable(
+			List<ResourceWithAttributes> resources, int timeoutSeconds) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public MachineInstance bind(ResourceWithAttributes resource)
+			throws ResourceNotFoundException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

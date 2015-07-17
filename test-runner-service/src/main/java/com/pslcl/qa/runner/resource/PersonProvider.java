@@ -1,5 +1,7 @@
 package com.pslcl.qa.runner.resource;
 
+import java.util.List;
+
 
 
 /**
@@ -10,10 +12,9 @@ public interface PersonProvider extends ResourceProvider, ArtifactConsumer {
 	/** 
      * Acquire a Person.
      *
-     * @param resourceHash
-     * @param resourceAttributes
+     * @param resource
      * @return Person object which represents the Person Resource Instance.
      */
 	@Override
-	public PersonInstance bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+	public PersonInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException;
 }

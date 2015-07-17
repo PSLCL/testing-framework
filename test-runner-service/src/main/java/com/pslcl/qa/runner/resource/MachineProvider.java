@@ -12,12 +12,11 @@ public interface MachineProvider extends ResourceProvider, ArtifactConsumer {
      * 
      * This resource must be released once it is no longer needed.
      *
-     * @param resourceHash
-     * @param resourceAttributes
+     * @param resource
      * @return MachineInstance object which represents the Machine as a ResourceInstance.
      * @note This MachineInstance is more explicitly defined than the ResourceInstance returned by ResourceProvider.bind().
-     * @see com.pslcl.qa.runner.resource#ResourceProvider
+     * @see ResourceProvider
      */
 	@Override
-	public MachineInstance bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+	public MachineInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException;
 }

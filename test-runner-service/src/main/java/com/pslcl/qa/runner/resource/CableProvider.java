@@ -9,10 +9,9 @@ public interface CableProvider extends ResourceProvider {
 	/** 
      * Acquire a Cable.
      *
-     * @param resourceHash
-     * @param resourceAttributes
+     * @param resource
      * @return Cable object which represents the Cable Resource Instance.
      */
 	@Override
-	public CableInstance bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+	public CableInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException;
 }

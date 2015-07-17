@@ -10,11 +10,10 @@ public interface NetworkProvider extends ResourceProvider {
 	/** 
      * Acquire a Network.
      *
-     * @param resourceHash
-     * @param resourceAttributes
+     * @param resource
      * @return Network object which represents the Network Resource Instance.
      */
 	@Override
-	public NetworkInstance bind( String resourceHash, String resourceAttributes ) throws ResourceNotFoundException;
+	public NetworkInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException;
 
 }
