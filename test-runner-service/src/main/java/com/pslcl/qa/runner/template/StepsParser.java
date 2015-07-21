@@ -1,7 +1,11 @@
 package com.pslcl.qa.runner.template;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
 public class StepsParser {
     
@@ -27,6 +31,32 @@ public class StepsParser {
             return step.substring(offset);
         }
         return null;
+    }
+    
+    /**
+     * 
+     * @param strResourceAttributes . Must be space terminated, and must follow K=V&K=V%K=V pattern 
+     * @return KVP Map, possibly empty
+     */
+    public static Map<String,String> getAttributeMap(String strResourceAttributes) {
+        Map<String,String> ret = new HashMap<>();
+        int offset = 0;
+        int ampersandOffset = 0;
+        while (ampersandOffset < strResourceAttributes.length()) {
+            ampersandOffset = strResourceAttributes.indexOf("&", offset);
+            if (ampersandOffset == -1)
+                ampersandOffset = strResourceAttributes.length(); // last attribute
+            int equalsOffset = strResourceAttributes.indexOf("=", offset);
+            if (equalsOffset > 0 && ampersandOffset > equalsOffset) {
+                // get K
+                String K = strResourceAttributes.substring(offset, equalsOffset);
+                // get V
+                String V = strResourceAttributes.substring(equalsOffset+1, ampersandOffset);
+                offset = ++ampersandOffset;
+                ret.put(K, V);
+            }
+        }
+        return ret;
     }
     
     
@@ -59,7 +89,7 @@ public class StepsParser {
             int termOffset = steps.indexOf('\n', offset); // -1 return means steps has no \n at or after offset
             if (termOffset >= 0) {
                 retStep = steps.substring(offset, termOffset); // trailing \n not included
-                System.out.println("TemplateProvider.get() returns " + ((offset==termOffset) ? "EMPTY " : "") + "step: " + retStep);
+                System.out.println("StepsParser.getNextStep() returns " + ((offset==termOffset) ? "EMPTY " : "") + "step: " + retStep);
                 if (++termOffset >= steps.length())
                     termOffset = -1;
             }
@@ -74,22 +104,60 @@ public class StepsParser {
      * @note In any template set of steps, all bind steps are placed first, identified by "bind ".
      * @note Normal use is: To get all bind steps, call this, after constructor, with "bind " param.
      * 
-     * @param stepTag String such as "bind " or "include "
+     * @param stepTag String such as "bind " or "include "; trailing space is important
      * @return null for internal offset initially negative, or \n not found at or after internal offset
      * @return empty List<String> when the first step does not match param stepType
      * @return In-order List<String> when at least the first step matches param stepType  
      */
     List<String> getNextSteps(String stepTag) {
+        // process any one step with this rule: step command is the first characters leading up to the first space char
         List<String> retList = null; // capacity grows as elements are added; null elements are permitted
         if (offset >= 0 &&
             steps.indexOf('\n', offset) >= 0) // -1 return means steps has no \n at or after offset
         {
             retList = new ArrayList<String>(); // empty list
             for (int i=0; ; i++) {
-                if (!steps.substring(offset, offset+4).equals(stepTag))
+                if (!steps.substring(offset, offset+stepTag.length()).equals(stepTag))
                     break;
                 String strBindStep = getNextStep();
-                retList.set(i, strBindStep);
+                retList.add(i, strBindStep); // i: 0 ... n
+            }
+        }
+        return retList;
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    List<ResourceWithAttributes> computeResourceQuery() {
+        List<ResourceWithAttributes> retList = new ArrayList<>();
+        List<String> bindList = getNextSteps("bind "); // list is indexed by original line number
+        for (int bindReference=0; bindReference<bindList.size(); bindReference++) {
+            // add next bind resource to the resource request
+            String bindStep = bindList.get(bindReference);
+            System.out.println("StepsParser.computeResourceQuery() finds bind step " + bindReference + ": " + bindStep);
+            int offset = 0;
+            String bindText = StepsParser.getNextSpaceTerminatedSubString(bindStep, offset); // get past "bind "
+            offset += (bindText.length() + 1);
+            String resourceHash = StepsParser.getNextSpaceTerminatedSubString(bindStep, offset);
+            if (resourceHash != null) {
+                String strResourceAttributes = null;
+                offset += resourceHash.length();
+                if (++offset > bindStep.length())
+                    offset = -1; // done
+                
+                strResourceAttributes = StepsParser.getNextSpaceTerminatedSubString(bindStep, offset);
+                // we do not extract further from bindStep
+//                if (resourceAttributes != null) {
+//                    offset += resourceAttributes.length();
+//                    if (++offset > step.length())
+//                        offset = -1; // done
+//                }
+
+                // TODO: Put bindReference into constructor
+                ResourceWithAttributes ra = new ResourceWithAttributes(resourceHash, StepsParser.getAttributeMap(strResourceAttributes));
+                retList.add(bindReference, ra);
             }
         }
         return retList;
