@@ -74,17 +74,44 @@ class Template implements Comparable<Template> {
         }
     }
 
-    @SuppressWarnings("unused")
-    private static class AttributeParameter implements Parameter {
+    static class AttributeParameter implements Parameter {
         ResourceParameter resourceParameter;
         String attribute;
+        String value;
 
+        /**
+         * Create an AttributeParameter with a known value.
+         * 
+         * @param attribute the attribute name.
+         * @param value the value of the attribute.
+         */
+        public AttributeParameter( String attribute, String value ) {
+        	this.attribute = attribute;
+            this.value = value;
+        }
+
+        /**
+         * Create an AttributeParameter if the value is unknown.
+         * 
+         * @param resource The resource associated with the attribute.
+         * @param attribute The attribute name.
+         */
         public AttributeParameter( Resource resource, String attribute ) {
             this.resourceParameter = new ResourceParameter( resource );
             this.attribute = attribute;
         }
 
+        /**
+         * Get the value of the attribute. If the value of the attribute is known, then it will be returned. 
+         * If the value of the attribute will not be known until the test is run, then a value reference in the 
+         * form of $(attribute <resource-ref> <attribute-name>) will be returned instead.
+         * 
+         * @return The value or value reference.
+         */
         public String getValue( Template template ) throws Exception {
+        	if(value != null){
+        		return value;
+        	}
             return "$(attribute " + resourceParameter.getValue( template ) + " " + attribute + ")";
         }
     }

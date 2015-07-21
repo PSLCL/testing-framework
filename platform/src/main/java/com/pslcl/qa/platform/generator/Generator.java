@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.pslcl.qa.platform.Hash;
+import com.pslcl.qa.platform.generator.Template.Parameter;
 
 public class Generator {
     static boolean trace = false;
@@ -36,6 +37,11 @@ public class Generator {
      * The primary key of the test that the generator will generate instances of.
      */
     private long pk_test;
+    
+    /**
+     * Maps parameter references to parameters.
+     */
+    private Map<String, Parameter> parameterReferenceMap;
 
     /**
      * Create a generator, which in turn can be used to generate test instances.
@@ -54,6 +60,12 @@ public class Generator {
      */
     Artifact declareArtifact() {
         return null;
+    }
+    
+    void addParameterReference(String uuid, Parameter parameter) throws IllegalStateException{
+    	if(parameterReferenceMap == null) throw new IllegalStateException("Test has not been started.");
+    			
+    	parameterReferenceMap.put(uuid, parameter);
     }
 
     /**
@@ -145,7 +157,8 @@ public class Generator {
             System.err.println( "ERROR: A test has already been started, and not yet completed." );
             return;
         }
-
+        
+        parameterReferenceMap = new HashMap<String, Parameter>();        
         activeTestInstance = new TestInstance( core );
     }
 
@@ -176,6 +189,8 @@ public class Generator {
         activeTestInstance.close();
         allTestInstances.add( activeTestInstance );
         activeTestInstance = null;
+        parameterReferenceMap.clear();
+        parameterReferenceMap = null;
     }
 
     private void dumpTestInstances() {
