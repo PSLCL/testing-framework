@@ -11,12 +11,12 @@ public class ReservedResourceWithAttributes extends ResourceWithAttributes {
 	private int timeoutSeconds;
 
 	public ReservedResourceWithAttributes(ResourceWithAttributes resourceWithAttributes, int timeoutSeconds) {
-		super(resourceWithAttributes.getHash(), resourceWithAttributes.getAttributes());
+		super(resourceWithAttributes.getHash(), resourceWithAttributes.getAttributes(), resourceWithAttributes.getReference());
 		this.timeoutSeconds = timeoutSeconds;
 	}
 
-	public ReservedResourceWithAttributes(String hash, Map<String, String> attributes, int timeoutSeconds) {
-		super(hash, attributes);
+	public ReservedResourceWithAttributes(String hash, Map<String, String> attributes, int timeoutSeconds, int reference) {
+		super(hash, attributes, reference);
 		this.timeoutSeconds = timeoutSeconds;
 	}
 	

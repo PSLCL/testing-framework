@@ -48,4 +48,10 @@ public class AWSMachineInstance implements MachineInstance {
 		return false;
 	}
 
+	@Override
+	public int getReference() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 }

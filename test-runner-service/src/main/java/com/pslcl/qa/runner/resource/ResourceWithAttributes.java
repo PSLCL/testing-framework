@@ -8,10 +8,20 @@ import java.util.Map;
 public class ResourceWithAttributes {
 	private String hash;
 	private Map<String, String> attributes;
+	private int reference;
 	
-	public ResourceWithAttributes(String hash, Map<String, String> attributes){
+	/**
+	 * Construct a ResourceWithAttributes object.
+	 * 
+	 * @param hash A hash string uniquely identifying the desired resource.
+	 * @param attributes A map of required attribute values.
+	 * @param reference A reference which may identify a specific ResourceInstance. In the context of a Template, this reference may be 
+	 * the line number on which the resource is bound.
+	 */
+	public ResourceWithAttributes(String hash, Map<String, String> attributes, int reference){
 		this.hash = hash;
 		this.attributes = attributes;
+		this.reference = reference;
 	}
 	
 	/**
@@ -28,6 +38,15 @@ public class ResourceWithAttributes {
 	 */
 	public Map<String, String> getAttributes(){
 		return attributes;
+	}
+	
+	/**
+	 * 
+	 * @returns A reference which may identify a specific ResourceInstance. In the context of a Template, this reference may be 
+	 * the line number on which the resource is bound.
+	 */
+	public int getReference(){
+		return reference;
 	}
 
 }

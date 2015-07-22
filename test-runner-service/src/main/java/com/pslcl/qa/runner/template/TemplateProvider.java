@@ -73,7 +73,7 @@ public class TemplateProvider {
                 for (int reference=0; reference<reservedResources.size(); reference++) {
                     // REVIEW: no need to .add with specified index?
                     // TODO: add reference to ResourceWithAttributes constructor
-                    bindableResources.add(reference, new ResourceWithAttributes(reservedResources.get(reference).getHash(), reservedResources.get(reference).getAttributes()));
+                    bindableResources.add(reference, new ResourceWithAttributes(reservedResources.get(reference).getHash(), reservedResources.get(reference).getAttributes(), reference));
                 }
                 List<ResourceInstance> resourceInstances = rp.bind(bindableResources);
                 

@@ -156,7 +156,7 @@ public class StepsParser {
 //                }
 
                 // TODO: Put bindReference into constructor
-                ResourceWithAttributes ra = new ResourceWithAttributes(resourceHash, StepsParser.getAttributeMap(strResourceAttributes));
+                ResourceWithAttributes ra = new ResourceWithAttributes(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
                 retList.add(bindReference, ra);
             }
         }

@@ -19,4 +19,13 @@ public interface ResourceInstance {
 	 */
 	String getDescription();
 	
+	/**
+	 * A reference matching this ResourceInstance with a specific {@link ResourceWithAttributes} request. 
+	 * 
+	 * @return The resource reference.
+	 * 
+	 * @see ResourceWithAttributes#getReference()
+	 */
+	int getReference();
+	
 }
