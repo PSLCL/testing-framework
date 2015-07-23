@@ -15,11 +15,10 @@ public class StepsParser {
     }
     
     /**
-     * Next substring ends at char before space char, or at last char.
+     * Get the next substring, which end at the char before next space char, or at last char of the full Step String.
      * 
-     * @note
-     * @param step
-     * @param offset
+     * @param step The full String being parsed.
+     * @param offset Begin point of the step String; a negative offset eliminates processing. 
      * @return null for negative offset
      */
     public static String getNextSpaceTerminatedSubString(String step, int offset) {
@@ -138,7 +137,7 @@ public class StepsParser {
             String bindStep = bindList.get(bindReference);
             System.out.println("StepsParser.computeResourceQuery() finds bind step " + bindReference + ": " + bindStep);
             int offset = 0;
-            String bindText = StepsParser.getNextSpaceTerminatedSubString(bindStep, offset); // get past "bind "
+            String bindText = StepsParser.getNextSpaceTerminatedSubString(bindStep, offset); // get past "bind " substring
             offset += (bindText.length() + 1);
             String resourceHash = StepsParser.getNextSpaceTerminatedSubString(bindStep, offset);
             if (resourceHash != null) {
@@ -155,9 +154,8 @@ public class StepsParser {
 //                        offset = -1; // done
 //                }
 
-                // TODO: Put bindReference into constructor
                 ResourceWithAttributes ra = new ResourceWithAttributes(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
-                retList.add(bindReference, ra);
+                retList.add(ra); // or retList.add(i, ra);
             }
         }
         return retList;

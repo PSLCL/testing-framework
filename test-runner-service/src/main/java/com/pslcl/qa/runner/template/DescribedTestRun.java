@@ -20,7 +20,7 @@ public class DescribedTestRun {
      * 
      */
     public void init() {
-        InstancedTemplate it = tp.get(dbDescribedTemplate);
+        InstancedTemplate it = tp.getInstancedTemplate(dbDescribedTemplate);
 
         
         

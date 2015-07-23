@@ -1,5 +1,6 @@
 package com.pslcl.qa.runner.resource;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ResourceProviderImpl implements ResourceProvider {
@@ -19,8 +20,16 @@ public class ResourceProviderImpl implements ResourceProvider {
 
     @Override
     public List<ResourceInstance> bind(List<ResourceWithAttributes> resources) {
-        // TODO Auto-generated method stub
-        return null;
+        List<ResourceInstance> retRi = new ArrayList<>();
+        for(int i=0; i<resources.size(); i++) {
+            try {
+                retRi.add(this.bind(resources.get(i)));
+            } catch (ResourceNotFoundException e) {
+                retRi.add(null);
+                System.out.println("ResourceProviderImpl.bind(List<> resources) stores null entry");
+            }
+        }
+        return retRi;
     }
 
     @Override
