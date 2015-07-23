@@ -55,7 +55,7 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public List<ResourceInstance> bind(List<ResourceWithAttributes> resources) {
+	public List<MachineInstance> bind(List<? extends ResourceWithAttributes> resources) {
 		// TODO Auto-generated method stub
 		return null;
 	}

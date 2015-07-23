@@ -27,7 +27,7 @@ public interface ResourceProvider {
      * @param resource A resource with attributes.
      * @return Resource object which represents the Resource Instance.
      */
-    public ResourceInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException;
+    public ResourceInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException, ResourceNotAvailableException;
 
     /** 
      * Acquire a list of resources. Available resources will be bound and a list containing the resulting ResourceInstance objects will be
@@ -38,7 +38,7 @@ public interface ResourceProvider {
      * @param resources A list of resources with attributes.
      * @return A list of ResourceInstance objects which each represent a Resource Instance.
      */
-    public List<ResourceInstance> bind( List<ResourceWithAttributes> resources);
+    public List<? extends ResourceInstance> bind( List<? extends ResourceWithAttributes> resources);
     
     /**
      * Release a bound resource instance. Any bound resources must be released.

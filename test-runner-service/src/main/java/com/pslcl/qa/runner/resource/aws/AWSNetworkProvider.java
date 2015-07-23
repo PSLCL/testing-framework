@@ -25,7 +25,7 @@ public class AWSNetworkProvider implements NetworkProvider {
 	}
 
 	@Override
-	public List<ResourceInstance> bind(List<ResourceWithAttributes> resources) {
+	public List<NetworkInstance> bind(List<? extends ResourceWithAttributes> resources) {
 		// TODO Auto-generated method stub
 		return null;
 	}

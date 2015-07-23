@@ -45,7 +45,7 @@ public class AWSPersonProvider implements PersonProvider {
 	}
 
 	@Override
-	public List<ResourceInstance> bind(List<ResourceWithAttributes> resources) {
+	public List<PersonInstance> bind(List<? extends ResourceWithAttributes> resources) {
 		// TODO Auto-generated method stub
 		return null;
 	}

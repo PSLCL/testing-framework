@@ -75,7 +75,7 @@ public class TemplateProvider {
                     List<ResourceWithAttributes> bindableResources = new ArrayList<>(); // this new list will also not be in order
                     for (int i=0; i<reservedResources.size(); i++)
                         bindableResources.add(new ResourceWithAttributes(reservedResources.get(i).getHash(), reservedResources.get(i).getAttributes(), reservedResources.get(i).getReference()));
-                    List<ResourceInstance> resourceInstances = rp.bind(bindableResources); // each element of returned list has its stepReference stored
+                    List<? extends ResourceInstance> resourceInstances = rp.bind(bindableResources); // each element of returned list has its stepReference stored
 
                     // TODO: analyze the success/failure of each ResourceInstance
                     

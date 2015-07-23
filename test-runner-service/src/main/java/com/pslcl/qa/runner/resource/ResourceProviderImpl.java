@@ -19,7 +19,7 @@ public class ResourceProviderImpl implements ResourceProvider {
     }
 
     @Override
-    public List<ResourceInstance> bind(List<ResourceWithAttributes> resources) {
+    public List<? extends ResourceInstance> bind(List<? extends ResourceWithAttributes> resources) {
         List<ResourceInstance> retRi = new ArrayList<>();
         for(int i=0; i<resources.size(); i++) {
             try {

@@ -1,5 +1,7 @@
 package com.pslcl.qa.runner.resource;
 
+import java.util.List;
+
 
 
 /**
@@ -18,5 +20,17 @@ public interface MachineProvider extends ResourceProvider, ArtifactConsumer {
      * @see ResourceProvider
      */
 	@Override
-	public MachineInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException;
+	public MachineInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException, ResourceNotAvailableException;
+	
+	/** 
+     * Acquire a list of machines. Available machines will be bound and a list containing the resulting {@link MachineInstance} objects will be
+     * returned. Machines not currently available should be requested later. 
+     * 
+     * The resources must be released once they are no longer needed.
+     *
+     * @param resources A list of resources with attributes.
+     * @return A list of {@link MachineInstance} objects which each represent a Machine Instance.
+     */
+	@Override
+	public List<MachineInstance> bind(List<? extends ResourceWithAttributes> resources);
 }
