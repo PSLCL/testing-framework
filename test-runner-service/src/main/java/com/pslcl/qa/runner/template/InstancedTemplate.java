@@ -11,10 +11,19 @@ import com.pslcl.qa.runner.resource.ResourceInstance;
  */
 public class InstancedTemplate {
 
-    //private SortedSet ss;
-    private final List<ResourceInstance> refToResource; // can use references.set(idx, String);
+    private List<OrderedResourceInfo> orderedResourceInfos = null;
+    
+    private final List<ResourceInstance> refToResource; // contains step reference number 
     
     InstancedTemplate() {
         refToResource = new ArrayList<ResourceInstance>();
+    }
+    
+    public void setOrderedResourceInfos(List<OrderedResourceInfo> orderedResourceInfos) {
+        this.orderedResourceInfos = orderedResourceInfos;
+    }
+    
+    public OrderedResourceInfo getOrderedResourceInfo(int stepReference) {
+        return (orderedResourceInfos != null) ? orderedResourceInfos.get(stepReference) : null;
     }
 }

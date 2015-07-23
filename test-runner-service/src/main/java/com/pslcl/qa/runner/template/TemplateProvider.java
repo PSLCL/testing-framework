@@ -55,43 +55,43 @@ public class TemplateProvider {
                 List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list not in order, but each element of returned list has its stepReference stored
                 
                 if (reservedResources!=null) {
-                    System.out.println("TemplateProvider.get() finds " + reservedResources.size() + " successful reserve-resource bind requests, now reserved");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource bind requests, now reserved");
                 }
 
                 List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list not in order
                 if (invalidResources!=null && !invalidResources.isEmpty()) {
                     allReserved = false;
-                    System.out.println("TemplateProvider.get() finds " + invalidResources.size() + " invalid resource bind requests");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + invalidResources.size() + " invalid resource bind requests");
                 }
 
                 List<ResourceWithAttributes> unavailableResources = rqr.getUnavailableResources(); // list not in order
                 if (unavailableResources!=null && !unavailableResources.isEmpty()) {
                     allReserved = false;
-                    System.out.println("TemplateProvider.get() finds " + unavailableResources.size() + " unavailable resource bind requests");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + unavailableResources.size() + " unavailable resource bind requests");
                 }
                 
                 if (allReserved) {
-                    // Bind all resources of reservedResources by first converting List<ReservedResourceWithAttributes> to List<ResourceWithAttributes> 
-                    List<ResourceWithAttributes> bindableResources = new ArrayList<>(); // this new list will also not be in order
-                    for (int i=0; i<reservedResources.size(); i++)
-                        bindableResources.add(new ResourceWithAttributes(reservedResources.get(i).getHash(), reservedResources.get(i).getAttributes(), reservedResources.get(i).getReference()));
-                    List<? extends ResourceInstance> resourceInstances = rp.bind(bindableResources); // each element of returned list has its stepReference stored
+                    // Bind all resources of reservedResources 
+                    List<? extends ResourceInstance> resourceInstances = rp.bind(reservedResources); // each element of returned list has its stepReference stored
 
                     // TODO: analyze the success/failure of each ResourceInstance
                     
                     // form ordered list for local use, by stepReference
-                    OrderedResourceInstance ori;
-                    List<OrderedResourceInstance> orderedResourceInstances = new ArrayList<>();
+                    OrderedResourceInfo orderedResourceInfo;
+                    List<OrderedResourceInfo> orderedResourceInfos = new ArrayList<>();
                     for (int i=0; i<resourceInstances.size(); i++) {
-                        ori = new OrderedResourceInstance(resourceInstances.get(i));
-                        orderedResourceInstances.add(ori);
+                        orderedResourceInfo = new OrderedResourceInfo(resourceInstances.get(i));
+                        orderedResourceInfos.add(orderedResourceInfo);
                     }
-                    Collections.sort(orderedResourceInstances);
+                    Collections.sort(orderedResourceInfos);
+                    System.out.println("TemplateProvider.getInstancedTemplate() has orderedResourceInfos of size " + orderedResourceInfos);
                     
-                    // TODO: set iT with gathered info and instantiations and similar
+                    iT.setOrderedResourceInfos(orderedResourceInfos);
+                    
+                    // TODO: set iT with more more additional gathered info and instantiations and similar
                 }
             } else {
-                System.out.println("TemplateProvider.get() finds null ResourceQueryRequest");
+                System.out.println("TemplateProvider.getInstancedTemplate() finds null ResourceQueryRequest");
             }
             
             // parse steps after bind
@@ -110,7 +110,7 @@ public class TemplateProvider {
                     switch (spaceTermSubString) {
                     case "include":
                         // templateHash
-                        System.out.println("TemplateProvider.get() finds include as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds include as reference " + stepsReference);
                         String templateHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
                         // we do not further extract from step
                         if (templateHash != null) {
@@ -121,13 +121,14 @@ public class TemplateProvider {
                         
                         if (templateHash != null) {
 
-                            // TODO: set iT with gathered info and instantiations and similar
-                            
+                            // TODO: set iT with more gathered info and instantiations and similar
+                        } else {
+                            System.out.println("TemplateProvider.getInstancedTemplate() finds include to be incompletely specified");
                         }
                         break;
                     case "deploy":
                         // machineRef ArtifactInfo (strComponentName strArtifactName strArtifactHash)
-                        System.out.println("TemplateProvider.get() finds deploy as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds deploy as reference " + stepsReference);
                         String strComponentName = null;
                         String strArtifactName = null;
                         String strArtifactHash = null;
@@ -156,20 +157,35 @@ public class TemplateProvider {
 //                                        offset += strArtifactHash.length();
 //                                        if (++offset > step.length())
 //                                            offset = -1; // done
-//                                }
+//                                    }
                                 }
                             }
                         }
                           
                         if (strComponentName != null && strArtifactName != null && strArtifactHash != null) {
-
-                            // TODO: set iT with gathered info and instantiations and similar
-
+                            ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
+                            int stepRef = Integer.parseInt(machineRef);
+                            OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
+                            boolean success = false;
+                            if (orderedResourceInfo != null) {
+                                orderedResourceInfo.setArtifactInfo(artifactInfo);
+                            
+                                // TODO: Call higher level api to deploy the artifact to the machine
+                            
+                                // TODO: set iT with more gathered info and instantiations and similar
+                            
+                                success = true;
+                                System.out.println("TemplateProvider.getInstancedTemplate() deploys to bound resource " + stepRef + ": artifactInfo: " + strComponentName + " " + strArtifactName + " " + strArtifactHash);
+                            }
+                            if (!success)
+                                System.out.println("TemplateProvider.getInstancedTemplate() deploy fails to bound resource " + stepRef);
+                        } else {
+                            System.out.println("TemplateProvider.getInstancedTemplate() finds deploy to be incompletely specified");
                         }
                         break;                    
                     case "inspect":
                         // machineRef strInstructionsArtifactHash ArtifactInfo (strComponentName strArtifactName strArtifactHash)
-                        System.out.println("TemplateProvider.get() finds inspect as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds inspect as reference " + stepsReference);
                         String strInstructionsArtifactHash = null;
                         strComponentName = null;
                         strArtifactName = null;
@@ -213,14 +229,16 @@ public class TemplateProvider {
                         }
                             
                         if (strInstructionsArtifactHash != null & strComponentName != null && strArtifactName != null && strArtifactHash != null) {
+                            ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
 
-                            // TODO: set iT with gathered info and instantiations and similar
-
+                            // TODO: set iT with more gathered info and instantiations and similar
+                        } else {
+                            System.out.println("TemplateProvider.getInstancedTemplate() finds inspect to be incompletely specified");
                         }
                         break;
                     case "connect":
                         // machineRef strNetwork
-                        System.out.println("TemplateProvider.get() finds connect as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds connect as reference " + stepsReference);
                         String strNetwork = null;
                         machineRef = StepsParser.getNextSpaceTerminatedSubString(step, offset);
                         if (machineRef != null) {
@@ -239,23 +257,24 @@ public class TemplateProvider {
                             
                         if (strNetwork != null) {
 
-                            // TODO: set iT with gathered info and instantiations and similar
-
+                            // TODO: set iT with more gathered info and instantiations and similar
+                        } else {
+                            System.out.println("TemplateProvider.getInstancedTemplate() finds connect to be incompletely specified");
                         }
                         break;                    
                     case "configure":
                         // 
-                        System.out.println("TemplateProvider.get() finds configure as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds configure as reference " + stepsReference);
                         break;
                     case "start":
                         // 
-                        System.out.println("TemplateProvider.get() finds start as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds start as reference " + stepsReference);
                         break;
                     case "run":
                         // machineRef ArtifactInfo (strComponentName strArtifactName strArtifactHash) strOptions
-                        System.out.println("TemplateProvider.get() finds run as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds run as reference " + stepsReference);
       
-                        // This comes in - it is missing some spaces - this is bug 7066 under app-test-platform
+                        // This os what actually comes in - it is missing some spaces - this is bug 7066 under app-test-platform
 //                      run[]0emit-oal-java bin%2FOperationsTest 562A789B9E66E0051F3DF3741985A0AFF67687C26DDC0EC93E774AA8FF6ADDEE-providerMode
                         // is this intended?
 //                      run 0 emit-oal-java bin%2FOperationsTest 562A789B9E66E0051F3DF3741985A0AFF67687C26DDC0EC93E774AA8FF6ADDEE -providerMode
@@ -313,22 +332,25 @@ public class TemplateProvider {
                             
                         if (strComponentName != null && strArtifactName != null && strArtifactHash != null) {
                             // strOptions is available; it may be null
+                            ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
                             
-                            // TODO: set iT with gathered info and instantiations and similar
+                            // TODO: set iT with more gathered info and instantiations and similar
                             
+                        } else {
+                            System.out.println("TemplateProvider.getInstancedTemplate() finds run to be incompletely specified");
                         }
                         break;
                     case "run-forever":
-                        System.out.println("TemplateProvider.get() finds run-forever as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds run-forever as reference " + stepsReference);
                         break;
                     default:
-                        System.out.println("TemplateProvider.get() finds something unexpected: " + spaceTermSubString + " as reference " + stepsReference);
+                        System.out.println("TemplateProvider.getInstancedTemplate() finds something unexpected: " + spaceTermSubString + " as reference " + stepsReference);
                         break;
                         
                     // bind steps handled above our while(loop)
 //                    case "bind":
 //                        // resourceHash resourceAttributes
-//                        System.out.println("TemplateProvider.get() finds bind");
+//                        System.out.println("TemplateProvider.getInstancedTemplate() finds bind");
 //                        String strResourceAttributes = null;
 //                        String resourceHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
 //                        if (resourceHash != null) {
