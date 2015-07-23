@@ -5,6 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import com.pslcl.qa.runner.RunnerService;
+import com.pslcl.qa.runner.template.TemplateProvider;
 
 
 /**
@@ -17,6 +18,8 @@ public class RunnerMachine {
 
     final RunnerService runnerService;
     final ExecutorService templateExecutorService; // supplies threads for individual template tasks
+    public final TemplateProvider tp;
+
 
     
     // sub classes
@@ -43,6 +46,7 @@ public class RunnerMachine {
     public RunnerMachine(RunnerService runnerService) {
         this.runnerService = runnerService;
         templateExecutorService = Executors.newCachedThreadPool(new DescribedTemplateThreadFactory());
+        tp = new TemplateProvider();
     }
     
     /**
@@ -56,7 +60,7 @@ public class RunnerMachine {
         try {
             DescribedTemplateState dtState = new DescribedTemplateState(dtNum, message);
             Action action = dtState.getAction();  // Action.INITIALIZE_INSTANCE
-            Action nextAction = action.act(dtState, null, runnerService);            
+            Action nextAction = action.act(dtState, null, this.tp, runnerService);            
             // for anything returned except ACTION.DISCARDED: the new dtState is stored in ActionStore
         } catch (Exception e) {
             System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling dtNum " + dtNum + ": " + e + ". Message remains in the QueueStore.");

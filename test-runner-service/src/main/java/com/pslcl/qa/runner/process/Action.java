@@ -1,6 +1,7 @@
 package com.pslcl.qa.runner.process;
 
 import com.pslcl.qa.runner.RunnerService;
+import com.pslcl.qa.runner.template.TemplateProvider;
 
 /**
  * 
@@ -20,7 +21,7 @@ public enum Action implements Actions {
 //    },
 
     INITIALIZE {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, TemplateProvider tp, RunnerService runnerService) {
             long dtNum = dtState.getDescribedTemplateNumber();
 
             Action retAction = dtState.getAction();
@@ -38,7 +39,7 @@ public enum Action implements Actions {
     },
     
     ANALYZE {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, TemplateProvider tp, RunnerService runnerService) {
             long dtNum = dtState.getDescribedTemplateNumber();
             
             // TODO. Determine a priority
@@ -50,9 +51,9 @@ public enum Action implements Actions {
     },
     
     DO {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, TemplateProvider tp,RunnerService runnerService) {
             long dtNum = dtState.getDescribedTemplateNumber();
-            dtCore.processDescribedTemplate(dtNum, dtCore);
+            dtCore.processDescribedTemplate(dtNum, dtCore, tp);
             dtState.setAction(REMOVE);
             return dtState.getAction();
         }
@@ -61,7 +62,7 @@ public enum Action implements Actions {
 //  STORE_RESULT,
     
     REMOVE {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, TemplateProvider tp, RunnerService runnerService) {
             long dtNum = dtState.getDescribedTemplateNumber();
             runnerService.actionStore.remove(dtNum);
             dtState.setAction(DISCARDED);
@@ -71,13 +72,13 @@ public enum Action implements Actions {
 
     // if called, remove tState from actionStore; try to code in a way that "DISCARDED" is never called
     DISCARDED {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
+        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, TemplateProvider tp, RunnerService runnerService) {
             long dtNum = dtState.getDescribedTemplateNumber();
             runnerService.actionStore.remove(dtNum);
             return dtState.getAction();
         }
     };
 
-    abstract Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService);
+    abstract Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, TemplateProvider tp, RunnerService runnerService);
     
 }

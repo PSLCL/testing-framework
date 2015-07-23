@@ -9,11 +9,11 @@ import com.pslcl.qa.runner.process.DBDescribedTemplate;
 public class DescribedTestRun {
 
     private DBDescribedTemplate dbDescribedTemplate;
-    private TemplateProvider tp; // TODO: make this available at a higher level
+    private TemplateProvider tp;
 
-    public DescribedTestRun(DBDescribedTemplate dbDescribedTemplate) {
+    public DescribedTestRun(DBDescribedTemplate dbDescribedTemplate, TemplateProvider tp) {
         this.dbDescribedTemplate = dbDescribedTemplate;
-        tp = new TemplateProvider();
+        this.tp = tp;
     }
     
     /**

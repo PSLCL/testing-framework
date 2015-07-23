@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import com.pslcl.qa.runner.template.DescribedTestRun;
+import com.pslcl.qa.runner.template.TemplateProvider;
 
 public class DescribedTemplateCore {
 
@@ -569,7 +570,7 @@ public class DescribedTemplateCore {
      * From a given described template number, process the described template to form a test run.
      * @param dtCore TODO
      */
-    public void processDescribedTemplate(long describedTemplateNumber, DescribedTemplateCore dtCore) {
+    public void processDescribedTemplate(long describedTemplateNumber, DescribedTemplateCore dtCore, TemplateProvider tp) {
         // We are an independent process. We have access
         //   to a Resource Manager that has access to artifacts and resources,
         //   and to everything else needed to cause our test instance to be executed.
@@ -633,7 +634,7 @@ public class DescribedTemplateCore {
         if (dbDescribedTemplate.enabled) {
             if (dbDescribedTemplate.template_hash != null && dbDescribedTemplate.steps != null) {
                 System.out.println("processDescribedTemplate() finds enabled described template of hash " + dbDescribedTemplate.template_hash + ", with steps\n");
-                DescribedTestRun dtr = new DescribedTestRun(dbDescribedTemplate);
+                DescribedTestRun dtr = new DescribedTestRun(dbDescribedTemplate, tp);
                 dtr.init();
             } else {
                 System.out.println("processDescribedTemplate() finds enabled described template with unexpected null for hash, or steps, or both");

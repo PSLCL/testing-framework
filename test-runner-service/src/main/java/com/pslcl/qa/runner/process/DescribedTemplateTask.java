@@ -41,9 +41,9 @@ public class DescribedTemplateTask implements Runnable {
         System.out.println( "InstanceTask.run() opens instance number " + dtNum);
         
         while(true) {
-            DescribedTemplateState iState = runnerMachine.runnerService.actionStore.get(dtNum);
-            Action action = iState.getAction();
-            Action nextAction = action.act(iState, tCore, runnerMachine.runnerService);
+            DescribedTemplateState dtState = runnerMachine.runnerService.actionStore.get(dtNum);
+            Action action = dtState.getAction();
+            Action nextAction = action.act(dtState, tCore, runnerMachine.tp, runnerMachine.runnerService);
             System.out.println("InstanceTask.run() ran Action " + action.toString() + " for instance number " + dtNum + ", finds next action to be " + nextAction.toString());
             if (nextAction == Action.DISCARDED)
                 break;

@@ -178,7 +178,7 @@ public class TemplateProvider {
                                 System.out.println("TemplateProvider.getInstancedTemplate() deploys to bound resource " + stepRef + ": artifactInfo: " + strComponentName + " " + strArtifactName + " " + strArtifactHash);
                             }
                             if (!success)
-                                System.out.println("TemplateProvider.getInstancedTemplate() deploy fails to bound resource " + stepRef);
+                                System.out.println("TemplateProvider.getInstancedTemplate() fails to deploy to bound resource " + stepRef);
                         } else {
                             System.out.println("TemplateProvider.getInstancedTemplate() finds deploy to be incompletely specified");
                         }
