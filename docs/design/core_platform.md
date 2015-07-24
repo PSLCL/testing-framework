@@ -19,7 +19,7 @@ are automatically prioritized over other commands which require use of the bound
 
 A Developer requests that artifacts be deployed to a [Machine Resource](resources.md) by issuing a 
 [Deploy command](template_commands.md). When the [Test Templates](templates.md) are generated, 
-[deploy commands](template_commands.md)) are automatically prioritized over other commands which require use of the 
+[deploy commands](template_commands.md) are automatically prioritized over other commands which require use of the 
 deployed [artifact](artifacts.md).
 
 ###A Developer [Connects](template_commands.md) a [Machine](resources.md) to a [Network](resources.md)
