@@ -9,10 +9,10 @@
 
 A User synchronizes the local [artifact](artifacts.md) cache with an [Artifact Provider](artifact_providers.md).
 
-###A User executes known [Test Generators](dtfexec.md)
+###A User executes known [Test Generators](test_generators.md)
 
-A User obtains a list of [Test Generators](test_generators.md) from the 
-[Artifact Provider](artifact_providers.md)
+A User specifies that [Test Generators](test_generators.md) known by the [Artifact Provider](artifact_providers.md) 
+should be executed.
 
 ###A User Runs a Test
 
@@ -21,8 +21,8 @@ queue.
 
 ###A User Runs Prioritized Tests
 
-A User specifies that a number of unspecified high priority tests should be run. The Core 
-Platform queries the database in order to determine the highest priority tests and adds them to the test queue.
+A User specifies that a number of unspecified high priority tests should be run. The [Core Platform](core_platform.md) queries 
+the database in order to determine the highest priority tests and adds them to the test queue.
 
 ###A User Queries the Status of a Test Run
 
