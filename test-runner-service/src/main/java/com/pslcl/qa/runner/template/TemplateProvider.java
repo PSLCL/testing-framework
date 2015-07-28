@@ -52,12 +52,6 @@ public class TemplateProvider {
             ResourceQueryResult rqr = rp.reserveIfAvailable(resources, 360);
             if (rqr != null) {
                 // analyze the success/failure of each reserved resource, one for each bind step
-                List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list not in order, but each element of returned list has its stepReference stored
-                
-                if (reservedResources!=null) {
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource bind requests, now reserved");
-                }
-
                 List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list not in order
                 if (invalidResources!=null && !invalidResources.isEmpty()) {
                     allReserved = false;
@@ -69,9 +63,15 @@ public class TemplateProvider {
                     allReserved = false;
                     System.out.println("TemplateProvider.getInstancedTemplate() finds " + unavailableResources.size() + " unavailable resource bind requests");
                 }
+
+                List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list not in order, but each element of returned list has its stepReference stored
+                // TODO: need ReservedResourceWithAttributes to hold the ResourceProvider impl that actually reserved the resource
+                if (reservedResources!=null) {
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource bind requests, now reserved");
+                }
                 
                 if (allReserved) {
-                    // Bind all resources of reservedResources 
+                    // Bind all resources of reservedResources
                     List<? extends ResourceInstance> resourceInstances = rp.bind(reservedResources); // each element of returned list has its stepReference stored
 
                     // TODO: analyze the success/failure of each ResourceInstance
@@ -89,6 +89,8 @@ public class TemplateProvider {
                     iT.setOrderedResourceInfos(orderedResourceInfos);
                     
                     // TODO: set iT with more more additional gathered info and instantiations and similar
+                } else {
+                    // TODO: deal with this failure to reserve some of the resources
                 }
             } else {
                 System.out.println("TemplateProvider.getInstancedTemplate() finds null ResourceQueryRequest");

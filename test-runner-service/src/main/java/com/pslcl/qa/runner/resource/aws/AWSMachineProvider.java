@@ -2,6 +2,7 @@ package com.pslcl.qa.runner.resource.aws;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2Client;
@@ -93,5 +94,23 @@ public class AWSMachineProvider implements MachineProvider {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+    @Override
+    public List<String> getHashes() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Map<String, String> getAttributes(String hash) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getDescription(String hash) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }

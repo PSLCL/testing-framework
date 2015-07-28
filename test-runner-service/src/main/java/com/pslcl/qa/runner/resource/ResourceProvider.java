@@ -82,4 +82,29 @@ public interface ResourceProvider {
      * @return The {@link ResourceQueryResult} listing the resources which were able to be reserved.
      */
     public ResourceQueryResult reserveIfAvailable( List<ResourceWithAttributes> resources, int timeoutSeconds );
+    
+    /**
+     * Get the hashes of the resource provider.
+     * These hashes identify supported resource types.
+     * @note Intent is that this information is not required by users, and is offered for possible optimization.
+     * @return A list of hex strings, each representing one hash of the resource.
+     */
+    List<String> getHashes();
+
+    /**
+     * Get the map of attributes supported by the resource provider, for the given hash.
+     * @param hash The hash for the attributes.
+     * @note Intent is that this information is not required by users, and is offered for possible optimization.
+     * @return The map of attributes.
+     */
+    public Map<String, String> getAttributes(String hash);
+
+    /**
+     * Get the description of the resource provider, for the given hash..
+     * @param hash The hash for the description.
+     * @note Intent is that this information is not required by users, and is offered for possible optimization.
+     * @return The description.
+     */
+    String getDescription(String hash);
+    
 }
