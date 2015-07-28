@@ -29,10 +29,25 @@ public class ResourceProviderImpl implements ResourceProvider {
         // note: param resourceWithAttributes is potentially a ReservedResourceWithAttributes, indicating to the target resource provider that it has already reserved this resource
         // subnote: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         System.out.println("ResourceProviderImpl.bind() called with resourceHash/resourceAttributes: " + resourceWithAttributes.getHash() + " / " + resourceWithAttributes.getAttributes());
+        
+        if (ReservedResourceWithAttributes.class.isInstance(resourceWithAttributes)) {
+            // preferred path- call resource provider directly- it reserved the resource and will directly bind it
+            ReservedResourceWithAttributes reservedResourceWithAttributes = ReservedResourceWithAttributes.class.cast(resourceWithAttributes);
+          //reservedResourceWithAttributes.`ReservedResourceWithAttributes reservedResourceWithAttributes = (ReservedResourceWithAttributes)resourceWithAttributes;
+            try {
+                reservedResourceWithAttributes.getResourceProvider().bind(resourceWithAttributes);
+            } catch (ResourceNotAvailableException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        } else {
+            // attempt bind from scratch- if the proper provider is not known, this needs to call "all the resource providers" to find out which one can perform the bind of param resourceWithAttributes
+            
+            // TODO: as necessary, optimize by taking advantage of knowledge of each resource provider's hash and attributes. 
 
-        // Identify that instance of ResourceProvider that responds to a bind call with the given ResourceWithAttributes and returns a bound resource.
-        //       Note that this final call must fill not only the return ResourceInstance with something like a MachineImpl or a PersonImpl, but it must fill reference, which comes from param resourceWithAttributes
-        // TODO: as necessary, optimize by taking advantage of knowledge of each resource provider's hash and attributes. 
+        }
+
+        // Note that this actual bind call  must fill not only the return ResourceInstance with something like a MachineImpl or a PersonImpl, but it must fill reference, which comes from param resourceWithAttributes
         
         return null;
     }

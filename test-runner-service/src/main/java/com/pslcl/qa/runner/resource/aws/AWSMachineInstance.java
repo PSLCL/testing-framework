@@ -1,8 +1,11 @@
 package com.pslcl.qa.runner.resource.aws;
 
+import java.util.Map;
+
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.ResourceProvider;
 
 public class AWSMachineInstance implements MachineInstance {
 
@@ -12,11 +15,23 @@ public class AWSMachineInstance implements MachineInstance {
 		return null;
 	}
 
+    @Override
+    public Map<String, String> getAttributes() {
+        // TODO Auto-generated method stub
+        return null;
+    }	
+	
 	@Override
 	public String getDescription() {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+    @Override
+    public ResourceProvider getResourceProvider() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 	@Override
 	public void deploy(String componentName, String artifactName,
