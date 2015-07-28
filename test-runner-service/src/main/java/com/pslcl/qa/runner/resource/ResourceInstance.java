@@ -1,45 +1,27 @@
 package com.pslcl.qa.runner.resource;
 
-import java.util.Map;
-
 
 /**
  * Represents a Resource Instance.
  */
-public interface ResourceInstance {
+public interface ResourceInstance extends ResourceWithAttributes {
 
 	/**
-	 * Get the hash of this resource.
-	 * 
-	 * @return A hex string representing the hash of the resource.
-	 */
-	String getHash();
+     * Get the description of the resource.
+     * @return the description of the resource.
+     */
+    String getDescription();
 	
     /**
-     * Get the map of attributes supported by the resource provider.
-     * @return The map of attributes.
-     */
-    public Map<String, String> getAttributes();
-	
-	/**
-	 * Get the description of this resource.
-	 * @return the description of the resource.
-	 */
-	String getDescription();
-	
-	/**
      * Get the ResourceProvider that bound the resource.
-     * @return the ResourceProvider
+     * @return the ResourceProvider.
      */
-    public ResourceProvider getResourceProvider();
+    ResourceProvider getResourceProvider();
     
-	/**
-	 * A reference matching this ResourceInstance with a specific {@link ResourceWithAttributes} request. 
-	 * 
-	 * @return The resource reference.
-	 * 
-	 * @see ResourceWithAttributes#getReference()
-	 */
-	int getReference();
-	
+    /**
+     * Get the number of seconds for which this resource may be bound, measured from now.
+     * @return The number of seconds.
+     */
+    int getTimeoutSeconds();
+
 }

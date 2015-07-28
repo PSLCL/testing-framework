@@ -32,7 +32,13 @@ public class AWSMachineInstance implements MachineInstance {
         // TODO Auto-generated method stub
         return null;
     }
-
+    
+    @Override
+    public int getTimeoutSeconds() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+    
 	@Override
 	public void deploy(String componentName, String artifactName,
 			String artifactHash) throws ResourceNotFoundException,

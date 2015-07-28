@@ -52,20 +52,19 @@ public class TemplateProvider {
             ResourceQueryResult rqr = rp.reserveIfAvailable(resources, 360);
             if (rqr != null) {
                 // analyze the success/failure of each reserved resource, one for each bind step
-                List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list not in order
+                List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list is not in order
                 if (invalidResources!=null && !invalidResources.isEmpty()) {
                     allReserved = false;
                     System.out.println("TemplateProvider.getInstancedTemplate() finds " + invalidResources.size() + " invalid resource bind requests");
                 }
 
-                List<ResourceWithAttributes> unavailableResources = rqr.getUnavailableResources(); // list not in order
+                List<ResourceWithAttributes> unavailableResources = rqr.getUnavailableResources(); // list is not in order
                 if (unavailableResources!=null && !unavailableResources.isEmpty()) {
                     allReserved = false;
                     System.out.println("TemplateProvider.getInstancedTemplate() finds " + unavailableResources.size() + " unavailable resource bind requests");
                 }
 
-                List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list not in order, but each element of returned list has its stepReference stored
-                // TODO: need ReservedResourceWithAttributes to hold the ResourceProvider impl that actually reserved the resource
+                List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
                 if (reservedResources!=null) {
                     System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource bind requests, now reserved");
                 }

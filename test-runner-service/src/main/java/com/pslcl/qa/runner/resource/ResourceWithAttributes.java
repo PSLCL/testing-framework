@@ -5,48 +5,25 @@ import java.util.Map;
 /**
  * A ResourceQuery is a resource hash and a map of attributes.
  */
-public class ResourceWithAttributes {
-	private String hash;
-	private Map<String, String> attributes;
-	private int reference;
+public interface ResourceWithAttributes {
 	
 	/**
-	 * Construct a ResourceWithAttributes object.
-	 * 
-	 * @param hash A hash string uniquely identifying the desired resource.
-	 * @param attributes A map of required attribute values.
-	 * @param reference A reference which may identify a specific ResourceInstance. In the context of a Template, this reference may be 
-	 * the line number on which the resource is bound.
+	 * Get the hash of the resource.
+	 * @return A hex string representing the hash of the resource.
 	 */
-	public ResourceWithAttributes(String hash, Map<String, String> attributes, int reference){
-		this.hash = hash;
-		this.attributes = attributes;
-		this.reference = reference;
-	}
+	String getHash();	
 	
 	/**
-	 * Get the hash of the requested resource.
-	 * @return The hash of the requested resource.
+	 * Get the set of attributes for the resource.
+	 * @return A map of strings representing the set of attributes for the resource.
 	 */
-	public String getHash(){
-		return hash;
-	}
+	Map<String, String> getAttributes();
 	
 	/**
-	 * Get the map of attributes for the requested resource.
-	 * @return A map of attributes for the requested resource.
+	 * Get a reference matching this object to the original resource request.
+	 * In the context of a template, this reference may be the line number holding the original resource bind request.
+	 * @returns The resource reference. 
 	 */
-	public Map<String, String> getAttributes(){
-		return attributes;
-	}
-	
-	/**
-	 * 
-	 * @returns A reference which may identify a specific ResourceInstance. In the context of a Template, this reference may be 
-	 * the line number on which the resource is bound.
-	 */
-	public int getReference(){
-		return reference;
-	}
+	int getReference();
 
 }

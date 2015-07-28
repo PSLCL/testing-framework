@@ -100,7 +100,7 @@ public interface ResourceProvider {
     public Map<String, String> getAttributes(String hash);
 
     /**
-     * Get the description of the resource provider, for the given hash..
+     * Get the description of the resource provider, for the given hash.
      * @param hash The hash for the description.
      * @note Intent is that this information is not required by users, and is offered for possible optimization.
      * @return The description.
