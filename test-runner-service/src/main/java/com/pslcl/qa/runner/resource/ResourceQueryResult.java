@@ -2,11 +2,14 @@ package com.pslcl.qa.runner.resource;
 
 import java.util.List;
 
+/**
+ * Hold and resolve results
+ */
 public class ResourceQueryResult {
-	private List<ResourceWithAttributes> availableResources;
+    private List<ReservedResourceWithAttributes> reservedResources;
+    private List<ResourceWithAttributes> availableResources;
 	private List<ResourceWithAttributes> unavailableResources;
 	private List<ResourceWithAttributes> invalidResources;
-	private List<ReservedResourceWithAttributes> reservedResources;
 	
 	public ResourceQueryResult(List<ReservedResourceWithAttributes> reservedResources, List<ResourceWithAttributes> availableResources, 
 			List<ResourceWithAttributes> unavailableResources, List<ResourceWithAttributes> invalidResources){
@@ -52,5 +55,17 @@ public class ResourceQueryResult {
 		return invalidResources;
 	}
 	
+	/**
+	 * From a given ResourceQueryResult, move reservedResources to us
+	 * 
+     * @note Once a reservedResource entry is placed, it will not be removed
+	 * @note An entry may exist in only one of the four lists
+	 * @param localRqr
+	 */
+	public void resolve(ResourceQueryResult localRqr) {
+	    // 
+	    
+	    
+	}
 	
 }

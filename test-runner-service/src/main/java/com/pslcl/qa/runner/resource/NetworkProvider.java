@@ -5,7 +5,7 @@ import java.util.List;
 
 
 /**
- *  A Resource provider which allows binding of Network resource types.
+ *  A Resource provider which allows reserving and binding of Network resource types.
  */
 public interface NetworkProvider extends ResourceProvider {
     

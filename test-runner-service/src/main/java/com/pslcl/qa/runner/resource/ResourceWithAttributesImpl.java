@@ -30,5 +30,10 @@ public class ResourceWithAttributesImpl implements ResourceWithAttributes {
         // TODO Auto-generated method stub
         return 0;
     }
+    
+    public boolean match(ResourceWithAttributes rwa) {
+        // TODO: match is that hash, attributes, and reference are equal
+        return false;
+    }
 
 }

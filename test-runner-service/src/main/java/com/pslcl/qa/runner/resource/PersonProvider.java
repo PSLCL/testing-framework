@@ -5,7 +5,7 @@ import java.util.List;
 
 
 /**
- *  A Resource provider which allows binding of Person resource types.
+ *  A Resource provider which allows reserving and binding of Person resource types.
  */
 public interface PersonProvider extends ResourceProvider, ArtifactConsumer {
     

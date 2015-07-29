@@ -48,7 +48,7 @@ public class TemplateProvider {
             List<ResourceWithAttributes> resources = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
             int stepsReference = resources.size();
             
-            // reserve the resource specified by each bind step, with 360 second timeout for each reservation
+            // reserve the resources specified by all the bind steps, with 360 second timeout for each reservation
             ResourceQueryResult rqr = rp.reserveIfAvailable(resources, 360);
             if (rqr != null) {
                 // analyze the success/failure of each reserved resource, one for each bind step
@@ -70,12 +70,12 @@ public class TemplateProvider {
                 }
                 
                 if (allReserved) {
-                    // Bind all resources of reservedResources
+                    // bind all resources of reservedResources, and receive a ResourceInstance for each one
                     List<? extends ResourceInstance> resourceInstances = rp.bind(reservedResources); // each element of returned list has its stepReference stored
 
-                    // TODO: analyze the success/failure of each ResourceInstance
+                    // TODO: analyze the success/failure of each returned ResourceInstance
                     
-                    // form ordered list for local use, by stepReference
+                    // form list for local use, ordered by stepReference
                     OrderedResourceInfo orderedResourceInfo;
                     List<OrderedResourceInfo> orderedResourceInfos = new ArrayList<>();
                     for (int i=0; i<resourceInstances.size(); i++) {
@@ -87,7 +87,7 @@ public class TemplateProvider {
                     
                     iT.setOrderedResourceInfos(orderedResourceInfos);
                     
-                    // TODO: set iT with more more additional gathered info and instantiations and similar
+                    // TODO: set iT with more gathered info and instantiations and similar
                 } else {
                     // TODO: deal with this failure to reserve some of the resources
                 }
@@ -163,7 +163,9 @@ public class TemplateProvider {
                             }
                         }
                           
-                        if (strComponentName != null && strArtifactName != null && strArtifactHash != null) {
+                        if (strComponentName != null &&
+                            strArtifactName != null && // note: %2F within is URL encoding for "/"
+                            strArtifactHash != null) {
                             ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
                             int stepRef = Integer.parseInt(machineRef);
                             OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
@@ -348,7 +350,7 @@ public class TemplateProvider {
                         System.out.println("TemplateProvider.getInstancedTemplate() finds something unexpected: " + spaceTermSubString + " as reference " + stepsReference);
                         break;
                         
-                    // bind steps handled above our while(loop)
+                    // bind steps are already handled above our while(loop)
 //                    case "bind":
 //                        // resourceHash resourceAttributes
 //                        System.out.println("TemplateProvider.getInstancedTemplate() finds bind");

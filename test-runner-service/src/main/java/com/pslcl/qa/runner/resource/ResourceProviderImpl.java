@@ -14,13 +14,13 @@ public class ResourceProviderImpl implements ResourceProvider {
      * constructor
      */
     public ResourceProviderImpl() {
-        resourceProviders = new ResourceProviders();
+        resourceProviders = new ResourceProviders(); // determines these individual ResourceProvider S, such as AWSMachineProvider, and instantiates them
     }
     
     @Override
     public void setResource(String resourceHash, String resourceDescription) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
@@ -28,13 +28,14 @@ public class ResourceProviderImpl implements ResourceProvider {
         // note: param resourceWithAttributes is potentially a ReservedResourceWithAttributes, indicating to the target resource provider that it has already reserved this resource
         // subnote: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         System.out.println("ResourceProviderImpl.bind() called with resourceHash/resourceAttributes: " + resourceWithAttributes.getHash() + " / " + resourceWithAttributes.getAttributes());
-        
+
+        ResourceInstance retRI = null;
         if (ReservedResourceWithAttributes.class.isInstance(resourceWithAttributes)) {
             // preferred path- call resource provider directly- it reserved the resource and will directly bind it
             ReservedResourceWithAttributes reservedResourceWithAttributes = ReservedResourceWithAttributes.class.cast(resourceWithAttributes);
-          //reservedResourceWithAttributes.`ReservedResourceWithAttributes reservedResourceWithAttributes = (ReservedResourceWithAttributes)resourceWithAttributes;
             try {
-                reservedResourceWithAttributes.getResourceProvider().bind(resourceWithAttributes);
+                // note that this bind call  must fill the return ResourceInstance with not only something like a MachineImpl or a PersonImpl, but it must fill reference, which comes from param resourceWithAttributes
+                retRI = reservedResourceWithAttributes.getResourceProvider().bind(resourceWithAttributes);
             } catch (ResourceNotAvailableException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -46,25 +47,24 @@ public class ResourceProviderImpl implements ResourceProvider {
 
         }
 
-        // Note that this actual bind call  must fill not only the return ResourceInstance with something like a MachineImpl or a PersonImpl, but it must fill reference, which comes from param resourceWithAttributes
         
-        return null;
+        return retRI;
     }
 
     @Override
     public List<? extends ResourceInstance> bind(List<? extends ResourceWithAttributes> resources) {
         // note: param resources is potentially a list of ReservedResourceWithAttributes, indicating to the target resource provider that it has already reserved resources within the list
         // subnote: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
-        List<ResourceInstance> retRi = new ArrayList<>();
+        List<ResourceInstance> retRiList = new ArrayList<>();
         for(int i=0; i<resources.size(); i++) {
             try {
-                retRi.add(this.bind(resources.get(i)));
+                retRiList.add(this.bind(resources.get(i)));
             } catch (ResourceNotFoundException e) {
-                retRi.add(null);
+                retRiList.add(null);
                 System.out.println("ResourceProviderImpl.bind(List<> resources) stores null entry");
             }
         }
-        return retRi;
+        return retRiList;
     }
 
     @Override
@@ -95,8 +95,15 @@ public class ResourceProviderImpl implements ResourceProvider {
 
     @Override
     public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds) {
-        // Identify that instance of ResourceProvider that responds to this call with the given ResourceWithAttributes and returns reserved resources.
-        // TODO: optimize by taking advantage of knowledge of each resource provider's hash and attributes. 
+        // Identify each ResourceProvider (like AWSMachineProvider) that understands the ResourceWithAttributes parameter and can reserve the resource.
+        //    To be specific, class object resourceProviders can be used- it has a list of all types of ResourceProvider (like AWSMachineProvider).
+
+        // TODO: Add an API to class ResourceProviders that will accomplish the reservation and return the appropriate information.
+        //resourceProviders.reserve
+        
+        
+        
+        // TODO: Perhaps optimize by taking advantage of knowledge of each resource provider's hash and attributes?
         return null;
     }
 

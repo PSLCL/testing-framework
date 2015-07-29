@@ -5,7 +5,7 @@ import java.util.List;
 
 
 /**
- * A Resource provider which allows binding of Machine resource types.
+ * A Resource provider which allows reserving and binding of Machine resource types.
  */
 public interface MachineProvider extends ResourceProvider, ArtifactConsumer {
     
