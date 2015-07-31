@@ -48,14 +48,6 @@ public class AWSMachineInstance implements MachineInstance {
 	}
 
 	@Override
-	public void inspect(String instructionsHash, String componentName,
-			String artifactName, String artifactHash)
-			throws ResourceNotFoundException, ArtifactNotFoundException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public void connect(String networkRef) throws ResourceNotFoundException {
 		// TODO Auto-generated method stub
 

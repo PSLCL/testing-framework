@@ -6,9 +6,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.process.DBDescribedTemplate;
+import com.pslcl.qa.runner.resource.MachineInstance;
+import com.pslcl.qa.runner.resource.NetworkInstance;
+import com.pslcl.qa.runner.resource.PersonInstance;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
+import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceProviderImpl;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
@@ -48,10 +53,10 @@ public class TemplateProvider {
             List<ResourceWithAttributes> resources = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
             int stepsReference = resources.size();
             
-            // reserve the resources specified by all the bind steps, with 360 second timeout for each reservation
+            // reserve each resource specified by all the bind steps, with 360 second timeout for each reservation
             ResourceQueryResult rqr = rp.reserveIfAvailable(resources, 360);
             if (rqr != null) {
-                // analyze the success/failure of each reserved resource, one for each bind step
+                // analyze the success/failure of each reserved resource, one resource for each bind step
                 List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list is not in order
                 if (invalidResources!=null && !invalidResources.isEmpty()) {
                     allReserved = false;
@@ -166,19 +171,30 @@ public class TemplateProvider {
                         if (strComponentName != null &&
                             strArtifactName != null && // note: %2F within is URL encoding for "/"
                             strArtifactHash != null) {
-                            ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
                             int stepRef = Integer.parseInt(machineRef);
                             OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
                             boolean success = false;
                             if (orderedResourceInfo != null) {
-                                orderedResourceInfo.setArtifactInfo(artifactInfo);
-                            
-                                // TODO: Call higher level api to deploy the artifact to the machine
-                            
-                                // TODO: set iT with more gathered info and instantiations and similar
-                            
-                                success = true;
-                                System.out.println("TemplateProvider.getInstancedTemplate() deploys to bound resource " + stepRef + ": artifactInfo: " + strComponentName + " " + strArtifactName + " " + strArtifactHash);
+                                ResourceInstance resourceInstance = orderedResourceInfo.getResourceInstance();
+                                if (MachineInstance.class.isInstance(resourceInstance)) {
+                                    // deploy artifact to the machine instance
+                                    MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
+                                    try {
+                                        machineInstance.deploy(strComponentName, strArtifactName, strArtifactHash);
+                                        ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
+                                        orderedResourceInfo.setArtifactInfo(artifactInfo);
+                                        // TODO: set iT with more gathered info and instantiations and similar
+
+                                        success = true;
+                                        System.out.println("TemplateProvider.getInstancedTemplate() deploys to bound resource " + stepRef + ": artifactInfo: " + strComponentName + " " + strArtifactName + " " + strArtifactHash);
+                                    } catch (ResourceNotFoundException e) {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                    } catch (ArtifactNotFoundException e) {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                    }
+                                }
                             }
                             if (!success)
                                 System.out.println("TemplateProvider.getInstancedTemplate() fails to deploy to bound resource " + stepRef);
@@ -187,9 +203,9 @@ public class TemplateProvider {
                         }
                         break;                    
                     case "inspect":
-                        // machineRef strInstructionsArtifactHash ArtifactInfo (strComponentName strArtifactName strArtifactHash)
+                        // machineRef strInstructionsHash ArtifactInfo (strComponentName strArtifactName strArtifactHash)
                         System.out.println("TemplateProvider.getInstancedTemplate() finds inspect as reference " + stepsReference);
-                        String strInstructionsArtifactHash = null;
+                        String strInstructionsHash = null;
                         strComponentName = null;
                         strArtifactName = null;
                         strArtifactHash = null;
@@ -199,12 +215,11 @@ public class TemplateProvider {
                             if (++offset > step.length())
                                 offset = -1; // done
                             
-                            strInstructionsArtifactHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                            if (strInstructionsArtifactHash != null) {
-                                offset += strInstructionsArtifactHash.length();
+                            strInstructionsHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                            if (strInstructionsHash != null) {
+                                offset += strInstructionsHash.length();
                                 if (++offset > step.length())
                                     offset = -1; // done
-                                
                                 
                                 // gather ArtifactInfo (strComponentName strArtifactName strArtifactHash)
                                 strComponentName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
@@ -231,10 +246,36 @@ public class TemplateProvider {
                             }
                         }
                             
-                        if (strInstructionsArtifactHash != null & strComponentName != null && strArtifactName != null && strArtifactHash != null) {
-                            ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
+                        if (strInstructionsHash != null & strComponentName != null && strArtifactName != null && strArtifactHash != null) {
+                            int stepRef = Integer.parseInt(machineRef);
+                            OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
+                            boolean success = false;
+                            if (orderedResourceInfo != null) {
+                                ResourceInstance resourceInstance = orderedResourceInfo.getResourceInstance();
+                                if (PersonInstance.class.isInstance(resourceInstance)) {
+                                    // inspect: give artifact to the person instance
+                                    PersonInstance personInstance = PersonInstance.class.cast(resourceInstance);
+                                    try {
+                                        personInstance.inspect(strInstructionsHash, strComponentName, strArtifactName, strArtifactHash);
+                                        ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
+                                        orderedResourceInfo.setArtifactInfo(artifactInfo);
+                                        orderedResourceInfo.setInstructionsHash(strInstructionsHash);
+                                        
+                                        // TODO: set iT with more gathered info and instantiations and similar
 
-                            // TODO: set iT with more gathered info and instantiations and similar
+                                        success = true;
+                                        System.out.println("TemplateProvider.getInstancedTemplate() initiates inspect to bound resource " + stepRef);
+                                    } catch (ResourceNotFoundException e) {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                    } catch (ArtifactNotFoundException e) {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                            if (!success)
+                                System.out.println("TemplateProvider.getInstancedTemplate() fails inspect to bound resource " + stepRef);
                         } else {
                             System.out.println("TemplateProvider.getInstancedTemplate() finds inspect to be incompletely specified");
                         }
@@ -259,8 +300,28 @@ public class TemplateProvider {
                         }
                             
                         if (strNetwork != null) {
+                            int stepRef = Integer.parseInt(machineRef);
+                            OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
+                            boolean success = false;
+                            if (orderedResourceInfo != null) {
+                                ResourceInstance resourceInstance = orderedResourceInfo.getResourceInstance();
+                                if (MachineInstance.class.isInstance(resourceInstance)) {
+                                    // connect network machineInstance
+                                    MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
+                                    try {
+                                        machineInstance.connect(strNetwork);
+                                        orderedResourceInfo.setNetwork(strNetwork);
+                                        
+                                        // TODO: set iT with more gathered info and instantiations and similar
 
-                            // TODO: set iT with more gathered info and instantiations and similar
+                                        success = true;
+                                        System.out.println("TemplateProvider.getInstancedTemplate() connects network " + strNetwork + "to bound resource " + stepRef);
+                                    } catch (ResourceNotFoundException e) {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
                         } else {
                             System.out.println("TemplateProvider.getInstancedTemplate() finds connect to be incompletely specified");
                         }
@@ -277,7 +338,7 @@ public class TemplateProvider {
                         // machineRef ArtifactInfo (strComponentName strArtifactName strArtifactHash) strOptions
                         System.out.println("TemplateProvider.getInstancedTemplate() finds run as reference " + stepsReference);
       
-                        // This os what actually comes in - it is missing some spaces - this is bug 7066 under app-test-platform
+                        // This is what actually comes in - it is missing some spaces - this is bug 7066 under app-test-platform
 //                      run[]0emit-oal-java bin%2FOperationsTest 562A789B9E66E0051F3DF3741985A0AFF67687C26DDC0EC93E774AA8FF6ADDEE-providerMode
                         // is this intended?
 //                      run 0 emit-oal-java bin%2FOperationsTest 562A789B9E66E0051F3DF3741985A0AFF67687C26DDC0EC93E774AA8FF6ADDEE -providerMode
@@ -295,7 +356,7 @@ public class TemplateProvider {
                         strComponentName = null;
                         strArtifactName = null;
                         strArtifactHash = null;
-                        String strOptions = null;
+                        String strRunParams = null;
                         machineRef = StepsParser.getNextSpaceTerminatedSubString(step, offset);
                         if (machineRef != null) {
                             offset += machineRef.length();
@@ -324,7 +385,7 @@ public class TemplateProvider {
                                 }
                             }
                             
-                            strOptions = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                            strRunParams = StepsParser.getNextSpaceTerminatedSubString(step, offset);
                             // we do not further extract from step
 //                            if (strOptions != null) {
 //                                offset += strOptions.length();
@@ -335,10 +396,34 @@ public class TemplateProvider {
                             
                         if (strComponentName != null && strArtifactName != null && strArtifactHash != null) {
                             // strOptions is available; it may be null
-                            ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
                             
-                            // TODO: set iT with more gathered info and instantiations and similar
-                            
+                            int stepRef = Integer.parseInt(machineRef);
+                            OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
+                            boolean success = false;
+                            if (orderedResourceInfo != null) {
+                                ResourceInstance resourceInstance = orderedResourceInfo.getResourceInstance();
+                                if (MachineInstance.class.isInstance(resourceInstance)) {
+                                    // run program on machineInstance
+                                    MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
+                                    try {
+                                        machineInstance.run(strComponentName, strArtifactName, strArtifactHash, strRunParams);
+                                        ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
+                                        orderedResourceInfo.setArtifactInfo(artifactInfo);
+                                        orderedResourceInfo.setRunParams(strRunParams);
+                                        
+                                        // TODO: set iT with more gathered info and instantiations and similar
+
+                                        success = true;
+                                        System.out.println("TemplateProvider.getInstancedTemplate() runs to bound resource " + stepRef + ": artifactInfo: " + strComponentName + " " + strArtifactName + " " + strArtifactHash);
+                                    } catch (ResourceNotFoundException e) {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                    } catch (ArtifactNotFoundException e) {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
                         } else {
                             System.out.println("TemplateProvider.getInstancedTemplate() finds run to be incompletely specified");
                         }
@@ -381,4 +466,5 @@ public class TemplateProvider {
         }
         return iT;
     }
+    
 }

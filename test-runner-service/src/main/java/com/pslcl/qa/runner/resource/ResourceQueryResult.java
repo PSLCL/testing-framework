@@ -56,16 +56,33 @@ public class ResourceQueryResult {
 	}
 	
 	/**
-	 * From a given ResourceQueryResult, move reservedResources to us
+	 * Merge a given ResourceQueryResult to this object
 	 * 
-     * @note Once a reservedResource entry is placed, it will not be removed
-	 * @note An entry may exist in only one of the four lists
-	 * @param localRqr
+     * @note Once the reservation is made (a reservedResource entry is placed into the reserved list), it will not be removed
+	 * @param localRqr Caller is responsible to ensure that localRqr does not contain a ReservedResourceWithAttributes entry that is already stored in the reservedResources entry of this object.
 	 */
-	public void resolve(ResourceQueryResult localRqr) {
-	    // 
+	public void merge(ResourceQueryResult localRqr) {
+	    for (ReservedResourceWithAttributes rrwa : localRqr.getReservedResources()) {
+	        // record successful reservation and remove corresponding entry that others may have placed from the three "fail" lists 
+	        this.reservedResources.add(rrwa);
+	        this.availableResources.remove(rrwa);
+            this.unavailableResources.remove(rrwa);
+	        this.invalidResources.remove(rrwa);
+	        // caller sees only the reserved entry
+	    }
 	    
-	    
+	    // keep in mind: once a successful rwa is entered into this object, the caller will not submit it to us in follow on calls 
+	    for (ResourceWithAttributes rwa : localRqr.getAvailableResources()) {
+	        // rwa is not found in incoming reservedResources, unavailableResources or invalidResources
+	        this.availableResources.add(rwa); // might add to an entry from a previous call
+	    }
+	    for (ResourceWithAttributes rwa : localRqr.getUnavailableResources()) {
+	        
+	        this.unavailableResources.add(rwa); // might add to an entry from a previous call
+	    }
+	    for (ResourceWithAttributes rwa : localRqr.getInvalidResources()) {
+	        this.invalidResources.add(rwa); // might add to an entry from a previous call
+	    }
 	}
 	
 }

@@ -35,11 +35,11 @@ public class StepsParser {
     
     /**
      * 
-     * @param strResourceAttributes . Must be space terminated, and must follow K=V&K=V%K=V pattern 
-     * @return KVP Map, possibly empty
+     * @param strResourceAttributes Must be space terminated; must follow K=V&K=V%K=V pattern; expecting no duplicate K (or if so only 1 is stored); empty K or V not expected but allowed
+     * @return KVP Map, possibly empty, but without a null key entry
      */
     public static Map<String,String> getAttributeMap(String strResourceAttributes) {
-        Map<String,String> ret = new HashMap<>();
+        Map<String,String> ret = new HashMap<>(); // HashMap operates on unique keys; allows 1 null key, but we will not have any; values may be null, but we will not have any
         int offset = 0;
         int ampersandOffset = 0;
         while (ampersandOffset < strResourceAttributes.length()) {
@@ -47,18 +47,21 @@ public class StepsParser {
             if (ampersandOffset == -1)
                 ampersandOffset = strResourceAttributes.length(); // last attribute
             int equalsOffset = strResourceAttributes.indexOf("=", offset);
-            if (equalsOffset > 0 && ampersandOffset > equalsOffset) {
+            
+            if (equalsOffset >= 0) // allow empty K to be extracted (will become an empty string in the returned HashMap)
+//          if (equalsOffset >  0) // deny empty K
+            {
                 // get K
                 String K = strResourceAttributes.substring(offset, equalsOffset);
                 // get V
-                String V = strResourceAttributes.substring(equalsOffset+1, ampersandOffset);
+                String V = strResourceAttributes.substring(equalsOffset+1, ampersandOffset); // could be an empty String
                 offset = ++ampersandOffset;
                 ret.put(K, V);
             }
         }
         return ret;
     }
-    
+
     
     // private instance members
     
@@ -155,7 +158,7 @@ public class StepsParser {
 //                        offset = -1; // done
 //                }
 
-                ResourceWithAttributesImpl rwa = new ResourceWithAttributesImpl(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
+                ResourceWithAttributes rwa = new ResourceWithAttributesImpl(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
                 retList.add(rwa); // or retList.add(i, ra);
             }
         }

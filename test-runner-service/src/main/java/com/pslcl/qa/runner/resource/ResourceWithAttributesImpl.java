@@ -31,9 +31,29 @@ public class ResourceWithAttributesImpl implements ResourceWithAttributes {
         return 0;
     }
     
-    public boolean match(ResourceWithAttributes rwa) {
-        // TODO: match is that hash, attributes, and reference are equal
-        return false;
+    /**
+     * 
+     * @param rwa Must not be null
+     * @return
+     */
+    public boolean matches(ResourceWithAttributes rwa) {
+        // match: reference, hash and attributes are equal
+        if (this.reference == rwa.getReference() && this.hash.equals(rwa.getHash())) {
+            // match the attribute sets to each other
+            Map<String, String> rwaAttributes = rwa.getAttributes();
+            if (this.attributes.size() != rwaAttributes.size())
+                return false;
+            // tHese keys and values might be empty strings, but they will not be null; keys are unique in each Map
+            for (String key : this.attributes.keySet()) {
+                if (rwaAttributes.containsKey(key)) {
+                    String value = this.attributes.get(key);
+                    if (value.equals(rwaAttributes.get(key)))
+                        continue;
+                }
+                return false;
+            }
+        }
+        return true; // every check succeeded
     }
 
 }

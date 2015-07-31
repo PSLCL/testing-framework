@@ -16,16 +16,6 @@ public interface MachineInstance extends ResourceInstance {
    void deploy( String componentName, String artifactName, String artifactHash )
                 throws ResourceNotFoundException, ArtifactNotFoundException;
 
-   /** Ask a person to follow instructions to inspect an artifact.
-    *
-    * @param instructionsHash
-    * @param componentName
-    * @param artifactName
-    * @param artifactHash
-    */
-   void inspect( String instructionsHash, String componentName, String artifactName, String artifactHash )
-                 throws ResourceNotFoundException, ArtifactNotFoundException;
-
    /** Connect a machine to a network.
     *
     * @param networkRef
