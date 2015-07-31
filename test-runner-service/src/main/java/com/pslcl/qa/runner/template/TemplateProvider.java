@@ -14,18 +14,18 @@ import com.pslcl.qa.runner.resource.PersonInstance;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
-import com.pslcl.qa.runner.resource.ResourceProviderImpl;
+import com.pslcl.qa.runner.resource.ResourceAccess;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
 public class TemplateProvider {
     
     private Map<byte[],InstancedTemplate> availableReusableTemplates; // note: this populates in the destroy method
-    private ResourceProviderImpl rp;
+    private ResourceAccess ra;
     
     public TemplateProvider() {
         availableReusableTemplates = new HashMap<byte[],InstancedTemplate>();
-        rp = new ResourceProviderImpl();
+        ra = new ResourceAccess();
     }
 
     public void destroy(byte [] template_hash, InstancedTemplate iT) { 
@@ -54,7 +54,7 @@ public class TemplateProvider {
             int stepsReference = resources.size();
             
             // reserve each resource specified by all the bind steps, with 360 second timeout for each reservation
-            ResourceQueryResult rqr = rp.reserveIfAvailable(resources, 360);
+            ResourceQueryResult rqr = ra.reserveIfAvailable(resources, 360);
             if (rqr != null) {
                 // analyze the success/failure of each reserved resource, one resource for each bind step
                 List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list is not in order
@@ -76,7 +76,7 @@ public class TemplateProvider {
                 
                 if (allReserved) {
                     // bind all resources of reservedResources, and receive a ResourceInstance for each one
-                    List<? extends ResourceInstance> resourceInstances = rp.bind(reservedResources); // each element of returned list has its stepReference stored
+                    List<? extends ResourceInstance> resourceInstances = ra.bind(reservedResources); // each element of returned list has its stepReference stored
 
                     // TODO: analyze the success/failure of each returned ResourceInstance
                     

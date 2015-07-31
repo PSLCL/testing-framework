@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceWithAttributesImpl;
+import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
 
 public class StepsParser {
     
@@ -158,7 +158,7 @@ public class StepsParser {
 //                        offset = -1; // done
 //                }
 
-                ResourceWithAttributes rwa = new ResourceWithAttributesImpl(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
+                ResourceWithAttributes rwa = new ResourceWithAttributesInstance(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
                 retList.add(rwa); // or retList.add(i, ra);
             }
         }

@@ -7,7 +7,7 @@ import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceProvider;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceWithAttributesImpl;
+import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
 import com.pslcl.qa.runner.resource.aws.AWSMachineProvider;
 import com.pslcl.qa.runner.resource.aws.AWSNetworkProvider;
 import com.pslcl.qa.runner.resource.aws.AWSPersonProvider;
@@ -29,7 +29,7 @@ public class ResourceProviders {
         resourceProviders.add(new AWSMachineProvider(null));
         resourceProviders.add(new AWSPersonProvider());
         resourceProviders.add(new AWSNetworkProvider());
-        // Note: Do not include ResourceProviderImpl in this list
+        // Note: Do not include ResourceAccess in this list
         
         // TODO: programmatically determine this list and instantiate each one, as needed
     }
@@ -40,7 +40,7 @@ public class ResourceProviders {
      * @param timeoutSeconds
      * @return
      */
-    ResourceQueryResult reserve(List<ResourceWithAttributes> resources, int timeoutSeconds) {
+    public ResourceQueryResult reserve(List<ResourceWithAttributes> resources, int timeoutSeconds) {
         // start retRqr with empty lists; afterward merge into these lists
         ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResourceWithAttributes>(),
                                                              new ArrayList<ResourceWithAttributes>(),
@@ -51,7 +51,7 @@ public class ResourceProviders {
             // to avoid multiple reservations: for any most recent success, strip param resources of that entry
             for (ReservedResourceWithAttributes rrwa : retRqr.getReservedResources()) {
                 for (ResourceWithAttributes rwa : resources) {
-                    ResourceWithAttributesImpl rwai = ResourceWithAttributesImpl.class.cast(rwa);
+                    ResourceWithAttributesInstance rwai = ResourceWithAttributesInstance.class.cast(rwa);
                     if (rwai.matches(rrwa)) {
                         resources.remove(rwa);
                         break; // note that resources is altered, but there is no need to check it again 
