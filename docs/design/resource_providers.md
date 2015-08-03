@@ -12,7 +12,7 @@ requested and keep some ready to quickly respond to requests. If the rate goes d
 
 ##Reserving Resources
 
-The Test Runner Service must be able to reserve a resource instance. A Resource Provider with limited resources must allocate
+The [Test Runner Service](test_runner_service.md) must be able to reserve a resource instance. A Resource Provider with limited resources must allocate
 resources based on a first-come first-served basis. Reserved resource instances may not be bound except by the owner of the
 reservation. 
 
