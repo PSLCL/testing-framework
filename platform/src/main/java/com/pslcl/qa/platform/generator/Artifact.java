@@ -1,18 +1,23 @@
 package com.pslcl.qa.platform.generator;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.URLEncoder;
+
+import org.apache.commons.compress.utils.IOUtils;
 
 import com.pslcl.qa.platform.Hash;
 
 /**
  * This class represents an artifact, which is named content that is associated with a component version.
  */
-public class Artifact extends Content {
-    private Version version;
-    private String platform;
-    private String variant;
+public class Artifact {
+    private Module module;
+    private String configuration;
     private String name;
-    private long pk;
+    private Hash hash;
+    private ContentProvider provider;
     
     /**
      * Construct an artifact associated with a component, name, version, platform and variant. The content
@@ -23,29 +28,62 @@ public class Artifact extends Content {
      * @param variant
      * @param hash
      */
-    public Artifact(long pk, String name, Version version, String platform, String variant, Hash hash) {
-        super( hash );
-        this.pk = pk;
-        this.version = version;
-        this.platform = platform;
-        this.variant = variant;
+    public Artifact( Module module, String configuration, String name, Hash hash ) {
+        this.module = module;
+        this.configuration = configuration;
         this.name = name;
+        this.hash = hash;
     }
 
-    long getPK() {
-        return pk;
+    Artifact( Module module, String configuration, String name, ContentProvider provider ) {
+        this.module = module;
+        this.configuration = configuration;
+        this.name = name;
+        this.provider = provider;
+        
     }
     
-    public Version getVersion() {
-        return version;
+    public Hash getHash( Core core ) {
+        if ( hash != null )
+            return hash;
+        
+        if ( provider == null )
+            return null;
+        
+        try {
+            File a = File.createTempFile("artifact", "");
+            FileOutputStream os = new FileOutputStream( a );
+            InputStream is = provider.asStream();
+            IOUtils.copy(is, os);
+            is.close();
+            os.close();
+
+            Hash h = Hash.fromContent( a );
+            core.addContent( h, a );
+            hash = h;
+            provider = null;
+        }
+        catch ( Exception e ) {
+            
+        }
+        
+        return hash;
+    }
+    
+    public Hash getHash() {
+        return hash;
+    }
+    
+    public Content getContent() {
+        return new Content( hash );
+    }
+    
+    public Module getModule() {
+        return module;
     }
 
-    public String getPlatform() {
-        return platform;
-    }
-
-    public String getVariant() {
-        return variant;
+    public String getConfiguration() {
+        return configuration;
     }
 
     public String getName() {
@@ -63,6 +101,6 @@ public class Artifact extends Content {
     }
 
     public String getValue( Template template ) {
-        return version.getComponent() + " " + getEncodedName() + " " + getHash();
+        return module.getOrganization() + "#" + module.getName() + " " + getEncodedName() + " " + getHash();
     }
 }

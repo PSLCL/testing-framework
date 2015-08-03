@@ -1,8 +1,9 @@
 package com.pslcl.qa.platform;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -11,19 +12,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-//import org.eclipse.jetty.client.HttpClient;
+import org.apache.commons.io.FileUtils;
 
+import com.pslcl.qa.platform.generator.Artifact;
 import com.pslcl.qa.platform.generator.ArtifactProvider;
-import com.pslcl.qa.platform.generator.ArtifactSink;
 import com.pslcl.qa.platform.generator.Core;
-import com.pslcl.qa.platform.generator.QuickBuildArtifactProvider;
+import com.pslcl.qa.platform.generator.Module;
 
 public class CommandLine {
     private static <T extends Comparable<? super T>> List<T> asSortedList( Collection<T> c ) {
@@ -44,8 +44,6 @@ public class CommandLine {
         System.exit( 1 );
     }
 
-    // TODO: the following is/are also required, could be mentioned with Help() println()s
-    // QA_CACHE
     private static void synchronizeHelp() {
         System.out.println( "test-platform Synchronize Help" );
         System.out.println( "This command synchronizes artifact providers with the database and runs generators." );
@@ -56,7 +54,6 @@ public class CommandLine {
         System.out.println( "  --no-generators - optional - disable running generators." );
         System.out.println( "  --artifact-endpoint - required unless no-synchronize specified - The endpoint of the artifact provider." );
         System.out.println( "environment requirements are:" );
-        System.out.println( "  DTF_TEST_PROJECT - required - the name of the project to synchronize." );
         System.out.println( "  DTF_TEST_ARTIFACTS - required - the full path of the directory that contains the artifact cache." );
         System.out.println( "  DTF_TEST_GENERATORS - required - the full path of the directory where generators are written." );
         System.exit( 1 );
@@ -87,19 +84,26 @@ public class CommandLine {
         System.exit(1);
     }
 
-    private static class HandleGenerator implements ArtifactProvider.GeneratorNotifier {
-        private File cache;
-
-        public HandleGenerator( File cache ) {
-            this.cache = cache;
+    private static class HandleModule implements ArtifactProvider.ModuleNotifier {
+        private static class Delayed {
+            ArtifactProvider source;
+            String merge;
+            Module module;
         }
-
-        public void generator( String name, ArtifactProvider.Content archive ) {
+        
+        private Core core;
+        private List<Delayed> delayed = new ArrayList<Delayed>();
+        
+        public HandleModule( Core core ) {
+            this.core = core;
+        }
+        
+        private void decompress( Hash hash, long pk_version, long pk_parent, String configuration, boolean merge_source, long pk_source_module ) {
             TarArchiveInputStream ti = null;
             try {
+                InputStream archive = new FileInputStream( core.getContentFile( hash ) );
                 /* Uncompress and unarchive the file, creating entries for each artifact found inside. */
-                InputStream fis = archive.asStream();
-                InputStream is = new GzipCompressorInputStream(fis);
+                InputStream is = new GzipCompressorInputStream(archive);
                 ti = new TarArchiveInputStream(is);
                 TarArchiveEntry entry;
                 while ((entry = ti.getNextTarEntry()) != null) {
@@ -123,21 +127,15 @@ public class CommandLine {
 
                     bos.close();
 
+                    Hash h = Hash.fromContent(new ByteArrayInputStream(bos.toByteArray()));
+
                     /* Check the cache and add the file if not found. */
-                    File f = new File(cache, artifact);
-                    if (!f.exists()) {
-                        //noinspection ResultOfMethodCallIgnored
-                        f.getParentFile().mkdirs();
-                        FileOutputStream fos = new FileOutputStream(f);
-                        bos.writeTo(fos);
-                        fos.close();
-                    }
-                    else
-                        System.err.println( "Duplicate generator artifact: " + artifact );
+                    core.addContent( h, new ByteArrayInputStream(bos.toByteArray()) );
+                    core.addArtifact( pk_version, configuration, artifact, h, merge_source, pk_parent, pk_source_module );
                 }
             }
             catch ( Exception e ) {
-                System.err.println( "ERROR: Failure to write generator artifact, " + e );
+                
             }
             finally {
                 if ( ti != null ) try {
@@ -148,8 +146,76 @@ public class CommandLine {
                 }
             }
         }
+        
+        @Override
+        public void module( ArtifactProvider source, Module module, String merge ) {
+            try {
+                // Check to see if the module exists. If it does then return (assuming that artifacts do not change).
+                // If it does not exist then add the module and iterate the artifacts.
+                if ( core.findModule( module ) != 0 )
+                    return;
+                
+                boolean merge_source = false;
+                if ( merge != null && merge.length() > 0 ) {
+                    merge_source = true;
+                    Delayed D = new Delayed();
+                    D.source = source;
+                    D.merge = merge;
+                    D.module = module;
+                    delayed.add( D );
+                }
+                
+                long pk_module = core.addModule( module );
+                List<Artifact> artifacts = module.getArtifacts();
+                for ( Artifact artifact : artifacts ) {                   
+                    long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getHash( core ), merge_source, 0, 0 );
+                    if ( artifact.getName().endsWith(".tar.gz") ) {
+                        decompress( artifact.getHash(), pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0 );
+                    }
+                }
+            }
+            catch ( Exception e ) {
+                
+            }
+        }
+        
+        public void finalize() {
+            Iterable<Module> modules = core.createModuleSet();
+            for ( Delayed d : delayed ) {
+                Module dmod = d.module;
+                long pk_source_module = core.findModule( dmod );
+                
+                for ( Module m : modules ) {
+                    // Since the actual types may differ, we compare fields to determine if they are the same.
+                    boolean same = true;
+                    if ( ! m.getOrganization().equals( dmod.getOrganization() ) )
+                        same = false;
+                    if ( ! m.getName().equals( dmod.getName() ))
+                        same = false;
+                    if ( ! m.getVersion().equals( dmod.getVersion() ))
+                        same = false;
+                    if ( ! m.getSequence().equals( dmod.getSequence() ))
+                        same = false;
+                    
+                    if ( same )
+                        continue;
+                    
+                    if ( d.source.merge( d.merge, dmod, m ) ) {
+                        long pk_module = core.findModule( m );
+                        
+                        List<Artifact> artifacts = dmod.getArtifacts();
+                        for ( Artifact artifact : artifacts ) {                   
+                            long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getHash( core ), false, 0, pk_source_module );
+                            if ( artifact.getName().endsWith(".tar.gz") ) {
+                                decompress( artifact.getHash(), pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module );
+                            }
+                        }
+                    }
+                }               
+            }
+        }
     }
-
+    
     private static void inheritIO(final InputStream src, final PrintStream dest) {
         new Thread(new Runnable() {
             public void run() {
@@ -157,6 +223,8 @@ public class CommandLine {
                 while (sc.hasNextLine()) {
                     dest.println(sc.nextLine());
                 }
+                
+                sc.close();
             }
         }).start();
     }
@@ -238,7 +306,7 @@ public class CommandLine {
                 synchronizeHelp();
         }
 
-        if ( System.getenv("DTF_TEST_PROJECT") == null || System.getenv("DTF_TEST_ARTIFACTS") == null || System.getenv("DTF_TEST_GENERATORS") == null || (synchronize && endpoint == null) )
+        if ( System.getenv("DTF_TEST_ARTIFACTS") == null || System.getenv("DTF_TEST_GENERATORS") == null || (synchronize && endpoint == null) )
             synchronizeHelp();
 
         Core core = null;
@@ -247,11 +315,8 @@ public class CommandLine {
         try {
             /* Instantiate the platform and artifact provider. */
             core = new Core( 0 );
-            //TODO: Make this a generic service lookup based on classpath.
-            artifactProvider = new QuickBuildArtifactProvider(endpoint);
 
             if ( synchronize ) {
-                String project = System.getenv("DTF_TEST_PROJECT");
                 File generators = new File( System.getenv("DTF_TEST_GENERATORS" ) );
                 if ( generators.exists() )
                     //noinspection ResultOfMethodCallIgnored
@@ -261,62 +326,46 @@ public class CommandLine {
                 //noinspection ResultOfMethodCallIgnored
                 generators.setWritable( true );
 
-                artifactProvider.init();
-
-                /* Handle generators from this provider. */
-                artifactProvider.iterateGenerators( new HandleGenerator( generators ) );
-
-                /* Read the set of components from both the database and the artifact provider. */
-                Map<String, Long> db_components = core.readComponents();
-                Set<String> components = artifactProvider.getComponents( project );
-
-                /* For each sorted component from the artifact provider... */
-                for (String component : asSortedList( components )) {
-                    /**
-                     * Determine the matching database primary key by lookup or adding the component.
-                     * Note that components are not removed from the database, that is a manual operation.
-                     */
-                    long pk_component;
-                    if (!db_components.containsKey(component))
-                        pk_component = core.addComponent(component);
-                    else
-                        pk_component = db_components.get(component);
-
-                    /* Read the set of versions for the component from both the database and artifact provider. */
-                    Map<String, Long> db_versions = core.readVersions(pk_component);
-                    Set<String> versions = artifactProvider.getVersions( project, component );
-
-                    /* Delete versions found in the database but not the artifact provider. */
-                    for (Map.Entry<String, Long> db_version : db_versions.entrySet()) {
-                        if (!versions.contains(db_version.getKey())) {
-                            core.deleteVersion(db_version.getValue());
-                        }
+                // Get the list of artifact providers from the database.
+                List<String> providers = core.readArtifactProviders();
+                HandleModule handler = new HandleModule( core );
+                List<ArtifactProvider> to_close = new ArrayList<ArtifactProvider>();
+                
+                for ( String providerName : providers ) {
+                    ArtifactProvider provider = null;
+                    try {
+                        Class<?> P = Class.forName( providerName );
+                        provider = (ArtifactProvider) P.newInstance();
+                        
+                        provider.init();
+                        
+                        /* Handle generators from this provider. */
+                        //core.startArtifactProvider( providerName );
+                        provider.iterateModules( handler );
+                        //core.finishArtifactProvider( providerName );
                     }
-
-                    /* For each sorted version from the artifact provider... */
-                    for (String version : asSortedList(versions)) {
-                        /* Determine the matching database primary key by lookup or adding the version. */
-                        long pk_version;
-                        if (!db_versions.containsKey(version))
-                            pk_version = core.addVersion(pk_component, version);
-                        else
-                            pk_version = db_versions.get(version);
-
-                        /* Create an ArtifactSet for the entire version (all platforms). */
-                        ArtifactSink artifactSet = new ArtifactSink();
-
-                        /* For each sorted platform from the artifact provider... */
-                        Set<String> platforms = artifactProvider.getPlatforms( project, component, version );
-                        for (String platform : asSortedList(platforms)) {
-                            /* Obtain the set of artifacts for this component/version/platform. */
-                            artifactProvider.iterateArtifacts( project, component, version, platform, artifactSet );
-                        }
-
-                        /* Synchronize with the database. */
-                        core.synchronizeArtifacts(pk_version, artifactSet);
+                    catch ( Exception e ) {
+                        System.err.println( e.getMessage() );
                     }
                 }
+                
+                handler.finalize();
+                
+                for ( ArtifactProvider p : to_close ) {
+                    p.close();
+                }
 
+                // Extract all generators
+                Iterable<Module> find_generators = core.createModuleSet();
+                for ( Module M : find_generators ) {
+                    List<Artifact> artifacts = M.getArtifacts( null, "dth_test_generator" );
+                    for ( Artifact A : artifacts ) {
+                        File f = core.getContentFile( A.getHash() );
+                        File P = new File( generators, A.getName() );
+                        FileUtils.copyFile( f, P );
+                    }
+                }
+                
                 // Remove all unreferenced templates and descriptions
                 core.pruneTemplates();
             }
@@ -367,7 +416,7 @@ public class CommandLine {
     }
     
     private static void runner( String[] args ) {
-        if (args.length < 2 || System.getenv("DTF_TEST_PROJECT") == null || System.getenv("DTF_TEST_ARTIFACTS") == null || System.getenv("DTF_TEST_GENERATORS") == null)
+        if (args.length < 2 || System.getenv("DTF_TEST_ARTIFACTS") == null || System.getenv("DTF_TEST_GENERATORS") == null)
             runHelp(); // exits app
 
         for (int i = 1; i < args.length; i++) {

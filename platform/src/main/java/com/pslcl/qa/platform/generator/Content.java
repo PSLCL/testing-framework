@@ -1,5 +1,9 @@
 package com.pslcl.qa.platform.generator;
 
+import java.io.File;
+
+import org.apache.commons.io.FileUtils;
+
 import com.pslcl.qa.platform.Hash;
 
 /**
@@ -32,8 +36,16 @@ public class Content implements Template.Parameter {
         if ( content != null )
             return content;
 
-        //TODO: Implement - would need to lookup the content based on the hash.
-        return "";
+        File f = core.getContentFile( hash );
+        try {
+            content = FileUtils.readFileToString( f );
+            return content;
+        }
+        catch ( Exception e ) {
+            // Ignore
+        }
+        
+        return null;
     }
 
     public String getValue( Template template ) {

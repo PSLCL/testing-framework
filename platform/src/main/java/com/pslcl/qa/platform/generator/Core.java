@@ -2,6 +2,7 @@ package com.pslcl.qa.platform.generator;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStream;
@@ -25,6 +26,7 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
+import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
 
 /**
@@ -34,13 +36,16 @@ import com.pslcl.qa.platform.Hash;
 public class Core {
     private static class DBDescribedTemplate {
         long pk;
+        @SuppressWarnings("unused")
         long fk_template;
         DescribedTemplate.Key key;
         Hash description;
     }
     private static class DBTestInstance {
         long fk_test;       // INT(11) in test
+        @SuppressWarnings("unused")
         String name;        // VARCHAR(100) from test
+        @SuppressWarnings("unused")
         String description; // LONGTEXT from test
         String script;      // VARCHAR(200) from test
         long pk_test_instance;
@@ -49,8 +54,10 @@ public class Core {
         long pk_template; // added here to avoid a lookup in the executeTestInstance()
     }
     private static class DBTemplateInfo {
+        @SuppressWarnings("unused")
         long pk_described_template; // INT(11) in described_template
-        byte [] fk_version_set;     // BINARY(32) in described_template
+        byte [] fk_module_set;      // BINARY(32) in described_template
+        @SuppressWarnings("unused")
         long pk_template;           // INT(11) in described_template
         byte [] description_hash;   // BINARY(32) in described_template
         byte [] hash;               // BINARY(32) in template
@@ -62,8 +69,6 @@ public class Core {
      * The connection to the database.
      */
     private Connection connect = null;
-    @SuppressWarnings("unused")
-    private String project;
     private File artifacts;
     private Map<Long,DBTestInstance> pktiToTI = new HashMap<Long,DBTestInstance>();
     private Map<Long,List<DBTestInstance>> pktToTI = new HashMap<Long,List<DBTestInstance>>();
@@ -136,18 +141,18 @@ public class Core {
 
         try {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT pk_described_template, fk_version_set, fk_template, hash, description_hash FROM described_template JOIN template ON fk_template = pk_template" );
+            resultSet = statement.executeQuery( "SELECT pk_described_template, fk_module_set, fk_template, hash, description_hash FROM described_template JOIN template ON fk_template = pk_template" );
             while ( resultSet.next() ) {
                 DBDescribedTemplate dbTemplate = new DBDescribedTemplate();
                 dbTemplate.pk = resultSet.getLong( "pk_described_template" );
                 dbTemplate.fk_template = resultSet.getLong( "fk_template" );
-                dbTemplate.key = new DescribedTemplate.Key( new Hash( resultSet.getBytes( "hash" ) ), new Hash( resultSet.getBytes( "fk_version_set" ) ) );
+                dbTemplate.key = new DescribedTemplate.Key( new Hash( resultSet.getBytes( "hash" ) ), new Hash( resultSet.getBytes( "fk_module_set" ) ) );
                 dbTemplate.description = new Hash( resultSet.getBytes( "description_hash" ) );
 
                 pkToDT.put( dbTemplate.pk, dbTemplate );
 
                 if ( keyToDT.containsKey( dbTemplate.key ) )
-                    throw new Exception( "Duplicate DescribedTemplate.Key " + dbTemplate.pk + " " + dbTemplate.key.getTemplateHash().toString() + ":" + dbTemplate.key.getVersionHash().toString() );
+                    throw new Exception( "Duplicate DescribedTemplate.Key " + dbTemplate.pk + " " + dbTemplate.key.getTemplateHash().toString() + ":" + dbTemplate.key.getModuleHash().toString() );
                 else {
                     keyToDT.put( dbTemplate.key, dbTemplate );
                 }
@@ -181,11 +186,14 @@ public class Core {
 
     public Core( long pk_test ) {
         this.pk_target_test = pk_test;
-        this.project = System.getenv("DTF_TEST_PROJECT");
         String dir = System.getenv("DTF_TEST_ARTIFACTS");
         if ( dir != null )
             this.artifacts = new File(dir);
 
+        if ( ! this.artifacts.isDirectory() )
+            //noinspection ResultOfMethodCallIgnored
+            this.artifacts.mkdirs();
+        
         openDatabase();
         
         if (connect == null) {
@@ -345,12 +353,12 @@ public class Core {
             ResultSet resultSet = null;
             try {
                 statement = connect.createStatement();
-                resultSet = statement.executeQuery( "SELECT pk_described_template, fk_version_set, pk_template, description_hash, hash, steps, enabled FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance = " + str_fkTestInstanceNumber + " AND pk_template = " + str_fkTemplate );
+                resultSet = statement.executeQuery( "SELECT pk_described_template, fk_module_set, pk_template, description_hash, hash, steps, enabled FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance = " + str_fkTestInstanceNumber + " AND pk_template = " + str_fkTemplate );
                 // exactly one resultSet (because we required test_instance.fk_described_template to match described_template.pk_described_template)
                 if ( resultSet.next() ) {
                     DBTemplateInfo dbtemplateinfo = new DBTemplateInfo();
                     dbtemplateinfo.pk_described_template = resultSet.getLong( "pk_described_template" ); // table entry will not be null
-                    dbtemplateinfo.fk_version_set = resultSet.getBytes("fk_version_set");
+                    dbtemplateinfo.fk_module_set = resultSet.getBytes("fk_module_set");
                     dbtemplateinfo.pk_template = resultSet.getLong("pk_template");
                     dbtemplateinfo.description_hash = resultSet.getBytes("description_hash");
                     dbtemplateinfo.hash = resultSet.getBytes("hash");
@@ -364,7 +372,7 @@ public class Core {
                     System.out.println( "executeTestInstance() has data base info for test instance " + dbti.pk_test_instance + " for test " + dbti.fk_test + ", finding described_template " + dbti.fk_described_template + " and template " + dbti.pk_template );
                     System.out.println( "executeTestInstance() finds test script: " + dbti.script);
                     System.out.println( "executeTestInstance() finds enabled: " + dbtemplateinfo.enabled);
-                    System.out.println( "executeTestInstance() finds version set: " + dbtemplateinfo.fk_version_set);
+                    System.out.println( "executeTestInstance() finds module set: " + dbtemplateinfo.fk_module_set);
                     System.out.println( "executeTestInstance() finds description_hash: " + dbtemplateinfo.description_hash);
                     System.out.println( "executeTestInstance() finds hash: " + dbtemplateinfo.hash);
                     System.out.println( "executeTestInstance() finds steps: \n" + dbtemplateinfo.steps);
@@ -410,25 +418,24 @@ public class Core {
     }
     
     /**
-     * Return a map of all components that exist in the database.
-     * @return A map from each existing component (by name) to its primary key.
+     * Return a list of artifact providers.
+     * @return The list of provider class names.
      */
-    public Map<String,Long> readComponents() {
-        Map<String,Long> result = new HashMap<String,Long>();
+    public List<String> readArtifactProviders() {
+        List<String> result = new ArrayList<String>();
         Statement statement = null;
         ResultSet resultSet = null;
 
         try {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT * FROM component" );
+            resultSet = statement.executeQuery( "SELECT * FROM artifact_provider" );
             while ( resultSet.next() ) {
-                String name = resultSet.getString( "name" );
-                Long pk = resultSet.getLong( "pk_component" );
-                result.put( name, pk );
+                String name = resultSet.getString( "classname" );
+                result.add( name );
             }
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Could not read components, " + e.getMessage() );
+            System.err.println( "ERROR: Could not read artifact providers, " + e.getMessage() );
         }
         finally {
             safeClose( resultSet ); resultSet = null;
@@ -437,88 +444,30 @@ public class Core {
 
         return result;
     }
-
+    
     /**
-     * Add a component to the database.
-     * @param component The component name.
-     * @return The primary key of the new component, or zero if there is an error or in read-only mode.
+     * Add a module to the database.
+     * @param module The module to add.
+     * @return The primary key of the new module, or zero if there is an error or in read-only mode. If the module already exists then
+     * the existing primary key is returned;
      */
-    public long addComponent( String component ) {
+    public long addModule( Module module ) {
         PreparedStatement statement = null;
-        long pk = 0;
+        long pk = findModule( module );
 
-        if ( read_only )
+        // This will work in read-only mode to return an existing module.
+        if ( pk != 0 || read_only )
             return pk;
 
-        try {
-            statement = connect.prepareStatement("INSERT INTO component (name) values (?)", Statement.RETURN_GENERATED_KEYS);
-            statement.setString( 1, component );
-            statement.executeUpdate();
-
-            ResultSet keys = statement.getGeneratedKeys();
-            if ( keys.next() )
-                pk = keys.getLong( 1 );
-        }
-        catch ( Exception e ) {
-            System.err.println( "ERROR: Could not add component, " + e.getMessage() );
-        }
-        finally {
-            safeClose( statement ); statement = null;
-        }
-
-        return pk;
-    }
-
-    /* Note that there is no deleteComponent - that is a manual operation. */
-
-    /**
-     * REturn a map of all versions related to a specified component.
-     * @param fk_component The component to return versions for.
-     * @return A map from the version string to the primary key of the version.
-     */
-    public Map<String,Long> readVersions( long fk_component ) {
-        Map<String,Long> result = new HashMap<String,Long>();
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        try {
-            statement = connect.createStatement();
-            resultSet = statement.executeQuery( String.format( "SELECT * FROM version WHERE fk_component=%d", fk_component ) );
-            while ( resultSet.next() ) {
-                String version = resultSet.getString( "version" );
-                Long pk = resultSet.getLong( "pk_version" );
-                result.put( version, pk );
-            }
-        }
-        catch ( Exception e ) {
-            System.err.println( "ERROR: Could not read versions for component " + fk_component + ", " + e.getMessage() );
-        }
-        finally {
-            safeClose( resultSet ); resultSet = null;
-            safeClose( statement ); statement = null;
-        }
-
-        return result;
-    }
-
-    /**
-     * Add a version to a specified component.
-     * @param fk_component The primary key of the component to add the version to.
-     * @param version The version to add.
-     * @return The primary key of the new version, or zero if there is an error or in read-only mode.
-     */
-    public long addVersion( long fk_component, String version ) {
-        PreparedStatement statement = null;
-        long pk = 0;
-
-        if ( read_only )
-            return pk;
-
+        String attributes = new Attributes( module.getAttributes()).toString();
         //TODO: Release date, actual release date, status, order all need to be added.
         try {
-            statement = connect.prepareStatement( "INSERT INTO version (fk_component, version) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS );
-            statement.setLong( 1, fk_component );
-            statement.setString( 2, version );
+            statement = connect.prepareStatement( "INSERT INTO module (organization, name, attributes, version, sequence) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+            statement.setString( 1, module.getOrganization() );
+            statement.setString( 2, module.getName() );
+            statement.setString( 3, attributes );
+            statement.setString( 4, module.getVersion() );
+            statement.setString( 5, module.getSequence() );
             statement.executeUpdate();
 
             ResultSet keys = statement.getGeneratedKeys();
@@ -526,7 +475,7 @@ public class Core {
                 pk = keys.getLong( 1 );
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Could not add version to component, " + e.getMessage() );
+            System.err.println( "ERROR: Could not add module, " + e.getMessage() );
         }
         finally {
             safeClose( statement ); statement = null;
@@ -536,143 +485,147 @@ public class Core {
     }
 
     /**
-     * Delete a version.
-     * @param pk_version The primary key of the version to delete.
+     * Delete a module.
+     * @param pk_module The primary key of the module to delete.
      */
-    public void deleteVersion( long pk_version ) {
+    public void deleteModule( long pk_module ) {
         PreparedStatement statement = null;
 
         if ( read_only )
             return;
 
         try {
-            statement = connect.prepareStatement( "DELETE FROM version WHERE pk_version=?" );
-            statement.setLong( 1, pk_version );
+            statement = connect.prepareStatement( "DELETE FROM module WHERE pk_module=?" );
+            statement.setLong( 1, pk_module );
+            statement.executeUpdate();
+            safeClose( statement ); statement = null;
+            
+            statement = connect.prepareStatement( "DELETE FROM artifact WHERE merged_from_module=?" );
+            statement.setLong( 1,  pk_module );
             statement.executeUpdate();
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Could not delete version, " + e.getMessage() );
+            System.err.println( "ERROR: Could not delete module, " + e.getMessage() );
         }
         finally {
             safeClose( statement ); statement = null;
         }
     }
-
+    
     /**
-     * Give a version and a set of artifacts, synchronize the database with the artifacts. There
-     * may be many artifacts associated with a version.
-     * @param pk_version The primary key of the version (and by extension the component) for these artifacts.
-     * @param artifacts A set of artifacts that should exist.
+     * Add content given a hash and inputstream. If the contents exist then the file is assumed to be correct
+     * and the database is still updated.
+     * @param h The hash of the file.
+     * @param is An input stream for the contents.
      */
-    public void synchronizeArtifacts( long pk_version, ArtifactSink artifacts ) {
-        PreparedStatement clear_synchronized = null;
-        PreparedStatement delete_not_synchronized = null;
-        PreparedStatement find_artifact = null;
-        PreparedStatement mark_synchronized = null;
-        PreparedStatement find_content = null;
-        PreparedStatement create_content = null;
-        PreparedStatement create_artifact = null;
-        ResultSet resultSet = null;
-
+    public void addContent( Hash h, InputStream is ) {
         if ( read_only )
             return;
 
-        /* Given that the number of artifacts may be large and we want to preserve the artifact
-         * primary key unless there is a change we do the following:
-         *   1. Bulk unmark all of the existing artifacts and content.
-         *   2. Scan the current artifacts, marking matches.
-         *   3. Add current artifacts that do not match (default marked).
-         *   4. Bulk delete database artifacts that are unmarked.
-         */
+        File target = new File( this.artifacts, h.toString() );
+        if ( target.exists() )
+            return;
+        
         try {
-            clear_synchronized = connect.prepareStatement( "UPDATE artifact SET synchronized=0 WHERE fk_version=?" );
-            clear_synchronized.setLong( 1,  pk_version );
-            clear_synchronized.executeUpdate();
-            safeClose( clear_synchronized ); clear_synchronized = null;
-
-            if ( ! this.artifacts.isDirectory() )
-                //noinspection ResultOfMethodCallIgnored
-                this.artifacts.mkdirs();
-
-            connect.setAutoCommit( false );
-
-            find_artifact = connect.prepareStatement( "SELECT pk_artifact FROM artifact WHERE fk_version=? and fk_content=? AND name=?" );
-            mark_synchronized = connect.prepareStatement( "UPDATE artifact SET synchronized=1 WHERE pk_artifact=?" );
-            find_content = connect.prepareStatement( "SELECT pk_content FROM content WHERE pk_content=?" );
-            create_content = connect.prepareStatement( "INSERT INTO content (pk_content) VALUES (?)" );
-            create_artifact = connect.prepareStatement( "INSERT INTO artifact (fk_version, fk_content, synchronized, platform, internal_build, name) VALUES (?,?,?,?,?,?)" );
-
-            for ( ArtifactSink.Entry entry : artifacts.entries ) {
-                // Always update the file if it doesn't exist, independent of database.
-                File a = new File( this.artifacts, entry.hash.toString() );
-                if ( ! a.exists() ) {
-                    FileOutputStream os = new FileOutputStream( a );
-                    InputStream is = entry.content.asStream();
-                    IOUtils.copy(is, os);
-                    is.close();
-                    os.close();
-                }
-
-                find_artifact.setLong( 1, pk_version );
-                find_artifact.setBinaryStream(2, new ByteArrayInputStream(entry.hash.toBytes()));
-                find_artifact.setString( 3, entry.name );
-
-                resultSet = find_artifact.executeQuery();
-                if ( ! resultSet.isBeforeFirst() ) {
-                    // There were no matches. Time to insert. Need to determine if the content exists.
-                    safeClose( resultSet ); resultSet = null;
-
-                    find_content.setBinaryStream(1, new ByteArrayInputStream(entry.hash.toBytes()));
-                    resultSet = find_content.executeQuery();
-                    if ( ! resultSet.isBeforeFirst() ) {
-                        // There is no content. Need to add.
-                        safeClose( resultSet ); resultSet = null;
-
-                        create_content.setBinaryStream( 1, new ByteArrayInputStream( entry.hash.toBytes() ) );
-                        create_content.executeUpdate();
-                    }
-
-                    create_artifact.setLong( 1, pk_version );
-                    create_artifact.setBinaryStream(2, new ByteArrayInputStream(entry.hash.toBytes()));
-                    create_artifact.setInt(3, 1);  // Additions are synchronized
-                    create_artifact.setString(4, entry.platform);
-                    create_artifact.setString( 5, entry.internal_build);
-                    create_artifact.setString( 6, entry.name );
-                    create_artifact.executeUpdate();
-                }
-                else {
-                    resultSet.next();
-                    Long pk = resultSet.getLong( "pk_artifact" );
-                    safeClose( resultSet ); resultSet = null;
-
-                    mark_synchronized.setLong( 1, pk );
-                    mark_synchronized.executeUpdate();
-                }
-            }
-
-            connect.commit();
-            connect.setAutoCommit( true );
-
-            delete_not_synchronized = connect.prepareStatement( "DELETE FROM artifact WHERE synchronized=0 AND fk_version=?" );
-            delete_not_synchronized.setLong( 1, pk_version );
-            delete_not_synchronized.executeUpdate();
-            safeClose( delete_not_synchronized ); delete_not_synchronized = null;
+            FileOutputStream os = new FileOutputStream( target );
+            IOUtils.copy( is, os );
+            is.close();
+            os.close();
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Couldn't synchronize artifacts, " + e.getMessage() );
+            
+        }
+
+        PreparedStatement statement = null;
+        try {
+            statement = connect.prepareStatement( "INSERT INTO content (pk_content, is_generated) VALUES (?,1)" );
+            statement.setBinaryStream(1, new ByteArrayInputStream(h.toBytes()));
+            statement.executeUpdate();
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Could not add content, " + e.getMessage() );
         }
         finally {
-            safeClose( resultSet );
-            safeClose( clear_synchronized );
-            safeClose( delete_not_synchronized );
-            safeClose( find_content );
-            safeClose( create_content );
-            safeClose( mark_synchronized );
-            safeClose( create_artifact );
-            safeClose( find_artifact );
+            safeClose( statement ); statement = null;
+        } 
+    }
+    
+    /**
+     * Add content to the system given a hash and a file.
+     * @param h The hash of the contents.
+     * @param f A file that contains the data.
+     */
+    public void addContent( Hash h, File f ) {
+        try {
+            FileInputStream is = new FileInputStream( f );
+            addContent( h, is );  
+        }
+        catch ( Exception e ) {
+            
         }
     }
+    
+    /**
+     * Return a file for content that exists in the cache.
+     * @param h The hash of the file to return.
+     * @return A file if it exists, null otherwise.
+     */
+    public File getContentFile( Hash h ) {
+        File f = new File( artifacts, h.toString() );
+        if ( f.exists() )
+            return f;
+        
+        return null;
+    }
+    
+    /**
+     * Add an artifact to a particular module and configuration, given a name and hash of the content.
+     * @param pk_module The module the artifact relates to.
+     * @param configuration The configuration the artifact is part of.
+     * @param name The name of the artifact.
+     * @param content The hash of the file content, which must already exist in the system.
+     * @param merge_source True of the artifact is associated with a merged module.
+     * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
+     * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from. 
+     * @return
+     */
+    public long addArtifact( long pk_module, String configuration, String name, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module ) {
+        PreparedStatement statement = null;
+        long pk = 0;
 
+        if ( read_only )
+            return pk;
+
+        try {
+            if ( merged_from_module != 0 )
+                statement = connect.prepareStatement( "INSERT INTO artifact (fk_module, fk_content, configuration, name, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+            else
+                statement = connect.prepareStatement( "INSERT INTO artifact (fk_module, fk_content, configuration, name, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+               
+            statement.setLong( 1, pk_module );
+            statement.setBinaryStream(2, new ByteArrayInputStream(content.toBytes()));
+            statement.setString( 3, configuration );
+            statement.setString( 4, name );
+            statement.setBoolean( 5, merge_source );
+            statement.setLong( 6, derived_from_artifact );
+            if ( merged_from_module != 0 )
+                statement.setLong( 7, merged_from_module );
+            statement.executeUpdate();
+
+            ResultSet keys = statement.getGeneratedKeys();
+            if ( keys.next() )
+                pk = keys.getLong( 1 );
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Could not add artifact to module, " + e.getMessage() );
+        }
+        finally {
+            safeClose( statement ); statement = null;
+        }
+
+        return pk;
+    }
+    
     /**
      * Clear the is_generated flag on all content. If not set before pruneContent() is called, then the content
      * will be deleted by pruneContent() unless associated with an artifact.
@@ -705,9 +658,8 @@ public class Core {
         if ( read_only )
             return;
 
-        // TODO: This will have to change for created content.
         try {
-            statement = connect.prepareStatement( "DELETE content FROM content LEFT JOIN artifact ON content.pk_content = artifact.fk_content WHERE artifact.fk_content IS NULL AND artifact.is_generated=0" );
+            statement = connect.prepareStatement( "DELETE content FROM content LEFT JOIN artifact ON content.pk_content = artifact.fk_content WHERE artifact.fk_content IS NULL AND content.is_generated=0" );
             statement.executeUpdate();
         }
         catch ( Exception e ) {
@@ -759,19 +711,86 @@ public class Core {
         }
     }
 
-    Iterable<Version> createVersionSet() {
-        List<Version> set = new ArrayList<Version>();
+    /**
+     * This class represents a module that is backed by the core database. Operations on the module will refer
+     * to database content.
+     */
+    private static class DBModule implements Module {
+        private Core core;
+        private long pk;
+        private String organization;
+        private String name;
+        private Attributes attributes;
+        private String version;
+        private String sequence;
+
+        
+        DBModule( Core core, long pk, String organization, String name, String attribute_string, String version, String sequence ) {
+            this.core = core;
+            this.pk = pk;
+            this.organization = organization;
+            this.name = name;
+            this.attributes = new Attributes(attribute_string);
+            this.version = version;
+            this.sequence = sequence;
+        }
+        
+        @Override
+        public String getOrganization() {
+            return organization;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public String getVersion() {
+            return version;
+        }
+
+        @Override
+        public Map<String, String> getAttributes() {
+            return attributes.getAttributes();
+        }
+
+       @Override
+        public String getSequence() {
+            return sequence;
+        }
+
+        @Override
+        public List<Artifact> getArtifacts() {
+            return core.getArtifacts( pk, null, null );
+        }
+
+        @Override
+        public List<Artifact> getArtifacts(String namePattern) {
+            return core.getArtifacts( pk, namePattern, null );
+        }
+
+        @Override
+        public List<Artifact> getArtifacts(String namePattern, String configuration) {
+            return core.getArtifacts( pk, namePattern, configuration );
+        }
+    }
+    
+    /**
+     * Return a set of all modules known to the database.
+     * @return
+     */
+    public Iterable<Module> createModuleSet() {
+        List<Module> set = new ArrayList<Module>();
         Statement statement = null;
         ResultSet resultSet = null;
 
         try {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( String.format( "SELECT component.name, version.version" +
-                    " FROM component" +
-                    " JOIN version ON component.pk_component = version.fk_component" ) );
+            resultSet = statement.executeQuery( "SELECT pk_module, organization, name, attributes, version, sequence FROM module" );
             while ( resultSet.next() ) {
-                Version V = new Version( this, resultSet.getString(1), resultSet.getString(2) );
-                set.add( V );
+                DBModule M = new DBModule( this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                set.add( M );
             }
         }
         catch ( Exception e ) {
@@ -786,20 +805,25 @@ public class Core {
         return set;
     }
 
-    Iterable<Version> createVersionSet(String component) {
-        List<Version> set = new ArrayList<Version>();
+    /**
+     * Create a set of all modules that match the specified organization and module name.
+     * @param organization The organizations to filter on.
+     * @param name The module name to filter on.
+     * @return A set of modules.
+     */
+    Iterable<Module> createModuleSet(String organization, String name) {
+        List<Module> set = new ArrayList<Module>();
         Statement statement = null;
         ResultSet resultSet = null;
 
         try {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( String.format( "SELECT name, version" +
-                    " FROM component" +
-                    " JOIN version ON pk_component = fk_component" ) +
-                    " WHERE name = " + component );
+            resultSet = statement.executeQuery( String.format( "SELECT pk_module, organization, name, attributes, version, sequence" +
+                    " FROM module" +
+                    " WHERE organization = " + organization + " AND name = '" + name + "'" ) );
             while ( resultSet.next() ) {
-                Version V = new Version( this, resultSet.getString(1), resultSet.getString(2) );
-                set.add( V );
+                DBModule M = new DBModule( this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                set.add( M );
             }
         }
         catch ( Exception e ) {
@@ -814,108 +838,107 @@ public class Core {
         return set;
     }
 
+    /**
+     * Return a set of all artifacts that the specified artifact depends on. Dependencies are stored in a
+     * corresponding artifact with '.dep' added. These are typically merged artifacts so they are not typically
+     * distributed.
+     * The '.dep' file contains artifact references, one per line, with the following formats:
+     * First, a line with a single field. This field is a name regex (defined my MySQL) for other artifacts in the same module.
+     * Second, a line with two fields separated by a comma. The first field is a module reference and the second is a version.
+     * The module reference is specified as 'org#module#attributes' and the version as 'version/configuration'. In all fields
+     * a dollar sign can be used to substitute the value from the artifact that dependencies are being found from. This
+     * means that '$#$#$,$/,$.dep' is used to search for the '.dep' file. If any of the fields is empty then it will not be used
+     * in the search. If attributes are specified then they must match exactly (and be formatted correctly including URL-encoding).
+     * If the dollar sign is used in attributes and additional attributes are specified then they will be reformatted correctly.
+     * Each artifact name is only accepted once, with the first match taking priority. Artifacts are ordered by sorting
+     * organization, module, attributes, version (all increasing order) and sequence (decreasing order).
+     * @param artifact The artifact to search dependencies for. The corresponding '.dep' file must be in the
+     * same module as the artifact (likely by being merged).
+     * @return A set of dependent artifacts.
+     */
     Iterable<Artifact> findDependencies( Artifact artifact ) {
         List<Artifact> set = new ArrayList<Artifact>();
         Statement statement = null;
         ResultSet resultSet = null;
 
+        // Artifact searches are always done from the perspective of merged modules.
+        long pk = findModule( artifact.getModule() );
+        if ( pk == 0 )
+            return set; // This should not happen
+        
         try {
+            // We are willing to find any artifact from any merged module
             statement = connect.createStatement();
-            String query = String.format( "SELECT component.name," +
-                    " version.version, artifact.platform, artifact.internal_build, artifact.name, artifact.fk_content" +
+            String query = String.format( "SELECT artifact.fk_content" +
                     " FROM artifact" +
-                    " JOIN version ON version.pk_version = artifact.fk_version" +
-                    " JOIN component ON component.pk_component = version.fk_component" +
-                    " WHERE artifact.name = '%s.dep" + "' AND" +
-                    " version.version = '%s' AND" +
-                    " artifact.internal_build = '%s'", artifact.getName(), artifact.getVersion().getVersion(), artifact.getVariant() );
+                    " WHERE artifact.fk_module = %d AND artifact.name = '%s.dep'", pk, artifact.getName() );
             resultSet = statement.executeQuery( query );
             if ( resultSet.next() ) {
-                Hash hash = new Hash( resultSet.getBytes(6) );
+                // We only care about the first match that we find.
+                Hash hash = new Hash( resultSet.getBytes(1) );
                 File f = new File( this.artifacts, hash.toString() );
                 LineIterator iterator = new LineIterator( new FileReader( f ) );
+                
+                safeClose( resultSet ); resultSet = null;
+                safeClose( statement ); statement = null;
+                
+                // Each line is a dependency. The first field is a name regex, the second (optional) is a version.
                 while ( iterator.hasNext() ) {
                     String line = iterator.next();
                     String[] fields = line.split(",");
                     if ( fields.length == 1 ) {
-                        safeClose( resultSet ); resultSet = null;
-                        safeClose( statement ); statement = null;
-
                         statement = connect.createStatement();
-                        query = String.format( "SELECT component.name," +
-                                " version.version, artifact.pk_artifact, artifact.platform, artifact.internal_build, artifact.name, artifact.fk_content" +
+                        query = String.format( "SELECT artifact.pk_artifact, artifact.configuration, artifact.name, artifact.fk_content" +
                                 " FROM artifact" +
-                                " JOIN version ON version.pk_version = artifact.fk_version" +
-                                " JOIN component ON component.pk_component = version.fk_component" +
-                                " WHERE artifact.name LIKE '%s" + "' AND" +
-                                " version.version = '%s' AND" +
-                                " artifact.internal_build = '%s'", fields[0], artifact.getVersion().getVersion(), artifact.getVariant() );
+                                " WHERE artifact.fk_module = %d AND artifact.name REGEXP '%s" + "'", pk, fields[0] );
                         resultSet = statement.executeQuery( query );
                         while ( resultSet.next() ) {
-                            String component = resultSet.getString(1);
-                            String version = resultSet.getString(2);
-                            hash = new Hash( resultSet.getBytes(7) );
-                            set.add( new Artifact( resultSet.getLong(3), resultSet.getString(6), new Version( this, component, version ), artifact.getPlatform(), artifact.getVariant(), hash ) );
+                            Module mod = artifact.getModule();
+                            Artifact A = new Artifact( mod, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) );
+                            set.add( A );
                         }
                     }
                     else if ( fields.length == 3 ) {
-                        VersionRange range = new VersionRange( fields[1] );
-                        int[] version = null;
-                        String chosenVersion = "";
-
-                        safeClose( resultSet ); resultSet = null;
-                        safeClose( statement ); statement = null;
-
                         statement = connect.createStatement();
-                        query = String.format( "SELECT component.name," +
-                                " version.version " +
-                                " FROM version" +
-                                " JOIN component ON component.pk_component = version.fk_component" +
-                                " WHERE component.name = '%s" + "'", fields[0] );
-                        resultSet = statement.executeQuery( query );
-                        while ( resultSet.next() ) {
-                            String V = resultSet.getString(2);
-                            if ( range.contains( V ) ) {
-                                String[] nums = V.split( "[^0-9]" );
-                                int[] num = new int[nums.length];
-                                for ( int i = 0; i < num.length; i++ )
-                                    num[i] = Integer.parseInt( nums[i] );
 
-                                if ( version == null ) {
-                                    version = num;
-                                    chosenVersion = V;
-                                    continue;
-                                }
+                        String[] mod_fields = fields[0].split("#");
+                        String[] ver_fields = fields[1].split("/");
+                        
+                        String organization = mod_fields[0];
+                        String module = mod_fields.length > 1 ? mod_fields[1] : "";
+                        String attributes = mod_fields.length > 2 ? mod_fields[2] : "";
+                        String version = ver_fields[0];
+                        String configuration = ver_fields.length > 1 ? ver_fields[1] : "";
+                        
+                        organization = organization.replace( "$", artifact.getModule().getOrganization() );
+                        module = module.replace( "$", artifact.getModule().getName() );
+                        attributes = attributes.replace( "$", artifact.getModule().getAttributes().toString() );
+                        attributes = new Attributes( attributes ).toString();
+                        version = version.replace( "$", artifact.getModule().getVersion() );
+                        configuration = configuration.replace( "$", artifact.getConfiguration() );
 
-                                for ( int i = 0; i < num.length || i < version.length; i++ ) {
-                                    int chosen = i < version.length ? version[i] : 0;
-                                    int possible = i < num.length ? num[i] : 0;
-                                    if ( possible > chosen ) {
-                                        version = num;
-                                        chosenVersion = V;
-                                        continue;
-                                    }
-                                }
-                            }
-                        }
-
-                        safeClose( resultSet ); resultSet = null;
-                        safeClose( statement ); statement = null;
-
-                        statement = connect.createStatement();
-                        query = String.format( "SELECT component.name," +
-                                " version.version, artifact.pk_artifact, artifact.platform, artifact.internal_build, artifact.name, artifact.fk_content" +
+                        
+                        String organization_where = organization.length() > 0 ? " AND module.organization='" + organization + "'" : "";
+                        String module_where = module.length() > 0 ? " AND module.name='" + module + "'" : "";
+                        String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + "'" : "";
+                        String version_where = version.length() > 0 ? " AND module.version='" + version + "'" : "";
+                        String configuration_where = configuration.length() > 0 ? " AND module.configuration='" + configuration + "'" : "";
+                        
+                        query = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.name, artifact.configuration, artifact.fk_content" +
                                 " FROM artifact" +
-                                " JOIN version ON version.pk_version = artifact.fk_version" +
-                                " JOIN component ON component.pk_component = version.fk_component" +
-                                " WHERE artifact.name LIKE '%s" + "' AND" +
-                                " version.version = '%s' AND" +
-                                " artifact.internal_build = '%s'", fields[2], chosenVersion, artifact.getVariant() );
+                                " JOIN module ON module.pk_module = artifact.fk_module" +
+                                " WHERE artiface.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s" +
+                                " ORDER BY module.organization, module.name, module.attributes, module.version, module.configuration, module.sequence DESC", fields[2], organization_where, module_where, attributes_where, version_where, configuration_where );
                         resultSet = statement.executeQuery( query );
+                        Set<String> found = new HashSet<String>();
                         while ( resultSet.next() ) {
-                            String component = resultSet.getString(1);
-                            hash = new Hash( resultSet.getBytes(7) );
-                            set.add( new Artifact( resultSet.getLong(3), resultSet.getString(6), new Version( this, component, chosenVersion ), artifact.getPlatform(), artifact.getVariant(), hash ) );
+                            String artifact_name = resultSet.getString(6);
+                            if ( found.contains( artifact_name ) )
+                                continue;
+                            
+                            DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                            Artifact A = new Artifact( dbmod, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) );
+                            set.add( A );
                         }
                     }
                     else
@@ -935,34 +958,75 @@ public class Core {
         return set;
     }
 
-    public Iterable<Artifact[]> createArtifactSet( String internal_build, String ... name ) {
+    /**
+     * Return a set of artifacts given the specified requirements. First, only attributes from modules with at least the specified
+     * attributes are included. Second, if specified, the artifacts must come from the given configuration. The names specified are patterns
+     * acceptable to MySQL regex search.
+     * The result set includes a list of sets of matching artifacts. For each element in the list the array of results contains the
+     * artifact that matches the parameter in the same position, all of which will come from the same module.
+     * @param required A parameter set or null. Any module considered for artifacts must contain at least these attributes.
+     * @param configuration the configuration to check, or null. 
+     * @param name Artifact names, including MySQL REGEXP patterns.
+     * @return
+     */
+    public Iterable<Artifact[]> createArtifactSet( Attributes required, String configuration, String ... name ) {
         Statement statement = null;
         ResultSet resultSet = null;
         List<Artifact[]> set = new ArrayList<Artifact[]>();
-        Map<String,Artifact[]> map = new HashMap<String, Artifact[]>();
-
+        Map<Long,DBModule> moduleMap = new HashMap<Long,DBModule>();
+        Map<Long,Artifact[]> artifactMap = new HashMap<Long, Artifact[]>();
+        
         for ( int name_index = 0; name_index < name.length; name_index++ ) {
             String artifact_name = name[ name_index ];
             try {
                 statement = connect.createStatement();
-                resultSet = statement.executeQuery( String.format( "SELECT component.name," +
-                        " version.version, artifact.pk_artifact, artifact.platform, artifact.internal_build, artifact.name, artifact.fk_content" +
+                String configuration_match = "";
+                if ( configuration != null )
+                    configuration_match = " AND artifact.configuration='" + configuration + "'";
+                
+                String queryStr = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.configuration, artifact.name, artifact.fk_content" +
                         " FROM artifact" +
-                        " JOIN version ON version.pk_version = artifact.fk_version" +
-                        " JOIN component ON component.pk_component = version.fk_component" +
-                        " WHERE artifact.name LIKE '%s' AND artifact.internal_build = '%s'", artifact_name, internal_build ) );
+                        " JOIN module ON module.pk_module = artifact.fk_module" +
+                        " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s" +
+                        " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC", artifact_name, configuration_match );
+                resultSet = statement.executeQuery( queryStr );
                 while ( resultSet.next() ) {
-                    String V = resultSet.getString(1) + ":" + resultSet.getString(2);
+                    // Verify that if requested, the module/version has all required attributes.
+                    Attributes possesses = new Attributes( resultSet.getString(4) );
+                    if ( required != null ) {
+                        boolean mismatch = false;
+                        for ( Map.Entry<String,String> entry : required.getAttributes().entrySet() ) {
+                            if ( possesses.get( entry.getKey() ) != entry.getValue() ) {
+                                mismatch = true;
+                                break;
+                            }
+                        }
+                        
+                        if ( mismatch )
+                            continue; // Move to the next result
+                    }
+                    
+                    long pk_found = resultSet.getLong(1);
                     Artifact[] artifacts;
-                    if ( map.containsKey( V ) )
-                        artifacts = map.get( V );
+                    if ( artifactMap.containsKey( pk_found ) )
+                        artifacts = artifactMap.get( pk_found );
                     else {
                         artifacts = new Artifact[ name.length ];
-                        map.put( V, artifacts );
+                        artifactMap.put( pk_found, artifacts );
                     }
 
-                    if ( artifacts[ name_index ] == null )
-                        artifacts[ name_index ] = new Artifact( resultSet.getLong(3), resultSet.getString(6), new Version( this, resultSet.getString(1), resultSet.getString(2) ), resultSet.getString(4), internal_build, new Hash( resultSet.getBytes(7) ) );
+                    DBModule module = null;
+                    if ( moduleMap.containsKey( pk_found ) )
+                        module = moduleMap.get( pk_found );
+                    else {
+                        module = new DBModule( this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                        moduleMap.put( pk_found, module );
+                    }
+                    
+                    if ( artifacts[ name_index ] == null ) {
+                        Artifact A = new Artifact( module, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) ); 
+                        artifacts[ name_index ] = A;
+                    }
                 }
             }
             catch ( Exception e ) {
@@ -975,8 +1039,8 @@ public class Core {
             }
         }
 
-        for ( String V : map.keySet() ) {
-            Artifact[] list = map.get(V);
+        for ( Long pk : artifactMap.keySet() ) {
+            Artifact[] list = artifactMap.get(pk);
             int found = 0;
             for ( int i = 0; i < list.length; i++ )
                 if ( list[i]  != null )
@@ -989,6 +1053,10 @@ public class Core {
         return set;
     }
 
+    /**
+     * Get the list of generators configured for all the tests.
+     * @return A map where the keys are the primary keys of the tests and the values are the string to run the generator.
+     */
     public Map<Long,String> getGenerators() {
         Map<Long,String> result = new HashMap<Long,String>();
         Statement statement = null;
@@ -1016,54 +1084,60 @@ public class Core {
         return result;
     }
 
-    public Set<String> getPlatforms( String component, String version ) {
-        Set<String> result = new HashSet<String>();
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        try {
-            statement = connect.createStatement();
-            resultSet = statement.executeQuery( String.format( "SELECT DISTINCT artifact.platform" +
-                    " FROM component" +
-                    " JOIN version ON component.pk_component = version.fk_component" +
-                    " JOIN artifact ON version.pk_version = artifact.fk_version" +
-                    " WHERE component.name='%s' AND version.version='%s'", component, version) );
-            while ( resultSet.next() ) {
-                result.add( resultSet.getString(1) );
-            }
-        }
-        catch ( Exception e ) {
-            System.err.println( "ERROR: Exception " + e.getMessage() );
-            e.printStackTrace( System.err );
-        }
-        finally {
-            safeClose( resultSet ); resultSet = null;
-            safeClose( statement ); statement = null;
-        }
-
-        return result;
-    }
-
-    public List<Artifact> getArtifacts( String version, String platform, String name ) {
+    /**
+     * Return artifacts associated with a particular module (including version). Both name and configuration optional.
+     * @param pk_module The primary key of the module to return artifacts for.
+     * @param name The name, which can include MySQL REGEXP patterns and is also optional.
+     * @param configuration The configuration, or null to include all.
+     * @return The list of matching artifacts.
+     */
+    public List<Artifact> getArtifacts(long pk_module, String name, String configuration ) {
         Statement statement = null;
         ResultSet resultSet = null;
         List<Artifact> set = new ArrayList<Artifact>();
         String name_match = "";
-
+        String configuration_match = "";
+        String separator = "";
+        String intro = "";
+        
         if ( name != null )
-            name_match = "artifact.name LIKE '" + name + "' AND ";
+            name_match = "artifact.name REGEXP '" + name + "'";
 
+        if ( configuration != null )
+            configuration_match = "artifact.configuration = '" + configuration + "'";
+        
+        if ( name != null && configuration != null )
+            separator = " AND ";
+        
+        if ( name != null || configuration != null )
+            intro = " AND ";
+        
         try {
+            Map<Long,DBModule> modules = new HashMap<Long,DBModule>();
+            
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT component.name," +
-                    " version.version, artifact.pk_artifact, artifact.platform, artifact.internal_build, artifact.name, artifact.fk_content" +
+            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.configuration, artifact.name, artifact.fk_content" +
                     " FROM artifact" +
-                    " JOIN version ON version.pk_version = artifact.fk_version" +
-                    " JOIN component ON component.pk_component = version.fk_component" +
-                    " WHERE " + name_match + "artifact.platform = '" + platform + "' AND version.version = '" + version + "'" );
+                    " JOIN module ON module.pk_module = artifact.fk_module" +
+                    " WHERE module.pk_module = " + pk_module +
+                    intro + name_match + separator + configuration_match +
+                    " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC");
             while ( resultSet.next() ) {
-                //TODO: Handle internal_build.
-                set.add( new Artifact( resultSet.getLong(3), resultSet.getString(6), new Version(this, resultSet.getString(1), resultSet.getString(2) ), resultSet.getString(4), "", new Hash( resultSet.getBytes(7) ) ) );
+                DBModule module = null;
+                long pk_found = resultSet.getLong(1);
+                
+                if ( modules.containsKey( pk_found ) )
+                    module = modules.get( pk_found );
+                else {
+                    module = new DBModule( this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                    modules.put( pk_found, module );
+                }
+                
+                if ( set.contains( resultSet.getString( 8 )) )
+                    continue;
+                
+                Artifact A = new Artifact( module, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) ); 
+                set.add( A );
             }
 
         }
@@ -1079,49 +1153,27 @@ public class Core {
         return set;
     }
 
-    long findComponent( String component ) {
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
-        try {
-            statement = connect.prepareStatement( "SELECT component.pk_component" +
-                    " FROM component" +
-                    " WHERE component.name = '" + component + "'");
-            resultSet = statement.executeQuery();
-            if ( resultSet.isBeforeFirst() ) {
-                resultSet.next();
-                return resultSet.getLong( "component.pk_component" );
-            }
-        }
-        catch ( Exception e ) {
-            System.err.println( "ERROR: Couldn't find the component, " + e.getMessage() );
-        }
-        finally {
-            safeClose( resultSet ); resultSet = null;
-            safeClose( statement ); statement = null;
-        }
-
-        return 0;
-    }
-
     /**
      * Return whether the specified version is associated with the current core target test. This is true
      * if there is a relationship from the test through the test plan to the component and version.
      * @param version
      * @return
      */
-    boolean isAssociatedWithTest( Version version ) {
+    boolean isAssociatedWithTest( Module module ) {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
-
+        long pk = findModule( module );
+        if ( pk == 0 )
+            return false;
+        
         try {
             statement = connect.prepareStatement( "SELECT test.pk_test" +
                     " FROM test" +
                     " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" +
-                    " JOIN component_to_test_plan ON component_to_test_plan.fk_test_plan = test_plan.pk_test_plan" +
-                    " WHERE test.pk_test = ? AND component_to_test_plan.fk_component = ?" );
+                    " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan = test_plan.pk_test_plan" +
+                    " WHERE test.pk_test = ? AND module_to_test_plan.fk_module = ?" );
             statement.setLong( 1, pk_target_test );
-            statement.setLong( 2, version.getComponentPK() );
+            statement.setLong( 2, pk );
             resultSet = statement.executeQuery();
             if ( resultSet.isBeforeFirst() ) {
                 return true;
@@ -1165,23 +1217,34 @@ public class Core {
         return 0;
     }
 
-    long findVersion( long pk_component, String version ) {
+    public long findModule( Module module ) {
+        // Short-cut the lookup if it is one of our modules.
+        if ( module instanceof DBModule ) {
+            DBModule dbmod = (DBModule) module;
+            if ( dbmod.pk != 0 )
+                return dbmod.pk;
+        }
+        
         PreparedStatement statement = null;
         ResultSet resultSet = null;
 
+        String attributes = new Attributes( module.getAttributes() ).toString();
         try {
-            statement = connect.prepareStatement( "SELECT version.pk_version" +
-                    " FROM version" +
-                    " JOIN component ON component.pk_component = version.fk_component" +
-                    " WHERE component.pk_component = " + pk_component + " AND version.version = '" + version + "'");
+            statement = connect.prepareStatement( "SELECT module.pk_module" +
+                    " FROM module" +
+                    " WHERE module.organization = '" + module.getOrganization() + "'" +
+                    " AND module.name = '" + module.getName() + "'" +
+                    " AND module.attributes = '" + attributes + "'" +
+                    " AND module.version = '" + module.getVersion() + "'" +
+                    " AND module.sequence = '" + module.getSequence() + "'" );
             resultSet = statement.executeQuery();
             if ( resultSet.isBeforeFirst() ) {
                 resultSet.next();
-                return resultSet.getLong( "version.pk_version" );
+                return resultSet.getLong( "module.pk_module" );
             }
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Couldn't find version, " + e.getMessage() );
+            System.err.println( "ERROR: Couldn't find module, " + e.getMessage() );
         }
         finally {
             safeClose( resultSet ); resultSet = null;
@@ -1303,7 +1366,7 @@ public class Core {
                     Artifact artifact = iter.next();
                     
                     statement = connect.prepareStatement( "INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)" );
-                    statement.setLong( 1, artifact.getPK() );
+                    statement.setLong( 1, 0 ); // TODO: FIX artifact.getPK() );
                     statement.setLong( 2, linepk );
                     statement.setInt( 3, au.getPrimary() ? 1 : 0 );
                     statement.setString( 4, au.getReason() );
@@ -1312,7 +1375,6 @@ public class Core {
                 }
             }
         }
-
     }
     
     /**
@@ -1347,8 +1409,8 @@ public class Core {
             PreparedStatement statement = null;
             ResultSet query = null;
             try {
-                statement = connect.prepareStatement( "INSERT INTO described_template (fk_version_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
-                statement.setBinaryStream(1, new ByteArrayInputStream( dt.getKey().getVersionHash().toBytes() ) );
+                statement = connect.prepareStatement( "INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+                statement.setBinaryStream(1, new ByteArrayInputStream( dt.getKey().getModuleHash().toBytes() ) );
                 statement.setLong(2, pk_template );
                 statement.setBinaryStream(3, new ByteArrayInputStream( dt.getDocumentationHash().toBytes()) );
                 statement.setInt(4, 1); // Default is synchronized.
@@ -1366,8 +1428,8 @@ public class Core {
                 //TODO: Figure out that this is a duplicate key or not.
                 safeClose( statement ); statement = null;
                 
-                statement = connect.prepareStatement( "SELECT pk_described_template FROM described_template WHERE fk_version_set=? AND fk_template=?" );
-                statement.setBinaryStream(1, new ByteArrayInputStream( dt.getKey().getVersionHash().toBytes() ) );
+                statement = connect.prepareStatement( "SELECT pk_described_template FROM described_template WHERE fk_module_set=? AND fk_template=?" );
+                statement.setBinaryStream(1, new ByteArrayInputStream( dt.getKey().getModuleHash().toBytes() ) );
                 statement.setLong(2, pk_template );
                 query = statement.executeQuery();
 

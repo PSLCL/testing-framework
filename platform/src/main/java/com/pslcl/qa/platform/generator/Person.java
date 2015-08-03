@@ -34,7 +34,7 @@ public class Person extends Resource {
             params[1] = body;
             int i = 2;
             for ( Artifact a : attachments ) {
-                params[i++] = a;
+                params[i++] = a.getContent();
             }
 
             StringBuilder sb = new StringBuilder();
@@ -59,9 +59,9 @@ public class Person extends Resource {
                     sb.append( "<li><tt>" );
                     sb.append( a.getName() );
                     sb.append( "</tt> from " );
-                    sb.append( a.getVersion().getComponent() );
+                    sb.append( a.getModule().getName() );
                     sb.append( ":" );
-                    sb.append( a.getVersion().getVersion() );
+                    sb.append( a.getModule().getVersion() );
                     sb.append( "</li>" );
                 }
 
