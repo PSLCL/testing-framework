@@ -15,13 +15,6 @@ The hash identifies the type of resource; the attributes further qualify the spe
 and during resource instantiation the request will be made to the [Resource Providers](resource_providers.md) which create actual 
 instances of the resource. In addition to the required attributes, resource instances may have additional non-required attributes.
 
-With this definition, a [Resource Provider](resource_providers.md) is free to define any resource that it desires by picking some 
-definition and hashing it. It is then free to define whatever attributes and values apply to the resource. A 
-[Resource Provider](resource_providers.md) is also free to “learn” about the types of requests that are being made, and to optimize 
-the creation (or even cache) resources that meet that definition. For example, assume that windows machines are difficult to create. 
-A resource provider may watch the rate at which these machines are requested and keep some ready to quickly respond to requests. 
-If the rate goes down, then it may release the resources.
-
 ##Resource Types
 
 There are three main types of resources that the Testing Framework can interact with: Machine, Network 
