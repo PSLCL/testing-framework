@@ -11,11 +11,12 @@ import com.pslcl.qa.runner.resource.ResourceInstance;
  */
 public class InstancedTemplate {
 
+    private final List<ResourceInstance> refToResource; // contains step reference number
+    private String descriptionHash = null;
     private List<OrderedResourceInfo> orderedResourceInfos = null;
     
-    private final List<ResourceInstance> refToResource; // contains step reference number 
-    
-    InstancedTemplate() {
+    InstancedTemplate(String descriptionHash) {
+        this.descriptionHash = descriptionHash;
         refToResource = new ArrayList<ResourceInstance>();
     }
     

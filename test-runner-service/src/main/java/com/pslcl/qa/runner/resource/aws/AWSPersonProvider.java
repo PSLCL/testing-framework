@@ -1,5 +1,6 @@
 package com.pslcl.qa.runner.resource.aws;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -72,10 +73,13 @@ public class AWSPersonProvider implements PersonProvider {
 	}
 
 	@Override
-	public ResourceQueryResult reserveIfAvailable(
-			List<ResourceWithAttributes> resources, int timeoutSeconds) {
-		// TODO Auto-generated method stub
-		return null;
+	public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds) {
+        // temporary, to allow progress: return empty rqr
+        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResourceWithAttributes>(),
+                new ArrayList<ResourceWithAttributes>(),
+                new ArrayList<ResourceWithAttributes>(),
+                new ArrayList<ResourceWithAttributes>());
+        return retRqr;	    
 	}
 
 	@Override

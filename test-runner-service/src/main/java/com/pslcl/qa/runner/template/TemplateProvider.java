@@ -9,27 +9,25 @@ import java.util.Map;
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.process.DBDescribedTemplate;
 import com.pslcl.qa.runner.resource.MachineInstance;
-import com.pslcl.qa.runner.resource.NetworkInstance;
 import com.pslcl.qa.runner.resource.PersonInstance;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
-import com.pslcl.qa.runner.resource.ResourceAccess;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
 public class TemplateProvider {
     
     private Map<byte[],InstancedTemplate> availableReusableTemplates; // note: this populates in the destroy method
-    private ResourceAccess ra;
+    private ResourceProviders resourceProviders;
     
     public TemplateProvider() {
         availableReusableTemplates = new HashMap<byte[],InstancedTemplate>();
-        ra = new ResourceAccess();
+        resourceProviders = new ResourceProviders(); // determines these individual ResourceProvider S, such as AWSMachineProvider, and instantiates them
     }
 
-    public void destroy(byte [] template_hash, InstancedTemplate iT) { 
-        availableReusableTemplates.put(template_hash, iT); // note: this is early impl with no smarts
+    public void destroy(byte [] description_hash, InstancedTemplate iT) { 
+        availableReusableTemplates.put(description_hash, iT); // note: this is early impl with no smarts
     }
 
     /**
@@ -39,44 +37,49 @@ public class TemplateProvider {
      */
     public InstancedTemplate getInstancedTemplate(DBDescribedTemplate dbdt) {
         // first check our tracking- is a matching reusable template available?
-        InstancedTemplate iT = availableReusableTemplates.get(dbdt.template_hash);
+        InstancedTemplate iT = availableReusableTemplates.get(dbdt.description_hash);
+        // Note: The use of template.hash is not yet known. We are using described_template.description_hash; it is a specific reusable template with ready resources already bound.
+        
         if (iT != null) {
-            availableReusableTemplates.remove(dbdt.template_hash); // note: this is early impl with no smarts- they asked for the described template, they get it 
+            availableReusableTemplates.remove(dbdt.description_hash); // Note: This is early impl with no smarts to optimize anything. Here, they asked for the described template, they get it 
         } else {
-            iT = new InstancedTemplate();
-            
+            iT = new InstancedTemplate(String.valueOf(dbdt.description_hash));
             // populate iT with everything needed to behave as a reusable described template
             StepsParser stepsParser = new StepsParser(dbdt.steps);
             
             // Process bind steps now, since they come first; each returned list entry is self-referenced by steps line number, from 0...n
-            boolean allReserved = true;
-            List<ResourceWithAttributes> resources = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
-            int stepsReference = resources.size();
+            List<ResourceWithAttributes> reserveResourceRequests = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
+            int stepsReference = reserveResourceRequests.size();
             
             // reserve each resource specified by all the bind steps, with 360 second timeout for each reservation
-            ResourceQueryResult rqr = ra.reserveIfAvailable(resources, 360);
+            ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
             if (rqr != null) {
                 // analyze the success/failure of each reserved resource, one resource for each bind step
                 List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list is not in order
                 if (invalidResources!=null && !invalidResources.isEmpty()) {
-                    allReserved = false;
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + invalidResources.size() + " invalid resource bind requests");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + invalidResources.size() + " reports of invalid resource bind requests");
                 }
 
                 List<ResourceWithAttributes> unavailableResources = rqr.getUnavailableResources(); // list is not in order
                 if (unavailableResources!=null && !unavailableResources.isEmpty()) {
-                    allReserved = false;
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + unavailableResources.size() + " unavailable resource bind requests");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + unavailableResources.size() + " reports of unavailable resources for the given bind requests");
+                }
+                
+                List<ResourceWithAttributes> availableResources = rqr.getAvailableResources();
+                if (availableResources!=null && !availableResources.isEmpty()) {
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + availableResources.size() + " reports of available resources for the given bind requests");
                 }
 
                 List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
                 if (reservedResources!=null) {
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource bind requests, now reserved");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource bind requests; they are now reserved");
                 }
-                
-                if (allReserved) {
+
+                // Note: The size of reservedResources and its entries are the important thing. Coding is intended that any reservedResource has no entries in the other three lists.
+                //       However, the ultimate rule is that an entry in the reservedResource list means that the resource is reserved, independent of what many ResourceProviders may have placed in the alternate lists. 
+                if (reservedResources.size() == reserveResourceRequests.size()) {
                     // bind all resources of reservedResources, and receive a ResourceInstance for each one
-                    List<? extends ResourceInstance> resourceInstances = ra.bind(reservedResources); // each element of returned list has its stepReference stored
+                    List<? extends ResourceInstance> resourceInstances = resourceProviders.bind(reservedResources); // each element of returned list has its stepReference stored
 
                     // TODO: analyze the success/failure of each returned ResourceInstance
                     
@@ -94,7 +97,7 @@ public class TemplateProvider {
                     
                     // TODO: set iT with more gathered info and instantiations and similar
                 } else {
-                    // TODO: deal with this failure to reserve some of the resources
+                    // TODO: deal with this failure to reserve some of the resources, including cleanup of whatever resources are reserved
                 }
             } else {
                 System.out.println("TemplateProvider.getInstancedTemplate() finds null ResourceQueryRequest");
