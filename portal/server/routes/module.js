@@ -4,7 +4,7 @@ var env    = process.env.NODE_ENV || 'development';
 var config = require('../config/config')[env];
 var squel  = require('squel');
 
-// [GET] List of components
+// [GET] List of modules
 exports.list = function (req, res) {
   var after_id = 0;
   var filter_str = req.param('filter');
@@ -13,38 +13,39 @@ exports.list = function (req, res) {
   }
 
   /**
-   * Get List of components
+   * Get List of modules
    */
   var sql_query =
     squel.select()
-    .field('component.pk_component')
-    .field('component.name')
-    .field('COUNT(DISTINCT test_plans.pk_test_plan)', 'test_plans')
-    .field('COUNT(DISTINCT tests.pk_test)', 'tests')
-    .from('component')
-    .left_join('component_to_test_plan',
-      null,
-      'component_to_test_plan.fk_component = component.pk_component')
-    .left_join('test_plan',
-      'test_plans',
-      'test_plans.pk_test_plan = component_to_test_plan.fk_test_plan')
-    .left_join('test', 'tests', 'tests.fk_test_plan = test_plans.pk_test_plan');
+    .field('module.pk_module')
+    .field('module.organization')
+    .field('module.name')
+    .field('module.attributes')
+    .field('module.version')
+    .field('module.sequence')
+    .from('module');
 
   // Expression for search
   var exp = squel.expr();
   if (filter_str) {
-    exp.and('component.pk_component > ?')
-      .and("component.name LIKE ?");
-    sql_query.where(exp, after_id, "%" + filter_str.replace(/["']/g, "") + "%");
+    exp.and('module.pk_module > ?')
+      .or_begin("name LIKE ?")
+      .or("organization LIKE ?")
+      .or("attributes LIKE ?")
+      .or("version LIKE ?")
+      .or("sequence LIKE ?")
+      .end();
+    var filter_exp = "%" + filter_str.replace(/["']/g, "") + "%";
+    sql_query.where(exp, after_id, filter_exp, filter_exp, filter_exp, filter_exp, filter_exp);
   } else {
-    exp.and('component.pk_component > ?');
+    exp.and('module.pk_module > ?');
     sql_query.where(exp, after_id);
   }
 
   /**
    * Group by
    */
-  sql_query.group('component.pk_component');
+  sql_query.group('module.pk_module');
 
   /**
    * Order by sort parameter
@@ -57,12 +58,16 @@ exports.list = function (req, res) {
       sql_query.order('tests',false);
       break;
     case 'name':
-      sql_query.order('component.name');
+      sql_query.order('module.organization');
+      sql_query.order('module.name');
+      sql_query.order('module.attributes');
+      sql_query.order('module.version');
+      sql_query.order('module.sequence');
       break;
     case 'associated':
     case 'id':
     default:
-      sql_query.order('component.pk_component');
+      sql_query.order('module.pk_module');
   }
 
   /**
@@ -92,19 +97,19 @@ exports.list = function (req, res) {
   });
 };
 
-// [GET] Individual component
+// [GET] Individual module
 exports.show = function (req, res) {
   var after_id = req.param('after') || 0;
   var filter_str = req.param('filter');
 
   /**
-   * Get component
+   * Get module
    */
   var get_comp = squel.select()
-    .field('pk_component')
+    .field('pk_module')
     .field('name')
-    .from('component')
-    .where('pk_component = ?', req.param('id'));
+    .from('module')
+    .where('pk_module = ?', req.param('id'));
 
   mysql.getConnection(function(err,conn) {
     conn.query(
@@ -116,12 +121,12 @@ exports.show = function (req, res) {
           .field('test_plan.name')
           .field('test_plan.pk_test_plan')
           .field('test_plan.description')
-          .field('component_to_test_plan.fk_component')
+          .field('module_to_test_plan.fk_module')
           .field('COUNT(DISTINCT test.pk_test)', 'tests')
           .from('test_plan')
-          .left_join('component_to_test_plan', null,
-            'component_to_test_plan.fk_test_plan = test_plan.pk_test_plan ' +
-            'AND component_to_test_plan.fk_component = '+conn.escape(req.param('id')))
+          .left_join('module_to_test_plan', null,
+            'module_to_test_plan.fk_test_plan = test_plan.pk_test_plan ' +
+            'AND module_to_test_plan.fk_module = '+conn.escape(req.param('id')))
           .left_join('test', null, 'test.fk_test_plan = test_plan.pk_test_plan');
 
         /**
@@ -155,7 +160,7 @@ exports.show = function (req, res) {
             sql_query.order('test_plan.name');
             break;
           case 'associated':
-            sql_query.order('fk_component',false);
+            sql_query.order('fk_module',false);
             break;
           case 'id':
           default:
@@ -174,10 +179,10 @@ exports.show = function (req, res) {
           function (tp_err, tp_result) {
             res.format({
               'text/html': function () {
-                res.send({ component: result[0], test_plans: tp_result });
+                res.send({ module: result[0], test_plans: tp_result });
               },
               'application/json': function () {
-                res.send({ component: result[0], test_plans: tp_result });
+                res.send({ module: result[0], test_plans: tp_result });
               }
             });
           });
@@ -187,12 +192,12 @@ exports.show = function (req, res) {
   });
 };
 
-// [DELETE] test plan from component
+// [DELETE] test plan from module
 exports.remove_test_plan = function (req, res) {
   mysql.getConnection(function(err,conn) {
-    conn.query('DELETE FROM component_to_test_plan ' +
-        'WHERE fk_component = ? AND fk_test_plan = ?',
-      [req.param('fk_component'), req.param('fk_test_plan')],
+    conn.query('DELETE FROM module_to_test_plan ' +
+        'WHERE fk_module = ? AND fk_test_plan = ?',
+      [req.param('fk_module'), req.param('fk_test_plan')],
       function (err, result) {
         if (err) throw err;
         res.format({
@@ -209,10 +214,10 @@ exports.remove_test_plan = function (req, res) {
   });
 };
 
-// [POST] test plan to component
+// [POST] test plan to module
 exports.add_test_plan = function (req, res) {
   mysql.getConnection(function(err,conn) {
-    conn.query('INSERT INTO component_to_test_plan SET ?', req.body,
+    conn.query('INSERT INTO module_to_test_plan SET ?', req.body,
       function (err, result) {
         if (err) throw err;
         res.format({
@@ -229,10 +234,10 @@ exports.add_test_plan = function (req, res) {
   });
 };
 
-// [POST] new component
+// [POST] new module
 exports.create = function (req, res) {
   mysql.getConnection(function(err,conn) {
-    conn.query('INSERT INTO component SET ?', req.body,
+    conn.query('INSERT INTO module SET ?', req.body,
       function (err, result) {
         if (err) throw err;
         res.format({
@@ -249,13 +254,13 @@ exports.create = function (req, res) {
   });
 };
 
-// [POST] Update component by pk_component
+// [POST] Update module by pk_module
 exports.update = function (req, res) {
   mysql.getConnection(function(err,conn) {
     conn.query(
-        'UPDATE component SET name = ? ' +
-        'WHERE pk_component = ? ',
-      [req.body['name'], req.body['pk_component']],
+        'UPDATE module SET name = ? ' +
+        'WHERE pk_module = ? ',
+      [req.body['name'], req.body['pk_module']],
       function (err, result) {
         if (err) throw err;
         res.format({
@@ -272,10 +277,10 @@ exports.update = function (req, res) {
   });
 };
 
-// [DELETE] component by pk_component
+// [DELETE] module by pk_module
 exports.destroy = function (req, res) {
   mysql.getConnection(function(err,conn) {
-    conn.query('DELETE FROM component WHERE pk_component = ?', req.param('id'),
+    conn.query('DELETE FROM module WHERE pk_module = ?', req.param('id'),
       function (err, result) {
         if (err) throw err;
         res.format({

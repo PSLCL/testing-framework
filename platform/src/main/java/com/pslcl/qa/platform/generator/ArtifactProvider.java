@@ -1,118 +1,69 @@
 package com.pslcl.qa.platform.generator;
 
-import java.io.InputStream;
-import java.util.Set;
-
-import com.pslcl.qa.platform.Hash;
-
 /**
- * This interface represents providers of artifacts. Artifact providers will return sets of components,
- * versions, platforms, and artifacts. It is assumed that the results of these methods may change over
- * time, and so the artifact provider should periodically be polled.
+ * This interface represents providers of artifacts. Artifact providers will return sets of Modules. Modules
+ * follow the definition established by many common repository projects (like Maven and Ivy). Modules have associated Artifacts.
+ * 
+ * It is assumed that the set of Modules may change over time, but that the set of Artifacts associated with a Module
+ * will not change. If the test platform already knows of a Module then it assumes that its Artifacts are consistent.
+ * 
+ * There is special meaning to artifacts with a configuration of dtf_test_generator. These artifacts are treated normally, but
+ * are also cached separately and with their normal filenames for use by generator execution.
+ * 
+ * Finally, there is a special capability to merge an module's artifacts into another set of modules. This is indicated by
+ * a flag passed along with the module. When set, and after all other modules have been loaded, then the provider will be
+ * asked whether or not each combination of modules should be merged. If the result is yes then the merged module's artifacts
+ * are hidden (they will not be found with artifact searches) and copied into the other module. Further, merged modules are
+ * replaced (with their merged artifacts removed) when another module with the same version information (except the sequence)
+ * is found. This allows for testing artifacts to be updated on existing (even released) modules.
  */
 public interface ArtifactProvider {
     /**
-     * This interface represents an asynchronous notification that is called for each artifact.
+     * THis interface represents an asynchronous notification that is called for each module.
      */
-    public interface ArtifactNotifier {
+    public interface ModuleNotifier {
         /**
-         * Notify the implementer that an artifact exists. The implementation should be thread-safe and
-         * handle multiple simultaneous notifications.
-         * @param project The name of the project.
-         * @param component The name of the component.
-         * @param version The name of the version.
-         * @param platform The name of the platform.
-         * @param internal_build The name of the internal build.
-         * @param name The name of the artifact.
-         * @param hash The hash of the content.
-         * @param content The provider of the content. If the content is needed then this can be used.
+         * Notify the implementer that a module exists. The implementation must be thread-safe and
+         * handle multiple simultaneous notifications. The module's lifecycle should not exceed that
+         * of the call to {@link ArtifactProvider#close()}.
+         * @param source The artifact provider that is providing the module.
+         * @param module The module that exists.
+         * @param merge Either null, or a definition of how the module should be merged. This information will be passed back
+         * to {@link ArtifactProvider#merge}.
          */
-        void artifact( String project, String component, String version, String platform, String internal_build, String name, Hash hash, Content content );
+        void module( ArtifactProvider source, Module module, String merge );
     }
-
+    
     /**
-     * This interface represents the provider of content.
-     */
-    public interface Content {
-        /**
-         * Obtain a stream that will return the content.
-         * @return A stream that will return the content.
-         */
-        InputStream asStream();
-
-        /**
-         * Obtain the content as a byte array.
-         * @return A byte array containing the content.
-         */
-        byte[] asBytes();
-    }
-
-    /**
-     * This interface represents an asynchronous notification that is called for each generator.
-     */
-    public interface GeneratorNotifier {
-        /**
-         * Notify the implementer that a generator exists. The implementation should be thread-safe and
-         * handle multiple simultaneous notifications.
-         * @param name The unique name of the generator.
-         * @param content The content provider of the generator.
-         */
-        void generator( String name, Content content );
-    }
-
-    /**
-     * Initialize the artifact provider. This should be paired with a call to close(). The same instance may be reused if close()
-     * is called and then followed by another call to init().
+     * Initialize the artifact provider. This should be paired with a call to {@link #close()}. The same instance may be reused if {@link #close()}
+     * is called and then followed by another call to {@link #init()}. The provider may maintain state between calls to {@link #open()} and {@link #close()}.
      * @throws Exception Thrown if the artifact provider cannot be initialized. This can indicate either permanent or temporary failures.
      */
     void init() throws Exception;
 
     /**
-     * Obtain a set of components given a project.
-     * @param project The project to return components of.
-     * @return A set of components. This assumes a relatively small number of components (up to thousands).
+     * Iterate through all the modules known to the provider. This routine will not return until all known modules have been
+     * passed to the callback. If there is an error then an Exception is thrown. In that case it should be assumed that only
+     * a partial set of modules was iterated.
+     * @param moduleNotifier The object that the modules should be notified to.
+     * @throws Exception Thrown if there is a problem iterating the modules.
      */
-    Set<String> getComponents( String project );
+    void iterateModules( ModuleNotifier moduleNotifier ) throws Exception;
 
     /**
-     * Obtain a set of versions for a project and component.
-     * @param project The project to limit results to.
-     * @param component The component to return versions of.
-     * @return A set of versions. This assumes a relatively small number of versions (up to thousands).
+     * Determine whether a module's artifacts should be merged into another. This call is triggered
+     * by passing a non-null merge parameter in {@link ModuleNotifier#module(Module, String)} call. If set,
+     * and after all other modules have been learned, then this call is made to determine if the module should
+     * be merged. If the result is true then the test harness will do the merge.
+     * @param merge The parameter passed out to the test harness during module discovery.
+     * @param module The module that will be merged. This module will have been defined by the provider.
+     * @param target The target module. This module may come from an ArtifactProvider.
+     * @return True if the module should be merged into the target. False if it should not.
      */
-    Set<String> getVersions( String project, String component );
-
+    boolean merge( String merge, Module module, Module target );
+    
     /**
-     * Obtain a set of platforms for a project, component, and version.
-     * @param project The project to limit results to.
-     * @param component The component to limit results to.
-     * @param version The version to return platforms of.
-     * @return A set of platforms. This assumes a relatively small number of platforms (hundreds).
-     */
-    Set<String> getPlatforms( String project, String component, String version );
-
-    /**
-     * Iterate over the artifacts of a project, component, version and platform combination. This routine will not
-     * return until all of the artifacts have been passed to the callback. Synchronization of the data structures
-     * holding the artifacts is the responsibility of the caller.
-     * @param project The project to limit results to.
-     * @param component The component to limit results to.
-     * @param version The version to limit results to.
-     * @param platform the platform to return artifacts of.
-     * @param callback A callback that will be called with each artifact.
-     */
-    void iterateArtifacts( String project, String component, String version, String platform, ArtifactNotifier callback );
-
-    /**
-     * Iterate over the generators associated with an artifact provider. This routine will not
-     * return until all of the generators have been passed to the callback. Synchronization of the data structures
-     * holding the generators is the responsibility of the caller.
-     * @param callback A callback that will be called with each generator.
-     */
-    void iterateGenerators( GeneratorNotifier callback );
-
-    /**
-     * Close an artifact provider. The same instance may be reused if init() is called again.
+     * Close an artifact provider. The same instance may be reused if {@link #init()} is called again.
      */
     void close();
 }

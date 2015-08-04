@@ -1,10 +1,13 @@
 package com.pslcl.qa.platform.generator;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.Template.Parameter;
 
@@ -68,38 +71,67 @@ public class Generator {
     	parameterReferenceMap.put(uuid, parameter);
     }
 
+    private static class StringContent implements Content {
+        String content;
+        Hash hash;
+        
+        StringContent( String content ) {
+            hash = Hash.fromContent( content );
+        }
+        
+        @Override
+        public String getValue(Template template) throws Exception {
+            return hash.toString();
+        }
+
+        @Override
+        public Hash getHash() {
+            return hash;
+        }
+
+        @Override
+        public InputStream asStream() {
+            return new ByteArrayInputStream( content.getBytes() );
+        }
+
+        @Override
+        public byte[] asBytes() {
+            return content.getBytes();
+        }       
+    }
+    
     /**
      * Create content that can be used in a test.
      * @param content
      * @return
      */
     public Content createContent( String content ) {
-        Hash h = Hash.fromContent( content );
-        Content c;
-        if ( ! addedContent.containsKey( h ) ) {
-            c = new Content( core, content );
-            addedContent.put( c.getHash(), c );
+        Content result = new StringContent( content );
+        if ( ! addedContent.containsKey( result.getHash() ) ) {
+            addedContent.put( result.getHash(), result );
         }
         else
-            c = addedContent.get( h );
+            result = addedContent.get( result.getHash() );
 
-        return c;
+        return result;
     }
 
     /**
-     * Create an iterable set of all versions known to the generator.
-     * @return An iterable set of all versions.
+     * Create an iterable set of all modules known to the generator.
+     * @return An iterable set of all modules.
      */
-    public Iterable<Version> createVersionSet() {
-        return core.createVersionSet();
+    public Iterable<Module> createModuleSet() {
+        return core.createModuleSet();
     }
 
     /**
-     * Create an iterable set of all versions known to the generator for a specific component.
-     * @return An iterable set of versions.
+     * Create an iterable set of all modules known to the generator for a specific organization and module name.
+     * @param organization The organization of the module.
+     * @param module The module name.
+     * @return An iterable set of modules.
      */
-    public Iterable<Version> createVersionSet(String component) {
-        return core.createVersionSet(component);
+    public Iterable<Module> createModuleSet(String organization, String module) {
+        return core.createModuleSet(organization, module);
     }
     
     /**
@@ -112,15 +144,24 @@ public class Generator {
     }
 
     /**
-     * Create an iterator over artifacts that match a given name. The artifacts will be associated with the
-     * specified artifact - meaning that all the artifacts returned will be tagged with the identifier of
-     * the passed artifact.
-     * @param internal_build The name of the internal build from which to pick the executable.
-     * @param name The name of the artifact that should be returned.
-     * @return An iterator over the set of artifacts.
+     * Create an iterator over artifacts that match a set of search criteria that include attributes that the
+     * providing module must contain, the configuration that the artifact must belong to, and a set of artifact
+     * names that may include regex patterns. Multiple artifact names may be specified.
+     * The result set will include sets of matching artifacts, with each set coming from compatible modules (although
+     * the modules may not be exactly the same). The first artifact from each matching module will be returned,
+     * with the latest sequence having priority.
+     * Modules are compatible if they have the same organization, module name, and version. They must have at
+     * least the attributes specified.
+     * @param attributes A set of attributes that each matching module must provide. Null is allowed, in which case there
+     * is no filtering done by attribute.
+     * @param configuration The configuration that each artifact must be in. Null is allowed, in which case there
+     * is no fitering done by configuration.
+     * @param name The name of the artifact that should be returned. Regex patterns are allowed as defined in MySQL.
+     * @return An iterator over the set of artifacts. Each entry contains an array of artifacts in the same order
+     * as the input parameters.
      */
-    public Iterable<Artifact[]> createArtifactSet( String internal_build, String ... name ) {
-        return core.createArtifactSet( internal_build, name );
+    public Iterable<Artifact[]> createArtifactSet( Attributes attributes, String configuration, String ... name ) {
+        return core.createArtifactSet( attributes, configuration, name );
     }
 
     /**

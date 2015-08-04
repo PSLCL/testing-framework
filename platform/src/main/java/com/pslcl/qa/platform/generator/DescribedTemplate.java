@@ -9,30 +9,30 @@ import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.TestInstance.Action;
 
 /**
- * This class represents the combination of a set of versions, a template, and documentation. It is the primary
+ * This class represents the combination of a set of modules, a template, and documentation. It is the primary
  * class that is synchronized between the generators and the database. Each TestInstance class is related to exactly
  * one DescribedTemplate, although the DescribedTemplates themselves form a tree.
  */
 public class DescribedTemplate {
     static class Key {
         private Hash template;
-        private Hash versions;
+        private Hash modules;
         
-        Key( Hash template, Hash versions ) {
+        Key( Hash template, Hash modules ) {
             this.template = template;
-            this.versions = versions;
+            this.modules = modules;
         }
         
         public Hash getTemplateHash() {
             return template;
         }
         
-        public Hash getVersionHash() {
-            return versions;
+        public Hash getModuleHash() {
+            return modules;
         }
         
         public int hashCode() {
-            return template.hashCode() + versions.hashCode();
+            return template.hashCode() + modules.hashCode();
         }
         
         public boolean equals( Object o ) {
@@ -40,7 +40,7 @@ public class DescribedTemplate {
                 return false;
             
             Key that = (Key) o;
-            return this.template.equals( that.template ) && this.versions.equals( that.versions );
+            return this.template.equals( that.template ) && this.modules.equals( that.modules );
         }
     }
     
@@ -71,12 +71,12 @@ public class DescribedTemplate {
 
     private String documentation;
     private Hash documentationHash;
-    private String versionDescription;
+    private String moduleDescription;
     
     private Hash buildDocumentation() {
         StringBuilder sb = new StringBuilder();
         
-        List<String> versionsUsed = new ArrayList<String>();
+        List<String> modulesUsed = new ArrayList<String>();
         for ( TestInstance.Action A : actions ) {
             try {
                 sb.append( A.getDescription() );
@@ -85,10 +85,10 @@ public class DescribedTemplate {
                 Iterator<Artifact> iter = au.getArtifacts();
                 while ( iter.hasNext() ) {
                     Artifact a = iter.next();
-                    Version v = a.getVersion();
-                    String vstr = v.toString();
-                    if ( ! versionsUsed.contains( vstr ) )
-                        versionsUsed.add( vstr );
+                    Module m = a.getModule();
+                    String vstr = m.toString();
+                    if ( ! modulesUsed.contains( vstr ) )
+                        modulesUsed.add( vstr );
                 }
             }
             catch ( Exception e ) {
@@ -98,14 +98,14 @@ public class DescribedTemplate {
             sb.append( '\n' );
         }
 
-        Collections.sort( versionsUsed );
+        Collections.sort( modulesUsed );
         
         documentation = sb.toString();
         documentationHash = Hash.fromContent( documentation );
         
         sb = new StringBuilder();
         StringBuilder sbh = new StringBuilder();
-        for ( String v : versionsUsed ) {
+        for ( String v : modulesUsed ) {
             sb.append( '\t' );
             sb.append( v );
             sb.append( '\n' );
@@ -113,7 +113,7 @@ public class DescribedTemplate {
             sbh.append( '\n' );
         }
         
-        versionDescription = sb.toString();
+        moduleDescription = sb.toString();
         return Hash.fromContent( sbh.toString() );
     }
     
@@ -130,8 +130,8 @@ public class DescribedTemplate {
         this.actions = actions;
         this.dependencies = dependencies;
         
-        Hash versionHash = buildDocumentation();
-        this.key = new Key( template.hash, versionHash );
+        Hash moduleHash = buildDocumentation();
+        this.key = new Key( template.hash, moduleHash );
     }
 
     public Template getTemplate() {
@@ -173,8 +173,8 @@ public class DescribedTemplate {
         sb.append( template.getHash().toString() );
         sb.append( '\n' );
 
-        sb.append( "Version Hash: " );
-        sb.append( key.versions.toString() );
+        sb.append( "Module Hash: " );
+        sb.append( key.modules.toString() );
         sb.append( '\n' );
         
         sb.append( "Documentation Hash: " );
@@ -205,8 +205,8 @@ public class DescribedTemplate {
             sb.append( '\n' );
         }
         
-        sb.append( "Versions:\n" );
-        sb.append( versionDescription );
+        sb.append( "Modules:\n" );
+        sb.append( moduleDescription );
         sb.append( "Steps:\n" );
         sb.append( template.toStandardString() );
         

@@ -2,7 +2,7 @@ var app = angular.module('qa-portal');
 
 // Dashboard page
 app.controller('DashboardCtrl',
-  function ($scope, $rootScope, $location, Stats, socket) {
+  function ($scope, $rootScope, $location, Stats, AuthenticUser, socket) {
     $scope.stats = {
       comp_count: 0,
       test_plan_count: 0,
@@ -12,7 +12,8 @@ app.controller('DashboardCtrl',
       return (viewLocation === $location.path());
     };
     $scope.stats = Stats.get();
-
+    $scope.user = AuthenticUser.get();
+        
     var sidebarIsHidden = false;
     $scope.hideSidebar = function(){ 
       if (!sidebarIsHidden) {

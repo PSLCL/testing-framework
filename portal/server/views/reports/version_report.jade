@@ -6,8 +6,8 @@ block content
         | function pending_graphs() { return chart_total_pending; };
         | function build_graphs() {
         | console.log("Building graphs.");
-        each component in items
-            each version in component.versions
+        each module in items
+            each version in module.versions
                 = 'gen_version_chart_' + version.pk + '();'
                 each test_plan in version.test_plans
                     = 'gen_test_plan_chart_' + version.pk + '_' + test_plan.pk + '();'
@@ -15,11 +15,11 @@ block content
                         = 'gen_test_chart_' + version.pk + '_' + test_plan.pk + '_' + test.pk + '();'
         | return chart_total_pending;
         | }
-    each component in items
+    each module in items
         .row
             .col-xs-12
-                each version in component.versions
-                    h4= component.name + ' ' + version.name + ' (component #' + component.pk + ', version #' + version.pk + ')'
+                each version in module.versions
+                    h4= module.name + ' ' + version.name + ' (module #' + module.pk + ', version #' + version.pk + ')'
                     script(type='text/javascript').
                         function gen_version_chart_!{version.pk}() {
                             var chart = {

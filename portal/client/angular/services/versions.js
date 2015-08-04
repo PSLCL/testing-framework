@@ -1,6 +1,6 @@
 var app = angular.module('qa-portal');
 
-// Components service for handling all components
+// Modules service for handling all modules
 app.factory('Versions', function ($resource) {
   return $resource('/api/v1/versions', {
     after: '@id',

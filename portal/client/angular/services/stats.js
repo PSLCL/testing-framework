@@ -10,3 +10,7 @@ app.factory('Stats', function ($resource) {
 app.factory('AdminStats', function ($resource) {
   return $resource('/api/v1/stats/admin');
 });
+
+app.factory('AuthenticUser', function($resource) {
+    return $resource('/loggedin');
+});

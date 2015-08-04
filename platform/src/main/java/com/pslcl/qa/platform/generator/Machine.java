@@ -28,9 +28,8 @@ public class Machine extends Resource {
      * @param platform The platform of the machine.
      * @throws Exception The bind is invalid.
      */
-    public void bind( String platform ) throws Exception {
+    public void bind() throws Exception {
         Attributes attributes = new Attributes();
-        attributes.put( "platform", platform );
         super.bind( attributes );
     }
 
@@ -40,10 +39,8 @@ public class Machine extends Resource {
      * @param attributes Other attributes that the machine must satisfy.
      * @throws Exception The bind is invalid.
      */
-    public void bind( String platform, Attributes attributes ) throws Exception {
-        Attributes N = new Attributes( attributes.toString() );
-        N.put( "platform", platform );
-        super.bind( N );
+    public void bind( Attributes attributes ) throws Exception {
+        super.bind( attributes );
     }
 
     static private class Deploy extends TestInstance.Action {
@@ -63,7 +60,7 @@ public class Machine extends Resource {
 
         @Override
         String getCommand( Template t ) throws Exception {
-            return "deploy " + t.getReference( this.m ) + " " + a.getValue(template);
+            return "deploy " + t.getReference( this.m ) + " " + a.getContent().getValue(template);
         }
 
         @Override
@@ -71,10 +68,10 @@ public class Machine extends Resource {
             StringBuilder sb = new StringBuilder();
             sb.append( "Copy the file <tt>" );
             sb.append( a.getName() );
-            sb.append( "</tt> from version <tt>" );
-            sb.append( a.getVersion().getComponent() );
+            sb.append( "</tt> from module <tt>" );
+            sb.append( a.getModule().getName() );
             sb.append( ":" );
-            sb.append( a.getVersion().getVersion() );
+            sb.append( a.getModule().getVersion() );
             sb.append( "</tt> to machine <em>" );
             sb.append( m.name );
             sb.append( "</em>" );
@@ -120,29 +117,27 @@ public class Machine extends Resource {
     }
 
     public Cable attach( Network n ) {
-        //TODO: Repair
-        /*        // If the testResource doesn't include the machine, it must be added.
-        if ( ! generator.testResource.contains( this ) ) {
-            generator.testResource = generator.testResource.add( this );
+        // Verify that the machine and network are bound.
+        if ( ! isBound() ) {
+            System.err.println( "Cannot attach an unbound machine." );
+            return null;
         }
-
-        // If the testResource doesn't include the network, it must be added.
-        if ( ! generator.testResource.contains( n ) ) {
-            generator.testResource = generator.testResource.add( n );
+        
+        if ( ! n.isBound() ) {
+            System.err.println( "Cannot bind a machine to an unbound network." );
+            return null;
         }
 
         Cable c = new Cable(generator, this, n );
         //TODO: Build description.
-        generator.testResource = generator.testResource.add(
-                "Attach machine to network.\n",
-                "connect",
-                new Template.ExportParameter( c ),
-                new Template.ResourceParameter( this ),
-                new Template.ResourceParameter( n ) );
+//        generator.add( new ConnectAction() ))
+//                "Attach machine to network.\n",
+//                "connect",
+//                new Template.ExportParameter( c ),
+//                new Template.ResourceParameter( this ),
+//                new Template.ResourceParameter( n ) );
 
         return c;
-         */    
-        return null;
     }
 
     private class ProgramAction extends TestInstance.Action {
@@ -161,7 +156,7 @@ public class Machine extends Resource {
             parameters = new Template.Parameter[ params.length + 3 ];
             parameters[0] = new Template.ExportParameter( program );
             parameters[1] = new Template.ResourceParameter( machine );
-            parameters[2] = artifact;
+            parameters[2] = artifact.getContent();
             for ( int i = 0; i < params.length; i++ ) {
                 // If the parameter is a UUID, then check for deferred parameters.
                 UUID p = null;

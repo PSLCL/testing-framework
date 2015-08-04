@@ -1,31 +1,27 @@
-var BasicStrategy = require('gt-passport-http').BasicStrategy;
-var LdapAuth      = require('ldapauth');
+var AtlassianOAuthStrategy = require('passport-atlassian-oauth').Strategy;
+//var LdapAuth      = require('ldapauth');
+var JiraApi       = require('jira').JiraApi;
 
 //Authentication Strategy
 module.exports = function (passport,config) {
-  // Production environment uses LDAP for authentication.
-  passport.use(new BasicStrategy({ disableBasicChallenge: true },
-      function (userid, password, done) { // (development only)
-    /** @namespace process.env.NODE_ENV */
+  passport.serializeUser(function(user,done) {
+    done(null, user);
+  });
+  
+  passport.deserializeUser(function(obj, done) {
+    done(null, obj);
+  });
+  
+var RsaPrivateKey = "";
 
-    // LDAP
-    var ldap = new LdapAuth({
-      url: config.ldap.url,
-      adminDn: config.ldap.adminDn,
-      adminPassword: config.ldap.adminPassword,
-      searchBase: config.ldap.searchBase,
-      searchFilter: config.ldap.searchFilter,
-      cache: true
-    });
-
-    ldap.authenticate(userid, password, function (err, user) {
-      if (err) {
-        console.log("LDAP auth error: %s", err);
-        return done(null, false);
+  passport.use(new AtlassianOAuthStrategy({
+        applicationURL: "https://issue.opendof.org",
+        callbackURL: "https://testing.opendof.org/auth/atlassian-oauth/callback",
+        consumerKey: "testing-consumer",
+        consumerSecret: RsaPrivateKey,
+        },
+      function (token, tokenSecret, profile, done) {
+        return done(null, profile);
       }
-
-      return done(null, user);
-    });
-  }
   ));
 };
