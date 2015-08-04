@@ -13,18 +13,18 @@ public class InstancedTemplate {
 
     private final List<ResourceInstance> refToResource; // contains step reference number
     private String descriptionHash = null;
-    private List<OrderedResourceInfo> orderedResourceInfos = null;
+    private List<ResourceInfo> orderedResourceInfos = null;
     
     InstancedTemplate(String descriptionHash) {
         this.descriptionHash = descriptionHash;
         refToResource = new ArrayList<ResourceInstance>();
     }
     
-    public void setOrderedResourceInfos(List<OrderedResourceInfo> orderedResourceInfos) {
+    public void setOrderedResourceInfos(List<ResourceInfo> orderedResourceInfos) {
         this.orderedResourceInfos = orderedResourceInfos;
     }
     
-    public OrderedResourceInfo getOrderedResourceInfo(int stepReference) {
+    public ResourceInfo getResourceInfo(int stepReference) {
         return (orderedResourceInfos != null) ? orderedResourceInfos.get(stepReference) : null;
     }
 }

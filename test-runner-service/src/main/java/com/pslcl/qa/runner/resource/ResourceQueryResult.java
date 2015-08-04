@@ -62,25 +62,30 @@ public class ResourceQueryResult {
 	 * @param localRqr Caller is responsible to ensure that localRqr does not contain a ReservedResourceWithAttributes entry that is already stored in the reservedResources entry of this object.
 	 */
 	public void merge(ResourceQueryResult localRqr) {
+	    // localRqr is composed of 1 result for every original resource request; keep in mind that each such result fills only one of the RQR's four lists.
+	    
+	    // Merge all reservations found in localRqr.
 	    for (ReservedResourceWithAttributes rrwa : localRqr.getReservedResources()) {
-	        // record successful reservation and remove corresponding entry that others may have placed from the three "fail" lists 
+	        // record the successful reservation found in localRqr 
 	        this.reservedResources.add(rrwa);
+	        // remove the corresponding entry in the 3 "fail" lists that we may hold from previous calls
 	        this.availableResources.remove(rrwa);
             this.unavailableResources.remove(rrwa);
 	        this.invalidResources.remove(rrwa);
-	        // caller sees only the reserved entry
+	        // caller now sees only the reserved entry
 	    }
-	    
-	    // keep in mind: once a successful rwa is entered into this object, the caller will not submit it to us in follow on calls 
+
+	    // Record whatever "fails" are found in localRqr
 	    for (ResourceWithAttributes rwa : localRqr.getAvailableResources()) {
-	        // rwa is not found in incoming reservedResources, unavailableResources or invalidResources
+	        // this rwa is not found in incoming reservedResources, unavailableResources or invalidResources
 	        this.availableResources.add(rwa); // might add to an entry from a previous call
 	    }
 	    for (ResourceWithAttributes rwa : localRqr.getUnavailableResources()) {
-	        
+            // this rwa is not found in incoming reservedResources, availableResources or invalidResources
 	        this.unavailableResources.add(rwa); // might add to an entry from a previous call
 	    }
 	    for (ResourceWithAttributes rwa : localRqr.getInvalidResources()) {
+            // this rwa is not found in incoming reservedResources, availableResource or unavailableResources
 	        this.invalidResources.add(rwa); // might add to an entry from a previous call
 	    }
 	}

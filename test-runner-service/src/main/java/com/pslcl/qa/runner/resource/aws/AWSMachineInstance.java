@@ -4,11 +4,32 @@ import java.util.Map;
 
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.resource.MachineInstance;
+import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceProvider;
 
 public class AWSMachineInstance implements MachineInstance {
 
+    private String hash;
+    private Map<String, String> attributes;
+    private String description;
+    private ResourceProvider rp;
+    private int timeoutSeconds;
+    private int reference;
+    
+    /**
+     * constructor for the use case where resource was previously reserved
+     * @param resource
+     */
+    public AWSMachineInstance(ReservedResourceWithAttributes rrwa) {
+        hash = rrwa.getHash();
+        attributes = rrwa.getAttributes();
+//      description = ;
+        rp = rrwa.getResourceProvider();
+        timeoutSeconds = rrwa.getTimeoutSeconds();
+        reference = rrwa.getReference();
+    }
+    
 	@Override
 	public String getHash() {
 		// TODO Auto-generated method stub
@@ -44,7 +65,6 @@ public class AWSMachineInstance implements MachineInstance {
 			String artifactHash) throws ResourceNotFoundException,
 			ArtifactNotFoundException {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -63,8 +83,7 @@ public class AWSMachineInstance implements MachineInstance {
 
 	@Override
 	public int getReference() {
-		// TODO Auto-generated method stub
-		return 0;
+		return this.reference;
 	}
 
 }

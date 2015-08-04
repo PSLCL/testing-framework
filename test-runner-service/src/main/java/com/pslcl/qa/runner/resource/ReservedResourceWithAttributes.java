@@ -13,13 +13,27 @@ public class ReservedResourceWithAttributes implements ResourceWithAttributes {
 	private ResourceProvider resourceProvider;
     private int timeoutSeconds;
 
-	public ReservedResourceWithAttributes(ResourceWithAttributes resourceWithAttributes,
+	/**
+	 * constructor
+	 * @param resourceWithAttributes
+	 * @param resourceProvider
+	 * @param timeoutSeconds
+	 */
+    public ReservedResourceWithAttributes(ResourceWithAttributes resourceWithAttributes,
 	                                      ResourceProvider resourceProvider, int timeoutSeconds) {
 		this(resourceWithAttributes.getHash(), resourceWithAttributes.getAttributes(),
 		     resourceWithAttributes.getReference(), resourceProvider, timeoutSeconds);
 	}
 
-	public ReservedResourceWithAttributes(String hash, Map<String, String> attributes, int reference,
+	/**
+	 * constructor
+	 * @param hash
+	 * @param attributes
+	 * @param reference
+	 * @param resourceProvider
+	 * @param timeoutSeconds
+	 */
+    public ReservedResourceWithAttributes(String hash, Map<String, String> attributes, int reference,
 	                                      ResourceProvider resourceProvider, int timeoutSeconds) {
 	    this.hash = hash;
 	    this.attributes = attributes;

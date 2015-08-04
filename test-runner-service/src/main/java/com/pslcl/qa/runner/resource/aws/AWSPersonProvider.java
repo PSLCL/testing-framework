@@ -11,6 +11,7 @@ import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
+import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
 
 public class AWSPersonProvider implements PersonProvider {
 
@@ -79,7 +80,12 @@ public class AWSPersonProvider implements PersonProvider {
                 new ArrayList<ResourceWithAttributes>(),
                 new ArrayList<ResourceWithAttributes>(),
                 new ArrayList<ResourceWithAttributes>());
-        return retRqr;	    
+        if (resources.size() > 0) {
+            // temporary, to allow progress: return an artificially unavailable resource
+            ResourceWithAttributes artificialUnavailableResource = resources.get(0);
+            retRqr.getUnavailableResources().add(artificialUnavailableResource);
+        }
+        return retRqr;
 	}
 
 	@Override

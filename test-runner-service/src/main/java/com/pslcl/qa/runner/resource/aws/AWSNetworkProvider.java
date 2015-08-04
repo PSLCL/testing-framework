@@ -59,7 +59,12 @@ public class AWSNetworkProvider implements NetworkProvider {
                 new ArrayList<ResourceWithAttributes>(),
                 new ArrayList<ResourceWithAttributes>(),
                 new ArrayList<ResourceWithAttributes>());
-        return retRqr;	    
+        if (resources.size() > 0) {
+            // temporary, to allow progress: return an artificially unavailable resource
+            ResourceWithAttributes artificialUnavailableResource = resources.get(0);
+            retRqr.getUnavailableResources().add(artificialUnavailableResource);
+        }
+        return retRqr;
 	}
 
 	@Override

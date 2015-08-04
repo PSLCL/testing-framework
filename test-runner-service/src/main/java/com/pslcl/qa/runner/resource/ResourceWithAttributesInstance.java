@@ -28,7 +28,7 @@ public class ResourceWithAttributesInstance implements ResourceWithAttributes {
     @Override
     public int getReference() {
         // TODO Auto-generated method stub
-        return 0;
+        return reference;
     }
     
     /**

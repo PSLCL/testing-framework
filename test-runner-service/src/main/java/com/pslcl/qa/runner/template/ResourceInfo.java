@@ -2,7 +2,7 @@ package com.pslcl.qa.runner.template;
 
 import com.pslcl.qa.runner.resource.ResourceInstance;
 
-public class OrderedResourceInfo implements Comparable<OrderedResourceInfo> {
+public class ResourceInfo implements Comparable<ResourceInfo> {
     private ResourceInstance resourceInstance;
     private ArtifactInfo artifactInfo = null;
     private String instructiondHash = null;
@@ -16,7 +16,7 @@ public class OrderedResourceInfo implements Comparable<OrderedResourceInfo> {
     
     // implement Comparable interface
     @Override
-    public int compareTo(OrderedResourceInfo ori) {
+    public int compareTo(ResourceInfo ori) {
         return this.resourceInstance.getReference() - ori.getReference();
     }
 
@@ -27,7 +27,7 @@ public class OrderedResourceInfo implements Comparable<OrderedResourceInfo> {
      * Constructor
      * @param resourceInstance
      */
-    public OrderedResourceInfo(ResourceInstance resourceInstance) {
+    public ResourceInfo(ResourceInstance resourceInstance) {
         this.resourceInstance = resourceInstance;
     }
 

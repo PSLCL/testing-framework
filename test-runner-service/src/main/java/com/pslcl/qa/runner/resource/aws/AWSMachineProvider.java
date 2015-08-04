@@ -35,8 +35,14 @@ public class AWSMachineProvider implements MachineProvider {
     @Override
     public MachineInstance bind(ResourceWithAttributes resource)
             throws ResourceNotFoundException {
-        // TODO Auto-generated method stub
-        return null;
+        AWSMachineInstance retAWSMachineInstance = null;
+        if (ReservedResourceWithAttributes.class.isInstance(resource)) {
+            // temporary, to allow progress: return matching AWSMachineInstance
+            retAWSMachineInstance = new AWSMachineInstance(ReservedResourceWithAttributes.class.cast(resource));
+        } else {
+            // TODO: bind without benefit of a previous reservation
+        }
+        return retAWSMachineInstance;
     }
     
     @Override
@@ -87,6 +93,11 @@ public class AWSMachineProvider implements MachineProvider {
                 new ArrayList<ResourceWithAttributes>(),
                 new ArrayList<ResourceWithAttributes>(),
                 new ArrayList<ResourceWithAttributes>());
+        for (ResourceWithAttributes rwa : resources) {
+            // temporary, to allow progress: return an artificially reserved resource
+            ReservedResourceWithAttributes artificialReservation = new ReservedResourceWithAttributes(rwa, this, timeoutSeconds);
+            retRqr.getReservedResources().add(artificialReservation);
+        }
 		return retRqr;
 	}
 	

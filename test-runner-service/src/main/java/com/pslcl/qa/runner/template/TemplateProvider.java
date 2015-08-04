@@ -50,8 +50,9 @@ public class TemplateProvider {
             // Process bind steps now, since they come first; each returned list entry is self-referenced by steps line number, from 0...n
             List<ResourceWithAttributes> reserveResourceRequests = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
             int stepsReference = reserveResourceRequests.size();
+            int originalReserveResourceRequestsSize = stepsReference;
             
-            // reserve each resource specified by all the bind steps, with 360 second timeout for each reservation
+            // reserve the resource specified by each bind step, with 360 second timeout for each reservation
             ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
             if (rqr != null) {
                 // analyze the success/failure of each reserved resource, one resource for each bind step
@@ -77,27 +78,27 @@ public class TemplateProvider {
 
                 // Note: The size of reservedResources and its entries are the important thing. Coding is intended that any reservedResource has no entries in the other three lists.
                 //       However, the ultimate rule is that an entry in the reservedResource list means that the resource is reserved, independent of what many ResourceProviders may have placed in the alternate lists. 
-                if (reservedResources.size() == reserveResourceRequests.size()) {
+                if (reservedResources.size() == originalReserveResourceRequestsSize) {
                     // bind all resources of reservedResources, and receive a ResourceInstance for each one
                     List<? extends ResourceInstance> resourceInstances = resourceProviders.bind(reservedResources); // each element of returned list has its stepReference stored
 
                     // TODO: analyze the success/failure of each returned ResourceInstance
                     
-                    // form list for local use, ordered by stepReference
-                    OrderedResourceInfo orderedResourceInfo;
-                    List<OrderedResourceInfo> orderedResourceInfos = new ArrayList<>();
+                    // for local use, form bound resource list, ordered by stepReference
+                    ResourceInfo resourceInfo;
+                    List<ResourceInfo> orderedResourceInfos = new ArrayList<>();
                     for (int i=0; i<resourceInstances.size(); i++) {
-                        orderedResourceInfo = new OrderedResourceInfo(resourceInstances.get(i));
-                        orderedResourceInfos.add(orderedResourceInfo);
+                        resourceInfo = new ResourceInfo(resourceInstances.get(i));
+                        orderedResourceInfos.add(resourceInfo);
                     }
                     Collections.sort(orderedResourceInfos);
-                    System.out.println("TemplateProvider.getInstancedTemplate() has orderedResourceInfos of size " + orderedResourceInfos);
+                    System.out.println("TemplateProvider.getInstancedTemplate() has orderedResourceInfos of size " + orderedResourceInfos.size());
                     
                     iT.setOrderedResourceInfos(orderedResourceInfos);
                     
                     // TODO: set iT with more gathered info and instantiations and similar
                 } else {
-                    // TODO: deal with this failure to reserve some of the resources, including cleanup of whatever resources are reserved
+                    // TODO: deal with this failure to reserve some of the resources, including cleanup of whatever resources are reserved but might no longer be needed
                 }
             } else {
                 System.out.println("TemplateProvider.getInstancedTemplate() finds null ResourceQueryRequest");
@@ -108,7 +109,7 @@ public class TemplateProvider {
                 String step = stepsParser.getNextStep();
                 if (step == null)
                     break;
-                // process step with this rule: step command is the first characters leading up to the first space char
+                // process step with this rule: step command is the first set of characters, leading up to the first space char
                 int offset = 0;
                 String spaceTermSubString = StepsParser.getNextSpaceTerminatedSubString(step, offset);
                 if (spaceTermSubString != null) {
@@ -175,17 +176,18 @@ public class TemplateProvider {
                             strArtifactName != null && // note: %2F within is URL encoding for "/"
                             strArtifactHash != null) {
                             int stepRef = Integer.parseInt(machineRef);
-                            OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
+                            // This next line takes advantage of the prior ordering of the orderedResourceInfos list held by iT. Using index value stepRef, this call returns the proper ResourceInfo that holds the correct machine to deploy to.
+                            ResourceInfo resourceInfo = iT.getResourceInfo(stepRef);
                             boolean success = false;
-                            if (orderedResourceInfo != null) {
-                                ResourceInstance resourceInstance = orderedResourceInfo.getResourceInstance();
+                            if (resourceInfo != null) {
+                                ResourceInstance resourceInstance = resourceInfo.getResourceInstance();
                                 if (MachineInstance.class.isInstance(resourceInstance)) {
                                     // deploy artifact to the machine instance
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
                                     try {
                                         machineInstance.deploy(strComponentName, strArtifactName, strArtifactHash);
                                         ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
-                                        orderedResourceInfo.setArtifactInfo(artifactInfo);
+                                        resourceInfo.setArtifactInfo(artifactInfo);
                                         // TODO: set iT with more gathered info and instantiations and similar
 
                                         success = true;
@@ -196,6 +198,7 @@ public class TemplateProvider {
                                     } catch (ArtifactNotFoundException e) {
                                         // TODO Auto-generated catch block
                                         e.printStackTrace();
+                                    } finally {
                                     }
                                 }
                             }
@@ -251,18 +254,18 @@ public class TemplateProvider {
                             
                         if (strInstructionsHash != null & strComponentName != null && strArtifactName != null && strArtifactHash != null) {
                             int stepRef = Integer.parseInt(machineRef);
-                            OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
+                            ResourceInfo resourceInfo = iT.getResourceInfo(stepRef);
                             boolean success = false;
-                            if (orderedResourceInfo != null) {
-                                ResourceInstance resourceInstance = orderedResourceInfo.getResourceInstance();
+                            if (resourceInfo != null) {
+                                ResourceInstance resourceInstance = resourceInfo.getResourceInstance();
                                 if (PersonInstance.class.isInstance(resourceInstance)) {
                                     // inspect: give artifact to the person instance
                                     PersonInstance personInstance = PersonInstance.class.cast(resourceInstance);
                                     try {
                                         personInstance.inspect(strInstructionsHash, strComponentName, strArtifactName, strArtifactHash);
                                         ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
-                                        orderedResourceInfo.setArtifactInfo(artifactInfo);
-                                        orderedResourceInfo.setInstructionsHash(strInstructionsHash);
+                                        resourceInfo.setInstructionsHash(strInstructionsHash);
+                                        resourceInfo.setArtifactInfo(artifactInfo);
                                         
                                         // TODO: set iT with more gathered info and instantiations and similar
 
@@ -303,17 +306,17 @@ public class TemplateProvider {
                         }
                             
                         if (strNetwork != null) {
-                            int stepRef = Integer.parseInt(machineRef);
-                            OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
                             boolean success = false;
-                            if (orderedResourceInfo != null) {
-                                ResourceInstance resourceInstance = orderedResourceInfo.getResourceInstance();
+                            int stepRef = Integer.parseInt(machineRef);
+                            ResourceInfo resourceInfo = iT.getResourceInfo(stepRef);
+                            if (resourceInfo != null) {
+                                ResourceInstance resourceInstance = resourceInfo.getResourceInstance();
                                 if (MachineInstance.class.isInstance(resourceInstance)) {
                                     // connect network machineInstance
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
                                     try {
                                         machineInstance.connect(strNetwork);
-                                        orderedResourceInfo.setNetwork(strNetwork);
+                                        resourceInfo.setNetwork(strNetwork);
                                         
                                         // TODO: set iT with more gathered info and instantiations and similar
 
@@ -401,18 +404,18 @@ public class TemplateProvider {
                             // strOptions is available; it may be null
                             
                             int stepRef = Integer.parseInt(machineRef);
-                            OrderedResourceInfo orderedResourceInfo = iT.getOrderedResourceInfo(stepRef);
+                            ResourceInfo resourceInfo = iT.getResourceInfo(stepRef);
                             boolean success = false;
-                            if (orderedResourceInfo != null) {
-                                ResourceInstance resourceInstance = orderedResourceInfo.getResourceInstance();
+                            if (resourceInfo != null) {
+                                ResourceInstance resourceInstance = resourceInfo.getResourceInstance();
                                 if (MachineInstance.class.isInstance(resourceInstance)) {
                                     // run program on machineInstance
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
                                     try {
                                         machineInstance.run(strComponentName, strArtifactName, strArtifactHash, strRunParams);
                                         ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
-                                        orderedResourceInfo.setArtifactInfo(artifactInfo);
-                                        orderedResourceInfo.setRunParams(strRunParams);
+                                        resourceInfo.setArtifactInfo(artifactInfo);
+                                        resourceInfo.setRunParams(strRunParams);
                                         
                                         // TODO: set iT with more gathered info and instantiations and similar
 
