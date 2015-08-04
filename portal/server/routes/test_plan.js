@@ -158,10 +158,13 @@ exports.create = function (req, res) {
 // [POST] Update test plan by pk_test_plan
 exports.update = function (req, res) {
   mysql.getConnection(function(err,conn) {
+    var name = req.body['name'] || "";
+    var description = req.body['description'] || "";
+    
     conn.query(
         'UPDATE test_plan SET name = ?, description = ? ' +
         'WHERE pk_test_plan = ? ',
-      [req.body['name'], req.body['description'], req.body['pk_test_plan']],
+      [name, description, req.body['pk_test_plan']],
       function (err, result) {
         if (err) throw err;
         res.format({
@@ -203,21 +206,21 @@ exports.new_report = function (req, res) {
   var filter_str = req.param('filter');
   var results = [];
   var query = squel.select()
-    .field('DISTINCT component.pk_component')
-    .field('component.name')
-    .from('component')
-    .where('component.pk_component IN ('+ filter_str.replace(/["']/g, "")+')');
+    .field('DISTINCT module.pk_module')
+    .field('module.name')
+    .from('module')
+    .where('module.pk_module IN ('+ filter_str.replace(/["']/g, "")+')');
 
   mysql.getConnection(function(err,conn) {
     var q = conn.query(query.toString());
     /**
-     * Get Components
+     * Get Modules
      */
     q.on('result', function (c_res) {
       conn.pause();
-      var component = {
+      var module = {
         name: c_res.name,
-        pk_component: c_res.pk_component,
+        pk_module: c_res.pk_module,
         test_plans: []
       };
       var tp_q = squel.select()
@@ -225,14 +228,14 @@ exports.new_report = function (req, res) {
         .field('test_plan.name')
         .field('test_plan.description')
         .from('test_plan')
-        .join('component_to_test_plan',
+        .join('module_to_test_plan',
           'cttp', 'cttp.fk_test_plan = test_plan.pk_test_plan')
-        .where('cttp.fk_component = ?',component.pk_component);
+        .where('cttp.fk_module = ?',module.pk_module);
 
       mysql.getConnection(function(err,conn2) {
         var tpq = conn2.query(tp_q.toString());
         /**
-         * Get test plans for component
+         * Get test plans for module
          */
           tpq.on('result', function (tp_res) {
             conn2.pause();
@@ -254,13 +257,13 @@ exports.new_report = function (req, res) {
                 test_plan.tests.push(test);
               }).on('end', function () {
                 conn2.resume();
-                component.test_plans.push(test_plan);
+                module.test_plans.push(test_plan);
               });
               conn3.release();
             });
           }).on('end', function () {
-            // Add component to results
-            results.push(component);
+            // Add module to results
+            results.push(module);
             conn.resume();
           });
         conn2.release();
@@ -291,7 +294,7 @@ exports.new_report = function (req, res) {
       } else {
         res.format({
           'text/html': function () {
-            res.render('reports/test_plan_report', {components: results});
+            res.render('reports/test_plan_report', {modules: results});
           },
           'application/json': function () {
             res.send(results);
@@ -303,22 +306,22 @@ exports.new_report = function (req, res) {
   });
 };
 
-// [GET] Test plan for component by name
+// [GET] Test plan for module by name
 exports.name_report = function(req, res) {
-  var component_name = req.param('component');
+  var module_name = req.param('module');
 
-  console.log( component_name );
+  console.log( module_name );
   var sql_query = squel.select()
-    .field('component.pk_component')
-    .from('component')
-    .where('component.name = \'' + component_name + '\'') ;
+    .field('module.pk_module')
+    .from('module')
+    .where('module.name = \'' + module_name + '\'') ;
 
   mysql.getConnection(function(err,conn) {
     conn.query(sql_query.toString(),
       function(err, result) {
         if (err) throw err;
         console.log(result);
-        res.redirect('/api/v2/report_test_plans?export=true&filter='+result[0].pk_component);
+        res.redirect('/api/v2/report_test_plans?export=true&filter='+result[0].pk_module);
       });
     conn.release();
   });
@@ -333,16 +336,16 @@ exports.report = function (req, res) {
    */
   var sql_query = squel.select()
     .field('DISTINCT test_plan.pk_test_plan')
-    .field('component.pk_component')
-    .field('component.name')
+    .field('module.pk_module')
+    .field('module.name')
     .field('test_plan.name', 'test_plan_name')
     .field('test_plan.description', 'test_plan_description')
     .from('test_plan')
-    .join('component_to_test_plan',
-      null, 'component_to_test_plan.fk_test_plan = test_plan.pk_test_plan')
-    .join('component',
-      null,'component.pk_component = component_to_test_plan.fk_component')
-    .where('component.pk_component IN ('+ filter_str.replace(/["']/g, "")+')');
+    .join('module_to_test_plan',
+      null, 'module_to_test_plan.fk_test_plan = test_plan.pk_test_plan')
+    .join('module',
+      null,'module.pk_module = module_to_test_plan.fk_module')
+    .where('module.pk_module IN ('+ filter_str.replace(/["']/g, "")+')');
 
   mysql.getConnection(function(err,conn) {
     conn.query(sql_query.toString(),
@@ -370,7 +373,7 @@ exports.report = function (req, res) {
         } else {
           res.format({
             'text/html': function () {
-              res.render('reports/test_plan_report', {components: result});
+              res.render('reports/test_plan_report', {modules: result});
             },
             'application/json': function () {
               res.send(result);

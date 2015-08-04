@@ -127,10 +127,7 @@ public class CommandLine {
 
                     bos.close();
 
-                    Hash h = Hash.fromContent(new ByteArrayInputStream(bos.toByteArray()));
-
-                    /* Check the cache and add the file if not found. */
-                    core.addContent( h, new ByteArrayInputStream(bos.toByteArray()) );
+                    Hash h = core.addContent( ti );
                     core.addArtifact( pk_version, configuration, artifact, h, merge_source, pk_parent, pk_source_module );
                 }
             }
@@ -167,10 +164,11 @@ public class CommandLine {
                 
                 long pk_module = core.addModule( module );
                 List<Artifact> artifacts = module.getArtifacts();
-                for ( Artifact artifact : artifacts ) {                   
-                    long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getHash( core ), merge_source, 0, 0 );
+                for ( Artifact artifact : artifacts ) {    
+                    Hash h = core.addContent( artifact.getContent().asStream() );
+                    long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), h, merge_source, 0, 0 );
                     if ( artifact.getName().endsWith(".tar.gz") ) {
-                        decompress( artifact.getHash(), pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0 );
+                        decompress( h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0 );
                     }
                 }
             }
@@ -204,10 +202,11 @@ public class CommandLine {
                         long pk_module = core.findModule( m );
                         
                         List<Artifact> artifacts = dmod.getArtifacts();
-                        for ( Artifact artifact : artifacts ) {                   
-                            long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getHash( core ), false, 0, pk_source_module );
+                        for ( Artifact artifact : artifacts ) {   
+                            Hash h = core.addContent( artifact.getContent().asStream() );
+                            long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), h, false, 0, pk_source_module );
                             if ( artifact.getName().endsWith(".tar.gz") ) {
-                                decompress( artifact.getHash(), pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module );
+                                decompress( h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module );
                             }
                         }
                     }
@@ -360,7 +359,7 @@ public class CommandLine {
                 for ( Module M : find_generators ) {
                     List<Artifact> artifacts = M.getArtifacts( null, "dth_test_generator" );
                     for ( Artifact A : artifacts ) {
-                        File f = core.getContentFile( A.getHash() );
+                        File f = core.getContentFile( A.getContent().getHash() );
                         File P = new File( generators, A.getName() );
                         FileUtils.copyFile( f, P );
                     }

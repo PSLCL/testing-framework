@@ -19,7 +19,9 @@ module.exports = function (app, config, passport) {
     app.use(express.urlencoded());
     app.use(express.methodOverride());
     app.use(express.cookieParser(config.cookiesecret));
+    app.use(express.session({ secret: 'SECRET' }));
     app.use(passport.initialize());
+    app.use(passport.session());
     app.use(require('stylus').middleware(path.join(__dirname, '../../public')));
     app.use(express.static(path.join(__dirname, '../../public')));
     app.use(logger('dev'));

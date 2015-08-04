@@ -1,12 +1,12 @@
 extends layout
 block content
-  each component in components
+  each module in modules
     .row
       .col-xs-12
-        h3= '#' + component.pk_component + ' ' + component.name
+        h3= '#' + module.pk_module + ' ' + module.name
           small Test Plans
         hr
-        each test_plan in component.test_plans
+        each test_plan in module.test_plans
           .row
             .col-xs-12
               h3= '#' + test_plan.pk_test_plan + ' ' + test_plan.name

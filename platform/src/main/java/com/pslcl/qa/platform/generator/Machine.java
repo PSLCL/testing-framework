@@ -60,7 +60,7 @@ public class Machine extends Resource {
 
         @Override
         String getCommand( Template t ) throws Exception {
-            return "deploy " + t.getReference( this.m ) + " " + a.getValue(template);
+            return "deploy " + t.getReference( this.m ) + " " + a.getContent().getValue(template);
         }
 
         @Override
@@ -117,29 +117,27 @@ public class Machine extends Resource {
     }
 
     public Cable attach( Network n ) {
-        //TODO: Repair
-        /*        // If the testResource doesn't include the machine, it must be added.
-        if ( ! generator.testResource.contains( this ) ) {
-            generator.testResource = generator.testResource.add( this );
+        // Verify that the machine and network are bound.
+        if ( ! isBound() ) {
+            System.err.println( "Cannot attach an unbound machine." );
+            return null;
         }
-
-        // If the testResource doesn't include the network, it must be added.
-        if ( ! generator.testResource.contains( n ) ) {
-            generator.testResource = generator.testResource.add( n );
+        
+        if ( ! n.isBound() ) {
+            System.err.println( "Cannot bind a machine to an unbound network." );
+            return null;
         }
 
         Cable c = new Cable(generator, this, n );
         //TODO: Build description.
-        generator.testResource = generator.testResource.add(
-                "Attach machine to network.\n",
-                "connect",
-                new Template.ExportParameter( c ),
-                new Template.ResourceParameter( this ),
-                new Template.ResourceParameter( n ) );
+//        generator.add( new ConnectAction() ))
+//                "Attach machine to network.\n",
+//                "connect",
+//                new Template.ExportParameter( c ),
+//                new Template.ResourceParameter( this ),
+//                new Template.ResourceParameter( n ) );
 
         return c;
-         */    
-        return null;
     }
 
     private class ProgramAction extends TestInstance.Action {

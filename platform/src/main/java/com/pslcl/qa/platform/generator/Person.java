@@ -77,7 +77,7 @@ public class Person extends Resource {
                 sb.append( "</em> follow these directions:" );
             }
 
-            sb.append( body.getContent() );
+            sb.append( body.asBytes() );
 
             return sb.toString();
         }

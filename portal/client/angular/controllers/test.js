@@ -11,7 +11,7 @@ app.controller('TestListCtrl',
     };
     // Delete a test by id
     $scope.deleteTest = function (testPlanId, testId) {
-      $scope.component = Test.delete({
+      $scope.module = Test.delete({
           testPlanId: testPlanId,
           testId: testId
         },
@@ -101,7 +101,7 @@ app.controller('TestEditCtrl',
 // Delete test plan
 app.controller('TestDeleteCtrl',
   function ($scope, $routeParams, $location, Test, socket) {
-    $scope.component = Test.delete({
+    $scope.module = Test.delete({
         testPlanId: $routeParams.testPlanId,
         testId: $routeParams.testId
       },

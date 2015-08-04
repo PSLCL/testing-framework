@@ -1,8 +1,6 @@
 package com.pslcl.qa.platform.generator;
 
-import java.io.File;
-
-import org.apache.commons.io.FileUtils;
+import java.io.InputStream;
 
 import com.pslcl.qa.platform.Hash;
 
@@ -10,50 +8,22 @@ import com.pslcl.qa.platform.Hash;
  * This class represents content. All content is identified by a hash, which allows
  * multiple references to the same content even if other metadata is different.
  */
-public class Content implements Template.Parameter {
-    private Core core = null;
-    Hash hash;
-    private String content = null;
+public interface Content extends Template.Parameter {
+    /**
+     * Obtain the hash of the contents.
+     * @return The hash of the contents.
+     */
+    Hash getHash();
+    
+    /**
+     * Obtain a stream that will return the content.
+     * @return A stream that will return the content.
+     */
+    InputStream asStream();
 
-    Content() {
-    }
-
-    Content( Hash hash ) {
-        this.hash = hash;
-    }
-
-    Content( Core core, String content ) {
-        this.core = core;
-        this.content = content;
-        this.hash = Hash.fromContent( content );
-    }
-
-    public Hash getHash() {
-        return hash;
-    }
-
-    public String getContent() {
-        if ( content != null )
-            return content;
-
-        File f = core.getContentFile( hash );
-        try {
-            content = FileUtils.readFileToString( f );
-            return content;
-        }
-        catch ( Exception e ) {
-            // Ignore
-        }
-        
-        return null;
-    }
-
-    public String getValue( Template template ) {
-        return getHash().toString();
-    }
-
-    public void sync() {
-        if ( core != null )
-            core.syncGeneratedContent( this );
-    }
+    /**
+     * Obtain the content as a byte array.
+     * @return A byte array containing the content.
+     */
+    byte[] asBytes();
 }

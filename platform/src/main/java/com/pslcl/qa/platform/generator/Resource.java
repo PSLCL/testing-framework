@@ -73,6 +73,7 @@ abstract class Resource  {
     String name;
     Hash hash;
     UUID instance;
+    BindAction bound;
     private Map<String, String> attributeMap;
 
     Resource(Generator generator, String name, Hash hash) {
@@ -103,13 +104,27 @@ abstract class Resource  {
      * @throws Exception The bind failed.
      */
     public void bind( Attributes attributes ) throws Exception {
-        generator.add( new BindAction( this, attributes ) );
+        if ( bound != null ) {
+            System.err.println( "Cannot bind the same resource twice." );
+            return;
+        }
+        
+        bound = new BindAction( this, attributes );
+        generator.add( bound );
         generator.core.findResource( this );
         this.attributeMap = attributes.getAttributes();
         if ( Generator.trace )
             System.err.println(String.format("Resource %s (%s) (%s) bound with attributes '%s'.", name, hash, instance, attributes));
     }
 
+    /**
+     * Return whether the resource is bound.
+     * @return True if the resource is bound, false otherwise.
+     */
+    public boolean isBound() {
+        return bound != null;
+    }
+    
     /**
      * Return the hash that identifies the type of the resource. Each resource type is associated
      * with a set of resource providers that know how to create instances of the resource type.

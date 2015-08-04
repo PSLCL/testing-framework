@@ -31,6 +31,8 @@ import org.apache.ivy.core.settings.IvySettings;
 import org.apache.ivy.plugins.resolver.AbstractPatternsBasedResolver;
 import org.apache.ivy.plugins.resolver.DependencyResolver;
 
+import com.pslcl.qa.platform.Hash;
+
 public class IvyArtifactProvider implements ArtifactProvider {
     private static class IvyModule implements Module {
         private ResolvedModuleRevision rmv;
@@ -75,7 +77,7 @@ public class IvyArtifactProvider implements ArtifactProvider {
             if ( al != null ) {
                 for ( org.apache.ivy.core.module.descriptor.Artifact a : al ) {
                     for ( String configuration : a.getConfigurations() ) {
-                        Artifact A = new Artifact( this, configuration, a.getName() + "." + a.getExt(), new IvyArtifact( rmv, a ) );
+                        Artifact A = new IvyArtifact( this, rmv, configuration, a );
                         result.add( A );
                     }
                 }
@@ -85,7 +87,7 @@ public class IvyArtifactProvider implements ArtifactProvider {
         }
 
         @Override
-        public List<Artifact> getArtifacts( String namePattern) {
+        public List<Artifact> getArtifacts( String namePattern ) {
             List<Artifact> full = getArtifacts();
             List<Artifact> result = new ArrayList<Artifact>();
             Pattern p = Pattern.compile( namePattern );
@@ -113,13 +115,49 @@ public class IvyArtifactProvider implements ArtifactProvider {
         }    
     }
     
-    private static class IvyArtifact implements ContentProvider {
+    private static class IvyArtifact implements Artifact {
+        private IvyModule module;
+        private String configuration;
+        private String name;
+        private IvyContent content;
+        
+        public IvyArtifact( IvyModule module, ResolvedModuleRevision rmv, String configuration, org.apache.ivy.core.module.descriptor.Artifact artifact ) {
+            this.module = module;
+            this.configuration = configuration;
+            this.content = new IvyContent( rmv, artifact );
+            
+            this.name = artifact.getName() + "." + artifact.getExt();
+        }
+        
+        @Override
+        public Module getModule() {
+            return module;
+        }
+        
+        @Override
+        public String getConfiguration() {
+            return configuration;
+        }
+        
+        @Override
+        public String getName() {
+            return name;
+        }
+        
+        @Override
+        public Content getContent() {
+            return content;
+        }
+    }
+    
+    private static class IvyContent implements Content {
+        private File file = null;
+        private Hash hash = null;
+        private boolean downloaded = false;
         private ResolvedModuleRevision rmv;
         private org.apache.ivy.core.module.descriptor.Artifact artifact;
-        private boolean downloaded = false;
-        private File file = null;
         
-        public IvyArtifact( ResolvedModuleRevision rmv, org.apache.ivy.core.module.descriptor.Artifact artifact ) {
+        public IvyContent( ResolvedModuleRevision rmv, org.apache.ivy.core.module.descriptor.Artifact artifact ) {
             this.rmv = rmv;
             this.artifact = artifact;
         }
@@ -132,9 +170,21 @@ public class IvyArtifactProvider implements ArtifactProvider {
             DownloadReport report = rmv.getArtifactResolver().download(new org.apache.ivy.core.module.descriptor.Artifact[] { artifact }, options);
             ArtifactDownloadReport areport = report.getArtifactReport(artifact);
             file = areport.getLocalFile();
+            hash = Hash.fromContent( file );
             downloaded = true;
         }
         
+        @Override
+        public Hash getHash() {
+            try {
+                download();
+                return hash;
+            }
+            catch ( Exception e ) {
+                return null;
+            }
+        }
+
         @Override
         public InputStream asStream() {
             try {
@@ -162,7 +212,12 @@ public class IvyArtifactProvider implements ArtifactProvider {
             catch ( Exception e ) {
                 return null;
             }
-        }    
+        }
+
+        @Override
+        public String getValue(Template template) throws Exception {
+            return getHash().toString();
+        }      
     }
     
     /**

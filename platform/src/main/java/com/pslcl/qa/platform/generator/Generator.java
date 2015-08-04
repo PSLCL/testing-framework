@@ -1,5 +1,7 @@
 package com.pslcl.qa.platform.generator;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -69,22 +71,49 @@ public class Generator {
     	parameterReferenceMap.put(uuid, parameter);
     }
 
+    private static class StringContent implements Content {
+        String content;
+        Hash hash;
+        
+        StringContent( String content ) {
+            hash = Hash.fromContent( content );
+        }
+        
+        @Override
+        public String getValue(Template template) throws Exception {
+            return hash.toString();
+        }
+
+        @Override
+        public Hash getHash() {
+            return hash;
+        }
+
+        @Override
+        public InputStream asStream() {
+            return new ByteArrayInputStream( content.getBytes() );
+        }
+
+        @Override
+        public byte[] asBytes() {
+            return content.getBytes();
+        }       
+    }
+    
     /**
      * Create content that can be used in a test.
      * @param content
      * @return
      */
     public Content createContent( String content ) {
-        Hash h = Hash.fromContent( content );
-        Content c;
-        if ( ! addedContent.containsKey( h ) ) {
-            c = new Content( core, content );
-            addedContent.put( c.getHash(), c );
+        Content result = new StringContent( content );
+        if ( ! addedContent.containsKey( result.getHash() ) ) {
+            addedContent.put( result.getHash(), result );
         }
         else
-            c = addedContent.get( h );
+            result = addedContent.get( result.getHash() );
 
-        return c;
+        return result;
     }
 
     /**

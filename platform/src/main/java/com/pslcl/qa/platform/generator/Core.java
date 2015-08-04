@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -518,26 +519,38 @@ public class Core {
      * @param h The hash of the file.
      * @param is An input stream for the contents.
      */
-    public void addContent( Hash h, InputStream is ) {
-        if ( read_only )
-            return;
-
-        File target = new File( this.artifacts, h.toString() );
-        if ( target.exists() )
-            return;
+    public Hash addContent( InputStream is ) {
+        File tmp;
         
         try {
-            FileOutputStream os = new FileOutputStream( target );
+            tmp = File.createTempFile( "artifact",  "hash" );
+            FileOutputStream os = new FileOutputStream( tmp );
             IOUtils.copy( is, os );
             is.close();
             os.close();
         }
         catch ( Exception e ) {
-            
+            // Cannot even determine the hash, so we don't know if it has already been added or not.
+            System.err.println( "ERROR: Could not add content, " + e.getMessage() );
+            return null;
         }
+        
+        Hash h = Hash.fromContent( tmp );
+        File target = new File( this.artifacts, h.toString() );
+        if ( target.exists() ) {
+            FileUtils.deleteQuietly( tmp );
+            return h;   // Filesystem and DB must match, file already cached.
+        }
+        
+        // If read-only and it doesn't exist, then it cannot be added.
+        if ( read_only )
+            return null;
 
         PreparedStatement statement = null;
         try {
+            // Move the file to the cache
+            FileUtils.moveFile( tmp, target );
+            
             statement = connect.prepareStatement( "INSERT INTO content (pk_content, is_generated) VALUES (?,1)" );
             statement.setBinaryStream(1, new ByteArrayInputStream(h.toBytes()));
             statement.executeUpdate();
@@ -547,22 +560,9 @@ public class Core {
         }
         finally {
             safeClose( statement ); statement = null;
-        } 
-    }
-    
-    /**
-     * Add content to the system given a hash and a file.
-     * @param h The hash of the contents.
-     * @param f A file that contains the data.
-     */
-    public void addContent( Hash h, File f ) {
-        try {
-            FileInputStream is = new FileInputStream( f );
-            addContent( h, is );  
         }
-        catch ( Exception e ) {
-            
-        }
+        
+        return h;
     }
     
     /**
@@ -777,6 +777,121 @@ public class Core {
     }
     
     /**
+     * This class represents an artifact that is represented in the database. It is the class
+     * returned to generators.
+     */
+    private static class DBArtifact implements Artifact {
+        private Core core;
+        private long pk;
+        private Module module;
+        private String configuration;
+        private String name;
+        private Hash hash;
+        
+        /**
+         * Construct an artifact associated with a component, name, version, platform and variant. The content
+         * associated with the artifact is passed as a hash.
+         * @param name The name of the artifact.
+         * @param version The version of the artifact. This contains
+         * @param platform
+         * @param variant
+         * @param hash
+         */
+        public DBArtifact( Core core, long pk, Module module, String configuration, String name, Hash hash ) {
+            this.core = core;
+            this.pk = pk;
+            this.module = module;
+            this.configuration = configuration;
+            this.name = name;
+            this.hash = hash;
+        }
+
+        public long getPK() {
+            return pk;
+        }
+        
+        @Override
+        public Module getModule() {
+            return module;
+        }
+
+        @Override
+        public String getConfiguration() {
+            return configuration;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        public String getEncodedName() {
+            try {
+                return URLEncoder.encode(name, "UTF-8");
+            }
+            catch ( Exception e ) {
+                // This should never happen, as UTF-8 is a required charset.
+                return "error";
+            }
+        }
+
+        @Override
+        public Content getContent() {
+            return new DBContent( core, hash );
+        }
+        
+        //@Override
+        //public String getValue( Template template ) {
+        //    return module.getOrganization() + "#" + module.getName() + " " + getEncodedName() + " " + hash.toString();
+        //}
+    }
+    
+    private static class DBContent implements Content {
+        Core core;
+        Hash hash;
+
+        DBContent( Core core, Hash hash ) {
+            this.hash = hash;
+        }
+
+        @Override
+        public Hash getHash() {
+            return hash;
+        }
+
+        @Override
+        public String getValue( Template template ) {
+            return getHash().toString();
+        }
+
+        @Override
+        public InputStream asStream() {
+            File f = core.getContentFile( hash );
+            try {
+                return new FileInputStream( f );
+            }
+            catch ( Exception e ) {
+                // Ignore
+            }
+            
+            return null;
+        }
+
+        @Override
+        public byte[] asBytes() {
+            File f = core.getContentFile( hash );
+            try {
+                return FileUtils.readFileToString( f ).getBytes();
+            }
+            catch ( Exception e ) {
+                // Ignore
+            }
+            
+            return null;
+        }
+    }
+    
+    /**
      * Return a set of all modules known to the database.
      * @return
      */
@@ -894,7 +1009,7 @@ public class Core {
                         resultSet = statement.executeQuery( query );
                         while ( resultSet.next() ) {
                             Module mod = artifact.getModule();
-                            Artifact A = new Artifact( mod, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) );
+                            Artifact A = new DBArtifact( this, resultSet.getLong(1), mod, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) );
                             set.add( A );
                         }
                     }
@@ -924,7 +1039,7 @@ public class Core {
                         String version_where = version.length() > 0 ? " AND module.version='" + version + "'" : "";
                         String configuration_where = configuration.length() > 0 ? " AND module.configuration='" + configuration + "'" : "";
                         
-                        query = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.name, artifact.configuration, artifact.fk_content" +
+                        query = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.name, artifact.configuration, artifact.fk_content" +
                                 " FROM artifact" +
                                 " JOIN module ON module.pk_module = artifact.fk_module" +
                                 " WHERE artiface.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s" +
@@ -932,12 +1047,12 @@ public class Core {
                         resultSet = statement.executeQuery( query );
                         Set<String> found = new HashSet<String>();
                         while ( resultSet.next() ) {
-                            String artifact_name = resultSet.getString(6);
+                            String artifact_name = resultSet.getString(8);
                             if ( found.contains( artifact_name ) )
                                 continue;
                             
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
-                            Artifact A = new Artifact( dbmod, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) );
+                            Artifact A = new DBArtifact( this, resultSet.getLong(7), dbmod, resultSet.getString(8), resultSet.getString(9), new Hash( resultSet.getBytes(10) ) );
                             set.add( A );
                         }
                     }
@@ -984,7 +1099,7 @@ public class Core {
                 if ( configuration != null )
                     configuration_match = " AND artifact.configuration='" + configuration + "'";
                 
-                String queryStr = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.configuration, artifact.name, artifact.fk_content" +
+                String queryStr = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.fk_content" +
                         " FROM artifact" +
                         " JOIN module ON module.pk_module = artifact.fk_module" +
                         " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s" +
@@ -1024,7 +1139,7 @@ public class Core {
                     }
                     
                     if ( artifacts[ name_index ] == null ) {
-                        Artifact A = new Artifact( module, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) ); 
+                        Artifact A = new DBArtifact( this, resultSet.getLong(7), module, resultSet.getString(8), resultSet.getString(9), new Hash( resultSet.getBytes(10) ) ); 
                         artifacts[ name_index ] = A;
                     }
                 }
@@ -1116,7 +1231,7 @@ public class Core {
             Map<Long,DBModule> modules = new HashMap<Long,DBModule>();
             
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.configuration, artifact.name, artifact.fk_content" +
+            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.fk_content" +
                     " FROM artifact" +
                     " JOIN module ON module.pk_module = artifact.fk_module" +
                     " WHERE module.pk_module = " + pk_module +
@@ -1136,7 +1251,7 @@ public class Core {
                 if ( set.contains( resultSet.getString( 8 )) )
                     continue;
                 
-                Artifact A = new Artifact( module, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) ); 
+                Artifact A = new DBArtifact( this, resultSet.getLong(7), module, resultSet.getString(8), resultSet.getString(9), new Hash( resultSet.getBytes(10) ) ); 
                 set.add( A );
             }
 
@@ -1254,7 +1369,7 @@ public class Core {
         return 0;
     }
 
-    public void syncGeneratedContent( Content sync ) {
+/*    public void syncGeneratedContent( Content sync ) {
         PreparedStatement find_content = null;
         PreparedStatement create_content = null;
         PreparedStatement mark_synchronized = null;
@@ -1310,7 +1425,7 @@ public class Core {
             safeClose( mark_synchronized ); mark_synchronized = null;
         }
     }
-
+*/
     void addToSet( DescribedTemplate dt, Set<DescribedTemplate> set ) {
         if ( ! set.contains( dt ) ) {
             set.add( dt );
@@ -1363,15 +1478,20 @@ public class Core {
             if ( au != null ) {
                 Iterator<Artifact> iter = au.getArtifacts();
                 while ( iter.hasNext() ) {
-                    Artifact artifact = iter.next();
-                    
-                    statement = connect.prepareStatement( "INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)" );
-                    statement.setLong( 1, 0 ); // TODO: FIX artifact.getPK() );
-                    statement.setLong( 2, linepk );
-                    statement.setInt( 3, au.getPrimary() ? 1 : 0 );
-                    statement.setString( 4, au.getReason() );
-                    statement.executeUpdate();
-                    safeClose( statement ); statement = null;
+                    try {
+                        DBArtifact artifact = (DBArtifact) iter.next();
+                        
+                        statement = connect.prepareStatement( "INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)" );
+                        statement.setLong( 1, artifact.getPK() );
+                        statement.setLong( 2, linepk );
+                        statement.setInt( 3, au.getPrimary() ? 1 : 0 );
+                        statement.setString( 4, au.getReason() );
+                        statement.executeUpdate();
+                        safeClose( statement ); statement = null;
+                    }
+                    catch ( Exception e ) {
+                        // Ignore
+                    }
                 }
             }
         }
