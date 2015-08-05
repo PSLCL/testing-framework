@@ -1,6 +1,6 @@
 {
   "name": "portal",
-  "version": "0.0.7",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "watch": "watchify client/main.js -o public/client.js -v",
@@ -17,6 +17,7 @@
     "mysql": "~2.0",
     "squel": "3.1.1",
     "jade": "*",
+    "socket.io": "*",
     "stylus": "*",
     "supervisor": "^0.5.7",
     "phantomjs": "*",
@@ -26,7 +27,9 @@
     "angular-promise-tracker": "*",
     "angular-busy": "*",
 	"tar-stream": "*",
-	"compression": "*"
+	"compression": "*",
+	"passport-atlassian-oauth": "*",
+	"jira": "*"
   },
   "devDependencies": {
     "express-livereload": "*",

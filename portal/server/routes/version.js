@@ -1,7 +1,7 @@
 // Mysql Connection
 var mysql    = require('../lib/mysql');
-var env     = process.env.NODE_ENV || 'development';
-var config  = require('../config/config')[env];
+var env     = process.env.NODE_ENV || 'production';
+var config  = require('../../config/config')[env];
 var squel   = require('squel');
 var Util    = require('../lib/util');
 var path    = require('path');

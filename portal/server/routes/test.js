@@ -1,7 +1,7 @@
 // Mysql Connection
 var mysql   = require('../lib/mysql');
-var env    = process.env.NODE_ENV || 'development';
-var config = require('../config/config')[env];
+var env    = process.env.NODE_ENV || 'production';
+var config = require('../../config/config')[env];
 
 // [GET] list of tests by test plan
 exports.list = function (req, res) {
@@ -50,7 +50,6 @@ exports.show = function (req, res) {
 // [POST] new test
 exports.create = function (req, res) {
   mysql.getConnection(function(err,conn) {
-  console.log(JSON.stringify(req.body));
     conn.query('INSERT INTO test SET ?', req.body,
       function (err, result) {
         if (err) throw err;

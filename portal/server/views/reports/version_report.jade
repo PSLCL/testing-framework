@@ -5,7 +5,6 @@ block content
         | var chart_total_pending = 0;
         | function pending_graphs() { return chart_total_pending; };
         | function build_graphs() {
-        | console.log("Building graphs.");
         each module in items
             each version in module.versions
                 = 'gen_version_chart_' + version.pk + '();'

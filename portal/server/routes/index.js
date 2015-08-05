@@ -17,8 +17,6 @@ exports.index = function (req, res) {
       res.format({
         'text/html': function () {
           res.render('index', { title: 'QA Portal', totals: result[0] });
-			console.log("Rendering");
-			console.log(JSON.stringify(req.user));
         },
         'application/json': function () {
           res.send(result[0]);

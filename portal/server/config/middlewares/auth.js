@@ -1,6 +1,7 @@
 var AtlassianOAuthStrategy = require('passport-atlassian-oauth').Strategy;
-//var LdapAuth      = require('ldapauth');
 var JiraApi       = require('jira').JiraApi;
+var env      = process.env.NODE_ENV || 'production';
+var config   = require('../../../config/config')[env];
 
 //Authentication Strategy
 module.exports = function (passport,config) {
@@ -12,14 +13,7 @@ module.exports = function (passport,config) {
     done(null, obj);
   });
   
-var RsaPrivateKey = "";
-
-  passport.use(new AtlassianOAuthStrategy({
-        applicationURL: "https://issue.opendof.org",
-        callbackURL: "https://testing.opendof.org/auth/atlassian-oauth/callback",
-        consumerKey: "testing-consumer",
-        consumerSecret: RsaPrivateKey,
-        },
+  passport.use(new AtlassianOAuthStrategy( config.oauth,
       function (token, tokenSecret, profile, done) {
         return done(null, profile);
       }

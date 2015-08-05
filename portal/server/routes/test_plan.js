@@ -1,7 +1,7 @@
 // Mysql Connection
 var mysql   = require('../lib/mysql');
-var env     = process.env.NODE_ENV || 'development';
-var config  = require('../config/config')[env];
+var env     = process.env.NODE_ENV || 'production';
+var config  = require('../../config/config')[env];
 var squel   = require('squel');
 var Util    = require('../lib/util');
 var path    = require('path');
@@ -284,7 +284,6 @@ exports.new_report = function (req, res) {
                 path.join(
                   __dirname, '../../public/reports/'+file_id+'.pdf'
                 ), function(){
-                  console.log('Page Rendered');
                   ph.exit();
                   res.redirect('/reports/'+file_id+'.pdf');
                 });
@@ -310,7 +309,6 @@ exports.new_report = function (req, res) {
 exports.name_report = function(req, res) {
   var module_name = req.param('module');
 
-  console.log( module_name );
   var sql_query = squel.select()
     .field('module.pk_module')
     .from('module')
@@ -320,7 +318,6 @@ exports.name_report = function(req, res) {
     conn.query(sql_query.toString(),
       function(err, result) {
         if (err) throw err;
-        console.log(result);
         res.redirect('/api/v2/report_test_plans?export=true&filter='+result[0].pk_module);
       });
     conn.release();
@@ -363,7 +360,7 @@ exports.report = function (req, res) {
                   path.join(
                     __dirname, '../../public/reports/'+file_id+'.pdf'
                   ), function(){
-                  console.log('Page Rendered');
+
                   ph.exit();
                   res.redirect('/reports/'+file_id+'.pdf');
                 });

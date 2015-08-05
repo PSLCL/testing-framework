@@ -6,12 +6,13 @@
  */
 
 //Dependencies
+
 var express  = require('express');
 var http     = require('http');
 var https    = require('https');
 var passport = require('passport');
-var env      = process.env.NODE_ENV || 'development';
-var config   = require('./server/config/config')[env];
+var env      = process.env.NODE_ENV || 'production';
+var config   = require('./config/config')[env];
 var fs       = require('fs');
 var os       = require('os');
 
@@ -22,10 +23,15 @@ if ( env == 'production' ) {
   }
 }
 
-var options = {
-    pfx: fs.readFileSync('server.pfx'),
-    passphrase: 'qaexport',
-    requestCert: true
+var options = {};
+if ( fs.existsSync( './config/server.pfx' ) ) {
+    var server_pfx = fs.readFileSync('config/server.pfx');
+
+    options = {
+        pfx: server_pfx,
+        passphrase: config.certificate_passphrase,
+        requestCert: true
+    };
 };
 
 //Setup server and socket io
@@ -33,17 +39,19 @@ var app = express();
 var forwarder = express();
 
 var unsecureServer;
-if ( env == 'production' ) {
+var secureServer;
+var socketServer;
+if ( config.https_port ) {
   unsecureServer = http.createServer(forwarder);
+  secureServer = https.createServer(options, app);
+  socketServer = secureServer;
 }
 else {
   unsecureServer = http.createServer(app);
+  socketServer = unsecureServer;
 }
 
-var secureServer = https.createServer(options, app);
-
-var sio = require('socket.io').listen(secureServer);
-sio.set('log level', 1);
+var sio = require('socket.io').listen(socketServer);
 
 //Init Express configuration
 require('./server/config/express')(app, config, passport);
@@ -58,10 +66,12 @@ forwarder.get('*',function(req,res) {
   res.redirect('https://' + req.headers.host + req.url)
 });
 
-unsecureServer.listen(app.get('http_port'), function(){
-  console.log('Server listening on port ' + app.get('http_port'));
+unsecureServer.listen(config.http_port, function(){
+  console.log('Server listening on port ' + config.http_port);
 });
 
-secureServer.listen( app.get('https_port'), function(){
-  console.log('Secure servier listening on port ' + app.get('https_port'));
-});
+if ( secureServer ) {
+    secureServer.listen( config.https_port, function(){
+        console.log('Secure server listening on port ' + config.https_port);
+    });
+}

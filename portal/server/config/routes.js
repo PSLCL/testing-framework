@@ -63,7 +63,7 @@ module.exports = function (app, config, passport) {
         displayName = req.user.displayName;
         avatar = req.user.avatarUrls['32x32'];
     
-        result = { "isAdmin": isAdmin, "username": req.user.username, "displayName": displayName, "avatar": avatar, "user": result };
+        result = { "isAdmin": isAdmin, "username": req.user.username, "displayName": displayName, "avatar": avatar, "user": req.user };
     }
     
     res.send( result );
