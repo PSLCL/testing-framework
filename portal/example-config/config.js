@@ -46,6 +46,7 @@ module.exports = {
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
 	'certificate_passphrase': certificate_passphrase,
+	listen_ip: '0.0.0.0',
 	http_port: 80,
 	https_port: null,
 	'oauth': oauth
@@ -56,6 +57,7 @@ module.exports = {
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
 	'certificate_passphrase': certificate_passphrase,
+	listen_ip: '0.0.0.0',
 	http_port: 80,
 	https_port: 443,
 	'oauth': oauth

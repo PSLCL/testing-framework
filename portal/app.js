@@ -67,11 +67,11 @@ forwarder.get('*',function(req,res) {
 });
 
 unsecureServer.listen(config.http_port, function(){
-  console.log('Server listening on port ' + config.http_port);
+  console.log('Server listening on ' + config.listen_ip + ':' + config.http_port);
 });
 
 if ( secureServer ) {
-    secureServer.listen( config.https_port, function(){
-        console.log('Secure server listening on port ' + config.https_port);
+    secureServer.listen( config.https_port, config.listen_ip, function(){
+        console.log('Secure server listening on ' + config.listen_ip + ':' + config.https_port);
     });
 }
