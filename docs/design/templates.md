@@ -71,11 +71,11 @@ Results of a test run must not be changed by the reuse of a template. Consider t
 the moment it was fully instantiated. In order to keep template reuse from affecting the outcome of a test run, a template may only
 be reused if it is at its initial state.
 
-In the simplest case, a parent template includes a child template but does not change its state. The [Run](template_commands.md#run) 
-and [Run-Forever](template_commands.md#run-forever) commands, when completed, must leave the Machine in the same state as before the 
-program was run. A parent may run a program on a resource bound by a child template without altering its state. When the parent 
-template instance is no longer needed and releases all of its resources and child templates, the child template may immediately be 
-reused by another parent template.
+In the simplest case, a parent template includes a child template but does not change its state. The [Run](template_commands.md#run), 
+[Run-Forever](template_commands.md#run-forever) and [Start](template_commands.md#start) commands, when completed, must leave the 
+Machine in the same state as before the program was run. A parent may run a program on a resource bound by a child template without 
+altering its state. When the parent template instance is no longer needed and releases all of its resources and child templates, the 
+child template may immediately be reused by another parent template.
 
 If, instead, the parent template changes the state of the child template, then those changes must be reversed before the child
 template can be reused. For example, if the parent template [Deploys](template_commands.md#deploy) an [Artifact](artifacts.md)
