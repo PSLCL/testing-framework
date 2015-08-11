@@ -113,18 +113,6 @@ public class CommandLine {
                     if (artifact.startsWith("./"))
                         artifact = artifact.substring(2);
 
-                    /* Extract the contents to a memory cache, determine the hash, and see if the file is already cached. */
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    final int BUFFER_MAX_SIZE = 8192;
-                    byte[] buffer = new byte[BUFFER_MAX_SIZE];
-
-                    int count;
-                    while ((count = ti.read(buffer, 0, BUFFER_MAX_SIZE)) != -1) {
-                        bos.write(buffer, 0, count);
-                    }
-
-                    bos.close();
-
                     Hash h = core.addContent( ti );
                     core.addArtifact( pk_version, configuration, artifact, h, merge_source, pk_parent, pk_source_module );
                 }
