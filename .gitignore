@@ -3,3 +3,8 @@ portal/config/
 portal/public/client.js
 portal/public/stylesheets/style.css
 portal/skin/
+platform/.build/
+portal/repo/
+platform/ivy-*.xml
+*.pom
+platform/ivysettings.xml

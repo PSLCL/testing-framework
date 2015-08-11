@@ -8,6 +8,7 @@
     "run": "npm run watch | nodemon app"
   },
   "dependencies": {
+    "cron": "*",
     "express": "3.5.0",
     "static-favicon": "~1.0.0",
     "morgan": "~1.0.0",

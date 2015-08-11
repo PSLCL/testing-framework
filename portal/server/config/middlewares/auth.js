@@ -1,7 +1,6 @@
 var AtlassianOAuthStrategy = require('passport-atlassian-oauth').Strategy;
 var JiraApi       = require('jira').JiraApi;
-var env      = process.env.NODE_ENV || 'production';
-var config   = require('../../../config/config')[env];
+var config   = require('../../../config/config');
 
 //Authentication Strategy
 module.exports = function (passport,config) {

@@ -7,6 +7,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -52,10 +54,7 @@ public class CommandLine {
         System.out.println( "arguments are:" );
         System.out.println( "  --no-synchronize - optional - disable synchronization." );
         System.out.println( "  --no-generators - optional - disable running generators." );
-        System.out.println( "  --artifact-endpoint - required unless no-synchronize specified - The endpoint of the artifact provider." );
-        System.out.println( "environment requirements are:" );
-        System.out.println( "  DTF_TEST_ARTIFACTS - required - the full path of the directory that contains the artifact cache." );
-        System.out.println( "  DTF_TEST_GENERATORS - required - the full path of the directory where generators are written." );
+
         System.exit( 1 );
     }
     
@@ -68,8 +67,7 @@ public class CommandLine {
         System.out.println( "  <runcount> - required except for manual mode - the number of tests to run." );
         System.out.println( "  --manual i - optional, to run one test on all test instances soon - supply the id number assigned for the test." );
         System.out.println( "  --manual i j - optional, to run one test on one test instance soon - supply the id number assigned for the test, followed by the id number assigned to the test run." );
-        System.out.println( "environment requirements are:" );
-        System.out.println( "  TODO" );
+
         System.exit( 1 );
     }
 
@@ -286,7 +284,6 @@ public class CommandLine {
     private static void synchronize( String[] args ) {
         boolean synchronize = true;
         boolean generate = true;
-        String endpoint = null;
 
         if (args.length > 1 && args[1].compareTo( "--help" ) == 0)
             synchronizeHelp();
@@ -298,15 +295,9 @@ public class CommandLine {
             else if ( args[i].compareTo( "--no-generators" ) == 0 ) {
                 generate = false;
             }
-            else if ( args[i].compareTo( "--artifact-endpoint" ) == 0 ) {
-                endpoint = args[++i];
-            }
             else
                 synchronizeHelp();
         }
-
-        if ( System.getenv("DTF_TEST_ARTIFACTS") == null || System.getenv("DTF_TEST_GENERATORS") == null || (synchronize && endpoint == null) )
-            synchronizeHelp();
 
         Core core = null;
         ArtifactProvider artifactProvider = null;
@@ -316,7 +307,7 @@ public class CommandLine {
             core = new Core( 0 );
 
             if ( synchronize ) {
-                File generators = new File( System.getenv("DTF_TEST_GENERATORS" ) );
+                File generators = new File( core.getConfig().dirGenerators() );
                 if ( generators.exists() )
                     //noinspection ResultOfMethodCallIgnored
                     org.apache.commons.io.FileUtils.deleteQuietly(generators);
@@ -337,6 +328,7 @@ public class CommandLine {
                         provider = (ArtifactProvider) P.newInstance();
                         
                         provider.init();
+                        to_close.add( provider );
                         
                         /* Handle generators from this provider. */
                         //core.startArtifactProvider( providerName );
@@ -375,11 +367,13 @@ public class CommandLine {
 
                 /* Instantiate the platform and artifact provider. */
                 Map<Long,String> scripts = core.getGenerators();
-                String shell = System.getenv("DTF_TEST_SHELL");
-                String base = System.getenv("DTF_TEST_BASE");
+                String shell = core.getConfig().shell();
+                Path currentRelativePath = Paths.get("");
+                String base = currentRelativePath.toAbsolutePath().toString();
+
                 if ( shell == null )
                     shell = "/bin/bash";
-                File generators = new File( System.getenv("DTF_TEST_GENERATORS") );
+                File generators = new File( core.getConfig().dirGenerators() );
 
                 ExecutorService executor = Executors.newFixedThreadPool( 25 );
 
@@ -415,7 +409,7 @@ public class CommandLine {
     }
     
     private static void runner( String[] args ) {
-        if (args.length < 2 || System.getenv("DTF_TEST_ARTIFACTS") == null || System.getenv("DTF_TEST_GENERATORS") == null)
+        if (args.length < 2)
             runHelp(); // exits app
 
         for (int i = 1; i < args.length; i++) {
@@ -424,6 +418,8 @@ public class CommandLine {
             }
         }
        
+        Core core = new Core(0);
+        
         int runCount = -1;
         boolean manual = false;
         long manualTestNumber = -1;

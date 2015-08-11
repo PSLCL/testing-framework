@@ -1,6 +1,5 @@
 //Module dependencies
-var env      = process.env.NODE_ENV || 'production';
-var config   = require('../../config/config')[env];
+var config   = require('../../config/config');
 var mysql  = require('mysql');
 
 var pool = mysql.createPool({

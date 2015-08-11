@@ -23,6 +23,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -184,10 +188,86 @@ public class Core {
      */
     private long pk_target_test = 0;
     private boolean read_only = false;
-
+    
+    public static class Config {
+        private String db_host;
+        private Integer db_port;
+        private String db_user;
+        private String db_password;
+        private String db_schema;
+        private String artifacts_dir;
+        private String generators_dir;
+        private String shell;
+        
+        Config() {
+            try {
+                ScriptEngineManager manager = new ScriptEngineManager();
+                ScriptEngine engine = manager.getEngineByName("JavaScript");
+                File fs = new File("portal/config/config.js");
+                Bindings binding = engine.createBindings();
+                binding.put("process",  null );
+                binding.put("env",  System.getenv() );
+                binding.put("module", new NodeModule() );
+                
+                engine.eval( new FileReader(fs), binding );
+                this.db_host = (String) engine.eval( "config.mysql.host;", binding );
+                this.db_port = (Integer) engine.eval( "config.mysql.port;", binding );
+                this.db_user = (String) engine.eval( "config.mysql.user;", binding );
+                this.db_password = (String) engine.eval( "config.mysql.password;", binding );
+                this.db_schema = (String) engine.eval( "config.mysql.db;", binding );
+                this.artifacts_dir = (String) engine.eval( "config.artifacts_dir;", binding );
+                this.generators_dir = (String) engine.eval( "config.generators_dir;", binding );
+                this.shell = (String) engine.eval( "config.shell;", binding );
+            }
+            catch ( Exception e ) {
+                
+            }
+        }
+        
+        public String dbHost() {
+            return db_host;
+        }
+        
+        public Integer dbPort() {
+            return db_port;
+        }
+        
+        public String dbUser() {
+            return db_user;
+        }
+        
+        public String dbPassword() {
+            return db_password;
+        }
+        
+        public String dbSchema() {
+            return db_schema;
+        }
+        
+        public String dirArtifacts() {
+            return artifacts_dir;
+        }
+        
+        public String dirGenerators() {
+            return generators_dir;
+        }
+        
+        public String shell() {
+            return shell;
+        }
+    };
+    
+    Config config = new Config();
+    
+    public Config getConfig() {
+        return config;
+    }
+    
     public Core( long pk_test ) {
         this.pk_target_test = pk_test;
-        String dir = System.getenv("DTF_TEST_ARTIFACTS");
+        
+        
+        String dir = config.dirArtifacts();
         if ( dir != null )
             this.artifacts = new File(dir);
 
@@ -214,6 +294,10 @@ public class Core {
         closeDatabase();
     }
 
+    private static class NodeModule {
+        private Object exports;
+    }
+    
     /**
      * Open the database connection if it is not already open. Environment variables are used
      * to determine the DB host, user, and password. The DTF_TEST_DB_HOST variable is required.
@@ -226,11 +310,11 @@ public class Core {
             return;
 
         try {
+            
             // Setup the connection with the DB
-            String host = System.getenv("DTF_TEST_DB_HOST");
-            String user = System.getenv("DTF_TEST_DB_USER");
-            String password = System.getenv("DTF_TEST_DB_PASSWORD");
             read_only = false;
+            String user = config.dbUser();
+            String password = config.dbPassword();
             if ( user == null || password == null ) {
                 user = "guest";
                 password = "";
@@ -238,7 +322,8 @@ public class Core {
             }
 
             Class.forName("com.mysql.jdbc.Driver"); // required at run time only for .getConnection(): mysql-connector-java-5.1.35.jar
-            connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
+            String connectstring = String.format( "jdbc:mysql://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password );
+            connect = DriverManager.getConnection(connectstring);
         }
         catch ( Exception e ) {
             read_only = true;

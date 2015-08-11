@@ -1,7 +1,6 @@
 // Mysql Connection
 var mysql   = require('../lib/mysql');
-var env    = process.env.NODE_ENV || 'production';
-var config = require('../../config/config')[env];
+var config = require('../../config/config');
 
 // [GET] list of tests by test plan
 exports.list = function (req, res) {

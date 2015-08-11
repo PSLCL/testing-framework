@@ -11,10 +11,14 @@ var express  = require('express');
 var http     = require('http');
 var https    = require('https');
 var passport = require('passport');
-var env      = process.env.NODE_ENV || 'production';
-var config   = require('./config/config')[env];
+var config   = require('./config/config');
 var fs       = require('fs');
 var os       = require('os');
+var CronJob  = require('cron').CronJob;
+var spawn    = require('child_process').spawn;
+var path     = require('path');
+
+var env = process.env.NODE_ENV || 'production';
 
 if ( env == 'production' ) {
   if ( os.platform() != 'win32' ) {
@@ -22,6 +26,18 @@ if ( env == 'production' ) {
     console.set({ facility: 'local0', title: 'basic', stdout: false, stderr: false })
   }
 }
+
+var job = new CronJob(config.synchronize_schedule, function() {
+    var child = spawn('java',
+            ['-cp', path.join('platform','*') + path.delimiter + path.join('platform','lib','*'), 'com.pslcl.qa.platform.CommandLine', 'synchronize' ],
+            { cwd: path.join(__dirname,'..') });
+    child.stdout.on('data', function(data) { console.log('synchronize: '+data); });
+    child.stderr.on('data', function(data) { console.log('synchronize (error): '+data); });
+    child.on('close', function(code) { console.log("synchronize complete with exit code " + code) });
+    }, function() {
+    },
+    true
+);
 
 var options = {};
 if ( fs.existsSync( './config/server.pfx' ) ) {
@@ -66,12 +82,12 @@ forwarder.get('*',function(req,res) {
   res.redirect('https://' + req.headers.host + req.url)
 });
 
-unsecureServer.listen(config.http_port, config.listen_ip, function(){
+unsecureServer.listen(config.http_port, function(){
   console.log('Server listening on ' + config.listen_ip + ':' + config.http_port);
 });
 
 if ( secureServer ) {
-    secureServer.listen( config.https_port, config.listen_ip, function(){
+    secureServer.listen( config.https_port, function(){
         console.log('Secure server listening on ' + config.listen_ip + ':' + config.https_port);
     });
 }
