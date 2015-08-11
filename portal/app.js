@@ -82,12 +82,12 @@ forwarder.get('*',function(req,res) {
   res.redirect('https://' + req.headers.host + req.url)
 });
 
-unsecureServer.listen(config.http_port, function(){
+unsecureServer.listen(config.http_port, config.listen_ip, function(){
   console.log('Server listening on ' + config.listen_ip + ':' + config.http_port);
 });
 
 if ( secureServer ) {
-    secureServer.listen( config.https_port, function(){
+    secureServer.listen( config.https_port, config.listen_ip, function(){
         console.log('Secure server listening on ' + config.listen_ip + ':' + config.https_port);
     });
 }

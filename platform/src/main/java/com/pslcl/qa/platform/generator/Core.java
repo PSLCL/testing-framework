@@ -220,7 +220,7 @@ public class Core {
                 this.shell = (String) engine.eval( "config.shell;", binding );
             }
             catch ( Exception e ) {
-                
+                System.err.println( "ERROR: Config exception: " + e.getMessage() );
             }
         }
         
@@ -611,7 +611,6 @@ public class Core {
             tmp = File.createTempFile( "artifact",  "hash" );
             FileOutputStream os = new FileOutputStream( tmp );
             IOUtils.copy( is, os );
-            is.close();
             os.close();
         }
         catch ( Exception e ) {

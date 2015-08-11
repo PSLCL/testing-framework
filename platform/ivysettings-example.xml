@@ -1,5 +1,5 @@
 <ivysettings>
-	<!-- Change the value to the checkout directory and rename file to ivysettings.xml. />
+	<!-- Change the value to the checkout directory and rename file to ivysettings.xml. -->
 	<property name="dtf.dir" value="DEFAULT"/>
 	<settings defaultResolver="default" />
 	<include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>

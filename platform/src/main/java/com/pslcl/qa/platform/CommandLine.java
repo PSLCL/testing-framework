@@ -130,7 +130,7 @@ public class CommandLine {
                 }
             }
             catch ( Exception e ) {
-                
+                System.err.println( "ERROR: Failure extracting file, " + e.getMessage() );
             }
             finally {
                 if ( ti != null ) try {
