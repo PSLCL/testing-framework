@@ -221,7 +221,7 @@ public class IvyArtifactProvider implements ArtifactProvider {
     }
     
     /**
-     * Extract the standard dth-merge-info information.
+     * Extract the standard dtf-merge-info information.
      * @param module The module to check.
      * @return A string representing everything to merge to.
      */
@@ -230,7 +230,7 @@ public class IvyArtifactProvider implements ArtifactProvider {
         Map<String,String> ns = module.getExtraAttributesNamespaces();
         String prefix = "";
         for ( Map.Entry<String,String> entry : ns.entrySet() ) {
-            if ( entry.getValue().equals( "http://com.pslcl/dth-ivy" ) ) {
+            if ( entry.getValue().equals( "http://com.pslcl/dtf-ivy" ) ) {
                 prefix = entry.getKey();
                 break;
             }
@@ -238,7 +238,7 @@ public class IvyArtifactProvider implements ArtifactProvider {
         
         String sep = "";
         for ( ExtraInfoHolder extra : module.getExtraInfos() ) {
-            if ( extra.getName().equals( prefix + ":" + "dth-merge-info" ) ) {
+            if ( extra.getName().equals( prefix + ":" + "dtf-merge-info" ) ) {
                 Map<String,String> attributes = extra.getAttributes();
                 for ( Map.Entry<String,String> attribute : attributes.entrySet() ) {
                     if ( attribute.getKey().equals( prefix + ":merge-to") ) {

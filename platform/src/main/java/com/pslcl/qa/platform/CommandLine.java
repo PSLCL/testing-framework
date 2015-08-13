@@ -337,7 +337,7 @@ public class CommandLine {
                 // Extract all generators
                 Iterable<Module> find_generators = core.createModuleSet();
                 for ( Module M : find_generators ) {
-                    List<Artifact> artifacts = M.getArtifacts( null, "dth_test_generator" );
+                    List<Artifact> artifacts = M.getArtifacts( null, "dtf_test_generator" );
                     for ( Artifact A : artifacts ) {
                         File f = core.getContentFile( A.getContent().getHash() );
                         File P = new File( generators, A.getName() );
