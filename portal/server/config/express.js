@@ -4,6 +4,22 @@ var express = require('express');
 var path    = require('path');
 var compression = require('compression');
 var config   = require('../../config/config');
+var serveIndex = require('serve-index');
+
+var directoryList = function(locals, callback) {
+    var result = "<html>";
+    locals.fileList.forEach( function(file) {
+        if ( file.stat.isDirectory() ) {
+            result += '<a href="' + locals.directory + '/' + file.name + '">' + file.name + '/</a><br/>';
+        }
+        else {
+            result += '<a href="' + locals.directory + '/' + file.name + '">' + file.name + '</a><br/>';
+        }
+    });
+    
+    result += "</html>";
+    callback( null, result );
+};
 
 module.exports = function (app, config, passport) {
   // all environments
@@ -27,7 +43,7 @@ module.exports = function (app, config, passport) {
     app.use(require('stylus').middleware(path.join(__dirname, '../../public')));
     app.use(express.static(path.join(__dirname, '../../public')));
     app.use('/skin', express.static(path.join(__dirname, '../../skin')));
-    app.use('/repo', express.directory(path.join(__dirname, '../../repo')));
+    app.use('/repo', serveIndex(path.join(__dirname, '../../repo'), { template: directoryList }));
     app.use('/repo', express.static(path.join(__dirname, '../../repo')));
     app.use(logger('dev'));
     app.use(app.router);

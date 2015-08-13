@@ -30,7 +30,8 @@
 	"tar-stream": "*",
 	"compression": "*",
 	"passport-atlassian-oauth": "*",
-	"jira": "*"
+	"jira": "*",
+	"serve-index": "*"
   },
   "devDependencies": {
     "express-livereload": "*",
