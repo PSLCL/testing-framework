@@ -7,7 +7,9 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -31,6 +33,7 @@ import org.apache.ivy.core.settings.IvySettings;
 import org.apache.ivy.plugins.resolver.AbstractPatternsBasedResolver;
 import org.apache.ivy.plugins.resolver.DependencyResolver;
 
+import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
 
 public class IvyArtifactProvider implements ArtifactProvider {
@@ -259,16 +262,19 @@ public class IvyArtifactProvider implements ArtifactProvider {
     private Ivy ivy = null;
     
     /**
-     * Given an ivy class, resolver, revision, criteria and additional optional parameters, determine if there are additional
+     * Given an ivy class, resolver, module (org/mod/ver), criteria and additional optional parameters, determine if there are additional
      * tokens that can be resolved and resolve them. This is recursive, resulting in the discovery of additional ivy files.
      * @param ivy The ivy class to use.
      * @param pbr The patterns resolver to search.
-     * @param ve The org/mod/ver that we have already discovered, but that may have additional options.
+     * @param org The organization.
+     * @param module The module.
+     * @param version The version
      * @param criteria Criteria that have already been determined to apply.
      * @param optional If the current search parameter is optional then the name is passed here.
+     * @param attr A list of attribute sets that have been searched for to prevent duplicate searches.
      * @param moduleNotifier The callback to notify modules to.
      */
-    private void scanOptions( Ivy ivy, AbstractPatternsBasedResolver pbr, RevisionEntry ve, Map<String,String> criteria, String optional, ModuleNotifier moduleNotifier ) {
+    private void scanOptions( Ivy ivy, AbstractPatternsBasedResolver pbr, String org, String module, String version, Map<String,String> criteria, String optional, List<String> attrs, ModuleNotifier moduleNotifier ) {
         // Get all the ivy patterns from the resolver. We will search them all for optional fields.
         @SuppressWarnings("unchecked")
         List<String> ivys = pbr.getIvyPatterns();
@@ -291,7 +297,18 @@ public class IvyArtifactProvider implements ArtifactProvider {
                 find.remove(IvyPatternHelper.ORGANISATION_KEY);
                 find.remove(IvyPatternHelper.MODULE_KEY);
                 find.remove(IvyPatternHelper.REVISION_KEY);
-                ModuleRevisionId mrid = ModuleRevisionId.newInstance(ve.getOrganisation(), ve.getModule(), ve.getRevision(), find);
+                ModuleRevisionId mrid = ModuleRevisionId.newInstance( org, module, version, find);
+                
+                // The non-recursive call handles searching without additional parameters.
+                if ( find.size() == 0 )
+                    return;
+                
+                Attributes attr = new Attributes( find );
+                String attrString = attr.toString();
+                if ( attrs.contains( attrString ) )
+                    return;
+                
+                attrs.add( attrString );
                 
                 // Search for a matching ivy module.
                 ResolvedModuleRevision rmv = ivy.findModule(mrid);
@@ -309,17 +326,17 @@ public class IvyArtifactProvider implements ArtifactProvider {
             boolean opt = pattern.indexOf('(') < pattern.indexOf( tokenStr );
             next_criteria.put( token, "[" + token + "]" );
             @SuppressWarnings("unchecked")
-            Map<String,String>[] tokenList = ve.getResolver().listTokenValues(new String[] {token}, next_criteria);
+            Map<String,String>[] tokenList = pbr.listTokenValues(new String[] {token}, next_criteria);
             for (int i = 0; i < tokenList.length; i++) {
                 String value = (String) tokenList[i].get(token);
                 next_criteria.put( token, value );
-                scanOptions( ivy, pbr, ve, next_criteria, null, moduleNotifier );
+                scanOptions( ivy, pbr, org, module, version, next_criteria, null, attrs, moduleNotifier );
             }
             
             if ( opt ) {
                 // This handles scanning for the token value when it does not exist.
                 next_criteria.put( token, "" );
-                scanOptions( ivy, pbr, ve, next_criteria, token, moduleNotifier );
+                scanOptions( ivy, pbr, org, module, version, next_criteria, token, attrs, moduleNotifier );
             }
         }
     }
@@ -343,40 +360,77 @@ public class IvyArtifactProvider implements ArtifactProvider {
         if ( ivy == null )
             throw new IllegalStateException("init() must be called");
         
-        // Start by determining all of the organizations from the ivy patterns.
-        OrganisationEntry[] orgs = ivy.listOrganisationEntries();
-        for ( OrganisationEntry oe : orgs ) {
-            // Determine the modules from the ivy patterns.
-            ModuleEntry[] modules = ivy.listModuleEntries( oe );
-            for ( ModuleEntry me : modules ) {
-                // Determine the versions from the ivy patterns.
-                RevisionEntry[] versions = ivy.listRevisionEntries( me );
-                for ( RevisionEntry ve : versions ) {
-                    /* For this org/mod/ver determine if there are other parameters in the ivy repository format.
-                     * This is only possible for AbstractPatternsBasedResolvers.
-                     * Since the values for each additional parameter must be passed in to determine the artifacts,
-                     * we have to build a map of parameter -> [value list], and for each value in the list
-                     * we have to determine if there are additional parameters. This has to be recursive, since
-                     * the pattern can contain several additional parameters.
-                     */
-                    DependencyResolver R = ve.getResolver();
-                    if ( AbstractPatternsBasedResolver.class.isAssignableFrom( R.getClass() ))  {
-                        AbstractPatternsBasedResolver pbr = (AbstractPatternsBasedResolver) R;
-                        Map<String,String> criteria = new HashMap<String,String>();
-                        criteria.put( IvyPatternHelper.ORGANISATION_KEY, ve.getOrganisation() );
-                        criteria.put( IvyPatternHelper.MODULE_KEY, ve.getModule() );
-                        criteria.put( IvyPatternHelper.REVISION_KEY, ve.getRevision() );
+        try {
+            // Start by determining all of the organizations from the ivy patterns.
+            OrganisationEntry[] oes = ivy.listOrganisationEntries();
+            List<String> orgs = new ArrayList<String>();
+            for ( OrganisationEntry oe : oes )
+                if ( ! orgs.contains( oe.getOrganisation() ) )
+                    orgs.add( oe.getOrganisation() );
+            
+            orgs.sort( String.CASE_INSENSITIVE_ORDER );
+            for ( String org : orgs ) {
+                // Determine the modules from the ivy patterns.
+                OrganisationEntry oe = new OrganisationEntry( null, org );
+                
+                ModuleEntry[] mes = ivy.listModuleEntries( oe );
+                List<String> modules = new ArrayList<String>();
+                for ( ModuleEntry me : mes )
+                    if ( ! modules.contains( me.getModule() ) )
+                        modules.add( me.getModule() );
+                
+                modules.sort( String.CASE_INSENSITIVE_ORDER );
+                for ( String module : modules ) {
+                    // Determine the versions from the ivy patterns.
+                    ModuleEntry me = new ModuleEntry( oe, module );
+                    RevisionEntry[] res = ivy.listRevisionEntries( me );
+                    List<String> versions = new ArrayList<String>();
+                    for ( RevisionEntry re : res )
+                        if ( ! versions.contains( re.getRevision() ) )
+                            versions.add( re.getRevision() );
+                    
+                    versions.sort( String.CASE_INSENSITIVE_ORDER );
+                    for ( String version : versions ) {
+                        /* For this org/mod/ver determine if there are other parameters in the ivy repository format.
+                         * This is only possible for AbstractPatternsBasedResolvers.
+                         * Since the values for each additional parameter must be passed in to determine the artifacts,
+                         * we have to build a map of parameter -> [value list], and for each value in the list
+                         * we have to determine if there are additional parameters. This has to be recursive, since
+                         * the pattern can contain several additional parameters.
+                         */
+                        List<String> attrs = new ArrayList<String>();
+                        for (Iterator iter = ivy.getSettings().getResolvers().iterator(); iter.hasNext();) {
+                            DependencyResolver resolver = (DependencyResolver) iter.next();
 
-                        scanOptions( ivy, pbr, ve, criteria, null, moduleNotifier );
-                    }
-                    else {
-                        ModuleRevisionId mrid = new ModuleRevisionId(new ModuleId(oe.getOrganisation(),me.getModule()), ve.getRevision() );
+                            if ( resolver.getName().equals( "all" ) )
+                                continue;
+                            
+                            if ( AbstractPatternsBasedResolver.class.isAssignableFrom( resolver.getClass() ))  {
+                                AbstractPatternsBasedResolver pbr = (AbstractPatternsBasedResolver) resolver;
+                                Map<String,String> criteria = new HashMap<String,String>();
+                                criteria.put( IvyPatternHelper.ORGANISATION_KEY, org );
+                                criteria.put( IvyPatternHelper.MODULE_KEY, module );
+                                criteria.put( IvyPatternHelper.REVISION_KEY, version );
+        
+                                scanOptions( ivy, pbr, org, module, version, criteria, null, attrs, moduleNotifier );
+                            }
+                        }
                         
-                        ResolvedModuleRevision rmv = ivy.findModule(mrid);
-                        moduleNotifier.module( this, new IvyModule( rmv ), extractMergeTo( rmv.getDescriptor() ) );
+                        {
+                            ModuleRevisionId mrid = new ModuleRevisionId(new ModuleId( org, module), version );
+                            
+                            ResolvedModuleRevision rmv = ivy.findModule(mrid);
+                            if ( rmv != null )
+                                moduleNotifier.module( this, new IvyModule( rmv ), extractMergeTo( rmv.getDescriptor() ) );
+                            else
+                                System.err.println( "Failed to find module: " + org + "#" + module + ";" + version );
+                        }
                     }
                 }
             }
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Exception during module iteration, " + e.getMessage() );
         }
     }
 
