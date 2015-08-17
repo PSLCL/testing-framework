@@ -210,7 +210,7 @@
 
     <tar destfile="${tar.name}-${ivy.revision}.noarch.tar.gz" compression="gzip" longfile="posix" basedir="${dist.dir}"/>
     <copy todir="." overwrite="true" flatten="true">
-      <fileset dir="${dist.dir}" includes="${jar.name}-${ivy.revision}.jar"/>
+      <fileset dir="${dist.dir}" includes="${jar.name}-${ivy.revision}.jar ${jar.name}-${ivy.revision}-javadoc.jar"/>
     </copy>
 </target>
 
