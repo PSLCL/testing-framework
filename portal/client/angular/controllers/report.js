@@ -272,6 +272,30 @@ app.controller('ReportsCtrl',
     }
   };
 
+  $scope.compareModule = function(a,b) {
+    if ( a.organization < b.organization )
+        return -1;
+    if ( a.organization > b.organization )
+        return +1;
+        
+    if ( a.name < b.name )
+        return -1;
+    if ( a.name > b.name )
+        return +1;
+        
+    if ( a.version < b.version )
+        return -1;
+    if ( a.version > b.version )
+        return +1;
+        
+    if ( a.attributes < b.attributes )
+        return -1;
+    if ( a.attributes > b.attributes )
+        return +1;
+        
+    return 0;
+  };
+  
   /**
    * Move modules based on target
    * @param target
@@ -292,6 +316,11 @@ app.controller('ReportsCtrl',
         }
       }
     }
+    
+    if (target == 'selected')
+          $scope.selectedModulesR1 = $scope.selectedModulesR1.sort($scope.compareModule);
+    else
+          $scope.availableModulesR1 = $scope.availableModulesR1.sort($scope.compareModule);
   };
 
   /**

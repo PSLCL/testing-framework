@@ -40,9 +40,8 @@
   <a href="#/test_plans" role="button">
     <button class="btn btn-small blue">Back to Test Plans</button>
   </a>
-  <h3>Add a Test</h3>
 </div>
-<div class="row list-header">
+<div class="row list-header" ng-show="user.username">
   <i class='fa fa-plus-circle {{createTestClass}}' ng-click='createTest()'></i>
   <span>Create a Test</span>
 </div>
@@ -96,11 +95,12 @@
           </h1>
           <div class='list-action-btns'>
             <a href="#/test_plans/{{test.fk_test_plan}}/tests/{{test.pk_test}}/edit">
-              <i class='fa fa-gears'></i>
+              <i class='fa fa-pencil-square-o' title='View/Edit'></i>
             </a>
-            <i confirmed-click="deleteTest(test.fk_test_plan,test.pk_test)"
+            <i class='fa fa-line-chart' title='Report'></i>
+            <i ng-show="user.username" confirmed-click="deleteTest(test.fk_test_plan,test.pk_test)"
                               ng-confirm-click="Are you sure you want to delete the test?" 
-                              class='fa fa-trash-o'></i>
+                              class='fa fa-trash-o' title='Delete'></i>
           </div>   
         </div>  
         <div class='item-info'>

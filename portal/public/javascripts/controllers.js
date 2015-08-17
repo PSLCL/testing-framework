@@ -35,11 +35,6 @@ app.controller('DashboardCtrl',
     })
   });
 
-// Reports
-app.controller('ReportsCtrl', function ($scope, $location) {
-  // TODO: Implement reports
-});
-
 // Handle login
 app.controller('LoginCtrl',
   function ($scope, $rootScope, $location, $window, Auth) {

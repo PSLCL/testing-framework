@@ -15,7 +15,7 @@
             <label for="availableModulesR1Selector">Modules</label>
             <select id="availableModulesR1Selector" class="selector"
                 multiple="multiple" ng-model="selectedModule"
-                ng-options="c.name for c in availableModulesR1">
+                ng-options="c.organization + '#' + c.name + ';' + c.version + '(' + c.attributes + ')' for c in availableModulesR1">
             </select>
         </div>
         <div class="move-arrows">
@@ -28,7 +28,7 @@
             <label for="selectedModulesR1Selector">Selected
                 Modules</label> <select id="selectedModulesR1Selector"
                 ng-model="selectedModule" multiple="multiple"
-                ng-options="c.name for c in selectedModulesR1">
+                ng-options="c.organization + '#' + c.name + ';' + c.version + '(' + c.attributes + ')' for c in selectedModulesR1">
             </select>
         </div>
     </div>

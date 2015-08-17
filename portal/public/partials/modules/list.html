@@ -37,11 +37,14 @@
               <br/>{{ module.version }} {{ module.sequence }}
               <div class="list-action-btns">
                   <a href="#/modules/{{module.pk_module}}">
-                    <i class='fa fa-gears'></i>
+                    <i class='fa fa-pencil-square-o' title='View/Edit'></i>
+                  </a>
+                  <a href="#/modules/{{module.pk_module}}/report">
+                    <i class='fa fa-line-chart' title="Report"></i>
                   </a>
                   <i ng-show="user.username" confirmed-click="deleteModule(module.pk_module)"
                                   ng-confirm-click="Are you sure you want to delete the module?" 
-                                  class='fa fa-trash-o'></i>
+                                  class='fa fa-trash-o' title='Delete'></i>
               </div>
             </div>
           </li>

@@ -374,6 +374,24 @@ app.controller('ModuleEditCtrl',
   };
 });
 
+//Report on module
+app.controller('ModuleReportCtrl', function ($window, $scope, $routeParams, $location, Module, ModuleReport) {
+    $scope.exportReport = function () {
+        $window.open( '/api/v1/modules/' + $scope.module.pk_module + '/report_print' );
+    };
+
+    Module.get({moduleId: $routeParams.moduleId},
+            function success(result) {
+          $scope.module = result.module;
+        });
+    
+    ModuleReport.query({moduleId: $routeParams.moduleId},
+            function success(results) {
+              console.log(JSON.stringify(results));
+              $scope.report = results;
+            });
+});
+
 //Delete module
 app.controller('ModuleDeleteCtrl',
     function ($scope, $routeParams, $location, Module, Modules, socket) {

@@ -1,0 +1,45 @@
+<div class="page-header">
+    <h1>Module Report</h1>
+    <h2>{{module.organization}}</h2>
+    <h2>{{module.name}}</h2>
+    <h2>{{module.version}}</h2>
+    <h2>{{module.attributes}}</h2>
+    <h2>{{module.sequence}}</h2>
+                <button class='btn btn-small blue'
+                ng-click="exportReport()">
+                <i class="fa fa-external-link btn-icon"></i>Export to
+                PDF
+            </button>
+    
+</div>
+
+<div class='results-results' ng-switch on="modules.length">
+    <span ng-switch-when="0"> <em>No modules in
+            database.</em>
+    </span>
+    <div class='result-module'
+        ng-repeat="item in report track by $index">
+        <h3>
+            {{item.name}} <span>Test
+                Plans</span>
+        </h3>
+        <div class='result-test-plan'
+            ng-repeat="plan in item.test_plans track by $index">
+            <h3>
+                #{{plan.test_plan.pk_test_plan}}
+                {{plan.test_plan.name}} <span>Tests</span>
+            </h3>
+            <p class='result-test-plan-description'>{{plan.test_plan.description}}</p>
+            <ul class='result-test-list'>
+                <li
+                    ng-repeat="test in plan.tests track by $index">
+                    <h4 class="list-group-item-heading">#{{test.pk_test}}
+                        {{test.name}}</h4>
+                    <p class="list-group-item-text">{{test.description}}</p>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div style="" class="text-muted small">Copyright © 2014 Panasonic, All Rights Reserved.</div>

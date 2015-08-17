@@ -23,6 +23,9 @@ module.exports = function (app, config, passport) {
   app.get('/api/v1/stats',                              routes.index);
   app.get('/api/v1/modules',                         comp.list);
   app.get('/api/v1/modules/:id',                     comp.show);
+  app.get('/api/v1/modules/:id/report',                 comp.report);
+  app.get('/api/v1/modules/:id/report_print',          comp.report_print);
+  
   app.get('/api/v1/test_plans',                         plan.list);
   app.get('/api/v1/test_plans/:pk_test_plan',           plan.show);
   app.get('/api/v1/test_plans/:pk_test_plan/tests',     test.list);

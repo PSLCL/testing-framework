@@ -5,7 +5,7 @@
   "scripts": {
     "watch": "watchify client/main.js -o public/client.js -v",
     "build": "browserify client/main.js -o public/client.js",
-    "run": "npm run watch | nodemon app"
+    "run": "npm run watch | nodemon app.js"
   },
   "dependencies": {
     "cron": "*",

@@ -18,26 +18,25 @@ exports.list = function (req, res) {
   // Use squel to generate sql
   var sql_query =
     squel.select()
-    .field('version.pk_version')
-    .field('version.fk_module')
+    .field('pk_module')
     .field('version')
-    .field('version.scheduled_release')
-    .field('version.actual_release')
-    .from('version');
+    .field('scheduled_release')
+    .field('actual_release')
+    .from('module');
 
   // Expression for search
   var exp = squel.expr();
   if (filter_str) {
-    exp.and('version.pk_version > ?')
-      .and("version.version LIKE ?");
+    exp.and('pk_module > ?')
+      .and("version LIKE ?");
     sql_query.where(exp, after_id, "%" + filter_str.replace(/["']/g, "") + "%");
   } else {
-    exp.and('version.pk_version > ?');
+    exp.and('pk_module > ?');
     sql_query.where(exp, after_id);
   }
 
   // Group by and page limit
-  sql_query.group('version.pk_version');
+  sql_query.group('pk_module');
     //.limit(config.page_limit);
 
   mysql.getConnection(function(err,conn) {

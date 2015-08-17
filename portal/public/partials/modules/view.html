@@ -1,111 +1,15 @@
-<div class="page-header" ng-if='!edit_module'>
-  <h1>{{module.name}} <i class='fa fa-pencil' ng-click='enableEdit()'></i></h1>
+<div class="page-header">
+  <h1>Organization: {{module.organization}}</h1>
+  <h1>Name: {{module.name}}</h1>
+  <h2>Version: {{module.version}}</h2>
+  <h2>Sequence: {{module.sequence}}</h2>
+  <h3>Attributes: {{module.attributes}}</h3>
+  <h3>Scheduled Release: {{module.scheduled_release}}</h3>
+  <h3>Actual Release: {{module.actual_release}}</h3>
 </div>
-
-<form role="form" ng-if='edit_module' class='general-form' ng-submit="submitFunction()" name="nModule">
-    <div class="form-group"
-            ng-class="{ 'has-error has-feedback' : nModule.moduleName.$invalid && !nModule.moduleName.$pristine }">
-        <input type="text" ng-model="module.name" class="form-control"
-             id="moduleName" name="moduleName"
-             value="module.name"
-             placeholder="Enter module name"
-             ng-maxlength="50" required autofocus>
-      <span ng-show="nModule.moduleName.$error.maxlength"
-            class="glyphicon glyphicon-remove form-control-feedback"></span>
-      <span class="help-block"
-            ng-show="nModule.moduleName.$error.required">
-          Name is required.
-      </span>
-      <span class="help-block"
-            ng-show="nModule.moduleName.$error.maxlength">
-          Maximum Length 50 characters.
-      </span>
-    </div>
-    <button class="btn btn-small green" type="submit"
-                  ng-disabled="nModule.$invalid">
-              {{ submitLabel }}</button>
-    </div>
-</form>
-
 
 <div class='row page-text'>
   <a href="#/modules" role="button">
     <button class="btn btn-small blue">Back to Modules</button>
   </a>
-  <h3>Add a Test Plan</h3>
-</div>
-<div class="row list-header">
-    <i class='fa fa-plus-circle {{createTestPlanClass}}' ng-click='createTestPlan()'></i>
-    <span>Create a Test Plan</span>
-    <input type="text" class="form-control search" ng-model="query"
-           placeholder="Search for a test plan" ng-change="getData(test_plans, query)">
-</div>
-<div class='row'>
-    <form role="form" class='create-plan-form {{createTestPlanClass}} {{displayBlock}}' ng-controller='TestPlanNewCtrl' ng-submit="testPlanSubmit()" name="tpf">
-        <div class="form-group"
-                ng-class="{ 'has-error has-feedback' : tpf.testPlanName.$invalid && !tpf.testPlanName.$pristine }">
-            <input type="text" ng-model="test_plan.name" class="form-control"
-                   name="testPlanName"
-                   id="testPlanName"
-                   value="test_plan.name"
-                   placeholder="Enter test plan name"
-                   ng-maxlength="50" required>
-            <span ng-show="tpf.testPlanName.$error.maxlength"
-                  class="glyphicon glyphicon-remove form-control-feedback"></span>
-            <span class="help-block"
-                  ng-show="tpf.testPlanName.$error.required">
-                Name is required.
-            </span>
-            <span class="help-block"
-                  ng-show="tpf.testPlanName.$error.maxlength">
-                Maximum Length 50 characters.
-            </span>
-        </div>
-        <div class="form-group">
-            <textarea class="form-control" ng-model="test_plan.description"
-                      id="testPlanDescription"
-                      placeholder="Enter test plan description"></textarea>
-            <button class="btn btn-small green"
-                    type="submit" ng-disabled="tpf.$invalid" ng-click='createTestPlan()'>
-                {{ submitLabel }}</button>
-        </div>
-    </form>
-</div>
-<div class="row">
-    <div class="row"
-         infinite-scroll='moreTestPlans()'
-         infinite-scroll-disabled='busy'
-         infinite-scroll-immediate-check="false"
-         infinite-scroll-distance='1'
-         ng-switch on="test_plans.length">
-        <span ng-switch-when="0">
-            <em>No test plans. Would you like to
-                <span class='linked' ng-click='createTestPlan()'>create one</span>?</em>
-        </span>
-        <ul class="list-items add-module" ng-switch-default accordian-wrap>
-          <li ng-repeat="test_plan in test_plans track by $index| filter:query" class='{{module.pk_module != test_plan.fk_module ? "not-selected" : "selected"}}' ng-style='{height: open_index == $index ? open_style : closed_style}' accordian>
-            <div class='list-header-group' >
-              <h1 ng-click='showInfo($index)'>
-                <i class="fa fa-chevron-circle-right" ng-class='open_index == $index ? display_info : " "'></i>
-                {{ test_plan.name }}
-              </h1>
-              <div class='switch-background {{module.pk_module != test_plan.fk_module ? "not-selected" : "selected"}}'>
-                <div class='switch-left'></div>
-                <div class='switch-control' ng-click='addTestPlan(module.pk_module,test_plan.pk_test_plan,test_plan.fk_module)'></div>
-              </div>
-              <div class='badge-items'>
-                <span class="tests-badge">{{ test_plan.tests }}</span>
-              </div>
-            </div>
-            <div class='item-info'>
-              <div class='description'>
-                {{test_plan.description}}
-              </div>
-            </div>
-          </li>
-        </ul>
-    </div>
-</div>
-<div class="row">
-    
 </div>

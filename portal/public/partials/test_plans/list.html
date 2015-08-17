@@ -5,8 +5,10 @@
     <p></p>
 </div>
 <div class="row list-header">
+    <div ng-show="user.username">
     <i class='fa fa-plus-circle {{createTestPlanClass}}' ng-click='createTestPlan()'></i>
     <span>Create a Test Plan</span>
+    </div>
     <div dropdown-box class='dropdown-box-wrap' ng-click='openSort()'>
       <ul class='module-sort'>
         <i class="fa fa-sort"></i>
@@ -71,11 +73,12 @@
             </h1>
             <div class="list-action-btns">
               <a href="#/test_plans/{{test_plan.pk_test_plan}}">
-                <i class='fa fa-gears'></i>
+                <i class='fa fa-pencil-square-o' title='View/Edit'></i>
               </a>
-              <i confirmed-click="deleteTestPlan(test_plan.pk_test_plan)"
+              <i class='fa fa-line-chart' title='Report'></i>
+              <i ng-show="user.username" confirmed-click="deleteTestPlan(test_plan.pk_test_plan)"
                                 ng-confirm-click="Are you sure you want to delete the test plan?" 
-                                class='fa fa-trash-o'></i>
+                                class='fa fa-trash-o' title='Delete'></i>
             </div>
             <div class='badge-items'>
               <span class="tests-badge">{{ test_plan.tests }}</span>

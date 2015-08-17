@@ -50,6 +50,10 @@ app.config(['$routeProvider',
     templateUrl: 'partials/modules/form.html',
     controller: 'ModuleEditCtrl'
   }).
+  when('/modules/:moduleId/report', {
+    templateUrl: 'partials/modules/report.html',
+    controller: 'ModuleReportCtrl'
+  }).
   when('/modules/:moduleId/destroy', {
     templateUrl: 'partials/modules/view.html',
     controller: 'ModuleDeleteCtrl'
