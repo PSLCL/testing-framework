@@ -70,6 +70,13 @@
       <textarea class="form-control" ng-model="test.description"
                     id="testDescription"
                     placeholder="Enter test description"></textarea>
+    </div>
+          <div class="form-group">
+          <textarea class="form-control" ng-model="test.script"
+                    id="testScript"
+                    placeholder="Enter test script"></textarea>
+      </div>
+    <div>
       <button class="btn btn-small green"
                       type="submit" ng-disabled="tf.$invalid">
                   {{ submitLabel }}</button>
@@ -83,8 +90,7 @@
        infinite-scroll-immediate-check="false"
        infinite-scroll-distance='1'>
   <span ng-switch-when="0">
-    <em>No tests in database. Would you like to
-          <span class='linked' ng-click='createTest()'>create one</span>?</em>
+    <em>No tests for this test plan.</em>
   </span>
     <ul class="list-items add-module" ng-switch-default accordian-wrap>
       <li ng-repeat="test in tests| filter:query" accordian ng-style='{height: open_index == $index ? open_style : closed_style}'>

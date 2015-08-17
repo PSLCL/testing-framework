@@ -48,10 +48,11 @@ app.controller('TestNewCtrl',
     $scope.test = {
       fk_test_plan: $routeParams.testPlanId,
       name: '',
-      description: ''
+      description: '',
+      script: ''
     };
     $scope.testSubmit = function () {
-      $scope.test = Tests.save({
+      Tests.save({
           testPlanId: $routeParams.testPlanId
         },
         $scope.test, function success() {
@@ -60,6 +61,12 @@ app.controller('TestNewCtrl',
         }, function fail() {
           console.log('Error: failed to save test.');
         });
+      $scope.test = {
+      fk_test_plan: $routeParams.testPlanId,
+      name: '',
+      description: '',
+      script: ''
+    };
     };
   });
 

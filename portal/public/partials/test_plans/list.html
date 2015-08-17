@@ -46,6 +46,8 @@
             <textarea class="form-control" ng-model="test_plan.description"
                       id="testPlanDescription"
                       placeholder="Enter test plan description"></textarea>
+        </div>
+        <div class="form-group">
             <button class="btn btn-small green"
                     type="submit" ng-disabled="tpf.$invalid" ng-click='createTestPlan()'>
                 {{ submitLabel }}</button>
@@ -61,8 +63,7 @@
          infinite-scroll-immediate-check="false"
          infinite-scroll-distance='1'>
       <span ng-switch-when="0">
-          <em>No test plans in database. Would you like to
-              <span class='linked' ng-click='createTestPlan()'>create one</span>?</em>
+          <em>No test plans.</em>
       </span>
       <ul class="list-items" ng-switch-default accordian-wrap>
         <li ng-repeat="test_plan in test_plans| filter:query" ng-style='{height: open_index == $index ? open_style : closed_style}' accordian>

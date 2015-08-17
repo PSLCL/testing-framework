@@ -49,7 +49,7 @@ app.controller('TestPlanListCtrl',
               sort_by: $scope.sort_by || 'id'
             };
           } else {
-            params = {after: after, sort_by: $scope.sort_by || 'id'};
+            params = {sort_by: $scope.sort_by || 'id'};
           }
           TestPlans.query(params,
             function success(results) {
@@ -185,7 +185,7 @@ app.controller('TestPlanViewCtrl',
       if ($scope.tests) {
         if ($scope.busy) return;
         $scope.busy = true;
-        var after = $scope.tests[$scope.tests.length - 1].pk_test;
+        var after = $scope.tests.length > 0 ? $scope.tests[$scope.tests.length - 1].pk_test : 0;
         var params;
         if ($scope.query_filter) {
           params = {
