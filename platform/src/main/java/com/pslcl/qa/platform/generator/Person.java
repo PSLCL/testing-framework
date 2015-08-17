@@ -13,7 +13,6 @@ public class Person extends Resource {
         private Resource inspector;
         private Content body;
         private Artifact[] attachments;
-        private Template t;
 
         private InspectAction( Resource inspector, Content body, Artifact[] attachments ) {
             this.inspector = inspector;

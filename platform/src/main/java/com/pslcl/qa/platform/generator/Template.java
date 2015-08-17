@@ -116,6 +116,7 @@ class Template implements Comparable<Template> {
         }
     }
 
+    @SuppressWarnings("unused")
     private class Command {
         private String command;
         private Parameter[] parameters;
@@ -159,12 +160,12 @@ class Template implements Comparable<Template> {
     private Map<UUID,String> references = new HashMap<UUID,String>();
 
     //TODO: Cleanup
-    private Generator generator;
-    private List<Template> templates = new ArrayList<Template>();
+    //private Generator generator;
+    //private List<Template> templates = new ArrayList<Template>();
     List<Template> allTemplates = new ArrayList<Template>();
-    private List<Resource> resources = new ArrayList<Resource>();
+    //private List<Resource> resources = new ArrayList<Resource>();
     List<Content> artifacts = new ArrayList<Content>();
-    private List<Command> commands = new ArrayList<Command>();
+    //private List<Command> commands = new ArrayList<Command>();
     Hash hash = null;
     private String std_string = null;
     private long pk;

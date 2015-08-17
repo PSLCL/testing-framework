@@ -45,11 +45,6 @@ public class DescribedTemplate {
     }
     
     /**
-     * The primary database key for this described template.
-     */
-    private long pk;
-    
-    /**
      * The primary java key for this described template.
      */
     private Key key;

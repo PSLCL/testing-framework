@@ -37,11 +37,6 @@ public class Generator {
     Core core;
     
     /**
-     * The primary key of the test that the generator will generate instances of.
-     */
-    private long pk_test;
-    
-    /**
      * Maps parameter references to parameters.
      */
     private Map<String, Parameter> parameterReferenceMap;
@@ -51,7 +46,6 @@ public class Generator {
      * @param pk_test The primary key of the test that any generated test instances are related to.
      */
     public Generator( long pk_test ) {
-        this.pk_test = pk_test;
         core = new Core( pk_test );
     }
 

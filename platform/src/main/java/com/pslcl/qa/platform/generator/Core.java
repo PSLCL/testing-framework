@@ -156,8 +156,11 @@ public class Core {
 
                 pkToDT.put( dbTemplate.pk, dbTemplate );
 
-                if ( keyToDT.containsKey( dbTemplate.key ) )
+                if ( keyToDT.containsKey( dbTemplate.key ) ) {
+                    safeClose( resultSet ); resultSet = null;
+                    safeClose( statement ); statement = null;
                     throw new Exception( "Duplicate DescribedTemplate.Key " + dbTemplate.pk + " " + dbTemplate.key.getTemplateHash().toString() + ":" + dbTemplate.key.getModuleHash().toString() );
+                }
                 else {
                     keyToDT.put( dbTemplate.key, dbTemplate );
                 }
@@ -295,7 +298,8 @@ public class Core {
     }
 
     private static class NodeModule {
-        private Object exports;
+        @SuppressWarnings("unused")
+        public Object exports;
     }
     
     /**
@@ -909,6 +913,7 @@ public class Core {
             return name;
         }
 
+        @SuppressWarnings("unused")
         public String getEncodedName() {
             try {
                 return URLEncoder.encode(name, "UTF-8");
@@ -1593,7 +1598,9 @@ public class Core {
             return keyToDT.get( proposed_key );
 
         // Recursive check for all dependencies
+        // TODO: Figure out if this logic is correct. Doesn't appear to be.
         for ( DescribedTemplate child : dt.getDependencies() ) {
+            @SuppressWarnings("unused")
             DBDescribedTemplate dbdt;
             if ( ! keyToDT.containsKey( child.getKey() ) )
                 dbdt = add( child, null );
@@ -1679,6 +1686,8 @@ public class Core {
     private DBDescribedTemplate check( DescribedTemplate dt, Boolean result ) throws Exception {
         // Recursive check for all dependencies
         for ( DescribedTemplate child : dt.getDependencies() ) {
+            // TODO: Figure out if this is correct.
+            @SuppressWarnings("unused")
             DBDescribedTemplate dbdt;
             if ( ! keyToDT.containsKey( child.getKey() ) )
                 throw new Exception( "Parent template exists, child does not." );

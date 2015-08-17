@@ -2,7 +2,6 @@ package com.pslcl.qa.platform.generator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
@@ -46,6 +45,7 @@ public class Machine extends Resource {
     static private class Deploy extends TestInstance.Action {
         private Machine m;
         private Artifact a;
+        @SuppressWarnings("unused")
         private Template.ResourceParameter me;
         private Template template;
         private List<Artifact> artifacts;
@@ -159,7 +159,8 @@ public class Machine extends Resource {
             parameters[2] = artifact.getContent();
             for ( int i = 0; i < params.length; i++ ) {
                 // If the parameter is a UUID, then check for deferred parameters.
-                UUID p = null;
+                // TODO: Repair or remove.
+                //UUID p = null;
                 //try {
                 //    p = UUID.fromString( params[i] );
                 //}

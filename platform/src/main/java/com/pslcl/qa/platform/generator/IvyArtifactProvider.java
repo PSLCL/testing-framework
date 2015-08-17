@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -399,7 +398,8 @@ public class IvyArtifactProvider implements ArtifactProvider {
                          * the pattern can contain several additional parameters.
                          */
                         List<String> attrs = new ArrayList<String>();
-                        for (Iterator iter = ivy.getSettings().getResolvers().iterator(); iter.hasNext();) {
+                        for (@SuppressWarnings("rawtypes")
+                        Iterator iter = ivy.getSettings().getResolvers().iterator(); iter.hasNext();) {
                             DependencyResolver resolver = (DependencyResolver) iter.next();
 
                             if ( resolver.getName().equals( "all" ) )

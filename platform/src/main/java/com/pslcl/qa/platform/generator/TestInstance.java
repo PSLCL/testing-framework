@@ -136,6 +136,7 @@ class TestInstance {
         abstract DescribedTemplate getIncludedTemplate() throws Exception;
     }
 
+    @SuppressWarnings("unused")
     private static class IncludeAction extends Action {
         private DescribedTemplate include;
         
