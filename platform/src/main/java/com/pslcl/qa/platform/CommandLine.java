@@ -5,12 +5,16 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -104,8 +108,9 @@ public class CommandLine {
                     if (artifact.startsWith("./"))
                         artifact = artifact.substring(2);
 
+                    int mode = entry.getMode();
                     Hash h = core.addContent( ti );
-                    core.addArtifact( pk_version, configuration, artifact, h, merge_source, pk_parent, pk_source_module );
+                    core.addArtifact( pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module );
                 }
             }
             catch ( Exception e ) {
@@ -143,7 +148,7 @@ public class CommandLine {
                 List<Artifact> artifacts = module.getArtifacts();
                 for ( Artifact artifact : artifacts ) {    
                     Hash h = core.addContent( artifact.getContent().asStream() );
-                    long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), h, merge_source, 0, 0 );
+                    long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0 );
                     if ( artifact.getName().endsWith(".tar.gz") ) {
                         decompress( h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0 );
                     }
@@ -181,7 +186,7 @@ public class CommandLine {
                         List<Artifact> artifacts = dmod.getArtifacts();
                         for ( Artifact artifact : artifacts ) {   
                             Hash h = core.addContent( artifact.getContent().asStream() );
-                            long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), h, false, 0, pk_source_module );
+                            long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module );
                             if ( artifact.getName().endsWith(".tar.gz") ) {
                                 decompress( h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module );
                             }
@@ -260,6 +265,41 @@ public class CommandLine {
         }
     }
 
+    private static Set<PosixFilePermission> toPosixPermissions(int mode) {
+        Set<PosixFilePermission> permissions = new HashSet<>();
+        if ((mode & 0b001_000) == 0b001_000) {
+            permissions.add(PosixFilePermission.GROUP_EXECUTE);
+        }
+        if ((mode & 0b100_000) == 0b100_000) {
+            permissions.add(PosixFilePermission.GROUP_READ);
+        }
+        if ((mode & 0b010_000) == 0b010_000) {
+            permissions.add(PosixFilePermission.GROUP_WRITE);
+        }
+
+        if ((mode & 0b001) == 0b001) {
+            permissions.add(PosixFilePermission.OTHERS_EXECUTE);
+        }
+        if ((mode & 0b100) == 0b100) {
+            permissions.add(PosixFilePermission.OTHERS_READ);
+        }
+        if ((mode & 0b010) == 0b010) {
+            permissions.add(PosixFilePermission.OTHERS_WRITE);
+        }
+
+        if ((mode & 0b001_000_000) == 0b001_000_000) {
+            permissions.add(PosixFilePermission.OWNER_EXECUTE);
+        }
+        if ((mode & 0b100_000_000) == 0b100_000_000) {
+            permissions.add(PosixFilePermission.OWNER_READ);
+        }
+        if ((mode & 0b010_000_000) == 0b010_000_000) {
+            permissions.add(PosixFilePermission.OWNER_WRITE);
+        }
+
+        return permissions;
+    }
+    
     private static void synchronize( String[] args ) {
         boolean synchronize = true;
         boolean generate = true;
@@ -333,6 +373,7 @@ public class CommandLine {
                         File f = core.getContentFile( A.getContent().getHash() );
                         File P = new File( generators, A.getName() );
                         FileUtils.copyFile( f, P );
+                        Files.setPosixFilePermissions( P.toPath(), toPosixPermissions( A.getPosixMode() ) );
                     }
                 }
                 

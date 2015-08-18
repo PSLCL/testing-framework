@@ -671,13 +671,14 @@ public class Core {
      * @param pk_module The module the artifact relates to.
      * @param configuration The configuration the artifact is part of.
      * @param name The name of the artifact.
+     * @param mode The POSIX mode of the artifact.
      * @param content The hash of the file content, which must already exist in the system.
      * @param merge_source True of the artifact is associated with a merged module.
      * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
      * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from. 
      * @return
      */
-    public long addArtifact( long pk_module, String configuration, String name, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module ) {
+    public long addArtifact( long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module ) {
         PreparedStatement statement = null;
         long pk = 0;
 
@@ -686,18 +687,19 @@ public class Core {
 
         try {
             if ( merged_from_module != 0 )
-                statement = connect.prepareStatement( "INSERT INTO artifact (fk_module, fk_content, configuration, name, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+                statement = connect.prepareStatement( "INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
             else
-                statement = connect.prepareStatement( "INSERT INTO artifact (fk_module, fk_content, configuration, name, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+                statement = connect.prepareStatement( "INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
                
             statement.setLong( 1, pk_module );
             statement.setBinaryStream(2, new ByteArrayInputStream(content.toBytes()));
             statement.setString( 3, configuration );
             statement.setString( 4, name );
-            statement.setBoolean( 5, merge_source );
-            statement.setLong( 6, derived_from_artifact );
+            statement.setInt( 5,  mode );
+            statement.setBoolean( 6, merge_source );
+            statement.setLong( 7, derived_from_artifact );
             if ( merged_from_module != 0 )
-                statement.setLong( 7, merged_from_module );
+                statement.setLong( 8, merged_from_module );
             statement.executeUpdate();
 
             ResultSet keys = statement.getGeneratedKeys();
