@@ -11,4 +11,6 @@ public interface Artifact {
     String getName();
 
     Content getContent();
+    
+    int getPosixMode();
 }

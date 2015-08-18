@@ -874,23 +874,27 @@ public class Core {
         private Module module;
         private String configuration;
         private String name;
+        private int mode;
         private Hash hash;
         
         /**
          * Construct an artifact associated with a component, name, version, platform and variant. The content
          * associated with the artifact is passed as a hash.
+         * @param core The core managing the database.
+         * @param pk The primary key of the artifact.
+         * @param module The module the artifact belongs to.
+         * @param configuration The configuration the artifact belongs to.
          * @param name The name of the artifact.
-         * @param version The version of the artifact. This contains
-         * @param platform
-         * @param variant
-         * @param hash
+         * @param mode The POSIX mode of the artifact.
+         * @param hash The hash of the artifact contents.
          */
-        public DBArtifact( Core core, long pk, Module module, String configuration, String name, Hash hash ) {
+        public DBArtifact( Core core, long pk, Module module, String configuration, String name, int mode, Hash hash ) {
             this.core = core;
             this.pk = pk;
             this.module = module;
             this.configuration = configuration;
             this.name = name;
+            this.mode = mode;
             this.hash = hash;
         }
 
@@ -927,6 +931,11 @@ public class Core {
         @Override
         public Content getContent() {
             return new DBContent( core, hash );
+        }
+
+        @Override
+        public int getPosixMode() {
+            return mode;
         }
         
         //@Override
@@ -1092,13 +1101,13 @@ public class Core {
                     String[] fields = line.split(",");
                     if ( fields.length == 1 ) {
                         statement = connect.createStatement();
-                        query = String.format( "SELECT artifact.pk_artifact, artifact.configuration, artifact.name, artifact.fk_content" +
+                        query = String.format( "SELECT artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" +
                                 " FROM artifact" +
                                 " WHERE artifact.fk_module = %d AND artifact.name REGEXP '%s" + "'", pk, fields[0] );
                         resultSet = statement.executeQuery( query );
                         while ( resultSet.next() ) {
                             Module mod = artifact.getModule();
-                            Artifact A = new DBArtifact( this, resultSet.getLong(1), mod, resultSet.getString(7), resultSet.getString(8), new Hash( resultSet.getBytes(9) ) );
+                            Artifact A = new DBArtifact( this, resultSet.getLong(1), mod, resultSet.getString(7), resultSet.getString(8), resultSet.getInt(9), new Hash( resultSet.getBytes(10) ) );
                             set.add( A );
                         }
                     }
@@ -1128,7 +1137,7 @@ public class Core {
                         String version_where = version.length() > 0 ? " AND module.version='" + version + "'" : "";
                         String configuration_where = configuration.length() > 0 ? " AND module.configuration='" + configuration + "'" : "";
                         
-                        query = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.name, artifact.configuration, artifact.fk_content" +
+                        query = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.name, artifact.configuration, artifact.mode, artifact.fk_content" +
                                 " FROM artifact" +
                                 " JOIN module ON module.pk_module = artifact.fk_module" +
                                 " WHERE artiface.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s" +
@@ -1141,7 +1150,7 @@ public class Core {
                                 continue;
                             
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
-                            Artifact A = new DBArtifact( this, resultSet.getLong(7), dbmod, resultSet.getString(8), resultSet.getString(9), new Hash( resultSet.getBytes(10) ) );
+                            Artifact A = new DBArtifact( this, resultSet.getLong(7), dbmod, resultSet.getString(8), resultSet.getString(9), resultSet.getInt(10), new Hash( resultSet.getBytes(11) ) );
                             set.add( A );
                         }
                     }
@@ -1188,7 +1197,7 @@ public class Core {
                 if ( configuration != null )
                     configuration_match = " AND artifact.configuration='" + configuration + "'";
                 
-                String queryStr = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.fk_content" +
+                String queryStr = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" +
                         " FROM artifact" +
                         " JOIN module ON module.pk_module = artifact.fk_module" +
                         " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s" +
@@ -1228,7 +1237,7 @@ public class Core {
                     }
                     
                     if ( artifacts[ name_index ] == null ) {
-                        Artifact A = new DBArtifact( this, resultSet.getLong(7), module, resultSet.getString(8), resultSet.getString(9), new Hash( resultSet.getBytes(10) ) ); 
+                        Artifact A = new DBArtifact( this, resultSet.getLong(7), module, resultSet.getString(8), resultSet.getString(9), resultSet.getInt(10), new Hash( resultSet.getBytes(11) ) ); 
                         artifacts[ name_index ] = A;
                     }
                 }
@@ -1320,7 +1329,7 @@ public class Core {
             Map<Long,DBModule> modules = new HashMap<Long,DBModule>();
             
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.fk_content" +
+            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" +
                     " FROM artifact" +
                     " JOIN module ON module.pk_module = artifact.fk_module" +
                     " WHERE module.pk_module = " + pk_module +
@@ -1340,7 +1349,7 @@ public class Core {
                 if ( set.contains( resultSet.getString( 8 )) )
                     continue;
                 
-                Artifact A = new DBArtifact( this, resultSet.getLong(7), module, resultSet.getString(8), resultSet.getString(9), new Hash( resultSet.getBytes(10) ) ); 
+                Artifact A = new DBArtifact( this, resultSet.getLong(7), module, resultSet.getString(8), resultSet.getString(9), resultSet.getInt(10), new Hash( resultSet.getBytes(11) ) ); 
                 set.add( A );
             }
 

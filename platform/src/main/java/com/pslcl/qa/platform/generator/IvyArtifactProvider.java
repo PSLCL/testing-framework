@@ -150,6 +150,11 @@ public class IvyArtifactProvider implements ArtifactProvider {
         public Content getContent() {
             return content;
         }
+
+        @Override
+        public int getPosixMode() {
+            return 0b100_100_100;
+        }
     }
     
     private static class IvyContent implements Content {
