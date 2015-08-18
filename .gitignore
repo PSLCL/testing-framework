@@ -9,3 +9,5 @@ platform/ivy-*.xml
 *.pom
 platform/ivysettings.xml
 ivy/
+artifacts/
+local-test/

@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -373,7 +374,22 @@ public class CommandLine {
                         File f = core.getContentFile( A.getContent().getHash() );
                         File P = new File( generators, A.getName() );
                         FileUtils.copyFile( f, P );
-                        Files.setPosixFilePermissions( P.toPath(), toPosixPermissions( A.getPosixMode() ) );
+                        try {
+                            Files.setPosixFilePermissions( P.toPath(), toPosixPermissions( A.getPosixMode() ) );
+                        }
+                        catch ( UnsupportedOperationException e ) {
+                            // Windows does not support setPosixFilePermissions. Fall back.
+                            Set<PosixFilePermission> perms = toPosixPermissions( A.getPosixMode() );
+
+                            P.setExecutable( perms.contains( PosixFilePermission.GROUP_EXECUTE) || perms.contains( PosixFilePermission.OTHERS_EXECUTE), false );
+                            P.setExecutable( perms.contains( PosixFilePermission.OWNER_EXECUTE), true );
+                            
+                            P.setReadable( perms.contains( PosixFilePermission.GROUP_READ) || perms.contains( PosixFilePermission.OTHERS_READ), false );
+                            P.setReadable( perms.contains( PosixFilePermission.OWNER_READ), true );
+                            
+                            P.setWritable( perms.contains( PosixFilePermission.GROUP_WRITE) || perms.contains( PosixFilePermission.OTHERS_WRITE), false );
+                            P.setWritable( perms.contains( PosixFilePermission.OWNER_WRITE), true );
+                        }
                     }
                 }
                 

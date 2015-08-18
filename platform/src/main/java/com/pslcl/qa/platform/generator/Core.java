@@ -1331,13 +1331,18 @@ public class Core {
             Map<Long,DBModule> modules = new HashMap<Long,DBModule>();
             
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" +
+            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content, artifact.merged_from_module" +
                     " FROM artifact" +
                     " JOIN module ON module.pk_module = artifact.fk_module" +
                     " WHERE module.pk_module = " + pk_module +
                     intro + name_match + separator + configuration_match +
                     " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC");
             while ( resultSet.next() ) {
+                // Ignore dtf_test_generator artifacts that are merged from other modules
+                int merged_from_module = resultSet.getInt( 12 );
+                if ( merged_from_module > 0 && configuration.equals( "dtf_test_generator" ) )
+                    continue;
+                
                 DBModule module = null;
                 long pk_found = resultSet.getLong(1);
                 

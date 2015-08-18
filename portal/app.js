@@ -25,19 +25,19 @@ if ( env == 'production' ) {
     require('rconsole');
     console.set({ facility: 'local0', title: 'basic', stdout: false, stderr: false })
   }
-}
 
-var job = new CronJob(config.synchronize_schedule, function() {
-    var child = spawn('java',
-            ['-cp', path.join('platform','*') + path.delimiter + path.join('platform','lib','*'), 'com.pslcl.qa.platform.CommandLine', 'synchronize' ],
-            { cwd: path.join(__dirname,'..') });
-    child.stdout.on('data', function(data) { console.log('synchronize: '+data); });
-    child.stderr.on('data', function(data) { console.log('synchronize (error): '+data); });
-    child.on('close', function(code) { console.log("synchronize complete with exit code " + code) });
-    }, function() {
-    },
-    true
-);
+    var job = new CronJob(config.synchronize_schedule, function() {
+        var child = spawn('java',
+                ['-cp', path.join('platform','*') + path.delimiter + path.join('platform','lib','*'), 'com.pslcl.qa.platform.CommandLine', 'synchronize' ],
+                { cwd: path.join(__dirname,'..') });
+        child.stdout.on('data', function(data) { console.log('synchronize: '+data); });
+        child.stderr.on('data', function(data) { console.log('synchronize (error): '+data); });
+        child.on('close', function(code) { console.log("synchronize complete with exit code " + code) });
+        }, function() {
+        },
+        true
+    );
+};
 
 var options = {};
 if ( fs.existsSync( './config/server.pfx' ) ) {
