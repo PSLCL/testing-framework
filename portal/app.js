@@ -21,18 +21,20 @@ var path     = require('path');
 var env = process.env.NODE_ENV || 'production';
 
 if ( env == 'production' ) {
-  if ( os.platform() != 'win32' ) {
-    require('rconsole');
-    console.set({ facility: 'local0', title: 'basic', stdout: false, stderr: false })
-  }
-
     var job = new CronJob(config.synchronize_schedule, function() {
+        console.log('Synchronize starting...');
         var child = spawn('java',
                 ['-cp', path.join('platform','*') + path.delimiter + path.join('platform','lib','*'), 'com.pslcl.qa.platform.CommandLine', 'synchronize' ],
                 { cwd: path.join(__dirname,'..') });
-        child.stdout.on('data', function(data) { console.log('synchronize: '+data); });
-        child.stderr.on('data', function(data) { console.log('synchronize (error): '+data); });
-        child.on('close', function(code) { console.log("synchronize complete with exit code " + code) });
+        child.stdout.on('data', function(data) {
+            var lines = (''+data).split(/\r?\n/);
+            lines.forEach( function(line) { if ( line.length > 0 ) console.log('synchronize: '+line); } );
+        });
+        child.stderr.on('data', function(data) {
+            var lines = (''+data).split(/\r?\n/);
+            lines.forEach( function(line) { if ( line.length > 0 ) console.log('synchronize (error): '+line); } );
+        });
+        child.on('close', function(code) { console.log("Synchronize complete with exit code " + code) });
         }, function() {
         },
         true
