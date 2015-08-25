@@ -31,6 +31,7 @@ import org.apache.ivy.core.search.RevisionEntry;
 import org.apache.ivy.core.settings.IvySettings;
 import org.apache.ivy.plugins.resolver.AbstractPatternsBasedResolver;
 import org.apache.ivy.plugins.resolver.DependencyResolver;
+import org.apache.ivy.util.FileUtil;
 
 import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
@@ -357,6 +358,9 @@ public class IvyArtifactProvider implements ArtifactProvider {
             throw new Exception( "ivy/ivysettings.xml file does not exist." );
         
         ivy.configure(ivySettingsXmlFile);
+        
+        // Clear out the download cache to force new downloads.
+        FileUtil.forceDelete( ivy.getSettings().getDefaultCache() );
     }
 
     @Override

@@ -12,7 +12,7 @@ import java.util.UUID;
 import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.TestInstance.Action;
 
-class Template implements Comparable<Template> {
+public class Template implements Comparable<Template> {
     public static interface Exportable {
         String getTag();
         void export(UUID tag);

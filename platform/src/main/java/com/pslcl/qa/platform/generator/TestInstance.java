@@ -254,6 +254,14 @@ class TestInstance {
         actions.add( action );
     }
 
+    /**
+     * Return the actions associated with a test instance.
+     * @return The list of actions associated with the test instance.
+     */
+    List<Action> getActions() {
+        return actions;
+    }
+    
     void pass() {
         result = true;
     }

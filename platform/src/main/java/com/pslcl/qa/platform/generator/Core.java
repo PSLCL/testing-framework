@@ -33,6 +33,7 @@ import org.apache.commons.io.LineIterator;
 
 import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
+import com.pslcl.qa.platform.generator.TestInstance.Action.ArtifactUses;
 
 /**
  * This class represents the relationship between the program and external resources like
@@ -536,6 +537,80 @@ public class Core {
     }
     
     /**
+     * Add a test plan to the database.
+     * @param name The name of the test plan.
+     * @param description The description of the test plan.
+     * @return The primary key of the new test plan, or zero if there is an error or in read-only mode. If the test plan already exists then
+     * the existing primary key is returned;
+     */
+    public long addTestPlan( String name, String description ) {
+        PreparedStatement statement = null;
+        long pk = findTestPlan( name, description );
+
+        // This will work in read-only mode to return an existing module.
+        if ( pk != 0 || read_only )
+            return pk;
+
+        try {
+            statement = connect.prepareStatement( "INSERT INTO test_plan (name, description) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS );
+            statement.setString( 1, name );
+            statement.setString( 2, description );
+            statement.executeUpdate();
+
+            ResultSet keys = statement.getGeneratedKeys();
+            if ( keys.next() )
+                pk = keys.getLong( 1 );
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Could not add test plan, " + e.getMessage() );
+        }
+        finally {
+            safeClose( statement ); statement = null;
+        }
+
+        return pk;
+    }
+
+    /**
+     * Add a test  to the database.
+     * @param pk_test_plan The primary key of the test plan.
+     * @param name The name of the test.
+     * @param description The description of the test.
+     * @param script The script of the test.
+     * @return The primary key of the new test, or zero if there is an error or in read-only mode. If the test already exists then
+     * the existing primary key is returned;
+     */
+    public long addTest( long pk_test_plan, String name, String description, String script ) {
+        PreparedStatement statement = null;
+        long pk = findTest( pk_test_plan, name, description, script );
+
+        // This will work in read-only mode to return an existing module.
+        if ( pk != 0 || read_only )
+            return pk;
+
+        try {
+            statement = connect.prepareStatement( "INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+            statement.setLong( 1,  pk_test_plan );
+            statement.setString( 2, name );
+            statement.setString( 3, description );
+            statement.setString( 4,  script );
+            statement.executeUpdate();
+
+            ResultSet keys = statement.getGeneratedKeys();
+            if ( keys.next() )
+                pk = keys.getLong( 1 );
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Could not add test, " + e.getMessage() );
+        }
+        finally {
+            safeClose( statement ); statement = null;
+        }
+
+        return pk;
+    }
+
+    /**
      * Add a module to the database.
      * @param module The module to add.
      * @return The primary key of the new module, or zero if there is an error or in read-only mode. If the module already exists then
@@ -600,6 +675,17 @@ public class Core {
         finally {
             safeClose( statement ); statement = null;
         }
+    }
+    
+    /**
+     * Delete previous builds of the same version as this module.
+     * @param module The module that previous versions of should be deleted. It is required
+     * that this module not be already added to the database.
+     */
+    public void deletePriorVersion( Module module ) {
+        long pk;
+        while ( (pk = findModuleWithoutSequence(module)) != 0 )
+            deleteModule( pk );
     }
     
     /**
@@ -1009,7 +1095,7 @@ public class Core {
             }
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Exception " + e.getMessage() );
+            System.err.println( "ERROR: createModuleSet() exception " + e.getMessage() );
             e.printStackTrace( System.err );
         }
         finally {
@@ -1042,7 +1128,7 @@ public class Core {
             }
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Exception " + e.getMessage() );
+            System.err.println( "ERROR: createModuleSet() exception " + e.getMessage() );
             e.printStackTrace( System.err );
         }
         finally {
@@ -1162,7 +1248,7 @@ public class Core {
             }
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Exception " + e.getMessage() );
+            System.err.println( "ERROR: findDependencies() exception " + e.getMessage() );
             e.printStackTrace( System.err );
         }
         finally {
@@ -1245,7 +1331,7 @@ public class Core {
                 }
             }
             catch ( Exception e ) {
-                System.err.println( "ERROR: Exception " + e.getMessage() );
+                System.err.println( "ERROR: createArtifactSet() exception " + e.getMessage() );
                 e.printStackTrace( System.err );
             }
             finally {
@@ -1288,7 +1374,7 @@ public class Core {
             }
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Exception " + e.getMessage() );
+            System.err.println( "ERROR: getGenerators() exception " + e.getMessage() );
             e.printStackTrace( System.err );
         }
         finally {
@@ -1362,7 +1448,7 @@ public class Core {
 
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Exception " + e.getMessage() );
+            System.err.println( "ERROR: getArtifacts() exception " + e.getMessage() );
             e.printStackTrace( System.err );
         }
         finally {
@@ -1410,24 +1496,56 @@ public class Core {
         return false;
     }
 
-    long findTestPlan() {
+    public long findTestPlan( String name, String description ) {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
 
         try {
-            statement = connect.prepareStatement( "SELECT test.fk_test_plan" +
-                    " FROM test" +
-                    " WHERE test.pk_test = ?");
-            statement.setLong( 1, pk_target_test );
-
+            statement = connect.prepareStatement( "SELECT test_plan.pk_test_plan" +
+                    " FROM test_plan" +
+                    " WHERE test_plan.name = '" + name + "'" +
+                    " AND test_plan.description = '" + description + "'" );
             resultSet = statement.executeQuery();
             if ( resultSet.isBeforeFirst() ) {
                 resultSet.next();
-                return resultSet.getLong( "test.fk_test_plan" );
+                return resultSet.getLong( "test_plan.pk_test_plan" );
             }
         }
         catch ( Exception e ) {
             System.err.println( "ERROR: Couldn't find test plan, " + e.getMessage() );
+        }
+        finally {
+            safeClose( resultSet ); resultSet = null;
+            safeClose( statement ); statement = null;
+        }
+
+        return 0;
+    }
+
+    long findTest( long pk_test_plan, String name, String description, String script ) {
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            statement = connect.prepareStatement( "SELECT test.pk_test" +
+                    " FROM test" +
+                    " WHERE test.fk_test_plan = ?" +
+                    " AND test.name = ?" +
+                    " AND test.description = ? " +
+                    " AND test.script = ?" );
+            statement.setLong( 1, pk_test_plan );
+            statement.setString( 2, name );
+            statement.setString( 3, description );
+            statement.setString( 4,  script );
+
+            resultSet = statement.executeQuery();
+            if ( resultSet.isBeforeFirst() ) {
+                resultSet.next();
+                return resultSet.getLong( "test.pk_test" );
+            }
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Couldn't find test, " + e.getMessage() );
         }
         finally {
             safeClose( resultSet ); resultSet = null;
@@ -1457,6 +1575,42 @@ public class Core {
                     " AND module.attributes = '" + attributes + "'" +
                     " AND module.version = '" + module.getVersion() + "'" +
                     " AND module.sequence = '" + module.getSequence() + "'" );
+            resultSet = statement.executeQuery();
+            if ( resultSet.isBeforeFirst() ) {
+                resultSet.next();
+                return resultSet.getLong( "module.pk_module" );
+            }
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Couldn't find module, " + e.getMessage() );
+        }
+        finally {
+            safeClose( resultSet ); resultSet = null;
+            safeClose( statement ); statement = null;
+        }
+
+        return 0;
+    }
+
+    public long findModuleWithoutSequence( Module module ) {
+        // Short-cut the lookup if it is one of our modules.
+        if ( module instanceof DBModule ) {
+            DBModule dbmod = (DBModule) module;
+            if ( dbmod.pk != 0 )
+                return dbmod.pk;
+        }
+        
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        String attributes = new Attributes( module.getAttributes() ).toString();
+        try {
+            statement = connect.prepareStatement( "SELECT module.pk_module" +
+                    " FROM module" +
+                    " WHERE module.organization = '" + module.getOrganization() + "'" +
+                    " AND module.name = '" + module.getName() + "'" +
+                    " AND module.attributes = '" + attributes + "'" +
+                    " AND module.version = '" + module.getVersion() + "'" );
             resultSet = statement.executeQuery();
             if ( resultSet.isBeforeFirst() ) {
                 resultSet.next();
@@ -1583,9 +1737,9 @@ public class Core {
             if ( au != null ) {
                 Iterator<Artifact> iter = au.getArtifacts();
                 while ( iter.hasNext() ) {
-                    try {
-                        DBArtifact artifact = (DBArtifact) iter.next();
-                        
+                    DBArtifact artifact = (DBArtifact) iter.next();
+                    
+                    try {                       
                         statement = connect.prepareStatement( "INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)" );
                         statement.setLong( 1, artifact.getPK() );
                         statement.setLong( 2, linepk );
@@ -1595,7 +1749,7 @@ public class Core {
                         safeClose( statement ); statement = null;
                     }
                     catch ( Exception e ) {
-                        // Ignore
+                        System.err.println( "ERROR: Failed to relate artifact to line, " + e.getMessage() );
                     }
                 }
             }
@@ -1793,6 +1947,33 @@ public class Core {
                 }
                 catch ( Exception e ) {
                     
+                }
+                
+                safeClose( statement2 ); statement2 = null;
+                
+                // Insert all of the module references
+                List<TestInstance.Action> actions = ti.getActions();
+                for ( TestInstance.Action action : actions ) {
+                    ArtifactUses au = action.getArtifactUses();
+                    if ( au == null )
+                        continue;
+                    
+                    Iterator<Artifact> iter = au.getArtifacts();
+                    while ( iter.hasNext() ) {
+                        Artifact artifact = iter.next();
+                        
+                        try {
+                            long pk_module = findModule( artifact.getModule() );
+                            statement2 = connect.prepareStatement( "INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)" );
+                            statement2.setLong( 1, pk_module );
+                            statement2.setLong( 2, ti.pk );
+                            statement2.execute();
+                            safeClose( statement2 ); statement2 = null;
+                        }
+                        catch ( Exception e ) {
+                            // Ignore, since many times this will be a duplicate.
+                        }
+                    }
                 }
                 
                 safeClose( statement2 ); statement2 = null;

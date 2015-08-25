@@ -251,7 +251,7 @@ public class Generator {
             core.syncDescribedTemplates( allTestInstances );
         }
         catch ( Exception e ) {
-            //TODO: Process.
+            System.err.println( "ERROR: Failure to close generator, " + e.getMessage() );
         }
         
         

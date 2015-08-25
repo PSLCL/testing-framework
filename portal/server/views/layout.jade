@@ -25,8 +25,8 @@ html(lang='en', ng-app='qa-portal')
     link(rel='stylesheet', href='/stylesheets/nv.d3.css')
     link(rel='stylesheet', href='/stylesheets/angular-busy.css')
 
-  body(ng-controller='DashboardCtrl', ng-class="{'dark-gray': isActive('/login')}")
-    nav.navbar-side.dark-gray(ng-show="!isActive('/login')", class="{{sidebarClass}}")
+  body(ng-controller='DashboardCtrl')
+    nav.navbar-side.dark-gray(class="{{sidebarClass}}")
       .navbar-header
         i.fa.fa-bars(ng-click="hideSidebar()")
       ul
@@ -45,7 +45,7 @@ html(lang='en', ng-app='qa-portal')
         | Panasonic Corporation,
         br
         | All Rights Reserved.
-    nav.navbar-top(ng-show="!isActive('/login')")
+    nav.navbar-top
       a(href="#/dashboard")
         img(src='/skin/logo.png', alt='')
       ul
@@ -57,6 +57,6 @@ html(lang='en', ng-app='qa-portal')
               Logged in as {{user.displayName}}<em ng-show="user.isAdmin"> (Admin)</em>, Logout
 
     div.flex-container
-      div.main-content(ng-view, ng-class="{'sidebar-inactive': isActive('/login')}", class="{{sidebarClass}}")
+      div.main-content(ng-view, class="{{sidebarClass}}")
         block content
     footer 

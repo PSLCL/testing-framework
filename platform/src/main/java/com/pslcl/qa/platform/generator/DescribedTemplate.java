@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.TestInstance.Action;
 
@@ -76,12 +77,16 @@ public class DescribedTemplate {
             try {
                 sb.append( A.getDescription() );
                 
-                TestInstance.Action.ArtifactUses au = A.getArtifactUses(); 
+                TestInstance.Action.ArtifactUses au = A.getArtifactUses();
+                if ( au == null )
+                    continue;
+                
                 Iterator<Artifact> iter = au.getArtifacts();
                 while ( iter.hasNext() ) {
                     Artifact a = iter.next();
                     Module m = a.getModule();
-                    String vstr = m.toString();
+                    Attributes attr = new Attributes( m.getAttributes() );
+                    String vstr = m.getOrganization() + "#" + m.getName() + ";" + m.getVersion() + "/" + m.getSequence() + "(" + attr.toString() + ")";
                     if ( ! modulesUsed.contains( vstr ) )
                         modulesUsed.add( vstr );
                 }
