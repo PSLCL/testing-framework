@@ -1946,7 +1946,7 @@ public class Core {
                         ti.pk = keys.getLong( 1 );
                 }
                 catch ( Exception e ) {
-                    
+                    System.err.println( "ERROR: Could not add module to module_to_test_instance: " + e.getMessage() );
                 }
                 
                 safeClose( statement2 ); statement2 = null;
@@ -1981,7 +1981,7 @@ public class Core {
                 dtToTI.put( dbdt.pk, ti.pk );
             }
             
-            // If the ti has a pass/fail state then make sure it is reflected.
+            // If the ti has a result recorded, then make sure it is reflected in the run table.
             Statement statement2 = null;
             ResultSet resultSet = null;
             Boolean dbResult = null;

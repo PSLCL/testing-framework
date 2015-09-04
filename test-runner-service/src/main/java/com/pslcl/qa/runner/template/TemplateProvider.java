@@ -41,7 +41,7 @@ public class TemplateProvider {
         // Note: The use of template.hash is not yet known. We are using described_template.description_hash; it is a specific reusable template with ready resources already bound.
         
         if (iT != null) {
-            availableReusableTemplates.remove(dbdt.description_hash); // Note: This is early impl with no smarts to optimize anything. Here, they asked for the described template, they get it 
+            availableReusableTemplates.remove(dbdt.description_hash); // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the described template, they get it, and now it is not available to another user  
         } else {
             iT = new InstancedTemplate(String.valueOf(dbdt.description_hash));
             // populate iT with everything needed to behave as a reusable described template

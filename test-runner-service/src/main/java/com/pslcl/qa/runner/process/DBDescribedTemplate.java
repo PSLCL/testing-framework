@@ -11,7 +11,7 @@ import java.util.Map;
 public class DBDescribedTemplate {
     // fields of table described_template
     public long pk_described_template;      // INT(11)
-    public byte[] fk_version_set = null;    // BINARY(32)
+    public byte[] fk_module_set = null;     // BINARY(32)
     public long fk_template = -1;           // INT(11)
     public byte[] description_hash = null;  // BINARY(32)
     public boolean dtSynchronized = false;  // BOOLEAN
