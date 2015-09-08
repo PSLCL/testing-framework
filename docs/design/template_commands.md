@@ -20,7 +20,7 @@ completed once the [Template](templates.md) has been fully instantiated.
 The *deploy* Command requests an [Artifact](artifacts.md) be deployed to a [Machine](resources.md) Instance. The format of the line 
 following the command is a Machine reference, followed by a space, followed by an [Artifact](artifacts.md) reference. 
 
-[Artifact](artifacts.md) references are the Artifact Name and Hash, separated by a space. Note that the version is not specified, 
+[Artifact](artifacts.md) references are the destination filename and Hash, separated by a space. Note that the version is not specified, 
 so if the file does not change from version to version then the reference will be identical. Deploy commands are considered
 completed once the [Artifact](artifacts.md) is fully deployed to the the [Machine](resources.md) Instance.
 
