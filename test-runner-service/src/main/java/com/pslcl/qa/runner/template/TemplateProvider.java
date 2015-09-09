@@ -177,7 +177,7 @@ public class TemplateProvider {
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
                                     try {
                                         machineInstance.deploy(strArtifactName, strArtifactHash);
-                                        ArtifactInfo artifactInfo = new ArtifactInfo(null, strArtifactName, strArtifactHash);
+                                        ArtifactInfo artifactInfo = new ArtifactInfo(strArtifactName, strArtifactHash);
                                         resourceInfo.setArtifactInfo(artifactInfo);
                                         // TODO: set iT with more gathered info and instantiations and similar
 
@@ -200,10 +200,9 @@ public class TemplateProvider {
                         }
                         break;                    
                     case "inspect":
-                        // machineRef strInstructionsHash ArtifactInfo (strComponentName strArtifactName strArtifactHash)
+                        // machineRef strInstructionsHash ArtifactInfo (strArtifactName strArtifactHash)
                         System.out.println("TemplateProvider.getInstancedTemplate() finds inspect as reference " + stepsReference);
                         String strInstructionsHash = null;
-                        String strComponentName = null; // TODO: Did tech spec change and this can be removed?
                         strArtifactName = null;
                         strArtifactHash = null;
                         machineRef = StepsParser.getNextSpaceTerminatedSubString(step, offset);
@@ -218,32 +217,25 @@ public class TemplateProvider {
                                 if (++offset > step.length())
                                     offset = -1; // done
                                 
-                                // gather ArtifactInfo (strComponentName strArtifactName strArtifactHash)
-                                strComponentName = StepsParser.getNextSpaceTerminatedSubString(step, offset); // TODO: Did tech spec change and this can be removed?
-                                if (strComponentName != null) {
-                                    offset += strComponentName.length();
+                                // gather ArtifactInfo (strArtifactName strArtifactHash)
+                                strArtifactName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                                if (strArtifactName != null) {
+                                    offset += strArtifactName.length();
                                     if (++offset > step.length())
                                         offset = -1; // done
                                 
-                                    strArtifactName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                                    if (strArtifactName != null) {
-                                        offset += strArtifactName.length();
-                                        if (++offset > step.length())
-                                            offset = -1; // done
-                                    
-                                        strArtifactHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                                        // we do not further extract from step
+                                    strArtifactHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                                    // we do not further extract from step
 //                                        if (strArtifactHash != null) {
 //                                            offset += strArtifactHash.length();
 //                                            if (++offset > step.length())
 //                                                offset = -1; // done
 //                                        }
-                                    }
                                 }
                             }
                         }
                             
-                        if (strInstructionsHash != null & strComponentName != null && strArtifactName != null && strArtifactHash != null) {
+                        if (strInstructionsHash != null && strArtifactName != null && strArtifactHash != null) {
                             int stepRef = Integer.parseInt(machineRef);
                             ResourceInfo resourceInfo = iT.getResourceInfo(stepRef);
                             boolean success = false;
@@ -253,8 +245,8 @@ public class TemplateProvider {
                                     // inspect: give artifact to the person instance
                                     PersonInstance personInstance = PersonInstance.class.cast(resourceInstance);
                                     try {
-                                        personInstance.inspect(strInstructionsHash, strComponentName, strArtifactName, strArtifactHash);
-                                        ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
+                                        personInstance.inspect(strInstructionsHash, strArtifactName, strArtifactHash);
+                                        ArtifactInfo artifactInfo = new ArtifactInfo(strArtifactName, strArtifactHash);
                                         resourceInfo.setInstructionsHash(strInstructionsHash);
                                         resourceInfo.setArtifactInfo(artifactInfo);
                                         
@@ -332,7 +324,7 @@ public class TemplateProvider {
                         System.out.println("TemplateProvider.getInstancedTemplate() finds start as reference " + stepsReference);
                         break;
                     case "run":
-                        // machineRef ArtifactInfo (strComponentName strArtifactName strArtifactHash) strOptions
+                        // machineRef strArtifactName strOptions
                         System.out.println("TemplateProvider.getInstancedTemplate() finds run as reference " + stepsReference);
       
                         // This is what actually comes in - it is missing some spaces - this is bug 7066 under app-test-platform
@@ -350,9 +342,7 @@ public class TemplateProvider {
                         
     
                         // this approximates what is needed
-                        strComponentName = null;
                         strArtifactName = null;
-                        strArtifactHash = null;
                         String strRunParams = null;
                         machineRef = StepsParser.getNextSpaceTerminatedSubString(step, offset);
                         if (machineRef != null) {
@@ -360,25 +350,12 @@ public class TemplateProvider {
                             if (++offset > step.length())
                                 offset = -1; // done
     
-                            // gather ArtifactInfo (strComponentName strArtifactName strArtifactHash)
-                            strComponentName = StepsParser.getNextSpaceTerminatedSubString(step, offset); // TODO: Did tech spec change and this can be removed?
-                            if (strComponentName != null) {
-                                offset += strComponentName.length();
+                            // gather strArtifactName
+                            strArtifactName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                            if (strArtifactName != null) {
+                                offset += strArtifactName.length();
                                 if (++offset > step.length())
                                     offset = -1; // done
-                                
-                                strArtifactName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                                if (strArtifactName != null) {
-                                    offset += strArtifactName.length();
-                                    if (++offset > step.length())
-                                        offset = -1; // done
-                                    
-                                    strArtifactHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                                    if (strArtifactHash != null) {
-                                        offset += strArtifactHash.length();
-                                        if (++offset > step.length())
-                                            offset = -1; // done
-                                    }
                                 }
                             }
                             
@@ -389,9 +366,8 @@ public class TemplateProvider {
 //                                if (++offset > step.length())
 //                                    offset = -1; // done
 //                            }
-                        }
                             
-                        if (strComponentName != null && strArtifactName != null && strArtifactHash != null) {
+                        if (strArtifactName != null) {
                             // strOptions is available; it may be null
                             
                             int stepRef = Integer.parseInt(machineRef);
@@ -403,15 +379,15 @@ public class TemplateProvider {
                                     // run program on machineInstance
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
                                     try {
-                                        machineInstance.run(strComponentName, strArtifactName, strArtifactHash, strRunParams);
-                                        ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
+                                        machineInstance.run(strArtifactName, strRunParams);
+                                        ArtifactInfo artifactInfo = new ArtifactInfo(strArtifactName, null); // null because we do not know its value
                                         resourceInfo.setArtifactInfo(artifactInfo);
                                         resourceInfo.setRunParams(strRunParams);
                                         
                                         // TODO: set iT with more gathered info and instantiations and similar
 
                                         success = true;
-                                        System.out.println("TemplateProvider.getInstancedTemplate() runs to bound resource " + stepRef + ": artifactInfo: " + strComponentName + " " + strArtifactName + " " + strArtifactHash);
+                                        System.out.println("TemplateProvider.getInstancedTemplate() runs to bound resource " + stepRef + ": artifactInfo: " + strArtifactName);
                                     } catch (ResourceNotFoundException e) {
                                         // TODO Auto-generated catch block
                                         e.printStackTrace();

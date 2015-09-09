@@ -5,7 +5,7 @@ import com.pslcl.qa.runner.resource.ResourceInstance;
 public class ResourceInfo implements Comparable<ResourceInfo> {
     private ResourceInstance resourceInstance;
     private ArtifactInfo artifactInfo = null;
-    private String instructiondHash = null;
+    private String instructionsHash = null;
     private String network = null;
     private String runParams = null;
 
@@ -40,7 +40,7 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
     }
     
     public void setInstructionsHash(String instructionsHash) {
-        this.instructiondHash = instructionsHash;
+        this.instructionsHash = instructionsHash;
     }
     
     public void setNetwork(String network) {

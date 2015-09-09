@@ -10,11 +10,10 @@ public interface PersonInstance extends ResourceInstance {
     /** Ask a person to follow instructions to inspect an artifact.
     *
     * @param instructionsHash
-    * @param componentName
-    * @param artifactName
-    * @param artifactHash
+     * @param artifactName
+     * @param artifactHash
     */
-   void inspect( String instructionsHash, String componentName, String artifactName, String artifactHash )
+   void inspect( String instructionsHash, String artifactName, String artifactHash )
                  throws ResourceNotFoundException, ArtifactNotFoundException;
 
 }

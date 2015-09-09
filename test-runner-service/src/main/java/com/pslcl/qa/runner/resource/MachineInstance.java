@@ -21,14 +21,12 @@ public interface MachineInstance extends ResourceInstance {
    void connect( String networkRef )  throws ResourceNotFoundException;
 
    /** Run a program artifact on a machine.
+ * @param artifactName
+ * @param params
     *
-    * @param componentName
-    * @param artifactName
-    * @param artifactHash
-    * @param params
     * @return
     */
-   boolean run( String componentName, String artifactName, String artifactHash, String params )
+   boolean run( String artifactName, String params )
                 throws ResourceNotFoundException, ArtifactNotFoundException;
    
 }

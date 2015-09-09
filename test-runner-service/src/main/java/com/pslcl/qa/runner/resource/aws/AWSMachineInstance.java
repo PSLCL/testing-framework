@@ -73,8 +73,7 @@ public class AWSMachineInstance implements MachineInstance {
 	}
 
 	@Override
-	public boolean run(String componentName, String artifactName,
-			String artifactHash, String params)
+	public boolean run(String artifactName, String params)
 			throws ResourceNotFoundException, ArtifactNotFoundException {
 		// TODO Auto-generated method stub
 		return false;

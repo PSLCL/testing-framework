@@ -94,6 +94,8 @@ public class AWSMachineProvider implements MachineProvider {
                 new ArrayList<ResourceWithAttributes>(),
                 new ArrayList<ResourceWithAttributes>());
         for (ResourceWithAttributes rwa : resources) {
+            // TODO: actually reserve whatever is requested in parameter resources 
+            
             // temporary, to allow progress: return an artificially reserved resource
             ReservedResourceWithAttributes artificialReservation = new ReservedResourceWithAttributes(rwa, this, timeoutSeconds);
             retRqr.getReservedResources().add(artificialReservation);
