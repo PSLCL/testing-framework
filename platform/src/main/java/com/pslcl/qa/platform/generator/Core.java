@@ -759,7 +759,7 @@ public class Core {
      * @param name The name of the artifact.
      * @param mode The POSIX mode of the artifact.
      * @param content The hash of the file content, which must already exist in the system.
-     * @param merge_source True of the artifact is associated with a merged module.
+     * @param merge_source True if the artifact is associated with a merged module.
      * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
      * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from. 
      * @return

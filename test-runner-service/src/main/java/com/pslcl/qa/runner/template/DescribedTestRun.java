@@ -1,6 +1,9 @@
 package com.pslcl.qa.runner.template;
 
+import java.util.Map;
+
 import com.pslcl.qa.runner.process.DBDescribedTemplate;
+import com.pslcl.qa.runner.process.DBRun;
 
 /**
  * 
@@ -22,12 +25,18 @@ public class DescribedTestRun {
     public void init() {
         InstancedTemplate it = tp.getInstancedTemplate(dbDescribedTemplate);
 
+    }
+    
+    /**
+     * 
+     */
+    public void initRunInfo() {
         
+        Map<Long, DBRun> pkdtToDBRun;
         
-        
-        
-        
-
+        for (DBRun dbRun : this.dbDescribedTemplate.pkdtToDBRun.values()) {
+            
+        }
     }
     
 

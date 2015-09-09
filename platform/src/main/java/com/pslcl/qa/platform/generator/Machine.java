@@ -60,7 +60,11 @@ public class Machine extends Resource {
 
         @Override
         String getCommand( Template t ) throws Exception {
-            return "deploy " + t.getReference( this.m ) + " " + a.getContent().getValue(template);
+            String retStr = "deploy " + t.getReference( this.m ) + " ";
+            String destName = a.getName();
+            retStr += destName;
+            retStr += (" " + a.getContent().getValue(template));
+            return retStr;
         }
 
         @Override

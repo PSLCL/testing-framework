@@ -1,7 +1,7 @@
 package com.pslcl.qa.runner.template;
 
 public class ArtifactInfo {
-    private String strComponentName;
+    private String strComponentName; // TODO: When can this be removed?
     private String strArtifactName;
     private String strArtifactHash;
     

@@ -137,9 +137,8 @@ public class TemplateProvider {
                         }
                         break;
                     case "deploy":
-                        // machineRef ArtifactInfo (strComponentName strArtifactName strArtifactHash)
+                        // machineRef ArtifactInfo (strArtifactName strArtifactHash)
                         System.out.println("TemplateProvider.getInstancedTemplate() finds deploy as reference " + stepsReference);
-                        String strComponentName = null;
                         String strArtifactName = null;
                         String strArtifactHash = null;
                         String machineRef = StepsParser.getNextSpaceTerminatedSubString(step, offset);
@@ -148,32 +147,24 @@ public class TemplateProvider {
                             if (++offset > step.length())
                                 offset = -1; // done
                           
-                            // gather ArtifactInfo (strComponentName strArtifactName strArtifactHash)
-                            strComponentName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                            if (strComponentName != null) {
-                                offset += strComponentName.length();
+                            // gather ArtifactInfo (strArtifactName strArtifactHash)
+                            strArtifactName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                            if (strArtifactName != null) {
+                                offset += strArtifactName.length();
                                 if (++offset > step.length())
                                     offset = -1; // done
                               
-                                strArtifactName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                                if (strArtifactName != null) {
-                                    offset += strArtifactName.length();
-                                    if (++offset > step.length())
-                                        offset = -1; // done
-                                  
-                                    strArtifactHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                                    // we do not further extract from step
+                                strArtifactHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                                // we do not further extract from step
 //                                    if (strArtifactHash != null) {
 //                                        offset += strArtifactHash.length();
 //                                        if (++offset > step.length())
 //                                            offset = -1; // done
 //                                    }
-                                }
                             }
                         }
                           
-                        if (strComponentName != null &&
-                            strArtifactName != null && // note: %2F within is URL encoding for "/"
+                        if (strArtifactName != null && // note: %2F within is URL encoding for "/"
                             strArtifactHash != null) {
                             int stepRef = Integer.parseInt(machineRef);
                             // This next line takes advantage of the prior ordering of the orderedResourceInfos list held by iT. Using index value stepRef, this call returns the proper ResourceInfo that holds the correct machine to deploy to.
@@ -185,13 +176,13 @@ public class TemplateProvider {
                                     // deploy artifact to the machine instance
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
                                     try {
-                                        machineInstance.deploy(strComponentName, strArtifactName, strArtifactHash);
-                                        ArtifactInfo artifactInfo = new ArtifactInfo(strComponentName, strArtifactName, strArtifactHash);
+                                        machineInstance.deploy(strArtifactName, strArtifactHash);
+                                        ArtifactInfo artifactInfo = new ArtifactInfo(null, strArtifactName, strArtifactHash);
                                         resourceInfo.setArtifactInfo(artifactInfo);
                                         // TODO: set iT with more gathered info and instantiations and similar
 
                                         success = true;
-                                        System.out.println("TemplateProvider.getInstancedTemplate() deploys to bound resource " + stepRef + ": artifactInfo: " + strComponentName + " " + strArtifactName + " " + strArtifactHash);
+                                        System.out.println("TemplateProvider.getInstancedTemplate() deploys to bound resource " + stepRef + ": artifactInfo: " + strArtifactName + " " + strArtifactHash);
                                     } catch (ResourceNotFoundException e) {
                                         // TODO Auto-generated catch block
                                         e.printStackTrace();
@@ -212,7 +203,7 @@ public class TemplateProvider {
                         // machineRef strInstructionsHash ArtifactInfo (strComponentName strArtifactName strArtifactHash)
                         System.out.println("TemplateProvider.getInstancedTemplate() finds inspect as reference " + stepsReference);
                         String strInstructionsHash = null;
-                        strComponentName = null;
+                        String strComponentName = null; // TODO: Did tech spec change and this can be removed?
                         strArtifactName = null;
                         strArtifactHash = null;
                         machineRef = StepsParser.getNextSpaceTerminatedSubString(step, offset);
@@ -228,7 +219,7 @@ public class TemplateProvider {
                                     offset = -1; // done
                                 
                                 // gather ArtifactInfo (strComponentName strArtifactName strArtifactHash)
-                                strComponentName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                                strComponentName = StepsParser.getNextSpaceTerminatedSubString(step, offset); // TODO: Did tech spec change and this can be removed?
                                 if (strComponentName != null) {
                                     offset += strComponentName.length();
                                     if (++offset > step.length())
@@ -370,7 +361,7 @@ public class TemplateProvider {
                                 offset = -1; // done
     
                             // gather ArtifactInfo (strComponentName strArtifactName strArtifactHash)
-                            strComponentName = StepsParser.getNextSpaceTerminatedSubString(step, offset);
+                            strComponentName = StepsParser.getNextSpaceTerminatedSubString(step, offset); // TODO: Did tech spec change and this can be removed?
                             if (strComponentName != null) {
                                 offset += strComponentName.length();
                                 if (++offset > step.length())

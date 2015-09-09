@@ -95,7 +95,7 @@ public class DescribedTemplateCore {
             safeClose( statement ); statement = null;
         }        
         
-        // acquire matching test_instance info; note: described_template to test_instance is 1:1
+        // acquire matching test_instance info; note: described_template to test_instance is potentially 1:many
         try {
             String strDescribedTemplateNum = String.valueOf(pk_described_template);
             statement = connect.createStatement();

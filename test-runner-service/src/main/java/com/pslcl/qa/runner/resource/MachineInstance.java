@@ -8,12 +8,10 @@ import com.pslcl.qa.runner.ArtifactNotFoundException;
 public interface MachineInstance extends ResourceInstance {
     
     /** Place an artifact on a machine.
-    *
-    * @param componentName
-    * @param artifactName
-    * @param artifactHash
+     * @param artifactName
+     * @param artifactHash
     */
-   void deploy( String componentName, String artifactName, String artifactHash )
+   void deploy( String artifactName, String artifactHash )
                 throws ResourceNotFoundException, ArtifactNotFoundException;
 
    /** Connect a machine to a network.

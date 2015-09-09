@@ -61,8 +61,7 @@ public class AWSMachineInstance implements MachineInstance {
     }
     
 	@Override
-	public void deploy(String componentName, String artifactName,
-			String artifactHash) throws ResourceNotFoundException,
+	public void deploy(String artifactName, String artifactHash) throws ResourceNotFoundException,
 			ArtifactNotFoundException {
 		// TODO Auto-generated method stub
 	}
