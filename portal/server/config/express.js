@@ -5,6 +5,7 @@ var path    = require('path');
 var compression = require('compression');
 var config   = require('../../config/config');
 var serveIndex = require('serve-index');
+var stylus   = require('stylus');
 
 var directoryList = function(locals, callback) {
     var result = "<html>";
@@ -40,7 +41,7 @@ module.exports = function (app, config, passport) {
     app.use(express.session({ secret: 'SECRET' }));
     app.use(passport.initialize());
     app.use(passport.session());
-    app.use(require('stylus').middleware(path.join(__dirname, '../../public')));
+    app.use(stylus.middleware(path.join(__dirname, '../../public')));
     app.use(express.static(path.join(__dirname, '../../public')));
     app.use('/skin', express.static(path.join(__dirname, '../../skin')));
     app.use('/repo', serveIndex(path.join(__dirname, '../../repo'), { template: directoryList }));
