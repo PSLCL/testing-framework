@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.Template.Parameter;
+import com.pslcl.qa.platform.generator.Template.StringParameter;
 
 /**
  * This class represents a person, which is a resource that can perform manual inspections.
@@ -33,7 +34,8 @@ public class Person extends Resource {
             params[1] = body;
             int i = 2;
             for ( Artifact a : attachments ) {
-                params[i++] = a.getContent();
+                params[i++] =  StringParameter.class.cast(a.getName()); // the artifact name, intended to be the artifact destination
+                params[i++] = a.getContent(); // the artifact hash
             }
 
             StringBuilder sb = new StringBuilder();
