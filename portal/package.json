@@ -32,9 +32,7 @@
     "static-favicon": "~1.0.0",
     "stylus": "*",
     "supervisor": "^0.5.7",
-    "tar-stream": "*",
-    "underscore": "^1.8.3",
-    "d3": "^3.5.6"
+    "tar-stream": "*"
   },
   "devDependencies": {
     "express-livereload": "*",
