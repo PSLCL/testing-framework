@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -602,7 +603,7 @@ public class CommandLine {
                     TarArchiveOutputStream os = new TarArchiveOutputStream( cos );
                     
                     for ( int artifact = 0; artifact < artifacts; artifact++ ) {
-                        String content_str = name + "-" + Integer.toString( artifact+1 );
+                        String content_str = name + "-" + Integer.toString( artifact );
                         TarArchiveEntry entry = new TarArchiveEntry( content_str );
                         byte[] content_bytes = content_str.getBytes();
                         entry.setSize( content_bytes.length );
@@ -665,15 +666,15 @@ public class CommandLine {
         private String org;
         private String name;
         private String version;
-        private int sequence;
+        private String seq;
         private int artifacts;
         
-        PopulateModule( String org, String name, String version, int sequence, int artifacts ) {
+        PopulateModule( String org, String name, String version, int artifacts ) {
             this.org = org;
             this.name = name;
             this.version = version;
-            this.sequence = sequence; 
             this.artifacts = artifacts;
+            this.seq = Long.toString( System.currentTimeMillis() );
         }
         
         @Override
@@ -693,7 +694,7 @@ public class CommandLine {
 
         @Override
         public String getSequence() {
-            return String.format("%05d", sequence);
+            return "1";
         }
 
         @Override
@@ -744,7 +745,7 @@ public class CommandLine {
                     String module_str = "module" + Integer.toString(module+1);
                     for ( int version = 0; version < versions; version++ ) {
                         String version_str = "v" + Integer.toString(version+1);
-                        moduleNotifier.module( this, new PopulateModule( org_str, module_str, version_str, version+1, artifacts ), null );
+                        moduleNotifier.module( this, new PopulateModule( org_str, module_str, version_str, artifacts ), null );
                     }
                 }
             }

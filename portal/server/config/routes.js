@@ -4,7 +4,6 @@ var test      = require('../routes/test');
 var plan      = require('../routes/test_plan');
 var version   = require('../routes/version');
 var artifact  = require('../routes/artifact');
-var instance  = require('../routes/instance');
 
 module.exports = function (app, config, passport) {
   require('./middlewares/auth')(passport,config);
@@ -37,8 +36,6 @@ module.exports = function (app, config, passport) {
   app.get('/api/v1/report_test_plans',                  plan.report);
   app.get('/api/v2/report_test_plans',                  plan.new_report);
 
-  app.get('/api/v1/instances',                          instance.list);
-  
   // Report routes (anonymous)
   app.get('/report/plan/:module',                    plan.name_report);
   app.get('/report/result/:module',                  version.name_report);

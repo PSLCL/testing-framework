@@ -1,290 +1,12 @@
-/* Style Design and Color Scheme
- =============================*/
- 
- /* Master applies universally */
- $master-color = #F2F2F2
- $master-font-size = 14px
- $master-font-family = 'Roboto', sans-serif
- $master-font = $master-font-size $master-font-family
- 
- /* Header relates to the top horizontal navigation bar */
- $header-height = 50px
- 
- /* Navigation relates to the main left navigation bar */
- $navigation-width = 250px
- $navigation-height = 50px
- $navigation-width-collapsed = 40px
- $navigation-background = #3D3D3D
- $navigation-color = #F2F2F2
- $navigation-transition-width = 900px
- $navigation-hover-background = #545454
- $navigation-glyph-width = 45px
- $navigation-glyph-border = 9px
- $navigation-glyph-size = 1.7em
- $navigation-gutter = 20px
- 
- /*Header background: #f4f4f4;
- Header foreground: #3D3D3D;
- Navigation background: #3D3D3D;
- Sidebar diminished text: #666666;
- 
- =============================*/
-/* Resets and Overrides
- =============================*/
-
-@import "normalize.css"
-
-*
-  margin 0
-  padding 0
-
-/* Links and Type
- =============================*/
-
-body
-  font $master-font
-  color $master-color
-
-/* Layout
- =============================*/
-
-/* Navigation Sidebar */
-
-nav.navbar-side
-    background $navigation-background
-    width $navigation-width
-    position fixed
-    top 0
-    left:0
-    min-height 100%
-    transition left .5s ease
-    -webkit-transition left .5s ease
-    -moz-transition left .5s ease
-    z-index 9997
-
-nav.navbar-side.collapsed
-    left $navigation-width-collapsed - $navigation-width
-
-@media only screen and (max-width: $navigation-transition-width)
-    nav.navbar-side.collapsed
-        left 0
-
-    nav.navbar-side
-        left $navigation-width-collapsed - $navigation-width
-
-nav.navbar-side a
-    text-decoration none
-    color $navigation-color
-
-.navbar-side ul li a
-    display block
-    height $navigation-height
-    line-height $navigation-height
-    padding-left $navigation-glyph-width
-    position relative
-
-.navbar-side ul li a:hover
-    background $navigation-hover-background
-
-.navbar-side ul li.active a
-    background white
-    border-left $navigation-gutter solid $navigation-background
-    padding-left $navigation-glyph-width - $navigation-gutter
-    color $navigation-background
-
-.navbar-side ul li.active a:hover
-    background white
-
-.navbar-side ul li i
-    position absolute
-    height $navigation-height
-    line-height $navigation-height
-    right $navigation-glyph-border
-    font-size $navigation-glyph-size
-
-/* There can be a single paragraph in the side. */
-.navbar-side p
-    text-align center
-    font-weight 100
-    font-size .8em
-    padding 0 40px
-    color #666666
-    position absolute
-    bottom 10px
-
-/* Fit the header over the top margin, bottom margin is space before navigation list. Padding provides the visible area. */
-.navbar-header
-    font-size 25px
-    padding 15px
-    margin 50px 0px 20px 0px
-
-.navbar-header i
-    position absolute
-    right 11px
-    top 58px
-    cursor pointer
-
-.navbar-top
-    position fixed
-    top 0
-    width 100%
-    background #f4f4f4
-    border-bottom 1px solid #dddddd
-    z-index 9998
-
-.navbar-top img
-    padding 15px
-    height 20px
-    float left
-    transition margin-left .5s ease
-    -webkit-transition margin-left .5s ease
-    -moz-transition margin-left .5s ease
-
-/* TODO: Is this needed? */
-.navbar-top img.collapsed
-    margin-left 40px
-
-.navbar-top ul li
-    list-style-type none
-    margin-right 50px
-    float right
-
-@media only screen and (max-width: 768px)
-    .navbar-top ul li
-        margin-right 10px
-
-.navbar-top ul li a
-    text-decoration none
-    color #3D3D3D
-    line-height 50px
-
-.navbar-top ul li a:hover
-    color black
-
-/* TODO: Is this needed? */
-.flex-container
-    overflow hidden
-
-/* Main content styles */
-.main-content {
-    margin-left: $navigation-width
-    margin-top:70px;
-    padding:15px 30px;
-    color:black;
-    transition:margin-left .5s ease;
-    -webkit-transition:margin-left .5s ease;
-    -moz-transition:margin-left .5s ease;
+* {
+  margin: 0;
+  padding: 0;
 }
-
-.main-content.collapsed {
-    margin-left:40px;
+body {
+  font-family: 'Roboto', sans-serif;;
+  font-size: 14px;
+  color:#F2F2F2;
 }
-
-@media only screen and (max-width: 900px) {
-    .main-content {
-        margin-left:40px;
-        margin-right:0;
-        transition:all .5s ease;
-        -moz-transition:all .5s ease;
-        -webkit-transition:all .5s ease;
-    }
-    
-    .main-content.collapsed {
-        margin-right:-210px;
-        margin-left:250px;
-    }
-    
-    /* TODO: Is this needed? */
-    .main-content.sidebar-inactive {
-        margin-left:0;
-    }
-}
-
-/* Report styles */
-.report-module h1
-    color blue
-
-.report-module span.id
-    position relative
-    top -.5em
-    font-size 50%
-    border 2px solid
-    padding 2px
-    margin-left 3px
-    color green
-    
-.report-module span.id::before
-    content "ID: "
-    
-.report-module h2
-    color blue
-    
-.report-module h3
-    color blue
-    
-.report-module h4
-    color blue
-    
-.report-module div.graph-block
-    width 100%
-    overflow hidden
-
-.report-module div.graph
-    width 110px
-    float left
-    
-.report-module div.legend
-    margin-left 110px
-    
-.report-module .legend p.pass
-    color #00CC00
-    
-.report-module .legend p.total
-    font-weight bold
-   
-.report-module .legend .total span.count::before
-    content "Total: "
-    
-.report-module .legend .pass span.count::before
-    content "Pass: "
-    
-.report-module .legend .fail span.count::before
-    content "Fail: "
-    
-.report-module .legend .pending span.count::before
-    content "Pending: "
-    
-.report-module .legend span.percent::before
-    content " ("
-    
-.report-module .legend span.percent::after
-    content "%)"
-    
-.report-module .legend p.fail
-    color #FF0000
-    
-.report-module .legend p.pending
-    color #A0A0A0
-
-.report-module ul.list-module
-    margin 0 0 0 0
-    padding 0
-    list-style-type none
-    text-align left
-
-.report-module .list-module li
-    display inline-block
-    margin 0 5px 5px 0
-   
-/* Boxes
- =============================*/
-
-/* Forms
- =============================*/
-
-/* Misc.
- =============================*/
-
 div.graphblock {
   width: 100%;
   overflow: hidden;
@@ -318,7 +40,62 @@ a {
 textarea {
   height: 175px;
 }
-
+h3 {
+	font-weight:bold;
+	margin-bottom:10px;
+	padding-left:3px;
+	background-color:#E0E6F8;
+	border-bottom-right-radius: 10px;
+	border-bottom-left-radius: 10px;
+	-webkit-box-shadow: 2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+	-moz-box-shadow:    2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+	box-shadow:         2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+}
+h4 {
+	font-weight:500;
+	font-size:15px;
+    color:#000;
+	margin-top:10px;
+	margin-left:10px;
+	margin-bottom:5px;
+	padding-left:3px;
+	background-color:#E0ECF8;
+	border-bottom-right-radius: 10px;
+	border-bottom-left-radius: 10px;
+	-webkit-box-shadow: 2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+	-moz-box-shadow:    2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+	box-shadow:         2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+}
+h5 {
+	font-weight:500;
+	font-size:14px;
+    color:#000;
+	margin-top:10px;
+	margin-left:20px;
+	margin-bottom:5px;
+	padding-left:3px;
+	background-color:#E0F2F7;
+	border-bottom-right-radius: 10px;
+	border-bottom-left-radius: 10px;
+	-webkit-box-shadow: 2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+	-moz-box-shadow:    2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+	box-shadow:         2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+}
+h6 {
+	font-weight:200;
+	font-size:14px;
+    color:#000;
+	margin-top:10px;
+	margin-left:30px;
+	margin-bottom:5px;
+	padding-left:3px;
+	background-color:#EFFBFB;
+	border-bottom-right-radius: 10px;
+	border-bottom-left-radius: 10px;
+	-webkit-box-shadow: 2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+	-moz-box-shadow:    2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+	box-shadow:         2px 2px 1px 0px rgba(129, 128, 128, 0.35);
+}
 copyright {
 	font-weight:100;
 	font-size:10px;
@@ -346,6 +123,9 @@ input.search {
 	width:200px;
 	float:right;
 }
+.flex-container {
+	overflow:hidden;
+}
 .fa {
 	cursor:pointer;
 }
@@ -358,17 +138,12 @@ input.search {
 	display:none;
 }
 /* Alignment classes */
-.row
-	padding-left 2%
-	padding-right 2%
-	width 96%
-	overflow auto
-
-.flexrow
-    @extend .row
-    display flex
-    flex-wrap wrap
-
+.row {
+	padding-left:2%;
+	padding-right:2%;
+	width:96%;
+	overflow:auto;
+}
 /* Columns */
 .col-4 {
 	width:32.33%;
@@ -518,6 +293,119 @@ input.search {
 }
 .btn-icon {
 	margin-right:10px;
+}
+/* Navigation styles */
+nav.navbar-side {
+	width:250px;
+	position:fixed;
+	top:0;
+	left:0;
+	min-height:100%;
+	transition:left .5s ease;
+	-webkit-transition:left .5s ease;
+	-moz-transition:left .5s ease;
+	z-index:9997;
+}
+nav.navbar-side.collapsed {
+	left:-210px;
+}
+nav.navbar-side a{
+	text-decoration:none;
+	color:#F2F2F2;
+}
+.navbar-header {
+	font-size:25px;
+	padding:15px;
+	margin-bottom:20px;
+	margin-top:50px;
+}
+.navbar-header i {
+	position:absolute;
+	right:11px;
+	top:58px;
+	cursor:pointer;
+}
+.navbar-side p {
+	text-align:center;
+	font-weight:100;
+	font-size:.8em;
+	padding:0 40px;
+	color:#666666;
+	position:absolute;
+	bottom:10px;
+}
+.navbar-side ul li a {
+	display:block;
+	padding:15px 0;
+	padding-left:45px;
+	position:relative;
+}
+.navbar-side ul li i {
+	position: absolute;
+	top: 12px;
+	right: 9px;
+	font-size: 1.7em;
+}
+.navbar-side ul li a:hover {
+	background:#545454;
+}
+.navbar-side ul li.active a{
+	background:white;
+	border-left:4px solid #672975;
+	padding-left:41px;
+}
+.navbar-side ul li.active a:hover {
+	background:white;
+}
+.navbar-side ul li.active a {
+	color:#3D3D3D;
+}
+.navbar-top {
+	position:fixed;
+	top:0;
+	width:100%;
+	background:#f4f4f4;
+	border-bottom:1px solid #dddddd;
+	z-index:9998;
+}
+.navbar-top img {
+	padding:15px;
+	height:20px;
+	float:left;
+	transition:margin-left .5s ease;
+	-webkit-transition:margin-left .5s ease;
+	-moz-transition:margin-left .5s ease;
+}
+.navbar-top img.collapsed {
+	margin-left:40px;
+}
+.navbar-top ul{
+}
+.navbar-top ul li {
+	list-style-type: none;
+	float:right;
+	margin-right:50px;
+}
+.navbar-top ul li a {
+	text-decoration: none;
+	color:#3D3D3D;
+	line-height:50px;
+}
+.navbar-top ul li a:hover {
+	color:black;
+}
+/* Main content styles */
+.main-content {
+	margin-left:250px;
+	margin-top:70px;
+	padding:15px 30px;
+	color:black;
+	transition:margin-left .5s ease;
+	-webkit-transition:margin-left .5s ease;
+	-moz-transition:margin-left .5s ease;
+}
+.main-content.collapsed {
+	margin-left:40px;
 }
 .list-header {
 	position:relative;
@@ -732,9 +620,6 @@ input.search {
 	text-align:center;
 	padding:15px;
 	border:1px solid #f4f4f4;
-	width: 120px;
-	margin-left: 10px;
-	margin-bottom: 10px;
 }
 .dash-block h2 {
 	font-weight:300;
@@ -958,6 +843,43 @@ i.display-create
 .report-results table td, .report-results table th {
 	padding:2px 5px;
 }
+.r2-version {
+	margin-bottom:25px;
+	padding-bottom:15px;
+	border-bottom:1px solid rgb(173, 173, 173);
+}
+.r2-test-plan {
+}
+.r2-test {
+}
+.r2-template {
+}
+.r2 h1 {
+    font-style:italic;
+    font-weight:bold;
+    margin-top: 25px;
+    margin-bottom:10px;
+    padding-left:3px;
+    background-color:#E0E6F8;
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+.r2 * {
+    padding: initial;
+}
+.r2 ol {
+    background: #E6E6E6;
+    margin: 5px 0;
+    padding-left: 25px;
+}
+.r2 ul {
+    background: #E6E6E6;
+    margin: 5px 0;
+    padding-left: 25px;
+}
+.r2 li {
+    display: list-item;
+}
 
 .hash {
 	background:rgb(206, 206, 206);
@@ -1010,6 +932,29 @@ i.display-create
 	font-size: 1.17em;
 	font-weight:100;
 }
+/* Responsive */
+@media only screen and (max-width: 900px) {
+	.main-content.collapsed {
+		margin-right:-210px;
+		margin-left:250px;
+	}
+	.main-content {
+		margin-left:40px;
+		margin-right:0;
+		transition:all .5s ease;
+		-moz-transition:all .5s ease;
+		-webkit-transition:all .5s ease;
+	}
+	.main-content.sidebar-inactive {
+		margin-left:0;
+	}
+	nav.navbar-side.collapsed {
+		left:0;
+	}
+	nav.navbar-side {
+		left:-210px;
+	}
+}
 @media only screen and (max-width: 860px) {
 	
 }
@@ -1037,6 +982,9 @@ i.display-create
 		float:left;
 		margin:20px 0 0;
 		right:0;
+	}
+	.navbar-top ul li {
+		margin-right:10px;
 	}
 	.list-header {
 		height:80px;

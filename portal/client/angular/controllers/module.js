@@ -385,9 +385,10 @@ app.controller('ModuleReportCtrl', function ($window, $scope, $routeParams, $loc
           $scope.module = result.module;
         });
     
-    ModuleReport.get({moduleId: $routeParams.moduleId},
+    ModuleReport.query({moduleId: $routeParams.moduleId},
             function success(results) {
-              $scope.result = results;
+              console.log(JSON.stringify(results));
+              $scope.report = results;
             });
 });
 

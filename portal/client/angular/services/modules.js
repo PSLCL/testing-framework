@@ -20,7 +20,7 @@ app.factory('Module', function ($resource) {
 });
 
 app.factory('ModuleReport', function($resource) {
-    return $resource('/api/v1/instances?module=:moduleId', {});
+    return $resource('/api/v1/modules/:moduleId/report', {});
 })
 
 // Modules to test plans

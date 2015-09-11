@@ -199,8 +199,9 @@ exports.show = function (req, res) {
 
 exports.report = function( req, res ) {
     mysql.getConnection(function(err,conn) {
-        var module = req.param('id');
-        conn.query('CALL get_instance_list(NULL,NULL,'+ module + ',NULL);',
+        conn.query('SELECT name FROM test_plan',
+        //    'WHERE fk_module = ? AND fk_test_plan = ?',
+        //  [req.param('fk_module'), req.param('fk_test_plan')],
           function (err, result) {
             if (err) throw err;
             res.format({
