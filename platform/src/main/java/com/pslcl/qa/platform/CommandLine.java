@@ -60,6 +60,9 @@ public class CommandLine {
         System.out.println( "arguments are:" );
         System.out.println( "  --no-synchronize - optional - disable synchronization." );
         System.out.println( "  --no-generators - optional - disable running generators." );
+        System.out.println( "  --prune <count> - optional - enable deleting of missing modules." );
+        System.out.println( "               <count> is the number of synchronize runs that the module has been missing. " );
+        System.out.println( "                       Count must be greater than 0." );
 
         System.exit( 1 );
     }
@@ -163,8 +166,11 @@ public class CommandLine {
             try {
                 // Check to see if the module exists. If it does then return (assuming that artifacts do not change).
                 // If it does not exist then add the module and iterate the artifacts.
-                if ( core.findModule( module ) != 0 )
+                long pk_module = core.findModule( module );
+                if ( pk_module != 0 ) {
+                    core.updateModule( pk_module );
                     return;
+                }
                 
                 boolean merge_source = false;
                 if ( merge != null && merge.length() > 0 ) {
@@ -188,7 +194,7 @@ public class CommandLine {
                     core.deletePriorVersion( module );
                 }
                 
-                long pk_module = core.addModule( module );
+                pk_module = core.addModule( module );
                 List<Artifact> artifacts = module.getArtifacts();
                 for ( Artifact artifact : artifacts ) {    
                     Hash h = core.addContent( artifact.getContent().asStream() );
@@ -347,7 +353,8 @@ public class CommandLine {
     private static void synchronize( String[] args ) {
         boolean synchronize = true;
         boolean generate = true;
-
+        int prune = -1;
+        
         if (args.length > 1 && args[1].compareTo( "--help" ) == 0)
             synchronizeHelp();
 
@@ -357,6 +364,16 @@ public class CommandLine {
             }
             else if ( args[i].compareTo( "--no-generators" ) == 0 ) {
                 generate = false;
+            }
+            else if ( args[i].compareTo( "--prune" ) == 0 ) {
+                if ( i == args.length )
+                    synchronizeHelp();
+                
+                prune = Integer.parseInt( args[i+1] );
+                if ( prune <= 0 )
+                    synchronizeHelp();
+                
+                i += 1;
             }
             else
                 synchronizeHelp();
@@ -379,8 +396,11 @@ public class CommandLine {
                 //noinspection ResultOfMethodCallIgnored
                 generators.setWritable( true );
 
-                // Get the list of artifact providers from the database.
+                // Get the list of artifact providers from the database, prepare the modules table for updates.
                 List<String> providers = core.readArtifactProviders();
+                core.prepareToLoadModules();
+                boolean noModuleErrors = true;
+                
                 HandleModule handler = new HandleModule( core );
                 List<ArtifactProvider> to_close = new ArrayList<ArtifactProvider>();
                 
@@ -394,12 +414,11 @@ public class CommandLine {
                         to_close.add( provider );
                         
                         /* Handle generators from this provider. */
-                        //core.startArtifactProvider( providerName );
                         provider.iterateModules( handler );
-                        //core.finishArtifactProvider( providerName );
                     }
                     catch ( Exception e ) {
                         System.err.println( e.getMessage() );
+                        noModuleErrors = false;
                     }
                 }
                 
@@ -409,6 +428,10 @@ public class CommandLine {
                     p.close();
                 }
 
+                // Finalize module loading
+                if ( noModuleErrors && prune > 0 )
+                    core.finalizeLoadingModules( prune );
+                
                 // Extract all generators
                 Iterable<Module> find_generators = core.createModuleSet();
                 for ( Module M : find_generators ) {

@@ -10,6 +10,7 @@ var _        = require('underscore');
 var d3      = require('d3');
 
 function buildModules( m ) {
+    m.sort(function(a,b) { return a.offset - b.offset; });
     return _.map( m, function(mod) {
         var s = mod.organization + '#' + mod.name + ';' + mod.version + '(' + mod.sequence + ')';
         if ( mod.attributes )

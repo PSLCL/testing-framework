@@ -536,6 +536,45 @@ public class Core {
         return result;
     }
     
+    public void prepareToLoadModules() {
+        // Update missing count.
+        PreparedStatement statement = null;
+
+        if ( read_only )
+            return;
+
+        try {
+            statement = connect.prepareStatement( "UPDATE module SET missing_count=missing_count+1" );
+            statement.executeUpdate();
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Could update missing_count, " + e.getMessage() );
+        }
+        finally {
+            safeClose( statement ); statement = null;
+        }
+    }
+    
+    public void finalizeLoadingModules( int deleteThreshold ) {
+        // Remove modules that have been missing for too long.
+        PreparedStatement statement = null;
+
+        if ( read_only )
+            return;
+
+        try {
+            statement = connect.prepareStatement( "DELETE FROM module WHERE missing_count > ?" );
+            statement.setLong( 1, deleteThreshold );
+            statement.executeUpdate();
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Could not delete module, " + e.getMessage() );
+        }
+        finally {
+            safeClose( statement ); statement = null;
+        }
+    }
+    
     /**
      * Add a test plan to the database.
      * @param name The name of the test plan.
@@ -1590,6 +1629,25 @@ public class Core {
         }
 
         return 0;
+    }
+
+    public void updateModule( long pk_module ) {
+        // Mark a module as found.
+        PreparedStatement statement = null;
+
+        if ( read_only )
+            return;
+
+        try {
+            statement = connect.prepareStatement( String.format( "UPDATE module SET missing_count=0 WHERE pk_module=%d", pk_module ) );
+            statement.executeUpdate();
+        }
+        catch ( Exception e ) {
+            //TODO: handle
+        }
+        finally {
+            safeClose( statement ); statement = null;
+        }
     }
 
     public long findModuleWithoutSequence( Module module ) {
