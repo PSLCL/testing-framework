@@ -201,6 +201,14 @@ class TestInstance {
     private Boolean result = null;
 
     /**
+     * During generation the owner of a test instance may be specified directly
+     * without the test instance being run. If set then a 'run' entry will be created.
+     * This can work in combination with the 'result' field to create different combinations
+     * of test status - although this is usually useful only for test data population.
+     */
+    private String owner = null;
+    
+    /**
      * All actions related to a test instance are stored in this list. Once the
      * test instance is defined completely, indicated by {@link #close()} being
      * called, then the actions are distributed among templates.
@@ -270,6 +278,10 @@ class TestInstance {
         result = false;
     }
 
+    void assign( String email ) {
+        owner = email;
+    }
+    
     void dump() {
         System.err.println( "Test Instance:" );
         System.err.println( getTemplate() );
@@ -313,6 +325,10 @@ class TestInstance {
         return result;
     }
 
+    public String getOwner() {
+        return owner;
+    }
+    
     long getPK() {
         return pk;
     }

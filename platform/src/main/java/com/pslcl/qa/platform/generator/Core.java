@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -485,7 +486,7 @@ public class Core {
                     
 
                     // simulated false condition, but database is readonly for a while, so this gives a quick return without storing anything
-                    reportResult( new String("junk"), false );
+                    reportResult( new String("junk"), false, null );
 
                     System.out.println( "executeTestInstance() exits after execution msec of " + sleep);
                     System.out.println("");
@@ -1425,6 +1426,36 @@ public class Core {
     }
 
     /**
+     * Update the generator status for a test, setting the last execute time and output.
+     * @param pk_test The primary key of the test.
+     * @param stdout The standard output of the generator run.
+     * @param stderr The standard error of the generator run.
+     */
+    public void updateTest( long pk_test, String stdout, String stderr ) {
+        // Mark a module as found.
+        PreparedStatement statement = null;
+
+        if ( read_only )
+            return;
+
+        try {
+            statement = connect.prepareStatement( "UPDATE test SET last_run=?, last_stdout=?, last_stderr=? WHERE pk_test=?" );
+            statement.setTimestamp( 1, new Timestamp( System.currentTimeMillis() ) );
+            statement.setString( 2, stdout );
+            statement.setString( 3, stderr );
+            statement.setLong( 4, pk_test );
+            statement.executeUpdate();
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Could not update test, " + e.getMessage() );
+        }
+        finally {
+            safeClose( statement ); statement = null;
+        }
+
+    }
+    
+    /**
      * Return artifacts associated with a particular module (including version). Both name and configuration optional.
      * @param pk_module The primary key of the module to return artifacts for.
      * @param name The name, which can include MySQL REGEXP patterns and is also optional.
@@ -1817,9 +1848,11 @@ public class Core {
     /**
      * Add a described template - it is known to not exist.
      * @param dt The described template to add.
+     * @param result The result to report, if any.
+     * @param owner The owner to assign, if any.
      * @return The key information for the added described template.
      */
-    private DBDescribedTemplate add( DescribedTemplate dt, Boolean result ) throws Exception {
+    private DBDescribedTemplate add( DescribedTemplate dt, Boolean result, String owner ) throws Exception {
         DescribedTemplate.Key proposed_key = dt.getKey();
         
         if ( keyToDT.containsKey( proposed_key ) )
@@ -1831,9 +1864,9 @@ public class Core {
             @SuppressWarnings("unused")
             DBDescribedTemplate dbdt;
             if ( ! keyToDT.containsKey( child.getKey() ) )
-                dbdt = add( child, null );
+                dbdt = add( child, null, null );
             else
-                dbdt = check( child, null );
+                dbdt = check( child );
         }
 
         try {
@@ -1842,8 +1875,8 @@ public class Core {
 
             long pk = 0;
             long pk_template = syncTemplate( dt.getTemplate() );
-            if ( result != null )
-                reportResult( dt.getTemplate().getHash().toString(), result );
+            if ( result != null || owner != null )
+                reportResult( dt.getTemplate().getHash().toString(), result, owner );
 
             PreparedStatement statement = null;
             ResultSet query = null;
@@ -1908,10 +1941,10 @@ public class Core {
     /**
      * Check that an existing template is correct. If the template exists then the children
      * must exist, but their documentation may be out of date.
-     * @param dt The described template to check.
+     * @param dt The described template to check. Results are not currently checked.
      * @return
      */
-    private DBDescribedTemplate check( DescribedTemplate dt, Boolean result ) throws Exception {
+    private DBDescribedTemplate check( DescribedTemplate dt ) throws Exception {
         // Recursive check for all dependencies
         for ( DescribedTemplate child : dt.getDependencies() ) {
             // TODO: Figure out if this is correct.
@@ -1920,7 +1953,7 @@ public class Core {
             if ( ! keyToDT.containsKey( child.getKey() ) )
                 throw new Exception( "Parent template exists, child does not." );
             else
-                dbdt = check( child, null );
+                dbdt = check( child );
         }
 
         DBDescribedTemplate me = keyToDT.get( dt.getKey() );
@@ -1980,10 +2013,10 @@ public class Core {
 
             if ( ! keyToDT.containsKey( key ) ) {
                 // Add the template
-                dbdt = add( ti.getTemplate(), ti.getResult() );
+                dbdt = add( ti.getTemplate(), ti.getResult(), ti.getOwner() );
             }
             else
-                dbdt = check( ti.getTemplate(), ti.getResult() );
+                dbdt = check( ti.getTemplate() );
 
             // We have the described template. There should be a Test Instance that relates the
             // current test (pk_test) to the current described template.
@@ -2043,16 +2076,21 @@ public class Core {
             Statement statement2 = null;
             ResultSet resultSet = null;
             Boolean dbResult = null;
+            String dbOwner = null;
             
-            if ( ti.getResult() != null ) {
+            if ( ti.getResult() != null || ti.getOwner() != null ) {
                 try {
                     statement2 = connect.createStatement();
-                    resultSet = statement2.executeQuery( "SELECT passed FROM run JOIN test_instance ON test_instance.fk_run = run.pk_run WHERE test_instance.pk_test_instance=" + Long.toString( ti.pk ) );
+                    resultSet = statement2.executeQuery( "SELECT result, owner FROM run JOIN test_instance ON test_instance.fk_run = run.pk_run WHERE test_instance.pk_test_instance=" + Long.toString( ti.pk ) );
                     
                     if ( resultSet.next() ) {
-                        dbResult = resultSet.getBoolean( "passed" );
+                        dbResult = resultSet.getBoolean( "result" );
                         if ( resultSet.wasNull() )
                             dbResult = null;
+                        
+                        dbOwner = resultSet.getString( "owner" );
+                        if ( resultSet.wasNull() )
+                            dbOwner = null;
                     }
                 }
                 catch ( Exception e ) {
@@ -2064,8 +2102,8 @@ public class Core {
                 }
         
                 // Check the run status, fix it if the status is known.
-                if ( (dbResult == null) || (dbResult != ti.getResult()) ) {
-                    reportResult( ti.getTemplate().getTemplate().getHash().toString(), ti.getResult() );
+                if ( (dbResult != ti.getResult()) || ! (dbOwner == null ? ti.getOwner() == null : dbOwner.equals(ti.getOwner() ) ) ) {
+                    reportResult( ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner() );
                 }
             }
         }
@@ -2549,15 +2587,26 @@ public class Core {
         return pk;
     }
 
-    public void reportResult( String hash, boolean result ) {
+    public void reportResult( String hash, Boolean result, String owner ) {
         PreparedStatement statement = null;
 
         if ( read_only )
             return;
 
         try {
-            statement = connect.prepareStatement( String.format( "call add_run('%s', %b)",
-                    hash, result ) );
+            statement = connect.prepareStatement( "call add_run(?, ?, ?)" );
+            statement.setString( 1, hash );
+            
+            if ( result != null )
+                statement.setBoolean( 2, result );
+            else
+                statement.setNull( 2, Types.BOOLEAN );
+            
+            if ( owner != null )
+                statement.setString( 3, owner );
+            else
+                statement.setNull( 3, Types.VARCHAR );
+            
             statement.execute();
         }
         catch ( Exception e ) {

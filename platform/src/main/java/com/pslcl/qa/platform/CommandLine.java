@@ -104,6 +104,7 @@ public class CommandLine {
         System.out.println( "  --modules <num> - optional, specifies how many modules to populate for each organization (requires --orgs)." );
         System.out.println( "  --versions <num> - optional, specifies how many versions to populate for each module (requires -modules)." );
         System.out.println( "  --artifacts <num> - optional, specifies how many artifacts to populate in each module (requires --modules)." );
+        System.out.println( "  --owner <email> - optional, specifies that some pending tests should be assigned to this owner (requires --instances)." );
         System.out.println( "  --results - optional, specifies whether or not to populate results (requires --instances)." );
         System.out.println( "When creating modules, the populator will create organizations, names, and versions. A new organization" );
         System.out.println( "is created for each 10 modules, a new name for each 5." );
@@ -247,12 +248,16 @@ public class CommandLine {
         }
     }
     
-    private static void inheritIO(final InputStream src, final PrintStream dest) {
+    private static void inheritIO(final InputStream src, final PrintStream dest, final PrintStream save) {
         new Thread(new Runnable() {
             public void run() {
                 Scanner sc = new Scanner(src);
                 while (sc.hasNextLine()) {
-                    dest.println(sc.nextLine());
+                    String line = sc.nextLine();
+                    if ( dest != null )
+                        dest.println(line);
+                    if ( save != null )
+                    save.println(line);
                 }
                 
                 sc.close();
@@ -261,13 +266,15 @@ public class CommandLine {
     }
 
     private static class GeneratorExecutor implements Runnable {
+        private Core core;
         private File generators;
         private String base;
         private String shell;
         private long id;
         private String script;
 
-        public GeneratorExecutor( File generators, String base, String shell, long id, String script ) {
+        public GeneratorExecutor( Core core, File generators, String base, String shell, long id, String script ) {
+            this.core = core;
             this.generators = generators;
             this.base = base;
             this.shell = shell;
@@ -282,6 +289,9 @@ public class CommandLine {
         }
 
         private void process() {
+            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+            ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
             try {
                 String augmented_params = shell + " " + script;
                 String[] params = augmented_params.split( " " );
@@ -292,8 +302,8 @@ public class CommandLine {
                 processBuilder.environment().put("DTF_TEST_ID", Long.toString( id ) );
 
                 Process run = processBuilder.start();
-                inheritIO(run.getInputStream(), System.out);
-                inheritIO(run.getErrorStream(), System.err);
+                inheritIO(run.getInputStream(), System.out, new PrintStream(stdout));
+                inheritIO(run.getErrorStream(), System.err, new PrintStream(stderr));
 
                 boolean running = true;
                 while (running == true) {
@@ -304,9 +314,16 @@ public class CommandLine {
                         try { Thread.sleep(250); } catch ( Exception ex ) {}
                     }
                 }
+                
+                core.updateTest( id, stdout.toString(), stderr.toString() );
             }
             catch ( Exception e ) {
-                System.err.println( "ERROR: Could not run script " + script + ", " + e );
+                String log = "ERROR: Could not run script " + script + ", " + e;
+                System.err.println( log );
+                new PrintStream( stderr ).println( log );
+            }
+            finally {
+                core.updateTest( id, stdout.toString(), stderr.toString() );
             }
         }
 
@@ -480,7 +497,7 @@ public class CommandLine {
                 ExecutorService executor = Executors.newFixedThreadPool( 25 );
 
                 for ( Map.Entry<Long,String> script : scripts.entrySet() ) {
-                    Runnable worker = new GeneratorExecutor( generators, base, shell, script.getKey(), script.getValue() );
+                    Runnable worker = new GeneratorExecutor( core, generators, base, shell, script.getKey(), script.getValue() );
                     executor.execute( worker );
                 }
 
@@ -584,7 +601,7 @@ public class CommandLine {
             resultHelp();
 
         Core core = new Core( 0 );
-        core.reportResult( hash, result );
+        core.reportResult( hash, result, null );
         core.close();
     }
 
@@ -805,6 +822,7 @@ public class CommandLine {
         int modules = 0;
         int versions = 0;
         int artifacts = 0;
+        String owner = null;
         boolean results = false;
         for (int i = 1; i < args.length; i++) {
             if (args[i].compareTo("--plans") == 0 && args.length > i) {
@@ -835,6 +853,10 @@ public class CommandLine {
                 artifacts = Integer.parseInt( args[i+1] );
                 i += 1;
             }
+            else if (args[i].compareTo("--owner") == 0 && args.length > i) {
+                owner = args[i+1];
+                i += 1;
+            }
             else if (args[i].compareTo("--results") == 0 ) {
                 results = true;
             }
@@ -852,6 +874,8 @@ public class CommandLine {
         if ( modules == 0 && artifacts > 0 )
             populateHelp();
         if ( (artifacts == 0 || instances == 0) && results )
+            populateHelp();
+        if ( (owner != null) && instances == 0)
             populateHelp();
         
         Core core = new Core( 0 );
@@ -921,14 +945,22 @@ public class CommandLine {
                        System.err.println( "ERROR: Couldn't bind an deploy instance, " + e.getMessage() );
                    }
                        
-                   if ( results ) {
-                       // Pass/Fail generation. Pass groups of 7 tests, then fail 7.
-                       if ( ((test_sequence++ / 7) % 2) == 0 )
+                   // Log results if either we need to have results or if there is an owner. For repeatability,
+                   // We alternate pass/fail/pending for every 3 results. We alternate assigning an owner every 7
+                   // results.
+                   if ( results || owner != null ) {
+                       // Pass/Fail generation. Pass groups of 3 tests, then fail 3, then pend 3.
+                       // Owner generation. Assign owner for groups of 7, then skip 7.                    
+                       if ( ((test_sequence / 3) % 3) == 0 )
                            generator.pass();
-                       else
+                       else if ( ((test_sequence /3) % 3) == 1 )
                            generator.fail();
+                       
+                       if ( ((test_sequence / 7) % 2) == 0 )
+                           generator.assign( owner );
                    }
                    
+                   test_sequence += 1;
                    generator.completeTest();
                 }
                 

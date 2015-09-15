@@ -184,6 +184,20 @@ public class Generator {
     }
 
     /**
+     * Declare that the running test has been assigned to a particular email. This is
+     * typically not used during generation, but is useful for populating test data.
+     * @param email The email address of the assigned owner.
+     */
+    public void assign( String email ) {
+        if ( activeTestInstance == null ) {
+            System.err.println( "ERROR: There is no test being generated." );
+            return;
+        }
+
+        activeTestInstance.assign( email );
+    }
+    
+    /**
      * Declare that a new test is being defined. Internally a test is represented as a script and description, along
      * with a set of versions that are used in the test.
      */
