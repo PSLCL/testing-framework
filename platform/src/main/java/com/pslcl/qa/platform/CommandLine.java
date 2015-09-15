@@ -173,6 +173,16 @@ public class CommandLine {
                     return;
                 }
                 
+                // Determine if the module contains a test generator - this triggers deletion of prior instances.
+                List<Artifact> artifacts = module.getArtifacts();
+                boolean contains_generator = false;
+                for ( Artifact artifact : artifacts ) {
+                    if ( artifact.getConfiguration().equals( "dtf_test_generator" ) ) {
+                        contains_generator = true;
+                        break;
+                    }
+                }
+                
                 boolean merge_source = false;
                 if ( merge != null && merge.length() > 0 ) {
                     merge_source = true;
@@ -181,22 +191,23 @@ public class CommandLine {
                     D.merge = merge;
                     D.module = module;
                     delayed.add( D );
-                    
-                    /* Merged components are "one only". This is done because they are not
-                     * meant to be the modules that are tested, but rather modules that provide
-                     * testing applications. Merging multiple "versions" of the same module would
-                     * cause conflicts.
-                     * However, we do allow different versions of the component that will merge
-                     * into different target modules. This means that we consider only modules
-                     * where the sequence is different.
-                     */
-                    // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED, BELOW
-                    // IT IS ASSUMED THAT THE SEQUENCE IS LATER THAN ALL EXISTING
-                    core.deletePriorVersion( module );
                 }
                 
+                /* Generator and merged components are "one only". This is done because they are not
+                 * meant to be the modules that are tested, but rather modules that provide
+                 * testing applications. Merging multiple "versions" of the same module would
+                 * cause conflicts. The same is true for generators, which are extracted and
+                 * executed.
+                 * However, we do allow different versions of the component that will merge
+                 * into different target modules. This means that we consider only modules
+                 * where the sequence is different.
+                 */
+                // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED, BELOW
+                // IT IS ASSUMED THAT THE SEQUENCE IS LATER THAN ALL EXISTING
+                if ( contains_generator || (merge != null && merge.length() > 0) )
+                    core.deletePriorVersion( module );
+                
                 pk_module = core.addModule( module );
-                List<Artifact> artifacts = module.getArtifacts();
                 for ( Artifact artifact : artifacts ) {    
                     Hash h = core.addContent( artifact.getContent().asStream() );
                     long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0 );
