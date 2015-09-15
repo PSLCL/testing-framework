@@ -33,7 +33,14 @@ var all = {
 
   // This should be randomly generated for your site.
   cookiesecret: 'randomly-generate-me',
-  synchronize_schedule: '*/15 * * * *'
+  
+  // Default schedule is to synchronize every 15 minutes, and to prune
+  // modules missing modules after 40 successful synchronizes without finding the module.
+  synchronize_schedule: '*/15 * * * *',
+  
+  // The number of synchronize runs without finding the module at which to prune, or null
+  // to disable pruning.
+  prune: 40
 };
 
 var oauth = {
@@ -61,7 +68,8 @@ var configs = {
 	'oauth': oauth,
 	artifacts_dir: all.artifacts_dir,
 	generators_dir: all.generators_dir,
-	shell: all.shell
+	shell: all.shell,
+	prune: all.prune
   },
   production: {
     enable_livereload: false,
@@ -76,7 +84,8 @@ var configs = {
 	'oauth': oauth,
 	artifacts_dir: all.artifacts_dir,
 	generators_dir: all.generators_dir,
-	shell: all.shell
+	shell: all.shell,
+	prune: all.prune
   }
 };
 

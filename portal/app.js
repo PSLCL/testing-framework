@@ -23,8 +23,14 @@ var env = process.env.NODE_ENV || 'production';
 if ( env == 'production' ) {
     var job = new CronJob(config.synchronize_schedule, function() {
         console.log('Synchronize starting...');
+        var parameters = ['-cp', path.join('platform','*') + path.delimiter + path.join('platform','lib','*'), 'com.pslcl.qa.platform.CommandLine', 'synchronize' ];
+        if ( config.prune != null ) {
+            parameters.push( '--prune' );
+            parameters.push( '' + config.prune );
+        };
+        
         var child = spawn('java',
-                ['-cp', path.join('platform','*') + path.delimiter + path.join('platform','lib','*'), 'com.pslcl.qa.platform.CommandLine', 'synchronize' ],
+                parameters,
                 { cwd: path.join(__dirname,'..') });
         child.stdout.on('data', function(data) {
             var lines = (''+data).split(/\r?\n/);
