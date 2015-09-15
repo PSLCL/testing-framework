@@ -309,7 +309,7 @@ public class CommandLine {
                 params[1] = generators.getAbsolutePath() + "/bin/" + params[1];
                 ProcessBuilder processBuilder = new ProcessBuilder();
                 processBuilder.command(params);
-                processBuilder.environment().put("CLASSPATH", generators.getAbsolutePath() + "/lib/*" + File.pathSeparator + base + "/lib/*" );
+                processBuilder.environment().put("CLASSPATH", generators.getAbsolutePath() + "/lib/*" + File.pathSeparator + base + "/platform/lib/*" + File.pathSeparator + base + "/platform/*" );
                 processBuilder.environment().put("DTF_TEST_ID", Long.toString( id ) );
 
                 Process run = processBuilder.start();
