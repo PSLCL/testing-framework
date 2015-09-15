@@ -288,7 +288,7 @@ public class Core {
             /* Load the description and template hashes */
             loadHashes();
             
-            loadTestInstances();
+//            loadTestInstances();
         }
     }
 
