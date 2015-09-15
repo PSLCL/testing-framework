@@ -505,7 +505,7 @@ public class CommandLine {
                     shell = "/bin/bash";
                 File generators = new File( core.getConfig().dirGenerators() );
 
-                ExecutorService executor = Executors.newFixedThreadPool( 25 );
+                ExecutorService executor = Executors.newFixedThreadPool( 5 );
 
                 for ( Map.Entry<Long,String> script : scripts.entrySet() ) {
                     Runnable worker = new GeneratorExecutor( core, generators, base, shell, script.getKey(), script.getValue() );
