@@ -341,30 +341,28 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     /**
      * 
-     * @param strDescribedTemplateNumber Representation of described template number (the dt number).
-     * @param message JMS message associated with the dt number, used for eventual message ack
+     * @param strRunEntryNumber String representation of the run entry number, or reNum (pk_run of this entry in table run).
+     * @param message JMS message associated with reNum, used for eventual message ack
      * @throws Exception
      */
-    public void submitQueueStoreNumber(String strDescribedTemplateNumber, Message message) throws Exception {
+    public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Exception {
         try {
-            // early tests- does strTemplateNumber produce a valid long integer? And is resulting dtNum already completed or in process?
-            
             // the ordinary method
-            long dtNum = Long.parseLong(strDescribedTemplateNumber);
-            logger.debug("RunnerService.submitQueueStoreNumber() finds described template number is " + dtNum);
+            long reNum = Long.parseLong(strRunEntryNumber);
+            logger.debug("RunnerService.submitQueueStoreNumber() finds reNum " + reNum);
             try {
-                if (ProcessTracker.resultStored(dtNum)) {
-                    ackTemplateEntry(message);
-                    System.out.println("RunnerService.submitQueueStoreNumber() finds dtNum " + dtNum + ", result already stored. Acking this dtNum now.");
-                } else if (processTracker.inProcess(dtNum)) {
-                    System.out.println("RunnerService.submitInstanceNumber_Store() finds dtNum " + dtNum + ", work already processing");
+                if (ProcessTracker.resultStored(reNum)) {
+                    ackRunEntry(message);
+                    System.out.println("RunnerService.submitQueueStoreNumber() finds reNum " + reNum + ", result already stored. Acking this reNum now.");
+                } else if (processTracker.inProcess(reNum)) {
+                    System.out.println("RunnerService.submitInstanceNumber_Store() finds reNum " + reNum + ", work already processing");
                 } else {
-                    // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this  template number.
-                    runnerMachine.initiateProcessing(dtNum, message);
+                    // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.
+                    runnerMachine.initiateProcessing(reNum, message);
                 }
             } catch (Exception e) {
-                // do nothing; dtNum remains in InstanceStore, we will see it again
-                System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for dtNum " + dtNum + ". Leave dtNum in QueueStore. Exception msg: " + e);
+                // do nothing; reNum remains in InstanceStore, we will see it again
+                System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
             }
         } catch (Exception e) {
             throw e; // recipient must ack the message
@@ -408,10 +406,10 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 
     /**
      * 
-     * @param message Original opaque message associated with the template number, used now to ack the message
+     * @param message Original opaque message associated with a run entry number, used now to ack the message
      * @throws JMSException
      */
-    private void ackTemplateEntry(Object message) throws JMSException {
+    private void ackRunEntry(Object message) throws JMSException {
         // this call is for classes that do not know about JMS
         mq.ackQueueStoreEntry((Message)message);
     }

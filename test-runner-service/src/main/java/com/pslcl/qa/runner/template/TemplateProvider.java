@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.process.DBDescribedTemplate;
+import com.pslcl.qa.runner.process.TemplateInstance;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.PersonInstance;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
@@ -30,12 +31,17 @@ public class TemplateProvider {
         availableReusableTemplates.put(description_hash, iT); // note: this is early impl with no smarts
     }
 
+    public TemplateInstance getTemplateInstance(String hash) {
+        // it can be in place already, or created from scratch
+        return null;
+    }
+    
     /**
      * 
      * @param dbdt
      * @return
      */
-    public InstancedTemplate getInstancedTemplate(DBDescribedTemplate dbdt) {
+    InstancedTemplate getInstancedTemplate(DBDescribedTemplate dbdt) {
         // first check our tracking- is a matching reusable template available?
         InstancedTemplate iT = availableReusableTemplates.get(dbdt.description_hash);
         // Note: The use of template.hash is not yet known. We are using described_template.description_hash; it is a specific reusable template with ready resources already bound.
