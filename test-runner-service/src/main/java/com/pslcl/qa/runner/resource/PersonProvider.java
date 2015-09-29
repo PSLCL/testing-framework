@@ -18,8 +18,8 @@ public interface PersonProvider extends ResourceProvider, ArtifactConsumer {
 	public Future<PersonInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
 
 	/**
-	 * Acquire a list of persons. Available persons will be bound and a list containing the resulting
-	 * {@link PersonInstance} objects will be returned. Persons not currently available should be requested later.
+	 * Acquire a list of persons. A list is returned containing Future objects that will be set with the
+	 * resulting {@link PersonInstance} once bound.
 	 * 
 	 * The resources must be released once they are no longer needed.
 	 *

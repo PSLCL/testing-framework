@@ -18,8 +18,8 @@ public interface NetworkProvider extends ResourceProvider {
 	public Future<NetworkInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
 
 	/**
-	 * Acquire a list of networks. Available networks will be bound and a list containing the resulting
-	 * {@link NetworkInstance} objects will be returned. Networks not currently available should be requested later.
+	 * Acquire a list of networks. A list is returned containing Future objects that will be set with the
+	 * resulting {@link NetworkInstance} once bound.
 	 * 
 	 * The resources must be released once they are no longer needed.
 	 *
