@@ -11,7 +11,7 @@ public interface ResourceWithAttributes {
 	 * Get the hash of the resource.
 	 * @return A hex string representing the hash of the resource.
 	 */
-	String getHash();	
+	String getName();	
 	
 	/**
 	 * Get the set of attributes for the resource.

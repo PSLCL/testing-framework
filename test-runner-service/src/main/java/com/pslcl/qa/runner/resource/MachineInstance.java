@@ -26,7 +26,7 @@ public interface MachineInstance extends ResourceInstance {
 	 *            The NetworkInstance to which the machine should connect.
 	 * 
 	 */
-	void connect(NetworkInstance network) throws IncompatibleResourceException;
+	Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException;
 
 	/**
 	 * Run an executable command on a machine and return a Future with the result of the set command once execution has

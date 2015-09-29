@@ -8,7 +8,7 @@ public interface StartProgram {
 	 * 
 	 * @return The result of the start program.
 	 */
-	public int stop();
+	public void kill();
 	
 	/**
 	 * Determine the running state of the program.

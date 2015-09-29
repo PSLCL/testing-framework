@@ -4,17 +4,17 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.ArtifactNotFoundException;
+import com.pslcl.qa.runner.resource.CableInstance;
 import com.pslcl.qa.runner.resource.IncompatibleResourceException;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.NetworkInstance;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceProvider;
 import com.pslcl.qa.runner.resource.StartProgram;
 
 public class AWSMachineInstance implements MachineInstance {
 
-	private String hash;
+	private String name;
 	private Map<String, String> attributes;
 	private String description;
 	private ResourceProvider rp;
@@ -27,16 +27,15 @@ public class AWSMachineInstance implements MachineInstance {
 	 * @param resource
 	 */
 	public AWSMachineInstance(ReservedResourceWithAttributes rrwa) {
-		hash = rrwa.getHash();
+		name = rrwa.getName();
 		attributes = rrwa.getAttributes();
 		// description = ;
 		rp = rrwa.getResourceProvider();
-		timeoutSeconds = rrwa.getTimeoutSeconds();
 		reference = rrwa.getReference();
 	}
 
 	@Override
-	public String getHash() {
+	public String getName() {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -48,21 +47,9 @@ public class AWSMachineInstance implements MachineInstance {
 	}
 
 	@Override
-	public String getDescription() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public ResourceProvider getResourceProvider() {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public int getTimeoutSeconds() {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 
 	@Override
@@ -71,9 +58,9 @@ public class AWSMachineInstance implements MachineInstance {
 	}
 
 	@Override
-	public void connect(NetworkInstance network) throws IncompatibleResourceException {
-		// TODO Auto-generated method stub
-
+	public Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException {
+		return null;
+		//TODO
 	}
 
 	@Override

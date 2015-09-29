@@ -1,6 +1,7 @@
 package com.pslcl.qa.runner.resource;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * A Resource provider which allows reserving and binding of Network resource types.
@@ -14,7 +15,7 @@ public interface NetworkProvider extends ResourceProvider {
 	 * @return Network object which represents the Network Resource Instance.
 	 */
 	@Override
-	public NetworkInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException;
+	public Future<NetworkInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
 
 	/**
 	 * Acquire a list of networks. Available networks will be bound and a list containing the resulting
@@ -27,6 +28,6 @@ public interface NetworkProvider extends ResourceProvider {
 	 * @return A list of {@link NetworkInstance} objects which each represent a Network Instance.
 	 */
 	@Override
-	public List<NetworkInstance> bind(List<ReservedResourceWithAttributes> resources);
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback);
 
 }

@@ -3,6 +3,7 @@ package com.pslcl.qa.runner.resource.aws;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.PersonInstance;
@@ -11,6 +12,7 @@ import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
+import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
 
@@ -41,7 +43,7 @@ public class AWSPersonProvider implements PersonProvider {
 	}
 
 	@Override
-	public List<PersonInstance> bind(List<ReservedResourceWithAttributes> resources) {
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -78,7 +80,7 @@ public class AWSPersonProvider implements PersonProvider {
 	}
 
 	@Override
-	public PersonInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException {
+	public Future<PersonInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException {
 		// TODO Auto-generated method stub
 		return null;
 	}

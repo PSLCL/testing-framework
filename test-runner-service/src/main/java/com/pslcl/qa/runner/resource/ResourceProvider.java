@@ -2,6 +2,7 @@ package com.pslcl.qa.runner.resource;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * This interface defines interactions with a resource provider. The primary responsibility of a resource provider is to
@@ -17,10 +18,12 @@ public interface ResourceProvider {
 	 *
 	 * @param resource
 	 *            A resource with attributes.
+	 * @param statusCallback
+	 *            callback for {@link ResourceStatus} change notification.
 	 * @return Resource object which represents the Resource Instance.
 	 * @throws BindResourceFailedException if unable to bind the resource.
 	 */
-	public ResourceInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException;
+	public Future<? extends ResourceInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
 
 	/**
 	 * Acquire a list of resources. Resources will be bound and a list containing the resulting
@@ -30,10 +33,12 @@ public interface ResourceProvider {
 	 *
 	 * @param resources
 	 *            A list of resources with attributes.
+	 * @param statusCallback
+	 *            callback for {@link ResourceStatus} change notification.
 	 * @return A list of ResourceInstance objects which each represent a Resource Instance.
 	 * @throws BindResourceFailedExcpetion if unable to bind all of the listed resources.
 	 */
-	public List<? extends ResourceInstance> bind(List<ReservedResourceWithAttributes> resources) throws BindResourceFailedException;
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
 
 	/**
 	 * Release a bound resource instance. Any bound resources must be released.

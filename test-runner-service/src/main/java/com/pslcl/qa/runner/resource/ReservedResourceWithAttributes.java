@@ -7,11 +7,12 @@ import java.util.Map;
  * specified by timeoutSeconds has passed, or if the resource is bound, the resource is no longer reserved.
  */
 public class ReservedResourceWithAttributes implements ResourceWithAttributes {
-    private String hash;
+    private String name;
     private Map<String, String> attributes;
     private int reference;
 	private ResourceProvider resourceProvider;
     private int timeoutSeconds;
+    private long endTime;
 
 	/**
 	 * constructor
@@ -21,33 +22,34 @@ public class ReservedResourceWithAttributes implements ResourceWithAttributes {
 	 */
     public ReservedResourceWithAttributes(ResourceWithAttributes resourceWithAttributes,
 	                                      ResourceProvider resourceProvider, int timeoutSeconds) {
-		this(resourceWithAttributes.getHash(), resourceWithAttributes.getAttributes(),
+		this(resourceWithAttributes.getName(), resourceWithAttributes.getAttributes(),
 		     resourceWithAttributes.getReference(), resourceProvider, timeoutSeconds);
 	}
 
 	/**
 	 * constructor
-	 * @param hash
+	 * @param name
 	 * @param attributes
 	 * @param reference
 	 * @param resourceProvider
 	 * @param timeoutSeconds
 	 */
-    public ReservedResourceWithAttributes(String hash, Map<String, String> attributes, int reference,
+    public ReserdvedResourceWithAttributes(String name, Map<String, String> attributes, int reference,
 	                                      ResourceProvider resourceProvider, int timeoutSeconds) {
-	    this.hash = hash;
+	    this.name = name;
 	    this.attributes = attributes;
 	    this.reference = reference;	    
 		this.resourceProvider = resourceProvider;
 		this.timeoutSeconds = timeoutSeconds;
+		this.endTime = System.currentTimeMillis() + (timeoutSeconds * 1000);
 	}
 
 	
 	// implement ResourceWithAttributes interface
 	
     @Override
-    public String getHash() {
-        return hash;
+    public String getName() {
+        return name;
     }
 
     @Override
@@ -75,8 +77,8 @@ public class ReservedResourceWithAttributes implements ResourceWithAttributes {
 	 * Get the number of seconds for which this resource is reserved, measured from now.
 	 * @return The number of seconds.
 	 */
-	public int getTimeoutSeconds(){
-		return timeoutSeconds;
+	public int getTimeLeft(){
+		return (int)(endTime - (System.currentTimeMillis() / 1000));
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.pslcl.qa.runner.resource;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 
 
@@ -20,11 +21,11 @@ public interface MachineProvider extends ResourceProvider, ArtifactConsumer {
      * @see ResourceProvider
      */
 	@Override
-	public MachineInstance bind( ReservedResourceWithAttributes resource ) throws BindResourceFailedException;
+	public Future<MachineInstance> bind( ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
 	
 	/** 
      * Acquire a list of machines. Available machines will be bound and a list containing the resulting {@link MachineInstance} objects will be
-     * returned. Machines not currently available should be requested later. 
+     * returned.
      * 
      * The resources must be released once they are no longer needed.
      *
@@ -32,5 +33,5 @@ public interface MachineProvider extends ResourceProvider, ArtifactConsumer {
      * @return A list of {@link MachineInstance} objects which each represent a Machine Instance.
      */
 	@Override
-	public List<MachineInstance> bind(List<ReservedResourceWithAttributes> resources);
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback);
 }

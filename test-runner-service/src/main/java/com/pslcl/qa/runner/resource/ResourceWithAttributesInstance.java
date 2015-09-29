@@ -14,7 +14,7 @@ public class ResourceWithAttributesInstance implements ResourceWithAttributes {
     }
 
     @Override
-    public String getHash() {
+    public String getName() {
         // TODO Auto-generated method stub
         return null;
     }
@@ -38,7 +38,7 @@ public class ResourceWithAttributesInstance implements ResourceWithAttributes {
      */
     public boolean matches(ResourceWithAttributes rwa) {
         // match: reference, hash and attributes are equal
-        if (this.reference == rwa.getReference() && this.hash.equals(rwa.getHash())) {
+        if (this.reference == rwa.getReference() && this.hash.equals(rwa.getName())) {
             // match the attribute sets to each other
             Map<String, String> rwaAttributes = rwa.getAttributes();
             if (this.attributes.size() != rwaAttributes.size())

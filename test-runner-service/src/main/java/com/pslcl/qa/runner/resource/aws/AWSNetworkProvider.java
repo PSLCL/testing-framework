@@ -3,6 +3,7 @@ package com.pslcl.qa.runner.resource.aws;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.NetworkInstance;
@@ -11,6 +12,7 @@ import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
+import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
 public class AWSNetworkProvider implements NetworkProvider {
@@ -22,7 +24,7 @@ public class AWSNetworkProvider implements NetworkProvider {
 	}
 
 	@Override
-	public List<NetworkInstance> bind(List<ReservedResourceWithAttributes> resources) {
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -59,7 +61,7 @@ public class AWSNetworkProvider implements NetworkProvider {
 	}
 
 	@Override
-	public NetworkInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException {
+	public Future<NetworkInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException {
 		// TODO Auto-generated method stub
 		return null;
 	}
