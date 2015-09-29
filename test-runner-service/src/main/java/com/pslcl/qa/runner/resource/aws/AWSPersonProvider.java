@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.PersonInstance;
 import com.pslcl.qa.runner.resource.PersonProvider;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
@@ -29,12 +30,6 @@ public class AWSPersonProvider implements PersonProvider {
 
 	@Override
 	public void invalidateArtifacts(String component, String version) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setResource(String resourceHash, String resourceDescription) {
 		// TODO Auto-generated method stub
 
 	}
@@ -83,27 +78,20 @@ public class AWSPersonProvider implements PersonProvider {
 	}
 
 	@Override
-	public PersonInstance bind(ReservedResourceWithAttributes resource) throws ResourceNotFoundException {
+	public PersonInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public List<String> getHashes() {
+	public Map<String, String> getAttributes(String name) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Map<String, String> getAttributes(String hash) {
+	public List<String> getNames() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
-	@Override
-	public String getDescription(String hash) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 }

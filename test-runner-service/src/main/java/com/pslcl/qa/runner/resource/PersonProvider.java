@@ -14,7 +14,7 @@ public interface PersonProvider extends ResourceProvider, ArtifactConsumer {
 	 * @return Person object which represents the Person Resource Instance.
 	 */
 	@Override
-	public PersonInstance bind(ReservedResourceWithAttributes resource) throws ResourceNotFoundException;
+	public PersonInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException;
 
 	/**
 	 * Acquire a list of persons. Available persons will be bound and a list containing the resulting

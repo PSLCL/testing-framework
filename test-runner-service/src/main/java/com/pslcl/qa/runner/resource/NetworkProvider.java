@@ -14,7 +14,7 @@ public interface NetworkProvider extends ResourceProvider {
 	 * @return Network object which represents the Network Resource Instance.
 	 */
 	@Override
-	public NetworkInstance bind(ReservedResourceWithAttributes resource) throws ResourceNotFoundException;
+	public NetworkInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException;
 
 	/**
 	 * Acquire a list of networks. Available networks will be bound and a list containing the resulting

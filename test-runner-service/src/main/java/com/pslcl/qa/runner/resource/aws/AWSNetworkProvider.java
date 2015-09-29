@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.NetworkInstance;
 import com.pslcl.qa.runner.resource.NetworkProvider;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
@@ -13,12 +14,6 @@ import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
 public class AWSNetworkProvider implements NetworkProvider {
-
-	@Override
-	public void setResource(String resourceHash, String resourceDescription) {
-		// TODO Auto-generated method stub
-
-	}
 
 	@Override
 	public void release(ResourceInstance resource) {
@@ -64,25 +59,19 @@ public class AWSNetworkProvider implements NetworkProvider {
 	}
 
 	@Override
-	public NetworkInstance bind(ReservedResourceWithAttributes resource) throws ResourceNotFoundException {
+	public NetworkInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public List<String> getHashes() {
+	public List<String> getNames() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Map<String, String> getAttributes(String hash) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getDescription(String hash) {
+	public Map<String, String> getAttributes(String name) {
 		// TODO Auto-generated method stub
 		return null;
 	}

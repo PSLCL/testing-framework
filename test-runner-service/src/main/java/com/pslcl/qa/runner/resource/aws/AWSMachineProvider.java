@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.MachineProvider;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
@@ -31,7 +32,7 @@ public class AWSMachineProvider implements MachineProvider {
 	// implement MachineProvider interface
 
 	@Override
-	public MachineInstance bind(ReservedResourceWithAttributes resource) throws ResourceNotFoundException {
+	public MachineInstance bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException {
 		AWSMachineInstance retAWSMachineInstance = null;
 		if (ReservedResourceWithAttributes.class.isInstance(resource)) {
 			// temporary, to allow progress: return matching AWSMachineInstance
@@ -49,12 +50,6 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	// implement ResourceProvider interface
-
-	@Override
-	public void setResource(String resourceHash, String resourceDescription) {
-		// TODO Auto-generated method stub
-
-	}
 
 	@Override
 	public void release(ResourceInstance resource) {
@@ -96,19 +91,13 @@ public class AWSMachineProvider implements MachineProvider {
 	}
 
 	@Override
-	public List<String> getHashes() {
+	public List<String> getNames() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Map<String, String> getAttributes(String hash) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getDescription(String hash) {
+	public Map<String, String> getAttributes(String name) {
 		// TODO Auto-generated method stub
 		return null;
 	}
