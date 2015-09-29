@@ -59,7 +59,7 @@ public enum Action implements Actions {
             // this is a new run entry: before returning, initiate a test run, process it to completion, gather result if available, and store the result
             boolean result = false;
             try {
-                result = reCore.testRun(reNum, reCore, tp);
+                result = reCore.testRun(reNum, tp);
             } catch (Exception e) {
                 System.out.println("Action.DO() see testRun() exception: " + e);
             }

@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.pslcl.qa.runner.ArtifactNotFoundException;
-import com.pslcl.qa.runner.process.DBDescribedTemplate;
-import com.pslcl.qa.runner.process.TemplateInstance;
+import com.pslcl.qa.runner.process.DBTemplate;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.PersonInstance;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
@@ -19,39 +18,38 @@ import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
 public class TemplateProvider {
     
-    private Map<byte[],InstancedTemplate> availableReusableTemplates; // note: this populates in the destroy method
+    private Map<byte[],InstancedTemplate> availableInstancedTemplates; // note: this populates in the destroy method
     private ResourceProviders resourceProviders;
     
     public TemplateProvider() {
-        availableReusableTemplates = new HashMap<byte[],InstancedTemplate>();
+        availableInstancedTemplates = new HashMap<byte[],InstancedTemplate>();
         resourceProviders = new ResourceProviders(); // determines these individual ResourceProvider S, such as AWSMachineProvider, and instantiates them
     }
 
-    public void destroy(byte [] description_hash, InstancedTemplate iT) { 
-        availableReusableTemplates.put(description_hash, iT); // note: this is early impl with no smarts
+    public void destroy(byte [] template_hash, InstancedTemplate iT) {
+        // Can instead destroy iT. This is early impl with no smarts.
+        availableInstancedTemplates.put(template_hash, iT);
     }
 
-    public TemplateInstance getTemplateInstance(String hash) {
-        // it can be in place already, or created from scratch
-        return null;
-    }
-    
     /**
+     * re-entrant
      * 
      * @param dbdt
      * @return
      */
-    InstancedTemplate getInstancedTemplate(DBDescribedTemplate dbdt) {
+    public InstancedTemplate getInstancedTemplate(DBTemplate dbT) {
         // first check our tracking- is a matching reusable template available?
-        InstancedTemplate iT = availableReusableTemplates.get(dbdt.description_hash);
-        // Note: The use of template.hash is not yet known. We are using described_template.description_hash; it is a specific reusable template with ready resources already bound.
+        InstancedTemplate iT = availableInstancedTemplates.get(dbT.hash);
+        // At any one time, there can be multiple instanced templates of the same .template_hash. They differ at least in which test run (or parent template) uses each, and in deployed artifacts.
         
         if (iT != null) {
-            availableReusableTemplates.remove(dbdt.description_hash); // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the described template, they get it, and now it is not available to another user  
+            // iT is now in use
+            availableInstancedTemplates.remove(dbT.hash);
+            // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the described template, they get it, and now it is not available to another user  
         } else {
-            iT = new InstancedTemplate(String.valueOf(dbdt.description_hash));
+            iT = new InstancedTemplate(String.valueOf(dbT.hash));
             // populate iT with everything needed to behave as a reusable described template
-            StepsParser stepsParser = new StepsParser(dbdt.steps);
+            StepsParser stepsParser = new StepsParser(dbT.steps);
             
             // Process bind steps now, since they come first; each returned list entry is self-referenced by steps line number, from 0...n
             List<ResourceWithAttributes> reserveResourceRequests = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored

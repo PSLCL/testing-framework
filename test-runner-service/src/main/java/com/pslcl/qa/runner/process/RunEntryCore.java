@@ -4,8 +4,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Date;
+import java.util.HashMap;
 
 import com.pslcl.qa.runner.template.DescribedTestRun;
+import com.pslcl.qa.runner.template.InstancedTemplate;
 import com.pslcl.qa.runner.template.TemplateProvider;
 
 public class RunEntryCore {
@@ -20,6 +23,8 @@ public class RunEntryCore {
     private Connection connect = null;
     private boolean read_only = true;
     private DBDescribedTemplate dbDescribedTemplate = null;
+    private long reNum;
+    private DBTemplate dbTemplate;
     
     
 //    private DBTemplate dbTemplate = null;
@@ -41,219 +46,255 @@ public class RunEntryCore {
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-            String strDTNum = String.valueOf(pk_described_template);
+            String strRENum = String.valueOf(this.reNum);
             statement = connect.createStatement();
 
-            // acquire described template info; note: template to described_template is 1 to many, so from described_template to template is 1:1
-            resultSet = statement.executeQuery( "SELECT fk_module_set, fk_template, description_hash, synchronized, hash, enabled, steps " +
-                                                "FROM described_template " +
-                                                "JOIN template ON fk_template = pk_template " +
-                                                "WHERE pk_described_template = " + strDTNum );
-
+            // acquire template info; note: template to run is 1 to many
+            resultSet = statement.executeQuery( "SELECT pk_template, hash, enabled, steps, artifacts, start_time, ready_time, end_time, result, owner " +
+                                                "FROM template " +
+                                                "JOIN run ON fk_template = pk_template " +
+                                                "WHERE pk_run = " + strRENum );
             if ( resultSet.next() ) {
-                dbDescribedTemplate.fk_module_set = resultSet.getBytes("fk_module_set");
-                dbDescribedTemplate.fk_template = resultSet.getLong("fk_template");
-                dbDescribedTemplate.description_hash = resultSet.getBytes("description_hash");
-                dbDescribedTemplate.dtSynchronized = resultSet.getBoolean("synchronized");
-                dbDescribedTemplate.template_hash = resultSet.getBytes("hash");
-                dbDescribedTemplate.enabled = resultSet.getBoolean("enabled");
-                dbDescribedTemplate.steps = resultSet.getString("steps");
-                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from described template record " + pk_described_template);
+                dbTemplate.pk_template = resultSet.getLong("pk_template");
+                dbTemplate.hash = resultSet.getBytes("hash");
+                dbTemplate.enabled = resultSet.getBoolean("enabled");
+                dbTemplate.steps = resultSet.getString("steps");
+                dbTemplate.artifacts = resultSet.getBytes("artifacts");
+                dbTemplate.start_time = resultSet.getDate("start_time");
+                dbTemplate.ready_time = resultSet.getDate("ready_time");
+                dbTemplate.end_time = resultSet.getDate("end_time");
+                dbTemplate.result = resultSet.getBoolean("result");
+                dbTemplate.owner = resultSet.getString("owner");
+                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from run-template matched records for reNum " + this.reNum + ", pk_template " + dbTemplate.pk_template);
                 if (resultSet.next())
                     throw new Exception("resultSet wrongly has more than one entry");
             } else {
-                throw new Exception("described template data not present");
+                throw new Exception("template data not present");
             }
         } catch(Exception e) {
-            System.out.println("RunEntryCore.loadRunEntryData() exception for dtNum " + pk_described_template + ": "+ e);
+            System.out.println("RunEntryCore.loadRunEntryData() exception for reNum " + this.reNum + ": "+ e);
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
         }
+            
+            
+            
+            
+            
+//            String strDTNum = String.valueOf(pk_described_template);
+//            statement = connect.createStatement();
+//
+//            // acquire described template info; note: template to described_template is 1 to many, so from described_template to template is 1:1
+//            resultSet = statement.executeQuery( "SELECT fk_module_set, fk_template, description_hash, synchronized, hash, enabled, steps " +
+//                                                "FROM described_template " +
+//                                                "JOIN template ON fk_template = pk_template " +
+//                                                "WHERE pk_described_template = " + strDTNum );
+//
+//            if ( resultSet.next() ) {
+//                dbDescribedTemplate.fk_module_set = resultSet.getBytes("fk_module_set");
+//                dbDescribedTemplate.fk_template = resultSet.getLong("fk_template");
+//                dbDescribedTemplate.description_hash = resultSet.getBytes("description_hash");
+//                dbDescribedTemplate.dtSynchronized = resultSet.getBoolean("synchronized");
+//                dbDescribedTemplate.template_hash = resultSet.getBytes("hash");
+//                dbDescribedTemplate.enabled = resultSet.getBoolean("enabled");
+//                dbDescribedTemplate.steps = resultSet.getString("steps");
+//                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from described template record " + pk_described_template);
+//                if (resultSet.next())
+//                    throw new Exception("resultSet wrongly has more than one entry");
+//            } else {
+//                throw new Exception("described template data not present");
+//            }
+//        } catch(Exception e) {
+//            System.out.println("RunEntryCore.loadRunEntryData() exception for dtNum " + pk_described_template + ": "+ e);
+//        } finally {
+//            safeClose( resultSet ); resultSet = null;
+//            safeClose( statement ); statement = null;
+//        }
 
-        // acquire matching run info
-        try {
-            String strTemplateNum = String.valueOf(dbDescribedTemplate.fk_template);
-            statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT pk_run, artifacts, start_time, ready_time, end_time, passed " +
-                                                "FROM run " +
-                                                "WHERE fk_template = " + strTemplateNum );
-            while ( resultSet.next() ) {
-                DBRun dbRun = new DBRun(resultSet.getLong("pk_run"));
-                dbRun.artifacts = resultSet.getBytes("artifacts");
-                dbRun.start_time = resultSet.getDate("start_time");
-                dbRun.ready_time = resultSet.getDate("ready_time");
-                dbRun.end_time = resultSet.getDate("end_time");
-                dbRun.passed = resultSet.getBoolean("passed");
-                dbDescribedTemplate.pkdtToDBRun.put(pk_described_template, dbRun);
-                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from described_template-matched run record " + dbRun.pk_run);
-            }
-        } catch(Exception e) {
-            System.out.println("RunEntryCore.loadRunEntryData() exception for dtNum " + pk_described_template + ": "+ e);
-        } finally {
-            safeClose( resultSet ); resultSet = null;
-            safeClose( statement ); statement = null;
-        }        
-        
-        // acquire matching test_instance info; note: described_template to test_instance is potentially 1:many
-        try {
-            String strDescribedTemplateNum = String.valueOf(pk_described_template);
-            statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT pk_test_instance, fk_run, due_date, phase, synchronized " +
-                                                "FROM test_instance " +
-                                                "WHERE fk_described_template = " + strDescribedTemplateNum);
-            while ( resultSet.next() ) {
-                DBTestInstance dbTestInstance = new DBTestInstance(resultSet.getLong("pk_test_instance"));
-                dbTestInstance.fk_run = resultSet.getLong("fk_run");                               // null entry returns 0
-                dbTestInstance.due_date = resultSet.getDate("due_date");
-                dbTestInstance.phase = resultSet.getInt("phase");
-                dbTestInstance.iSynchronized = resultSet.getBoolean("synchronized");
-                dbDescribedTemplate.pkdtToDBTestInstance.put(pk_described_template, dbTestInstance);
-                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from described_template-matched test_instance record " + dbTestInstance.pk_test_instance);
-            }
-        } catch(Exception e) {
-            System.out.println("RunEntryCore.loadRunEntryData() exception for dtNum " + pk_described_template + ": "+ e);
-        } finally {
-            safeClose( resultSet ); resultSet = null;
-            safeClose( statement ); statement = null;
-        }        
-
-        // acquire corresponding multiple lines of data
-        try {
-            String strPKDT = String.valueOf(dbDescribedTemplate.pk_described_template);
-            statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT pk_dt_line, line, description " +
-                                                "FROM dt_line " +
-                                                "WHERE fk_described_template = " + strPKDT );
-            while ( resultSet.next() ) {
-                DBDTLine dtLine = new DBDTLine();
-                dtLine.pk_dt_line = resultSet.getLong("pk_dt_line"); // null entry returns 0
-                dtLine.line = resultSet.getInt("line");
-                dtLine.dtLineDescription = resultSet.getString("description");
-                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads line data from dt_line " + dtLine.pk_dt_line);
-
-                dbDescribedTemplate.pkdtToDTLine.put(dtLine.pk_dt_line, dtLine);
-            }
-        } catch(Exception e) {
-            System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
-        } finally {
-            safeClose( resultSet ); resultSet = null;
-            safeClose( statement ); statement = null;
-        }
-
-        // get corresponding artifact information; not every dtLine has corresponding artifact information
-        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
-            try {
-                String strPKDTLine = String.valueOf(dtLine.pk_dt_line);
-                statement = connect.createStatement();
-                resultSet = statement.executeQuery( "SELECT is_primary, reason, pk_artifact, fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module " +
-                                                    "FROM artifact_to_dt_line " +
-                                                    "JOIN artifact ON fk_artifact = pk_artifact " +
-                                                    "WHERE fk_dt_line = " + strPKDTLine );
-                if ( resultSet.next() ) {
-                    dtLine.is_primary = resultSet.getBoolean("is_primary");
-                    dtLine.reason = resultSet.getString("reason");
-                    dtLine.pk_artifact = resultSet.getLong("pk_artifact");
-                    dtLine.pk_module = resultSet.getLong("fk_module");
-                    dtLine.configuration = resultSet.getString("configuration");
-                    dtLine.artifactName = resultSet.getString("name");
-                    dtLine.mode = resultSet.getInt("mode");
-                    dtLine.merge_source = resultSet.getBoolean("merge_source");
-                    dtLine.derived_from_artifact = resultSet.getLong("derived_from_artifact");
-                    dtLine.merged_from_module = resultSet.getLong("merged_from_module");
-                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads artifact data for dt_line " + dtLine.pk_dt_line);
-
-                    if (resultSet.next())
-                        throw new Exception("resultSet wrongly has more than one entry");
-                }
-            } catch(Exception e) {
-                System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
-            } finally {
-                safeClose( resultSet ); resultSet = null;
-                safeClose( statement ); statement = null;
-            }
-        } // end for()
-
-        // get corresponding module information; not every dtLine has corresponding module information
-        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
-            try {
-                String strPKModule = String.valueOf(dtLine.pk_module);
-                statement = connect.createStatement();
-                resultSet = statement.executeQuery( "SELECT organization, name, version, sequence, attributes, scheduled_release, actual_release, sort_order " +
-                                                    "FROM module " +
-                                                    "WHERE pk_module = " + strPKModule );
-                if ( resultSet.next() ) {
-                    dtLine.organization = resultSet.getString("organization");
-                    dtLine.moduleName = resultSet.getString("name");
-                    dtLine.version = resultSet.getString("version");
-                    dtLine.sequence = resultSet.getString("sequence");
-                    dtLine.attributes = resultSet.getString("attributes");
-                    dtLine.scheduled_release = resultSet.getDate("scheduled_release");
-                    dtLine.actual_release = resultSet.getDate("actual_release");
-                    dtLine.sort_order = resultSet.getInt("sort_order");
-                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads module data for dt_line " + dtLine.pk_dt_line);
-
-                    if (resultSet.next())
-                        throw new Exception("resultSet wrongly has more than one entry");
-                }
-            } catch(Exception e) {
-                System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
-            } finally {
-                safeClose( resultSet ); resultSet = null;
-                safeClose( statement ); statement = null;
-            }
-        } // end for()
-
-        // get corresponding content information; not every dtLine has corresponding content information
-        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
-            try {
-                String strPKArtifact = String.valueOf(dtLine.pk_artifact);
-                statement = connect.createStatement();
-                resultSet = statement.executeQuery( "SELECT pk_content, is_generated " +
-                                                    "FROM content " +
-                                                    "JOIN artifact ON fk_content = pk_content " +
-                                                    "WHERE pk_artifact = " + strPKArtifact );
-                if ( resultSet.next() ) {
-                    dtLine.pk_content = resultSet.getBytes("pk_content");
-                    dtLine.is_generated = resultSet.getBoolean("is_generated");
-                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads content data for dt_line " + dtLine.pk_dt_line);
-
-                    if (resultSet.next())
-                        throw new Exception("resultSet wrongly has more than one entry");
-                }
-            } catch(Exception e) {
-                System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
-            } finally {
-                safeClose( resultSet ); resultSet = null;
-                safeClose( statement ); statement = null;
-            }
-        } // end for()
-
-        // get corresponding resource information; not every dtLine has corresponding resource information
-        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
-            try {
-                String strPKDTLine = String.valueOf(dtLine.pk_dt_line);
-                statement = connect.createStatement();
-                resultSet = statement.executeQuery( "SELECT hash, name, resource.description " +
-                                                    "FROM dt_line " +
-                                                    "JOIN resource ON fk_resource = pk_resource " +
-                                                    "WHERE pk_dt_line = " + strPKDTLine );
-                if ( resultSet.next() ) {
-                    dtLine.resourceHash = resultSet.getBytes("hash");
-                    dtLine.resourceName = resultSet.getString("name");
-                    dtLine.resourceDescription = resultSet.getString("description");
-                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads resource data for dt_line " + dtLine.pk_dt_line);
-
-                    if (resultSet.next())
-                        throw new Exception("resultSet wrongly has more than one entry");
-                }
-            } catch(Exception e) {
-                System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
-            } finally {
-                safeClose( resultSet ); resultSet = null;
-                safeClose( statement ); statement = null;
-            }
-        } // end for()
+//        // acquire matching run info
+//        try {
+//            String strTemplateNum = String.valueOf(dbDescribedTemplate.fk_template);
+//            statement = connect.createStatement();
+//            resultSet = statement.executeQuery( "SELECT pk_run, artifacts, start_time, ready_time, end_time, passed " +
+//                                                "FROM run " +
+//                                                "WHERE fk_template = " + strTemplateNum );
+//            while ( resultSet.next() ) {
+//                DBRun dbRun = new DBRun(resultSet.getLong("pk_run"));
+//                dbRun.artifacts = resultSet.getBytes("artifacts");
+//                dbRun.start_time = resultSet.getDate("start_time");
+//                dbRun.ready_time = resultSet.getDate("ready_time");
+//                dbRun.end_time = resultSet.getDate("end_time");
+//                dbRun.passed = resultSet.getBoolean("passed");
+//                dbDescribedTemplate.pkdtToDBRun.put(pk_described_template, dbRun);
+//                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from described_template-matched run record " + dbRun.pk_run);
+//            }
+//        } catch(Exception e) {
+//            System.out.println("RunEntryCore.loadRunEntryData() exception for dtNum " + pk_described_template + ": "+ e);
+//        } finally {
+//            safeClose( resultSet ); resultSet = null;
+//            safeClose( statement ); statement = null;
+//        }        
+//        
+//        // acquire matching test_instance info; note: described_template to test_instance is potentially 1:many
+//        try {
+//            String strDescribedTemplateNum = String.valueOf(pk_described_template);
+//            statement = connect.createStatement();
+//            resultSet = statement.executeQuery( "SELECT pk_test_instance, fk_run, due_date, phase, synchronized " +
+//                                                "FROM test_instance " +
+//                                                "WHERE fk_described_template = " + strDescribedTemplateNum);
+//            while ( resultSet.next() ) {
+//                DBTestInstance dbTestInstance = new DBTestInstance(resultSet.getLong("pk_test_instance"));
+//                dbTestInstance.fk_run = resultSet.getLong("fk_run");                               // null entry returns 0
+//                dbTestInstance.due_date = resultSet.getDate("due_date");
+//                dbTestInstance.phase = resultSet.getInt("phase");
+//                dbTestInstance.iSynchronized = resultSet.getBoolean("synchronized");
+//                dbDescribedTemplate.pkdtToDBTestInstance.put(pk_described_template, dbTestInstance);
+//                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from described_template-matched test_instance record " + dbTestInstance.pk_test_instance);
+//            }
+//        } catch(Exception e) {
+//            System.out.println("RunEntryCore.loadRunEntryData() exception for dtNum " + pk_described_template + ": "+ e);
+//        } finally {
+//            safeClose( resultSet ); resultSet = null;
+//            safeClose( statement ); statement = null;
+//        }        
+//
+//        // acquire corresponding multiple lines of data
+//        try {
+//            String strPKDT = String.valueOf(dbDescribedTemplate.pk_described_template);
+//            statement = connect.createStatement();
+//            resultSet = statement.executeQuery( "SELECT pk_dt_line, line, description " +
+//                                                "FROM dt_line " +
+//                                                "WHERE fk_described_template = " + strPKDT );
+//            while ( resultSet.next() ) {
+//                DBDTLine dtLine = new DBDTLine();
+//                dtLine.pk_dt_line = resultSet.getLong("pk_dt_line"); // null entry returns 0
+//                dtLine.line = resultSet.getInt("line");
+//                dtLine.dtLineDescription = resultSet.getString("description");
+//                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads line data from dt_line " + dtLine.pk_dt_line);
+//
+//                dbDescribedTemplate.pkdtToDTLine.put(dtLine.pk_dt_line, dtLine);
+//            }
+//        } catch(Exception e) {
+//            System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
+//        } finally {
+//            safeClose( resultSet ); resultSet = null;
+//            safeClose( statement ); statement = null;
+//        }
+//
+//        // get corresponding artifact information; not every dtLine has corresponding artifact information
+//        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
+//            try {
+//                String strPKDTLine = String.valueOf(dtLine.pk_dt_line);
+//                statement = connect.createStatement();
+//                resultSet = statement.executeQuery( "SELECT is_primary, reason, pk_artifact, fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module " +
+//                                                    "FROM artifact_to_dt_line " +
+//                                                    "JOIN artifact ON fk_artifact = pk_artifact " +
+//                                                    "WHERE fk_dt_line = " + strPKDTLine );
+//                if ( resultSet.next() ) {
+//                    dtLine.is_primary = resultSet.getBoolean("is_primary");
+//                    dtLine.reason = resultSet.getString("reason");
+//                    dtLine.pk_artifact = resultSet.getLong("pk_artifact");
+//                    dtLine.pk_module = resultSet.getLong("fk_module");
+//                    dtLine.configuration = resultSet.getString("configuration");
+//                    dtLine.artifactName = resultSet.getString("name");
+//                    dtLine.mode = resultSet.getInt("mode");
+//                    dtLine.merge_source = resultSet.getBoolean("merge_source");
+//                    dtLine.derived_from_artifact = resultSet.getLong("derived_from_artifact");
+//                    dtLine.merged_from_module = resultSet.getLong("merged_from_module");
+//                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads artifact data for dt_line " + dtLine.pk_dt_line);
+//
+//                    if (resultSet.next())
+//                        throw new Exception("resultSet wrongly has more than one entry");
+//                }
+//            } catch(Exception e) {
+//                System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
+//            } finally {
+//                safeClose( resultSet ); resultSet = null;
+//                safeClose( statement ); statement = null;
+//            }
+//        } // end for()
+//
+//        // get corresponding module information; not every dtLine has corresponding module information
+//        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
+//            try {
+//                String strPKModule = String.valueOf(dtLine.pk_module);
+//                statement = connect.createStatement();
+//                resultSet = statement.executeQuery( "SELECT organization, name, version, sequence, attributes, scheduled_release, actual_release, sort_order " +
+//                                                    "FROM module " +
+//                                                    "WHERE pk_module = " + strPKModule );
+//                if ( resultSet.next() ) {
+//                    dtLine.organization = resultSet.getString("organization");
+//                    dtLine.moduleName = resultSet.getString("name");
+//                    dtLine.version = resultSet.getString("version");
+//                    dtLine.sequence = resultSet.getString("sequence");
+//                    dtLine.attributes = resultSet.getString("attributes");
+//                    dtLine.scheduled_release = resultSet.getDate("scheduled_release");
+//                    dtLine.actual_release = resultSet.getDate("actual_release");
+//                    dtLine.sort_order = resultSet.getInt("sort_order");
+//                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads module data for dt_line " + dtLine.pk_dt_line);
+//
+//                    if (resultSet.next())
+//                        throw new Exception("resultSet wrongly has more than one entry");
+//                }
+//            } catch(Exception e) {
+//                System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
+//            } finally {
+//                safeClose( resultSet ); resultSet = null;
+//                safeClose( statement ); statement = null;
+//            }
+//        } // end for()
+//
+//        // get corresponding content information; not every dtLine has corresponding content information
+//        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
+//            try {
+//                String strPKArtifact = String.valueOf(dtLine.pk_artifact);
+//                statement = connect.createStatement();
+//                resultSet = statement.executeQuery( "SELECT pk_content, is_generated " +
+//                                                    "FROM content " +
+//                                                    "JOIN artifact ON fk_content = pk_content " +
+//                                                    "WHERE pk_artifact = " + strPKArtifact );
+//                if ( resultSet.next() ) {
+//                    dtLine.pk_content = resultSet.getBytes("pk_content");
+//                    dtLine.is_generated = resultSet.getBoolean("is_generated");
+//                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads content data for dt_line " + dtLine.pk_dt_line);
+//
+//                    if (resultSet.next())
+//                        throw new Exception("resultSet wrongly has more than one entry");
+//                }
+//            } catch(Exception e) {
+//                System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
+//            } finally {
+//                safeClose( resultSet ); resultSet = null;
+//                safeClose( statement ); statement = null;
+//            }
+//        } // end for()
+//
+//        // get corresponding resource information; not every dtLine has corresponding resource information
+//        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
+//            try {
+//                String strPKDTLine = String.valueOf(dtLine.pk_dt_line);
+//                statement = connect.createStatement();
+//                resultSet = statement.executeQuery( "SELECT hash, name, resource.description " +
+//                                                    "FROM dt_line " +
+//                                                    "JOIN resource ON fk_resource = pk_resource " +
+//                                                    "WHERE pk_dt_line = " + strPKDTLine );
+//                if ( resultSet.next() ) {
+//                    dtLine.resourceHash = resultSet.getBytes("hash");
+//                    dtLine.resourceName = resultSet.getString("name");
+//                    dtLine.resourceDescription = resultSet.getString("description");
+//                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads resource data for dt_line " + dtLine.pk_dt_line);
+//
+//                    if (resultSet.next())
+//                        throw new Exception("resultSet wrongly has more than one entry");
+//                }
+//            } catch(Exception e) {
+//                System.out.println("RunEntryCore.loadRunEntryData() exception on dtLine access for dtNum " + pk_described_template + ": "+ e);
+//            } finally {
+//                safeClose( resultSet ); resultSet = null;
+//                safeClose( statement ); statement = null;
+//            }
+//        } // end for()
     }
     
     // meant to be called once only; if more than once becomes useful, might work but review
@@ -530,11 +571,13 @@ public class RunEntryCore {
      *
      * @param pk_described_template
      */
-    public RunEntryCore( long pk_described_template ) {
-        this.pk_described_template = pk_described_template;
-        dbDescribedTemplate = new DBDescribedTemplate(this.pk_described_template);
-        openDatabase();
+    public RunEntryCore( long reNum ) {
+        //this.pk_described_template = pk_described_template;
+        //dbDescribedTemplate = new DBDescribedTemplate(this.pk_described_template);
 
+        this.reNum = reNum;
+        dbTemplate = new DBTemplate(this.reNum);
+        openDatabase();
         if (connect == null)
             System.err.println( "RunEntryCore constructor fails without database connection");
         else
@@ -551,26 +594,25 @@ public class RunEntryCore {
     public boolean isReadOnly() {
         return read_only;
     }
-
+    
     /**
      * Execute the test run specified by the run entry number.
-     * @param reCore TODO
      * @return TODO
      */
-    public boolean testRun(long reNum, RunEntryCore reCore, TemplateProvider tp) throws Exception {
+    public boolean testRun(long reNum, TemplateProvider tp) throws Exception {
         // We are an independent process. We have access
-        //   to a Artifact Provider
+        //   to an Artifact Provider
         //   to a Resource Provider
         //   to a Template Provider
         //   to everything else needed to cause our test run to execute.
         // We might have access to the database but the goal is not to access it here- everything is found in the structure that we need to replace what is known now as this.dbDescribedTemplate.
         
         // On arriving here a pk_run=runEntry exists in table run.
-        //     DECISION: We could check and prove that pk_run=reNum of table run has null for its result field. But we instead require that this be checked in whatever process placed reNum into the message queue. A human could manually place an reNum, and we will make a test run out of it.
-        //     We expect that no other thread will be filling run.result.
-        //     We also expect, at the end of our work and with a collected result, that there will be at least one test_instance that can "connect" to our pk_run (equals runEntry).
+        //     DECISION: We could check and prove that pk_run=reNum of table run has null for its result field. But we instead require that this be checked in whatever process placed reNum into the message queue. A human could manually place an reNum, without double checking, and we will make a test run out of it.
+        //     We expect that no other thread will be filling our result field of table run.
+        //     We also expect, at the end of our work and with a collected result, that there will be at least one test_instance that can "connect" to our pk_run (which equals decimal number runEntry).
         //         If there is not such a test_instance, it means that some other test run has completed, and was somehow qualified to connect to all of our supposed test_instance 'S.
-        //                                               The situation may be legal, but should be investigated to prove that it is true.
+        //                                               The situation may be legal, but should be investigated to prove that it is legal.
 
         // fill java class DBRunTemplate with entries from table run and its one linked entry from table template
         // throw exception for template.enabled false (assume that template.steps and template.hash are not null)
@@ -578,9 +620,21 @@ public class RunEntryCore {
         // fill DBRunTemplate.owner, only if null, with "test-runner-service"
         // write table run from DBRunTemplate
         
-        // a template instance has its resources attached (with bind), its nested templates instanced (with include), and has enough information so that we can call tp to deploy artifaces and issue runs, etc.
-        // has a class member for template nesting
-        TemplateInstance ti = tp.getTemplateInstance(null); // throws Exception which fails this test run
+        
+        
+        
+        
+        // an instanced template has its resources attached (with bind), its nested templates instanced (with include), and has enough information so that we can call tp to deploy artifacts and issue runs, etc.
+        //     has a class member for template nesting
+        InstancedTemplate it;
+        try {
+            it = tp.getInstancedTemplate(this.dbTemplate); // throws Exception which fails this test run
+        } catch (Exception e) {
+            e.printStackTrace(); // TODO: output message
+            throw e;
+        }
+        
+        // proceed to deploy artifacts, issue runs, etc. 
         
         
         
@@ -592,62 +646,62 @@ public class RunEntryCore {
         // This converts a test instance to a test raun.
         // Running the test run generates a test result.
         // The test result applies to as many test instances as are controlled by parameter describedTemplateNumber (to match test_instance.fk_described_template)
-        System.out.println( "\nRunEntryCore() has data base info for dtNum " + reCore.pk_described_template + ", corresponding to template number " + this.dbDescribedTemplate.fk_template +
-                            "; test instance count " + this.dbDescribedTemplate.pkdtToDBTestInstance.size() + "; recorded test run count (attached to this template number ) " + this.dbDescribedTemplate.pkdtToDBRun.size());
-        System.out.println( "RunEntryCore() finds module set: " + this.dbDescribedTemplate.fk_module_set);
-        System.out.println( "RunEntryCore() finds description_hash: " + this.dbDescribedTemplate.description_hash);
-        System.out.println( "RunEntryCore() finds dtSynchronized: " + this.dbDescribedTemplate.dtSynchronized);
-        System.out.println( "RunEntryCore() finds template_hash: " + this.dbDescribedTemplate.template_hash);
-        System.out.println( "RunEntryCore() finds enabled: " + this.dbDescribedTemplate.enabled);
-        System.out.println( "RunEntryCore() finds steps:\n" + this.dbDescribedTemplate.steps + "\n");
-        
-        int runCount = dbDescribedTemplate.pkdtToDBRun.size();
-        System.out.println( "RunEntryCore() finds " + runCount + " associated record(s) in table run." + ((runCount==1) ? "":"") + "\n");
-        
-        int instanceCount = dbDescribedTemplate.pkdtToDBTestInstance.size();
-        System.out.println( "RunEntryCore() finds " + instanceCount + " associated record(s) in table test_instance." + ((instanceCount>0)? "":" 1 or more are needed"));
-        
-        for (DBTestInstance dbti: dbDescribedTemplate.pkdtToDBTestInstance.values()) {
-            System.out.println( "RunEntryCore() has data base info for test instance " + dbti.pk_test_instance );
-            System.out.println( "RunEntryCore() finds run: " + dbti.fk_run);
-            System.out.println( "RunEntryCore() finds due date: " + dbti.due_date);
-            System.out.println( "RunEntryCore() finds phase: " + dbti.phase);
-            System.out.println( "RunEntryCore() finds iSynchronized: " + dbti.iSynchronized);
-        }
-        System.out.println();
-
-        int dtLineCount = dbDescribedTemplate.pkdtToDTLine.size();
-        System.out.println( "RunEntryCore() finds " + dtLineCount + " associated record(s) in table dt_line." + ((dtLineCount>0)? "":" 1 or more are needed"));
-
-        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
-            String strReason = dtLine.reason; // found sometimes as null, sometimes as empty string
-            if (strReason!=null && strReason.isEmpty())
-                strReason = "Unspecified as empty string";
-
-            System.out.println("\nRunEntryCore() finds line data from pk_dt_line " + dtLine.pk_dt_line + ", line " + dtLine.line +
-                               "\nDtLineDescription " + dtLine.dtLineDescription +
-                               "\nReason for artifact: " + strReason +
-                               "\nArtifact Info: is_primary " + dtLine.is_primary + ", configuration " + dtLine.configuration + ", artifactName " + dtLine.artifactName + ", mode " + dtLine.mode + ", merge_source " + dtLine.merge_source +
-                                                                                    ", derived_from_artifact " + dtLine.derived_from_artifact + ", merged_from_module " + dtLine.merged_from_module +
-                               "\nVersion of artifact: " + dtLine.version + ", sequence " + dtLine.sequence + ", attributes " + dtLine.attributes + ", scheduled_release " + dtLine.scheduled_release +
-                                                                                    ", actual_release " + dtLine.actual_release + ", sort_order " + dtLine.sort_order +
-                               "\nContent of artifact: " + dtLine.pk_content + ", is_generated " + dtLine.is_generated +
-                               "\nResource of dtLine, hash: " + dtLine.resourceHash + ", name " + dtLine.resourceName + ", description " + dtLine.resourceDescription);
-        }
-        System.out.println();
-
-        if (dbDescribedTemplate.enabled) {
-            if (dbDescribedTemplate.template_hash != null && dbDescribedTemplate.steps != null) {
-                System.out.println("RunEntryCore() finds enabled described template of hash " + dbDescribedTemplate.template_hash + ", with steps\n");
-                DescribedTestRun dtr = new DescribedTestRun(dbDescribedTemplate, tp);
-                dtr.init();
-                dtr.initRunInfo();
-            } else {
-                System.out.println("RunEntryCore() finds enabled described template with unexpected null for hash, or steps, or both");
-            }
-        } else {
-            System.out.println("RunEntryCore() finds disabled described template of hash " + dbDescribedTemplate.template_hash + ", with steps\n");
-        }
+//        System.out.println( "\nRunEntryCore() has data base info for dtNum " + this.pk_described_template + ", corresponding to template number " + this.dbDescribedTemplate.fk_template +
+//                            "; test instance count " + this.dbDescribedTemplate.pkdtToDBTestInstance.size() + "; recorded test run count (attached to this template number ) " + this.dbDescribedTemplate.pkdtToDBRun.size());
+//        System.out.println( "RunEntryCore() finds module set: " + this.dbDescribedTemplate.fk_module_set);
+//        System.out.println( "RunEntryCore() finds description_hash: " + this.dbDescribedTemplate.description_hash);
+//        System.out.println( "RunEntryCore() finds dtSynchronized: " + this.dbDescribedTemplate.dtSynchronized);
+//        System.out.println( "RunEntryCore() finds template_hash: " + this.dbDescribedTemplate.template_hash);
+//        System.out.println( "RunEntryCore() finds enabled: " + this.dbDescribedTemplate.enabled);
+//        System.out.println( "RunEntryCore() finds steps:\n" + this.dbDescribedTemplate.steps + "\n");
+//        
+//        int runCount = dbDescribedTemplate.pkdtToDBRun.size();
+//        System.out.println( "RunEntryCore() finds " + runCount + " associated record(s) in table run." + ((runCount==1) ? "":"") + "\n");
+//        
+//        int instanceCount = dbDescribedTemplate.pkdtToDBTestInstance.size();
+//        System.out.println( "RunEntryCore() finds " + instanceCount + " associated record(s) in table test_instance." + ((instanceCount>0)? "":" 1 or more are needed"));
+//        
+//        for (DBTestInstance dbti: dbDescribedTemplate.pkdtToDBTestInstance.values()) {
+//            System.out.println( "RunEntryCore() has data base info for test instance " + dbti.pk_test_instance );
+//            System.out.println( "RunEntryCore() finds run: " + dbti.fk_run);
+//            System.out.println( "RunEntryCore() finds due date: " + dbti.due_date);
+//            System.out.println( "RunEntryCore() finds phase: " + dbti.phase);
+//            System.out.println( "RunEntryCore() finds iSynchronized: " + dbti.iSynchronized);
+//        }
+//        System.out.println();
+//
+//        int dtLineCount = dbDescribedTemplate.pkdtToDTLine.size();
+//        System.out.println( "RunEntryCore() finds " + dtLineCount + " associated record(s) in table dt_line." + ((dtLineCount>0)? "":" 1 or more are needed"));
+//
+//        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
+//            String strReason = dtLine.reason; // found sometimes as null, sometimes as empty string
+//            if (strReason!=null && strReason.isEmpty())
+//                strReason = "Unspecified as empty string";
+//
+//            System.out.println("\nRunEntryCore() finds line data from pk_dt_line " + dtLine.pk_dt_line + ", line " + dtLine.line +
+//                               "\nDtLineDescription " + dtLine.dtLineDescription +
+//                               "\nReason for artifact: " + strReason +
+//                               "\nArtifact Info: is_primary " + dtLine.is_primary + ", configuration " + dtLine.configuration + ", artifactName " + dtLine.artifactName + ", mode " + dtLine.mode + ", merge_source " + dtLine.merge_source +
+//                                                                                    ", derived_from_artifact " + dtLine.derived_from_artifact + ", merged_from_module " + dtLine.merged_from_module +
+//                               "\nVersion of artifact: " + dtLine.version + ", sequence " + dtLine.sequence + ", attributes " + dtLine.attributes + ", scheduled_release " + dtLine.scheduled_release +
+//                                                                                    ", actual_release " + dtLine.actual_release + ", sort_order " + dtLine.sort_order +
+//                               "\nContent of artifact: " + dtLine.pk_content + ", is_generated " + dtLine.is_generated +
+//                               "\nResource of dtLine, hash: " + dtLine.resourceHash + ", name " + dtLine.resourceName + ", description " + dtLine.resourceDescription);
+//        }
+//        System.out.println();
+//
+//        if (dbDescribedTemplate.enabled) {
+//            if (dbDescribedTemplate.template_hash != null && dbDescribedTemplate.steps != null) {
+//                System.out.println("RunEntryCore() finds enabled described template of hash " + dbDescribedTemplate.template_hash + ", with steps\n");
+//                DescribedTestRun dtr = new DescribedTestRun(dbDescribedTemplate, tp);
+//                dtr.init();
+//                dtr.initRunInfo();
+//            } else {
+//                System.out.println("RunEntryCore() finds enabled described template with unexpected null for hash, or steps, or both");
+//            }
+//        } else {
+//            System.out.println("RunEntryCore() finds disabled described template of hash " + dbDescribedTemplate.template_hash + ", with steps\n");
+//        }
         
         // unneeded- our real approach involves instantiating templates
 //        for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
