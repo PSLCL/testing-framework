@@ -34,7 +34,7 @@ public class ReservedResourceWithAttributes implements ResourceWithAttributes {
 	 * @param resourceProvider
 	 * @param timeoutSeconds
 	 */
-    public ReserdvedResourceWithAttributes(String name, Map<String, String> attributes, int reference,
+    public ReservedResourceWithAttributes(String name, Map<String, String> attributes, int reference,
 	                                      ResourceProvider resourceProvider, int timeoutSeconds) {
 	    this.name = name;
 	    this.attributes = attributes;
