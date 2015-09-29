@@ -13,5 +13,5 @@ public interface CableProvider extends ResourceProvider {
      * @return Cable object which represents the Cable Resource Instance.
      */
 	@Override
-	public CableInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException;
+	public CableInstance bind( ReservedResourceWithAttributes resource ) throws ResourceNotFoundException;
 }

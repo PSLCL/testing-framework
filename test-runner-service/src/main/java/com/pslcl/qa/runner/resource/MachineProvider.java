@@ -20,7 +20,7 @@ public interface MachineProvider extends ResourceProvider, ArtifactConsumer {
      * @see ResourceProvider
      */
 	@Override
-	public MachineInstance bind( ResourceWithAttributes resource ) throws ResourceNotFoundException, ResourceNotAvailableException;
+	public MachineInstance bind( ReservedResourceWithAttributes resource ) throws ResourceNotFoundException, ResourceNotAvailableException;
 	
 	/** 
      * Acquire a list of machines. Available machines will be bound and a list containing the resulting {@link MachineInstance} objects will be
@@ -32,5 +32,5 @@ public interface MachineProvider extends ResourceProvider, ArtifactConsumer {
      * @return A list of {@link MachineInstance} objects which each represent a Machine Instance.
      */
 	@Override
-	public List<MachineInstance> bind(List<? extends ResourceWithAttributes> resources);
+	public List<MachineInstance> bind(List<ReservedResourceWithAttributes> resources);
 }
