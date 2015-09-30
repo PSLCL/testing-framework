@@ -11,7 +11,6 @@ public class ReservedResourceWithAttributes implements ResourceWithAttributes {
     private Map<String, String> attributes;
     private int reference;
 	private ResourceProvider resourceProvider;
-    private int timeoutSeconds;
     private long endTime;
 
 	/**
@@ -40,7 +39,6 @@ public class ReservedResourceWithAttributes implements ResourceWithAttributes {
 	    this.attributes = attributes;
 	    this.reference = reference;	    
 		this.resourceProvider = resourceProvider;
-		this.timeoutSeconds = timeoutSeconds;
 		this.endTime = System.currentTimeMillis() + (timeoutSeconds * 1000);
 	}
 
