@@ -6,7 +6,7 @@ results to the database.
 
 ##Instantiating Templates
 
-A [Template](templates.md) is considered instantiated once all of its steps' [commands](template_commands) have completed. If
+A [Template](templates.md) is considered instantiated once all of its steps' [commands](template_commands.md) have completed. If
 the template is the top-level template for a test, then results are [published](#publishing-results). Steps must be executed
 in the order outlined in the [Template](templates.md#template-instantiation) documentation.
 
@@ -52,10 +52,10 @@ template requires one then the Test Runner Service can provide it directly witho
 ##Publishing Results
 
 When a top-level [Template](templates.md) for a test has been fully instantiated, the Test Runner Service must inspect the results
-of any [run](template_commands#run) or [run-forever](template_commands#run-forever) commands to determine the overall result of
+of any [run](template_commands.md#run) or [run-forever](template_commands.md#run-forever) commands to determine the overall result of
 the test. 
 
-If the test includes an [inspect](template_commands#inspect) command, its result, as reported by a [Person](Resources.md), must also 
+If the test includes an [inspect](template_commands.md#inspect) command, its result, as reported by a [Person](Resources.md), must also 
 be incorporated into the overall result of the test.
 
 If any run, run-forever or inspect command fails then the overall test fails.

@@ -13,7 +13,7 @@ the file, zero based.
 
 The include command requests a [Template](templates.md) instance. The format of the line following the command is a hash 
 (64 characters). The reference to the template instance is the line index in the file, zero based. Include commands are considered
-completed once the [Template](templates.md) has been fully instantiated. 
+completed once the template has been fully instantiated. 
 
 ##Deploy
 
@@ -24,12 +24,12 @@ Deploy commands are considered completed once the artifact is fully deployed to 
 
 ##Inspect
 
-The inspect command requests that a [Person](resource.md) follow a set of HTML formatted instructions sent generally via email. 
+The inspect command requests that a [Person](resources.md) follow a set of HTML formatted instructions sent generally via email. 
 Relevant [Artifacts](artifacts.md) may also be included in an archive named attachments.tar.gz and attached to the email. 
 The format of the line following the command is the person [Resource Reference](templates.md#resource-references), followed by a space, 
 followed by the Hash of the instructions, followed by [Artifact References](templates.md#artifact-references) to be included as attachments 
 also separated by spaces. The person performing the inspection must manually enter the results. Inspect commands are considered completed
-once the instructions and attachments have been sent to the [Person](resource.md).
+once the instructions and attachments have been sent to the person.
 
 ##Connect
 
@@ -54,7 +54,7 @@ rolled back and reused. Configure commands are considered completed once the pro
 ###Start
 
 The program start command requests that a program be run that should stay running for the duration of the [Template](templates.md) 
-Instance. It cannot modify the Machine. [Templates](templates.md) may contain only a single
+Instance. It cannot modify the Machine. Templates may contain only a single
 start command. Start commands are considered completed once the program has been started.
 
 ###Run

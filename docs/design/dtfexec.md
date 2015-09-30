@@ -9,9 +9,9 @@
 
 A User synchronizes the local [Artifact](artifacts.md) cache with an [Artifact Provider](artifacts.md#artifact-providers).
 
-###A User executes known [Test Generators](test_generators.md)
+###A User executes known Test Generators
 
-A User specifies that [Test Generators](test_generators.md) known by the [Artifact Provider](artifact.md#artifact-providers) 
+A User specifies that [Test Generators](test_generators.md) known by the [Artifact Provider](artifacts.md#artifact-providers) 
 should be executed.
 
 ###A User Runs a Test

@@ -28,8 +28,8 @@ a resource with an attribute for the IP address, but the test platform could not
 ##Resource Reuse
 
 At the completion of a test run, it may be possible for the [Test Runner Service](test_runner_service.md) to reuse a 
-[Resource](resources.md) instance if it has not been permanently altered by using the program-based 
-[Cconfigure](template_commands.md#configure) command. 
+resource instance if it has not been permanently altered by using the program-based 
+[Configure](template_commands.md#configure) command. 
 
 Results of a test run must not be changed by the reuse of a resource instance. Consider the initial state of a 
 resource instance to be its state at the moment it was bound. In order to keep resource instance reuse from

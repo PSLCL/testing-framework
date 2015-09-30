@@ -5,7 +5,7 @@ may create multiple templates and test runs, possibly with only minor difference
 
 Templates created by generators may be specific to a particular [Module](artifacts.md#modules), depending on the needs of the test. However, 
 templates may also apply more broadly to multiple modules. For example, consider a generator that creates a test(template) to verify that a
-particular [artifact](artifacts.md) is present. If that artifact needs to be present in 10 different modules each with 10 different versions, the
+particular [Artifact](artifacts.md) is present. If that artifact needs to be present in 10 different modules each with 10 different versions, the
 generator only needs to create a single template which would apply to all 100 module version.
 
 ##Creating Test Generators
