@@ -129,12 +129,7 @@ public class ResourceProviders implements ResourceProvider {
 //        }
 //        return retRiList;
 //    }    
-    
-    @Override
-    public void release(ResourceInstance resource) {
-        // TODO Auto-generated method stub
-        
-    }
+
 
     @Override
     public void releaseReservedResource(ReservedResourceWithAttributes resource) {
@@ -164,6 +159,12 @@ public class ResourceProviders implements ResourceProvider {
     public List<String> getNames() {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public void release(ResourceInstance resource, boolean isReusable) {
+        // TODO Auto-generated method stub
+        
     }
     
 }

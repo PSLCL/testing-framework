@@ -205,7 +205,7 @@ public class TemplateProvider {
                                 if (MachineInstance.class.isInstance(resourceInstance)) {
                                     // deploy artifact to the machine instance
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
-                                    try {
+//                                  try {
                                         machineInstance.deploy(strArtifactName, strArtifactHash);
                                         ArtifactInfo artifactInfo = new ArtifactInfo(strArtifactName, strArtifactHash);
                                         resourceInfo.setArtifactInfo(artifactInfo);
@@ -213,11 +213,8 @@ public class TemplateProvider {
 
                                         success = true;
                                         System.out.println("TemplateProvider.getInstancedTemplate() deploys to bound resource " + stepRef + ": artifactInfo: " + strArtifactName + " " + strArtifactHash);
-                                    } catch (ArtifactNotFoundException e) {
-                                        // TODO Auto-generated catch block
-                                        e.printStackTrace();
-                                    } finally {
-                                    }
+//                                  } finally {
+//                                  }
                                 }
                             }
                             if (!success)
