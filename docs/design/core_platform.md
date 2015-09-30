@@ -4,7 +4,7 @@ The Core Platform provides Java APIs for [Test Generators](test_generators.md) a
 The Core Platform also provides the command-line tool [dtfexec](dtfexec.md) which gives user access to various commands such as 
 executing [Test Generators](test_generators.md) and running tests.
 
-##Use Cases
+##Generator Use Cases
 
 The Core Platform provides the following use cases through the Java API to developers of [Test Generators](test_generators.md). 
 Requirements and use cases for the dtfexec command-line tool may be found [here](dtfexec.md).

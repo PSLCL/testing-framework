@@ -1,14 +1,14 @@
 #Templates
 
-Templates are managed by the Testing Framework and are identified by a Hash. They are created by running 
-[Test Generators](test_generators.md). Templates are just definitions and do not actually utilize resources until they are 
-instantiated, which involves instantiating any required resources and templates, as well as running specified steps, or 
-[Commands](template_commands.md), on those resources.
+Templates represent a sequence of steps that the Testing Framework must execute to generate a result. They are managed by the Testing 
+Framework and are identified by a Hash. They are created by running [Test Generators](test_generators.md). Templates are just definitions and 
+do not actually utilize resources until they are instantiated, which involves instantiating any required resources and templates, as well as 
+running specified steps, or [Commands](template_commands.md), on those resources.
 
 ##Template Definitions
 
-A template is defined as a definition of the steps it takes to instantiate the template, sorted in an order that produces 
-the same result each time. Specifically, the definition is:
+A template is defined by the steps it takes to instantiate the template, sorted in an order that produces 
+the same result each time when created by a [Test Generator](test_generators.md). Specifically, the definition is:
 
 1.	A text string, ASCII, with UNIX line termination. No commenting or blank lines are allowed, and each line has a line terminator.
 2.	Each line begins with a set ID, followed by a space, followed by a command, followed by another space, followed by parameters 
@@ -16,6 +16,8 @@ determined by the command. Parameters are URL encoded and separated by spaces. [
 do not require a set ID.
 3.	Each hash is 64 upper-case hex characters, no quotes.
 4.	Attribute strings are A=V&A=V, with each V being URL encoded.
+
+Templates are considered identical if they have the same definition and are identifed by the same hash.
 
 ###Step Ordering
 
