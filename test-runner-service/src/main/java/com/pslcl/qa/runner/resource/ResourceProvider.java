@@ -45,8 +45,10 @@ public interface ResourceProvider {
 	 * 
 	 * @param resource
 	 *            The resource instance to release.
+	 * @param isReusable
+	 *            Whether or not the Resource can be reused.
 	 */
-	public void release(ResourceInstance resource);
+	public void release(ResourceInstance resource, boolean isReusable);
 
 	/**
 	 * Release a reserved resource. If a resource is bound, the reservation is automatically released.

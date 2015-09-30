@@ -2,8 +2,6 @@ package com.pslcl.qa.runner.resource;
 
 import java.util.concurrent.Future;
 
-import com.pslcl.qa.runner.ArtifactNotFoundException;
-
 /**
  * Represents a Machine Resource instance.
  */
@@ -16,17 +14,41 @@ public interface MachineInstance extends ResourceInstance {
 	 *            The target filename for the artifact.
 	 * @param artifactHash
 	 *            The hash of the artifact.
+	 * 
+	 * @return A Future<Void> which returns once the deploy is complete. The Future will throw an exception if the deploy fails. 
 	 */
-	void deploy(String filename, String artifactHash) throws ArtifactNotFoundException;
+	Future<Void> deploy(String filename, String artifactHash);
+	
+	/**
+	 * Delete an artifact from a machine.
+	 * 
+	 * @param filename
+	 *            The filename of the artifact to delete.
+	 *            
+	 * @return A Future<Void> which returns once the delete is complete. The Future will throw an exception if the delete fails. 
+	 */
+	Future<Void> delete(String filename);
 
 	/**
 	 * Connect a machine to a network.
 	 *
 	 * @param network
 	 *            The NetworkInstance to which the machine should connect.
+	 *            
+	 * @return A Future<CableInstance> which returns once the machine is connected to the network.
 	 * 
 	 */
 	Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException;
+
+	/**
+	 * Disconnect a machine from a network. 
+	 *
+	 * @param network
+	 *            The NetworkInstance to which the machine should be disconnected.
+	 * 
+	 * @return a Future<Void> which returns once the machine is disconnected from the network.
+	 */
+	Future<Void> disconnect(NetworkInstance network);
 
 	/**
 	 * Run an executable command on a machine and return a Future with the result of the set command once execution has
