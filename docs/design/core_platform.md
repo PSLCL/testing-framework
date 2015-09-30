@@ -1,6 +1,6 @@
 #Core Platform
 
-The Core Platform provides Java APIs for [Test Generators](test_generators.md) and [Artifact Providers](artifact_providers.md). 
+The Core Platform provides Java APIs for [Test Generators](test_generators.md) and [Artifact Providers](artifacts.md#Artifact-Providers). 
 The Core Platform also provides the command-line tool [dtfexec](dtfexec.md) which gives user access to various commands such as 
 executing [Test Generators](test_generators.md) and running tests.
 
