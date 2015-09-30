@@ -8,11 +8,12 @@ import java.util.Map;
 
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.process.DBTemplate;
+import com.pslcl.qa.runner.resource.IncompatibleResourceException;
 import com.pslcl.qa.runner.resource.MachineInstance;
+import com.pslcl.qa.runner.resource.NetworkInstance;
 import com.pslcl.qa.runner.resource.PersonInstance;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
-import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
@@ -187,9 +188,6 @@ public class TemplateProvider {
 
                                         success = true;
                                         System.out.println("TemplateProvider.getInstancedTemplate() deploys to bound resource " + stepRef + ": artifactInfo: " + strArtifactName + " " + strArtifactHash);
-                                    } catch (ResourceNotFoundException e) {
-                                        // TODO Auto-generated catch block
-                                        e.printStackTrace();
                                     } catch (ArtifactNotFoundException e) {
                                         // TODO Auto-generated catch block
                                         e.printStackTrace();
@@ -204,11 +202,12 @@ public class TemplateProvider {
                         }
                         break;                    
                     case "inspect":
-                        // machineRef strInstructionsHash ArtifactInfo (strArtifactName strArtifactHash)
+                        // machineRef strInstructionsHash ArtifactInfo (strArtifactName strArtifactHash); October note: multiple ArtifactInfo may be allowed to follow
                         System.out.println("TemplateProvider.getInstancedTemplate() finds inspect as reference " + stepsReference);
                         String strInstructionsHash = null;
                         strArtifactName = null;
                         strArtifactHash = null;
+                        Map<String, String> mapArtifacts = new HashMap<>();
                         machineRef = StepsParser.getNextSpaceTerminatedSubString(step, offset);
                         if (machineRef != null) {
                             offset += machineRef.length();
@@ -227,9 +226,10 @@ public class TemplateProvider {
                                     offset += strArtifactName.length();
                                     if (++offset > step.length())
                                         offset = -1; // done
-                                
                                     strArtifactHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                                    // we do not further extract from step
+                                    mapArtifacts.put(strArtifactName, strInstructionsHash); // new API says we pass artifacts as a map
+
+                                    // we do not further extract from step // Oct 1 note: we might now have more artifacts being specified, and for each we would .put to mapArtifacts
 //                                        if (strArtifactHash != null) {
 //                                            offset += strArtifactHash.length();
 //                                            if (++offset > step.length())
@@ -246,10 +246,14 @@ public class TemplateProvider {
                             if (resourceInfo != null) {
                                 ResourceInstance resourceInstance = resourceInfo.getResourceInstance();
                                 if (PersonInstance.class.isInstance(resourceInstance)) {
+                                    // get the string of actual instructions from strInstructionHash
+                                    String strInstructions = ArtifactInfo.getContent(strInstructionsHash);
+                                    
                                     // inspect: give artifact to the person instance
                                     PersonInstance personInstance = PersonInstance.class.cast(resourceInstance);
                                     try {
-                                        personInstance.inspect(strInstructionsHash, strArtifactName, strArtifactHash);
+                                        personInstance.inspect(strInstructions, mapArtifacts);
+                                        // TODO: now that there can be more than 1 artifact (as found in mapArtifacts), change this code that sets resourceInfo
                                         ArtifactInfo artifactInfo = new ArtifactInfo(strArtifactName, strArtifactHash);
                                         resourceInfo.setInstructionsHash(strInstructionsHash);
                                         resourceInfo.setArtifactInfo(artifactInfo);
@@ -258,9 +262,6 @@ public class TemplateProvider {
 
                                         success = true;
                                         System.out.println("TemplateProvider.getInstancedTemplate() initiates inspect to bound resource " + stepRef);
-                                    } catch (ResourceNotFoundException e) {
-                                        // TODO Auto-generated catch block
-                                        e.printStackTrace();
                                     } catch (ArtifactNotFoundException e) {
                                         // TODO Auto-generated catch block
                                         e.printStackTrace();
@@ -301,15 +302,17 @@ public class TemplateProvider {
                                 if (MachineInstance.class.isInstance(resourceInstance)) {
                                     // connect network machineInstance
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
+                                    // TODO: for new API, we need to instantiate something that implements java interface NetworkInstance; strNetwork is available to help that instantiation
+                                    NetworkInstance network = null;    
                                     try {
-                                        machineInstance.connect(strNetwork);
+                                        machineInstance.connect(network);
                                         resourceInfo.setNetwork(strNetwork);
                                         
                                         // TODO: set iT with more gathered info and instantiations and similar
 
                                         success = true;
                                         System.out.println("TemplateProvider.getInstancedTemplate() connects network " + strNetwork + "to bound resource " + stepRef);
-                                    } catch (ResourceNotFoundException e) {
+                                    } catch (IncompatibleResourceException e) {
                                         // TODO Auto-generated catch block
                                         e.printStackTrace();
                                     }
@@ -373,7 +376,6 @@ public class TemplateProvider {
                             
                         if (strArtifactName != null) {
                             // strOptions is available; it may be null
-                            
                             int stepRef = Integer.parseInt(machineRef);
                             ResourceInfo resourceInfo = iT.getResourceInfo(stepRef);
                             boolean success = false;
@@ -382,8 +384,9 @@ public class TemplateProvider {
                                 if (MachineInstance.class.isInstance(resourceInstance)) {
                                     // run program on machineInstance
                                     MachineInstance machineInstance = MachineInstance.class.cast(resourceInstance);
-                                    try {
-                                        machineInstance.run(strArtifactName, strRunParams);
+//                                  try {
+                                        String command = strArtifactName + (strRunParams!=null ? (" " +strRunParams): ""); // command is an executable command, including arguments, to be run on the machine
+                                        machineInstance.run(command);
                                         ArtifactInfo artifactInfo = new ArtifactInfo(strArtifactName, null); // null because we do not know its value
                                         resourceInfo.setArtifactInfo(artifactInfo);
                                         resourceInfo.setRunParams(strRunParams);
@@ -392,13 +395,7 @@ public class TemplateProvider {
 
                                         success = true;
                                         System.out.println("TemplateProvider.getInstancedTemplate() runs to bound resource " + stepRef + ": artifactInfo: " + strArtifactName);
-                                    } catch (ResourceNotFoundException e) {
-                                        // TODO Auto-generated catch block
-                                        e.printStackTrace();
-                                    } catch (ArtifactNotFoundException e) {
-                                        // TODO Auto-generated catch block
-                                        e.printStackTrace();
-                                    }
+//                                  }
                                 }
                             }
                         } else {
