@@ -28,23 +28,23 @@ a resource with an attribute for the IP address, but the test platform could not
 ##Resource Reuse
 
 At the completion of a test run, it may be possible for the [Test Runner Service](test_runner_service.md) to reuse a 
-[Resource](resources.md)Instance if it has not been permanently altered by using the program-based 
-[*configure*](template_commands.md) command. 
+[Resource](resources.md) instance if it has not been permanently altered by using the program-based 
+[Cconfigure](template_commands.md#configure) command. 
 
 Results of a test run must not be changed by the reuse of a resource instance. Consider the initial state of a 
-[Resource](resources.md) Instance to be its state at the moment it was bound. In order to keep Resource Instance reuse from
-affecting the outcome of a test run, a Resource Instance may only be reused if it is at its initial state.
+resource instance to be its state at the moment it was bound. In order to keep resource instance reuse from
+affecting the outcome of a test run, a resource instance may only be reused if it is at its initial state.
 
-In the simplest case, a [Template](templates.md) binds a [Resource](resources.md) Instance but does not change its state. A Template 
-may run a program on a bound Resource Instance without altering its state. The [Run](template_commands.md#run), 
+In the simplest case, a [Template](templates.md) binds a resource instance but does not change its state. A template 
+may run a program on a bound resource instance without altering its state. The [Run](template_commands.md#run), 
 [Run-Forever](template_commands.md#run-forever) and [Start](template_commands.md#start) commands, 
-when completed, must leave the Machine in the same state as before the program was run. When the Template Instance is no longer 
-needed and releases the Resource Instance, the Resource Instance may immediately be reused by another parent template.
+when completed, must leave the machine in the same state as before the program was run. When the template instance is no longer 
+needed and releases the resource instance, the resource instance may immediately be reused by another parent template.
 
-If, instead, the [Template](templates.md) changes the state of the [Resource](resources.md) Instance, then those changes must be 
-reversed before the Resource Instance can be reused. For example, if the Template [Deploys](template_commands.md#deploy) an 
-[Artifact](artifacts.md) to a Machine Instance, that Artifact must be deleted before the Machine Instance may be reused. Likewise, 
-if the Template adds a Machine Instance to a Network, the Machine Instance must be removed from that Network.
+If, instead, the template changes the state of the resource instance, then those changes must be 
+reversed before the resource instance can be reused. For example, if the Template [Deploys](template_commands.md#deploy) an 
+[Artifact](artifacts.md) to a machine instance, that artifact must be deleted before the machine instance may be reused. Likewise, 
+if the template adds a machine instance to a network, the machine instance must be removed from that network.
 
-It should be noted that the [Configure](template_commands.md#configure) command may irreversibly change the state of a
-Machine Instance. If a [Template](templates.md) *configures* a Machine Instance, then the Machine Instance must not be reused.
+It should be noted that the configure command may irreversibly change the state of a
+machine instance. If a template configures a machine instance, then the machine instance must not be reused.

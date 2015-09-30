@@ -17,10 +17,10 @@ Each Module provides the following information:
 
 ##Artifact Providers
 
-Artifact Providers implement the [Core Platform's](core_platform.md) ArtifactProvider Java interface, providing a set of
-modules which can be iterated by the core platform.
+Artifact providers implement the [Core Platform's](core_platform.md) ArtifactProvider Java interface, providing a set of
+modules which can be iterated by the Core Platform.
 
-Artifact Providers also provide information about modules which may be merged on the local cache.
+Artifact providers also provide information about modules which may be merged on the local cache.
 
 ##Artifact Cache
 
@@ -30,6 +30,5 @@ Typically this is done by the [QA Portal](qa_portal.md) which provides a Rest AP
 
 ##Test Generator Artifacts
 
-Artifacts which contain [Test Generators](test_generators.md) should have their configuration set to "dtf_test_generator". This enables the 
-[dtfexec synchronize](dtfexec.md#a-user-synchronizes-the-local-artifact-cache) command to identify and execute test generators provided by an 
-Artifact Provider.
+Artifacts which contain [Test Generators](test_generators.md) should have their configuration set to "dtf_test_generator". This enables 
+[dtfexec](dtfexec.md) command to identify and execute test generators provided by an artifact provider.

@@ -5,13 +5,13 @@
 
 ##Use Cases
 
-###A User Synchronizes the Local [Artifact](artifacts.md) Cache
+###A User Synchronizes the Local Artifact Cache
 
-A User synchronizes the local [artifact](artifacts.md) cache with an [Artifact Provider](artifact_providers.md).
+A User synchronizes the local [Artifact](artifacts.md) cache with an [Artifact Provider](artifacts.md#artifact-providers).
 
 ###A User executes known [Test Generators](test_generators.md)
 
-A User specifies that [Test Generators](test_generators.md) known by the [Artifact Provider](artifact_providers.md) 
+A User specifies that [Test Generators](test_generators.md) known by the [Artifact Provider](artifact.md#artifact-providers) 
 should be executed.
 
 ###A User Runs a Test
