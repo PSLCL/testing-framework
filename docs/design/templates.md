@@ -40,7 +40,13 @@ interchangeable.
 Specific Resource Instances may be referenced by other commands using the line index, zero based, of the step containing the 
 [Bind](template_commands.md#bind) command. Resources bound by an included Template may be referenced using the line index of the 
 [Include](template_commands.md#include) command followed by a forward slash and then by an index in the included Template, 
-continuing until a Bind command is referenced. 
+continuing until a Bind command is referenced.
+
+###Artifact References
+
+Artifact references are required by [Inspect](template_commands.md#inspect) and [Deploy](template_commands.md#deploy) template commands. Artifact 
+references are the destination filename and Hash, separated by a space. Note that the version is not specified, 
+so if the file does not change from version to version then the reference will be identical.
 
 ##Template Building
 

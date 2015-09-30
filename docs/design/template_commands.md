@@ -18,18 +18,16 @@ completed once the [Template](templates.md) has been fully instantiated.
 ##Deploy
 
 The *deploy* Command requests an [Artifact](artifacts.md) be deployed to a [Machine](resources.md) Instance. The format of the line 
-following the command is a Machine reference, followed by a space, followed by an [Artifact](artifacts.md) reference. 
+following the command is a Machine reference, followed by a space, followed by an [Artifact Reference](templates.md#artifact-references). 
 
-[Artifact](artifacts.md) references are the destination filename and Hash, separated by a space. Note that the version is not specified, 
-so if the file does not change from version to version then the reference will be identical. Deploy commands are considered
-completed once the [Artifact](artifacts.md) is fully deployed to the the [Machine](resources.md) Instance.
+Deploy commands are considered completed once the [Artifact](artifacts.md) is fully deployed to the the [Machine](resources.md) Instance.
 
 ##Inspect
 
 The *inspect* Command requests that a [Person](resource.md) follow a set of HTML formatted instructions sent generally via email. 
 Relevant [Artifacts](artifacts.md) may also be included in an archive named attachments.tar.gz and attached to the email. 
 The format of the line following the command is a Person reference, followed by a space, followed by the Hash of 
-the instructions, followed by the Hashes of any [Artifact](artifacts.md) attachments also separated by spaces. The 
+the instructions, followed by [Artifact References](templates.md#artifact-references) to be included as attachments also separated by spaces. The 
 [Person](resources.md) performing the inspection must manually enter the results. Inspect commands are considered completed
 once the instructions and attachments have been sent to the [Person](resource.md).
 
