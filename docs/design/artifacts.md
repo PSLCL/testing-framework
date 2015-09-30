@@ -13,6 +13,7 @@ Each Module provides the following information:
 * Version - The version of the module.
 * Sequence - The sequence of the module, used in addition to the version in order to differentiate versions of a module. Sequences are ordered alphabetically, with the latest being the most recent.
 * Attributes - A set of key-value pairs providing additional information about a module.
+* Artifacts - A set of artifacts associated with the module.
 
 ##Artifact Providers
 
