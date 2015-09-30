@@ -1,6 +1,6 @@
 #Artifacts
 
-Artifacts are files produced by modules. Each artifact is identified by a module and name, and has a content-based hash.
+Artifacts are files produced by modules. Each artifact is identified by a module, name, and configuration, and has a content-based hash.
 
 ##Modules
 
@@ -27,3 +27,9 @@ Artifact Providers also provide information about modules which may be merged on
 A local artifact cache may be built using the [dtfexec synchronize](dtfexec.md#a-user-synchronizes-the-local-artifact-cache) functionality.
 
 Typically this is done by the [QA Portal](qa_portal.md) which provides a Rest API for downloading artifacts.
+
+##Test Generator Artifacts
+
+Artifacts which contain [Test Generators](test_generators.md) should have their configuration set to "dtf_test_generator". This enables the 
+[dtfexec synchronize](dtfexec.md#a-user-synchronizes-the-local-artifact-cache) command to identify and execute test generators provided by an 
+Artifact Provider.

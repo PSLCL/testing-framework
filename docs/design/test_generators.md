@@ -14,5 +14,5 @@ Test Generators utilize the Java API provided by the [Core Platform](core_platfo
 
 ##Executing Test Generators
 
-Test Generators that are provided by an Artifact Provider can be discovered by the Core Platform and executed using the [dtfexec](dtfexec.md)
-command line tool.
+Test Generators that are provided by an Artifact Provider as a [Test Generator Artifact](artifacts.md#test-generator-artifacts)
+can be discovered by the Core Platform and executed using the [dtfexec](dtfexec.md) command line tool.
