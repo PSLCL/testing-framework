@@ -3,15 +3,14 @@
 A primary design goal of the Testing Framework is to allow flexible resource handling, including the ability to easily define and 
 use new types of resources.
 
-##Resource Definitions
+##Resource Definition
 
-A resource is identified uniquely by a hash. The hash itself is created from a textual definition of a resource in a standardized 
-format that a [Resource Provider](resource_providers.md) can use to recreate the resource itself.
+A resource is uniquely identified by its name and attributes. Note that a resource is not an instance of a resource. A resource
+defined by its name and attributes may match any number of resource instances which have the same name and a set of
+attributes containing at least those specified by the resource.
 
-Note that a resource is not an instance of a resource, and the hash of a resource matches any instance of the resource.
-
-During the execution of a test run, resource instances are requested. This request ultimately includes a hash and attributes. 
-The hash identifies the type of resource; the attributes further qualify the specific resource desired. The request is memorized, 
+During the execution of a test run, resource instances are requested. This request ultimately includes the name and attributes. 
+The name identifies the type of resource; the attributes further qualify the specific resource desired. The request is memorized, 
 and during resource instantiation the request will be made to the [Resource Providers](resource_providers.md) which create actual 
 instances of the resource. In addition to the required attributes, resource instances may have additional non-required attributes.
 
@@ -21,8 +20,8 @@ There are three main types of resources that the Testing Framework can interact 
 and Person. Other resources may be defined that do not interact directly with the Testing Framework but instead simply provide 
 attributes.
 
-For example, a certain class of resource (identified by its hash) may be understood by the harness as 
-a machine that it can operate against (connect to networks, deploy software to). A different hash may be understood equally as a 
+For example, a certain class of resource (identified by its name) may be understood by the harness as 
+a machine that it can operate against (connect to networks, deploy software to). A different name may be understood equally as a 
 resource, but not as one that the test platform can interoperate with other than getting its attributes. An external server might be 
 a resource with an attribute for the IP address, but the test platform could not deploy additional software on the resource.
 

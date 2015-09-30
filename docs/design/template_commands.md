@@ -35,7 +35,7 @@ once the instructions and attachments have been sent to the [Person](resource.md
 
 The *connect* command requests a connection between a [Machine](resources.md) and a [Network](resources.md). The format of the line 
 following the command is a Machine reference, followed by a space, followed by a Network reference. Connect commands are considered
-completed once the Machine is connected to the Network
+completed once the Machine is connected to the Network.
 
 ##Program-Based Commands
 
