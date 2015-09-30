@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.Template.Parameter;
+import com.pslcl.qa.platform.generator.Template.StringParameter;
 
 /**
  * This class represents a person, which is a resource that can perform manual inspections.
@@ -13,7 +14,6 @@ public class Person extends Resource {
         private Resource inspector;
         private Content body;
         private Artifact[] attachments;
-        private Template t;
 
         private InspectAction( Resource inspector, Content body, Artifact[] attachments ) {
             this.inspector = inspector;
@@ -34,7 +34,8 @@ public class Person extends Resource {
             params[1] = body;
             int i = 2;
             for ( Artifact a : attachments ) {
-                params[i++] = a;
+                params[i++] =  StringParameter.class.cast(a.getName()); // the artifact name, intended to be the artifact destination
+                params[i++] = a.getContent(); // the artifact hash
             }
 
             StringBuilder sb = new StringBuilder();
@@ -59,9 +60,9 @@ public class Person extends Resource {
                     sb.append( "<li><tt>" );
                     sb.append( a.getName() );
                     sb.append( "</tt> from " );
-                    sb.append( a.getVersion().getComponent() );
+                    sb.append( a.getModule().getName() );
                     sb.append( ":" );
-                    sb.append( a.getVersion().getVersion() );
+                    sb.append( a.getModule().getVersion() );
                     sb.append( "</li>" );
                 }
 
@@ -77,7 +78,7 @@ public class Person extends Resource {
                 sb.append( "</em> follow these directions:" );
             }
 
-            sb.append( body.getContent() );
+            sb.append( body.asBytes() );
 
             return sb.toString();
         }

@@ -53,7 +53,7 @@ public class Sqs extends MessageQueueDaoAbstract {
                     String jmsMessageID = message.getJMSMessageID(); // begins with "ID:", by JMS specification
                     String strQueueStoreNumber = ((TextMessage)message).getText();
                     System.out.println("\n");
-                    prependString += " msgID " + jmsMessageID + ", stringQueueStoreNumber " +  strQueueStoreNumber + ". ";
+                    prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ". ";
                     if (jmsMessageID != null && strQueueStoreNumber != null) {
                         System.out.println(prependString);
                         // design decision: Object message will not, as it could, be stored as key value pair "jmsMessageID/hexStrQueueStoreNumber." Message instead passes out here, as state for eventual ack.
@@ -64,7 +64,7 @@ public class Sqs extends MessageQueueDaoAbstract {
                         }
                         System.out.println(prependString + "Drop - rejected by RunnerService");
                     } else {
-                        System.out.println(prependString + "Drop - jmsMessageID or stringQueueStoreNumber are null");
+                        System.out.println(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");
                     }
                 } catch (JMSException e) {
                     e.printStackTrace();

@@ -10,7 +10,7 @@ app.controller('TestPlanListCtrl',
       function success(results) {
         $scope.test_plans = results;
       });
-    // Filter list of components
+    // Filter list of modules
     $scope.getData = function (test_plans, query) {
       $scope.query_filter = query;
       TestPlans.query({
@@ -21,7 +21,7 @@ app.controller('TestPlanListCtrl',
           $scope.test_plans = results;
         });
     };
-    // Display create component inline
+    // Display create module inline
     var display_create = false;
     $scope.createTestPlan = function() {
       if (!display_create) {
@@ -40,7 +40,7 @@ app.controller('TestPlanListCtrl',
     };
     // Delete a test plan by id
     $scope.deleteTestPlan = function (testPlanId) {
-      $scope.component = TestPlan.delete({testPlanId: testPlanId},
+      $scope.module = TestPlan.delete({testPlanId: testPlanId},
         function success() {
           var params;
           if ($scope.query_filter) {
@@ -49,7 +49,7 @@ app.controller('TestPlanListCtrl',
               sort_by: $scope.sort_by || 'id'
             };
           } else {
-            params = {after: after, sort_by: $scope.sort_by || 'id'};
+            params = {sort_by: $scope.sort_by || 'id'};
           }
           TestPlans.query(params,
             function success(results) {
@@ -146,7 +146,7 @@ app.controller('TestPlanViewCtrl',
         });
     };
 
-    // Display create component inline
+    // Display create module inline
     var display_create = false;
     $scope.createTest = function() {
       if (!display_create) {
@@ -166,7 +166,7 @@ app.controller('TestPlanViewCtrl',
 
     // Delete a test by id
     $scope.deleteTest = function (testPlanId, testId) {
-      $scope.component = Test.delete({
+      $scope.module = Test.delete({
           testPlanId: testPlanId,
           testId: testId
         },
@@ -185,7 +185,7 @@ app.controller('TestPlanViewCtrl',
       if ($scope.tests) {
         if ($scope.busy) return;
         $scope.busy = true;
-        var after = $scope.tests[$scope.tests.length - 1].pk_test;
+        var after = $scope.tests.length > 0 ? $scope.tests[$scope.tests.length - 1].pk_test : 0;
         var params;
         if ($scope.query_filter) {
           params = {
@@ -257,7 +257,7 @@ app.controller('TestPlanEditCtrl',
 // Delete test plan
 app.controller('TestPlanDeleteCtrl',
   function ($scope, $routeParams, $location, TestPlan, socket) {
-    $scope.component = TestPlan.delete({testPlanId: $routeParams.testPlanId},
+    $scope.module = TestPlan.delete({testPlanId: $routeParams.testPlanId},
       function success() {
         $location.path('test_plans');
         socket.emit('get:stats');

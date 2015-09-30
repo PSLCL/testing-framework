@@ -60,6 +60,10 @@ public class Attributes {
         value = null;
     }
 
+    public Attributes( Attributes attributes ) {
+        map.putAll( attributes.map );
+    }
+    
     public Attributes( Map<String,String> attributes ) {
         map.putAll( attributes );
     }
@@ -72,9 +76,20 @@ public class Attributes {
             throw new IllegalArgumentException( "Attributes: value is not properly encoded." );
     }
 
-    public void put( String attribute, String value ) {
+    public Attributes putAll( Attributes attributes ) {
+        putAll( attributes.map );
+        return this;
+    }
+    
+    public Attributes putAll( Map<String,String> attributes ) {
+        map.putAll( attributes );
+        return this;
+    }
+    
+    public Attributes put( String attribute, String value ) {
         map.put( attribute, value );
         mapToValue();
+        return this;
     }
 
     public String get( String attribute ) {

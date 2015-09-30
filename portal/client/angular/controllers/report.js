@@ -3,24 +3,24 @@ var Util = require('../util/util');
 
 //Reports
 app.controller('ReportsCtrl',
-    function ($scope, $q, $http, $location, $anchorScroll, $window, Components, TestPlan,
+    function ($scope, $q, $http, $location, $anchorScroll, $window, Modules, TestPlan,
         Versions, ReportTestPlans, ReportVersions, ReportResult, promiseTracker) {
   $scope.reportTracker = promiseTracker();
   $scope.r2generation = null;
-  $scope.selectedComponent = {};
-  $scope.r2 = { selectedComponent: [], includePassed: false, includeFailed: true, includePending: false };
+  $scope.selectedModule = {};
+  $scope.r2 = { selectedModule: [], includePassed: false, includeFailed: true, includePending: false };
 
   $scope.selectedVersions = {};
   $scope.util = new Util();
   /**
-   * Get entire list of components (all=true)
+   * Get entire list of modules (all=true)
    */
-  Components.query({all: true, sort_by: 'name'},
+  Modules.query({all: true, sort_by: 'name'},
       function success(results) {
-    $scope.components = results;
-    $scope.availableComponentsR1 = angular.copy($scope.components);
-    $scope.selectedComponentsR1 = []; // Leave empty initially
-    $scope.availableComponentsR2 = angular.copy($scope.components);
+    $scope.modules = results;
+    $scope.availableModulesR1 = angular.copy($scope.modules);
+    $scope.selectedModulesR1 = []; // Leave empty initially
+    $scope.availableModulesR2 = angular.copy($scope.modules);
   }
   );
   $scope.version = [];
@@ -71,7 +71,7 @@ app.controller('ReportsCtrl',
     parent.chart = { "data": newdata, "options": parent.chart.options };
   };
 
-  $scope.passIt = function(instance, test, test_plan, version, component) {
+  $scope.passIt = function(instance, test, test_plan, version, module) {
     ReportResult.report(
         {
           hash: instance.hash,
@@ -93,7 +93,7 @@ app.controller('ReportsCtrl',
     parent.chart = { "data": newdata, "options": parent.chart.options };
   };
 
-  $scope.failIt = function(instance, test, test_plan, version, component) {
+  $scope.failIt = function(instance, test, test_plan, version, module) {
     ReportResult.report(
         {
           hash: instance.hash,
@@ -137,15 +137,15 @@ app.controller('ReportsCtrl',
   };
 
   /**
-   * Find a component in an array of components
+   * Find a module in an array of modules
    *
    * @param array
    * @param id
    * @returns {*}
    */
-  function findComponent(array,id) {
+  function findModule(array,id) {
     for(var i = 0; i < array.length; i++) {
-      if (array[i].pk_component == id) {
+      if (array[i].pk_module == id) {
         return array[i];
       }
     }
@@ -176,22 +176,22 @@ app.controller('ReportsCtrl',
     if (rpt == 'r1') {
       $scope.showR1Results = true;
       $scope.filter_r1 = $scope.util.join_by(
-          'pk_component', $scope.selectedComponentsR1
+          'pk_module', $scope.selectedModulesR1
       );
       ReportTestPlans.query({filter: $scope.filter_r1},
           function success(results) {
         $scope.reportR1 = [];
         angular.forEach(results, function (test_plan) {
-          var component
-          = findComponent($scope.reportR1, test_plan.pk_component) || {
+          var module
+          = findModule($scope.reportR1, test_plan.pk_module) || {
             name: test_plan.name,
-            pk_component: test_plan.pk_component,
+            pk_module: test_plan.pk_module,
             test_plans: []
           };
-          if($scope.reportR1.indexOf(component) == -1) {
-            $scope.reportR1.push(component);
+          if($scope.reportR1.indexOf(module) == -1) {
+            $scope.reportR1.push(module);
           }
-          var key = $scope.reportR1.indexOf(component);
+          var key = $scope.reportR1.indexOf(module);
           TestPlan.get({testPlanId: test_plan.pk_test_plan},
               function success(result) {
             $scope.reportR1[key].test_plans.push(result);
@@ -224,8 +224,8 @@ app.controller('ReportsCtrl',
           $scope.descriptionsR2 = results.descriptions;
           $scope.r2_resources = results.resources;
 
-          angular.forEach( results.details, function( component ) {
-            angular.forEach( component.versions, function ( version ) {
+          angular.forEach( results.details, function( module ) {
+            angular.forEach( module.versions, function ( version ) {
               var data = [
                           {
                             value: version.summary.pass,
@@ -272,37 +272,66 @@ app.controller('ReportsCtrl',
     }
   };
 
+  $scope.compareModule = function(a,b) {
+    if ( a.organization < b.organization )
+        return -1;
+    if ( a.organization > b.organization )
+        return +1;
+        
+    if ( a.name < b.name )
+        return -1;
+    if ( a.name > b.name )
+        return +1;
+        
+    if ( a.version < b.version )
+        return -1;
+    if ( a.version > b.version )
+        return +1;
+        
+    if ( a.attributes < b.attributes )
+        return -1;
+    if ( a.attributes > b.attributes )
+        return +1;
+        
+    return 0;
+  };
+  
   /**
-   * Move components based on target
+   * Move modules based on target
    * @param target
    */
-  $scope.moveSelectedComponentsR1 = function (target) {
-    for (var i = 0; i < $scope.selectedComponent.length; i++) {
+  $scope.moveSelectedModulesR1 = function (target) {
+    for (var i = 0; i < $scope.selectedModule.length; i++) {
       if (target == 'selected') {
-        var idx_s = $scope.availableComponentsR1.indexOf($scope.selectedComponent[i]);
+        var idx_s = $scope.availableModulesR1.indexOf($scope.selectedModule[i]);
         if (idx_s != -1) {
-          $scope.selectedComponentsR1.push($scope.selectedComponent[i]);
-          $scope.availableComponentsR1.splice(idx_s, 1);
+          $scope.selectedModulesR1.push($scope.selectedModule[i]);
+          $scope.availableModulesR1.splice(idx_s, 1);
         }
       } else if (target === 'available') {
-        var idx_a = $scope.selectedComponentsR1.indexOf($scope.selectedComponent[i]);
+        var idx_a = $scope.selectedModulesR1.indexOf($scope.selectedModule[i]);
         if (idx_a != -1) {
-          $scope.availableComponentsR1.push($scope.selectedComponent[i]);
-          $scope.selectedComponentsR1.splice(idx_a, 1);
+          $scope.availableModulesR1.push($scope.selectedModule[i]);
+          $scope.selectedModulesR1.splice(idx_a, 1);
         }
       }
     }
+    
+    if (target == 'selected')
+          $scope.selectedModulesR1 = $scope.selectedModulesR1.sort($scope.compareModule);
+    else
+          $scope.availableModulesR1 = $scope.availableModulesR1.sort($scope.compareModule);
   };
 
   /**
-   * Get available versions by selected component
+   * Get available versions by selected module
    */
   $scope.generateAvailableVersionsR2 = function ( c ) {
-    // Build the versions list based on selected components
+    // Build the versions list based on selected modules
     $scope.availableVersionsR2 = [];
-    var component = $scope.r2.selectedComponent[0];
+    var module = $scope.r2.selectedModule[0];
     angular.forEach($scope.versions, function (valueL1) {
-      if (component.pk_component == valueL1.fk_component) {
+      if (module.pk_module == valueL1.fk_module) {
         var doPush = true;
 //      angular.forEach($scope.selectedCombinationsR2, function (valueL2) {
 //      if (valueL1.pk_version != valueL2.pk_version) {
@@ -311,7 +340,7 @@ app.controller('ReportsCtrl',
 //      }
 //      );
         if (doPush) {
-          valueL1.name = valueL1.version + " - " + component.name;
+          valueL1.name = valueL1.version + " - " + module.name;
           $scope.availableVersionsR2.push(valueL1);
         }
       }

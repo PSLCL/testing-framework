@@ -11,7 +11,7 @@ app.controller('TestListCtrl',
     };
     // Delete a test by id
     $scope.deleteTest = function (testPlanId, testId) {
-      $scope.component = Test.delete({
+      $scope.module = Test.delete({
           testPlanId: testPlanId,
           testId: testId
         },
@@ -48,10 +48,11 @@ app.controller('TestNewCtrl',
     $scope.test = {
       fk_test_plan: $routeParams.testPlanId,
       name: '',
-      description: ''
+      description: '',
+      script: ''
     };
     $scope.testSubmit = function () {
-      $scope.test = Tests.save({
+      Tests.save({
           testPlanId: $routeParams.testPlanId
         },
         $scope.test, function success() {
@@ -60,6 +61,12 @@ app.controller('TestNewCtrl',
         }, function fail() {
           console.log('Error: failed to save test.');
         });
+      $scope.test = {
+      fk_test_plan: $routeParams.testPlanId,
+      name: '',
+      description: '',
+      script: ''
+    };
     };
   });
 
@@ -101,7 +108,7 @@ app.controller('TestEditCtrl',
 // Delete test plan
 app.controller('TestDeleteCtrl',
   function ($scope, $routeParams, $location, Test, socket) {
-    $scope.component = Test.delete({
+    $scope.module = Test.delete({
         testPlanId: $routeParams.testPlanId,
         testId: $routeParams.testId
       },

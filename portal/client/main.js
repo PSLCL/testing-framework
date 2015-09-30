@@ -4,14 +4,14 @@ require('./angular/app.js');
 // Controllers
 require('./angular/controllers/user.js');
 require('./angular/controllers/dashboard.js');
-require('./angular/controllers/component.js');
+require('./angular/controllers/module.js');
 require('./angular/controllers/test_plan.js');
 require('./angular/controllers/test.js');
 require('./angular/controllers/report.js');
 
 // Services
 require('./angular/services/auth.js');
-require('./angular/services/components.js');
+require('./angular/services/modules.js');
 require('./angular/services/sockets.js');
 require('./angular/services/stats.js');
 require('./angular/services/test_plans.js');

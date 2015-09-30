@@ -1,0 +1,53 @@
+<div class="page-header">
+    <h1>Modules</h1>
+</div>
+<div class="row page-text">
+    <p></p>
+</div>
+<div class="row list-header">
+    <div dropdown-box class='dropdown-box-wrap' ng-click='openSort()'>
+      <ul class='module-sort'>
+        <i class="fa fa-sort"></i>
+        <li>{{selected_filter}}<li>
+        <li ng-click="sort.by('name'); changeFilter('Name');">Name</li>
+        <li ng-click="sort.by('test_plans'); changeFilter('Test Plans');">Test Plans</li>
+        <li ng-click="sort.by('tests'); changeFilter('Tests');">Tests</li>
+      </ul>
+    </div>
+    <input type="text" class="form-control search" ng-model="query"
+           placeholder="Search for a module" ng-change="getData(modules, query)">
+</div>
+
+<div class="row" ng-switch on="modules.length">
+    <div class="col-xs-12"
+         infinite-scroll='moreModules()'
+         infinite-scroll-disabled='busy'
+         infinite-scroll-immediate-check="false"
+         infinite-scroll-distance='1'>
+      <span ng-switch-when="0">
+          <em>No test plans in database. Would you like to
+              <span class='linked' ng-click='createModule()'>create one</span>?</em>
+      </span>
+      <ul class="list-items" ng-switch-default>
+          <li ng-repeat="module in modules| filter:query">
+            <div class='list-header-group'>
+              <h1>
+                <i class='ico-22x22 list-fold'></i>{{ module.organization}} {{ module.name }} {{ module.attributes }}
+              </h1>
+              <br/>{{ module.version }} {{ module.sequence }}
+              <div class="list-action-btns">
+                  <a href="#/modules/{{module.pk_module}}">
+                    <i class='fa fa-pencil-square-o' title='View/Edit'></i>
+                  </a>
+                  <a href="#/modules/{{module.pk_module}}/report">
+                    <i class='fa fa-line-chart' title="Report"></i>
+                  </a>
+                  <i ng-show="user.username" confirmed-click="deleteModule(module.pk_module)"
+                                  ng-confirm-click="Are you sure you want to delete the module?" 
+                                  class='fa fa-trash-o' title='Delete'></i>
+              </div>
+            </div>
+          </li>
+      </ul>
+    </div>
+</div>

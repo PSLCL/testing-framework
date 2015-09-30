@@ -1,9 +1,9 @@
 //Module dependencies
-var env      = process.env.NODE_ENV || 'development';
-var config   = require('../config/config')[env];
+var config   = require('../../config/config');
 var mysql  = require('mysql');
 
 var pool = mysql.createPool({
+  connectionLimit: 100,
   host: config.mysql.host,
   port: config.mysql.port,
   user: config.mysql.user,

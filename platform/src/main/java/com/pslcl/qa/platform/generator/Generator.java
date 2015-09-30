@@ -1,11 +1,15 @@
 package com.pslcl.qa.platform.generator;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
+import com.pslcl.qa.platform.generator.Template.Parameter;
 
 public class Generator {
     static boolean trace = false;
@@ -33,16 +37,15 @@ public class Generator {
     Core core;
     
     /**
-     * The primary key of the test that the generator will generate instances of.
+     * Maps parameter references to parameters.
      */
-    private long pk_test;
+    private Map<String, Parameter> parameterReferenceMap;
 
     /**
      * Create a generator, which in turn can be used to generate test instances.
      * @param pk_test The primary key of the test that any generated test instances are related to.
      */
     public Generator( long pk_test ) {
-        this.pk_test = pk_test;
         core = new Core( pk_test );
     }
 
@@ -55,33 +58,76 @@ public class Generator {
     Artifact declareArtifact() {
         return null;
     }
+    
+    void addParameterReference(String uuid, Parameter parameter) throws IllegalStateException{
+    	if(parameterReferenceMap == null) throw new IllegalStateException("Test has not been started.");
+    			
+    	parameterReferenceMap.put(uuid, parameter);
+    }
 
+    private static class StringContent implements Content {
+        String content;
+        Hash hash;
+        
+        StringContent( String content ) {
+            hash = Hash.fromContent( content );
+        }
+        
+        @Override
+        public String getValue(Template template) throws Exception {
+            return hash.toString();
+        }
+
+        @Override
+        public Hash getHash() {
+            return hash;
+        }
+
+        @Override
+        public InputStream asStream() {
+            return new ByteArrayInputStream( content.getBytes() );
+        }
+
+        @Override
+        public byte[] asBytes() {
+            return content.getBytes();
+        }       
+    }
+    
     /**
      * Create content that can be used in a test.
      * @param content
      * @return
      */
     public Content createContent( String content ) {
-        Hash h = Hash.fromContent( content );
-        Content c;
-        if ( ! addedContent.containsKey( h ) ) {
-            c = new Content( core, content );
-            addedContent.put( c.getHash(), c );
+        Content result = new StringContent( content );
+        if ( ! addedContent.containsKey( result.getHash() ) ) {
+            addedContent.put( result.getHash(), result );
         }
         else
-            c = addedContent.get( h );
+            result = addedContent.get( result.getHash() );
 
-        return c;
+        return result;
     }
 
     /**
-     * Create an iterable set of all versions known to the generator.
-     * @return An iterable set of all versions.
+     * Create an iterable set of all modules known to the generator.
+     * @return An iterable set of all modules.
      */
-    public Iterable<Version> createVersionSet() {
-        return core.createVersionSet();
+    public Iterable<Module> createModuleSet() {
+        return core.createModuleSet();
     }
 
+    /**
+     * Create an iterable set of all modules known to the generator for a specific organization and module name.
+     * @param organization The organization of the module.
+     * @param module The module name.
+     * @return An iterable set of modules.
+     */
+    public Iterable<Module> createModuleSet(String organization, String module) {
+        return core.createModuleSet(organization, module);
+    }
+    
     /**
      * Create an iterator over the dependencies of a particular artifact.
      * @param artifact The artifact to find the dependencies of.
@@ -92,15 +138,24 @@ public class Generator {
     }
 
     /**
-     * Create an iterator over artifacts that match a given name. The artifacts will be associated with the
-     * specified artifact - meaning that all the artifacts returned will be tagged with the identifier of
-     * the passed artifact.
-     * @param internal_build The name of the internal build from which to pick the executable.
-     * @param name The name of the artifact that should be returned.
-     * @return An iterator over the set of artifacts.
+     * Create an iterator over artifacts that match a set of search criteria that include attributes that the
+     * providing module must contain, the configuration that the artifact must belong to, and a set of artifact
+     * names that may include regex patterns. Multiple artifact names may be specified.
+     * The result set will include sets of matching artifacts, with each set coming from compatible modules (although
+     * the modules may not be exactly the same). The first artifact from each matching module will be returned,
+     * with the latest sequence having priority.
+     * Modules are compatible if they have the same organization, module name, and version. They must have at
+     * least the attributes specified.
+     * @param attributes A set of attributes that each matching module must provide. Null is allowed, in which case there
+     * is no filtering done by attribute.
+     * @param configuration The configuration that each artifact must be in. Null is allowed, in which case there
+     * is no fitering done by configuration.
+     * @param name The name of the artifact that should be returned. Regex patterns are allowed as defined in MySQL.
+     * @return An iterator over the set of artifacts. Each entry contains an array of artifacts in the same order
+     * as the input parameters.
      */
-    public Iterable<Artifact[]> createArtifactSet( String internal_build, String ... name ) {
-        return core.createArtifactSet( internal_build, name );
+    public Iterable<Artifact[]> createArtifactSet( Attributes attributes, String configuration, String ... name ) {
+        return core.createArtifactSet( attributes, configuration, name );
     }
 
     /**
@@ -129,6 +184,20 @@ public class Generator {
     }
 
     /**
+     * Declare that the running test has been assigned to a particular email. This is
+     * typically not used during generation, but is useful for populating test data.
+     * @param email The email address of the assigned owner.
+     */
+    public void assign( String email ) {
+        if ( activeTestInstance == null ) {
+            System.err.println( "ERROR: There is no test being generated." );
+            return;
+        }
+
+        activeTestInstance.assign( email );
+    }
+    
+    /**
      * Declare that a new test is being defined. Internally a test is represented as a script and description, along
      * with a set of versions that are used in the test.
      */
@@ -137,7 +206,8 @@ public class Generator {
             System.err.println( "ERROR: A test has already been started, and not yet completed." );
             return;
         }
-
+        
+        parameterReferenceMap = new HashMap<String, Parameter>();        
         activeTestInstance = new TestInstance( core );
     }
 
@@ -168,6 +238,8 @@ public class Generator {
         activeTestInstance.close();
         allTestInstances.add( activeTestInstance );
         activeTestInstance = null;
+        parameterReferenceMap.clear();
+        parameterReferenceMap = null;
     }
 
     private void dumpTestInstances() {
@@ -193,7 +265,7 @@ public class Generator {
             core.syncDescribedTemplates( allTestInstances );
         }
         catch ( Exception e ) {
-            //TODO: Process.
+            System.err.println( "ERROR: Failure to close generator, " + e.getMessage() );
         }
         
         

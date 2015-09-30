@@ -1,21 +1,32 @@
 var routes    = require('../routes');
-var comp      = require('../routes/component');
+var comp      = require('../routes/module');
 var test      = require('../routes/test');
 var plan      = require('../routes/test_plan');
 var version   = require('../routes/version');
 var artifact  = require('../routes/artifact');
+var instance  = require('../routes/instance');
 
 module.exports = function (app, config, passport) {
   require('./middlewares/auth')(passport,config);
 
+  var auth = function(req, res, next) {
+    if (!req.isAuthenticated())
+      res.send(401);
+    else
+      next();
+  };
+  
   // Root route
-  app.get('/', routes.index);
+  app.get('/', routes.index );
 
   // API routes
   // Anonymous routes
   app.get('/api/v1/stats',                              routes.index);
-  app.get('/api/v1/components',                         comp.list);
-  app.get('/api/v1/components/:id',                     comp.show);
+  app.get('/api/v1/modules',                         comp.list);
+  app.get('/api/v1/modules/:id',                     comp.show);
+  app.get('/api/v1/modules/:id/report',                 comp.report);
+  app.get('/api/v1/modules/:id/report_print',          comp.report_print);
+  
   app.get('/api/v1/test_plans',                         plan.list);
   app.get('/api/v1/test_plans/:pk_test_plan',           plan.show);
   app.get('/api/v1/test_plans/:pk_test_plan/tests',     test.list);
@@ -26,51 +37,70 @@ module.exports = function (app, config, passport) {
   app.get('/api/v1/report_test_plans',                  plan.report);
   app.get('/api/v2/report_test_plans',                  plan.new_report);
 
+  app.get('/api/v1/instances',                          instance.list);
+  
   // Report routes (anonymous)
-  app.get('/report/plan/:component',                    plan.name_report);
-  app.get('/report/result/:component',                  version.name_report);
-  app.get('/report/result/:component/:version',         version.name_report);
+  app.get('/report/plan/:module',                    plan.name_report);
+  app.get('/report/result/:module',                  version.name_report);
+  app.get('/report/result/:module/:version',         version.name_report);
 
   // Artifact routes (anonymous)
   app.get('/artifact/:artifactid',                      artifact.single);
   app.get('/artifacts/:instanceid',                     artifact.multiple);
 
+  // Authentication routes.
+  app.get('/auth/atlassian-oauth',
+        passport.authenticate('atlassian-oauth'), function (req,res) {});
+  app.get('/auth/atlassian-oauth/callback',
+        passport.authenticate('atlassian-oauth', { failureRedirect: '/login' }),
+           function(req,res) {
+                res.redirect('/');
+           });
+  app.get('/loggedin', function(req,res) {
+    var result = {};
+    if ( req.isAuthenticated() ) {   
+        var isAdmin = false;
+        var displayName = "";
+        var avatar = null;
+    
+        if ( req.user.groups.indexOf('testing-admin') > 0 )
+            isAdmin = true;
+    
+        displayName = req.user.displayName;
+        avatar = req.user.avatarUrls['32x32'];
+    
+        result = { "isAdmin": isAdmin, "username": req.user.username, "displayName": displayName, "avatar": avatar, "user": req.user };
+    }
+    
+    res.send( result );
+  });
+  app.get('/logout', function(req,res) {
+    req.logout();
+    res.redirect('/');
+  });
+  
   // Authenticated Routes
-  app.get('/api/v1/stats/admin',
-      passport.authenticate('basic',{ session: false }), routes.admin_index);
-  // Component routes
-  app.post  ('/api/v1/components',
-      passport.authenticate('basic', { session: false }), comp.create);
-  app.post  ('/api/v1/components/:id',
-      passport.authenticate('basic', { session: false }), comp.update);
-  app.delete('/api/v1/components/:id',
-      passport.authenticate('basic', { session: false }), comp.destroy);
+  app.get('/api/v1/stats/admin',                 auth, routes.admin_index);
+  app.post  ('/api/v1/modules',                  auth, comp.create);
+  app.post  ('/api/v1/modules/:id',              auth, comp.update);
+  app.delete('/api/v1/modules/:id',              auth, comp.destroy);
 
   // Test Plan routes
-  app.post  ('/api/v1/test_plans',
-      passport.authenticate('basic', { session: false }), plan.create);
-  app.post  ('/api/v1/test_plans/:pk_test_plan',
-      passport.authenticate('basic', { session: false }), plan.update);
-  app.delete('/api/v1/test_plans/:pk_test_plan',
-      passport.authenticate('basic', { session: false }), plan.destroy);
+  app.post  ('/api/v1/test_plans',               auth, plan.create);
+  app.post  ('/api/v1/test_plans/:pk_test_plan', auth, plan.update);
+  app.delete('/api/v1/test_plans/:pk_test_plan', auth, plan.destroy);
 
-  // Add/Remove Test Plan from components
-  app.delete('/api/v1/component/test_plan',
-      passport.authenticate('basic', { session: false}), comp.remove_test_plan);
-  app.post  ('/api/v1/component/test_plan',
-      passport.authenticate('basic', { session: false}), comp.add_test_plan);
+  // Add/Remove Test Plan from modules
+  app.delete('/api/v1/module/test_plan',         auth, comp.remove_test_plan);
+  app.post  ('/api/v1/module/test_plan',         auth, comp.add_test_plan);
 
   // Test Routes
-  app.post  ('/api/v1/test_plans/:pk_test_plan/tests',
-      passport.authenticate('basic', { session: false }), test.create);
-  app.post  ('/api/v1/test_plans/:pk_test_plan/tests/:id',
-      passport.authenticate('basic', { session: false }), test.update);
-  app.delete('/api/v1/test_plans/:pk_test_plan/tests/:id',
-      passport.authenticate('basic', { session: false }), test.destroy);
+  app.post  ('/api/v1/test_plans/:pk_test_plan/tests',  auth, test.create);
+  app.post  ('/api/v1/test_plans/:pk_test_plan/tests/:id',  auth, test.update);
+  app.delete('/api/v1/test_plans/:pk_test_plan/tests/:id',  auth, test.destroy);
 
   // Report Result
-  app.post('/api/v1/report_result',
-      passport.authenticate('basic', { session: false }), test.report_result);
+  app.post('/api/v1/report_result', auth, test.report_result);
 
   // development error handler
   // will print stack trace

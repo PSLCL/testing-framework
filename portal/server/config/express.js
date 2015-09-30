@@ -3,14 +3,33 @@ var logger  = require('morgan');
 var express = require('express');
 var path    = require('path');
 var compression = require('compression');
+var config   = require('../../config/config');
+var serveIndex = require('serve-index');
+var stylus   = require('stylus');
+
+var directoryList = function(locals, callback) {
+    var result = "<html>";
+    locals.fileList.forEach( function(file) {
+        if ( file.stat.isDirectory() ) {
+            result += '<a href="' + locals.directory + '/' + file.name + '">' + file.name + '/</a><br/>';
+        }
+        else {
+            result += '<a href="' + locals.directory + '/' + file.name + '">' + file.name + '</a><br/>';
+        }
+    });
+    
+    result += "</html>";
+    callback( null, result );
+};
 
 module.exports = function (app, config, passport) {
   // all environments
   app.configure(function () {
     /** @namespace process.env.PORT */
-    app.set('http_port', process.env.HTTP_PORT || 80);
+    app.set('http_port', config.http_port);
     /** @namespace process.env.SPORT */
-    app.set('https_port', process.env.HTTPS_PORT || 443);
+    if ( config.https_port != null )
+        app.set('https_port', config.https_port);
     app.set('views', path.join(__dirname, '../views'));
     app.set('view engine', 'jade');
     app.use(favicon());
@@ -19,9 +38,14 @@ module.exports = function (app, config, passport) {
     app.use(express.urlencoded());
     app.use(express.methodOverride());
     app.use(express.cookieParser(config.cookiesecret));
+    app.use(express.session({ secret: 'SECRET' }));
     app.use(passport.initialize());
-    app.use(require('stylus').middleware(path.join(__dirname, '../../public')));
+    app.use(passport.session());
+    app.use(stylus.middleware(path.join(__dirname, '../../public')));
     app.use(express.static(path.join(__dirname, '../../public')));
+    app.use('/skin', express.static(path.join(__dirname, '../../skin')));
+    app.use('/repo', serveIndex(path.join(__dirname, '../../repo'), { template: directoryList }));
+    app.use('/repo', express.static(path.join(__dirname, '../../repo')));
     app.use(logger('dev'));
     app.use(app.router);
     app.use(compression({

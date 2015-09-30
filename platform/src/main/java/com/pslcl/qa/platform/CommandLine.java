@@ -1,13 +1,18 @@
 package com.pslcl.qa.platform;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -17,21 +22,23 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-//import org.eclipse.jetty.client.HttpClient;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
+import com.pslcl.qa.platform.generator.Artifact;
 import com.pslcl.qa.platform.generator.ArtifactProvider;
-import com.pslcl.qa.platform.generator.ArtifactSink;
+import com.pslcl.qa.platform.generator.ArtifactProvider.ModuleNotifier;
+import com.pslcl.qa.platform.generator.Content;
 import com.pslcl.qa.platform.generator.Core;
-import com.pslcl.qa.platform.generator.QuickBuildArtifactProvider;
+import com.pslcl.qa.platform.generator.Generator;
+import com.pslcl.qa.platform.generator.Machine;
+import com.pslcl.qa.platform.generator.Module;
+import com.pslcl.qa.platform.generator.Template;
 
 public class CommandLine {
-    private static <T extends Comparable<? super T>> List<T> asSortedList( Collection<T> c ) {
-        List<T> list = new ArrayList<T>(c);
-        java.util.Collections.sort(list);
-        return list;
-    }
-
     private static void generalHelp() {
         System.out.println( "test-platform General Help" );
         System.out.println( "[program] --help (this output)" );
@@ -41,11 +48,10 @@ public class CommandLine {
         System.out.println( "  synchronize - synchronize the artifact providers with the database." );
         System.out.println( "  result - add a result to the database." );
         System.out.println( "  run - extract tests from the database and run them." );
+        System.out.println( "  populate - populate the system with made-up testing data." );
         System.exit( 1 );
     }
 
-    // TODO: the following is/are also required, could be mentioned with Help() println()s
-    // QA_CACHE
     private static void synchronizeHelp() {
         System.out.println( "test-platform Synchronize Help" );
         System.out.println( "This command synchronizes artifact providers with the database and runs generators." );
@@ -54,11 +60,10 @@ public class CommandLine {
         System.out.println( "arguments are:" );
         System.out.println( "  --no-synchronize - optional - disable synchronization." );
         System.out.println( "  --no-generators - optional - disable running generators." );
-        System.out.println( "  --artifact-endpoint - required unless no-synchronize specified - The endpoint of the artifact provider." );
-        System.out.println( "environment requirements are:" );
-        System.out.println( "  DTF_TEST_PROJECT - required - the name of the project to synchronize." );
-        System.out.println( "  DTF_TEST_ARTIFACTS - required - the full path of the directory that contains the artifact cache." );
-        System.out.println( "  DTF_TEST_GENERATORS - required - the full path of the directory where generators are written." );
+        System.out.println( "  --prune <count> - optional - enable deleting of missing modules." );
+        System.out.println( "               <count> is the number of synchronize runs that the module has been missing. " );
+        System.out.println( "                       Count must be greater than 0." );
+
         System.exit( 1 );
     }
     
@@ -71,8 +76,7 @@ public class CommandLine {
         System.out.println( "  <runcount> - required except for manual mode - the number of tests to run." );
         System.out.println( "  --manual i - optional, to run one test on all test instances soon - supply the id number assigned for the test." );
         System.out.println( "  --manual i j - optional, to run one test on one test instance soon - supply the id number assigned for the test, followed by the id number assigned to the test run." );
-        System.out.println( "environment requirements are:" );
-        System.out.println( "  TODO" );
+
         System.exit( 1 );
     }
 
@@ -87,19 +91,48 @@ public class CommandLine {
         System.exit(1);
     }
 
-    private static class HandleGenerator implements ArtifactProvider.GeneratorNotifier {
-        private File cache;
+    private static void populateHelp() {
+        System.out.println( "test-platform Populate Help" );
+        System.out.println( "This command populates the database with made-up testing data." );
+        System.out.println( "[program] populate --help (this output)" );
+        System.out.println( "[program] populate <arguments>" );
+        System.out.println( "arguments are:" );
+        System.out.println( "  --plans <num> - optional, specifies how many test plans to populate." );
+        System.out.println( "  --tests <num> - optional, specifies how many tests to populate in each test plan (requires --plans)." );
+        System.out.println( "  --instances <num> - optional, specifies how many test instances to populate for each test (requires --tests)." );
+        System.out.println( "  --orgs <num> - optional, specifies how many organizations to populate." );
+        System.out.println( "  --modules <num> - optional, specifies how many modules to populate for each organization (requires --orgs)." );
+        System.out.println( "  --versions <num> - optional, specifies how many versions to populate for each module (requires -modules)." );
+        System.out.println( "  --artifacts <num> - optional, specifies how many artifacts to populate in each module (requires --modules)." );
+        System.out.println( "  --owner <email> - optional, specifies that some pending tests should be assigned to this owner (requires --instances)." );
+        System.out.println( "  --results - optional, specifies whether or not to populate results (requires --instances)." );
+        System.out.println( "When creating modules, the populator will create organizations, names, and versions. A new organization" );
+        System.out.println( "is created for each 10 modules, a new name for each 5." );
+        System.out.println( "When creating instances, each will get progressively more complex and use different combinations of modules" );
+        System.out.println( "and artifacts." );
+        System.exit(1);
+    }
 
-        public HandleGenerator( File cache ) {
-            this.cache = cache;
+    private static class HandleModule implements ArtifactProvider.ModuleNotifier {
+        private static class Delayed {
+            ArtifactProvider source;
+            String merge;
+            Module module;
         }
-
-        public void generator( String name, ArtifactProvider.Content archive ) {
+        
+        private Core core;
+        private List<Delayed> delayed = new ArrayList<Delayed>();
+        
+        public HandleModule( Core core ) {
+            this.core = core;
+        }
+        
+        private void decompress( Hash hash, long pk_version, long pk_parent, String configuration, boolean merge_source, long pk_source_module ) {
             TarArchiveInputStream ti = null;
             try {
+                InputStream archive = new FileInputStream( core.getContentFile( hash ) );
                 /* Uncompress and unarchive the file, creating entries for each artifact found inside. */
-                InputStream fis = archive.asStream();
-                InputStream is = new GzipCompressorInputStream(fis);
+                InputStream is = new GzipCompressorInputStream(archive);
                 ti = new TarArchiveInputStream(is);
                 TarArchiveEntry entry;
                 while ((entry = ti.getNextTarEntry()) != null) {
@@ -111,33 +144,13 @@ public class CommandLine {
                     if (artifact.startsWith("./"))
                         artifact = artifact.substring(2);
 
-                    /* Extract the contents to a memory cache, determine the hash, and see if the file is already cached. */
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    final int BUFFER_MAX_SIZE = 8192;
-                    byte[] buffer = new byte[BUFFER_MAX_SIZE];
-
-                    int count;
-                    while ((count = ti.read(buffer, 0, BUFFER_MAX_SIZE)) != -1) {
-                        bos.write(buffer, 0, count);
-                    }
-
-                    bos.close();
-
-                    /* Check the cache and add the file if not found. */
-                    File f = new File(cache, artifact);
-                    if (!f.exists()) {
-                        //noinspection ResultOfMethodCallIgnored
-                        f.getParentFile().mkdirs();
-                        FileOutputStream fos = new FileOutputStream(f);
-                        bos.writeTo(fos);
-                        fos.close();
-                    }
-                    else
-                        System.err.println( "Duplicate generator artifact: " + artifact );
+                    int mode = entry.getMode();
+                    Hash h = core.addContent( ti );
+                    core.addArtifact( pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module );
                 }
             }
             catch ( Exception e ) {
-                System.err.println( "ERROR: Failure to write generator artifact, " + e );
+                System.err.println( "ERROR: Failure extracting file, " + e.getMessage() );
             }
             finally {
                 if ( ti != null ) try {
@@ -148,27 +161,131 @@ public class CommandLine {
                 }
             }
         }
+        
+        @Override
+        public void module( ArtifactProvider source, Module module, String merge ) {
+            try {
+                // Check to see if the module exists. If it does then return (assuming that artifacts do not change).
+                // If it does not exist then add the module and iterate the artifacts.
+                long pk_module = core.findModule( module );
+                if ( pk_module != 0 ) {
+                    core.updateModule( pk_module );
+                    return;
+                }
+                
+                // Determine if the module contains a test generator - this triggers deletion of prior instances.
+                List<Artifact> artifacts = module.getArtifacts();
+                boolean contains_generator = false;
+                for ( Artifact artifact : artifacts ) {
+                    if ( artifact.getConfiguration().equals( "dtf_test_generator" ) ) {
+                        contains_generator = true;
+                        break;
+                    }
+                }
+                
+                boolean merge_source = false;
+                if ( merge != null && merge.length() > 0 ) {
+                    merge_source = true;
+                    Delayed D = new Delayed();
+                    D.source = source;
+                    D.merge = merge;
+                    D.module = module;
+                    delayed.add( D );
+                }
+                
+                /* Generator and merged components are "one only". This is done because they are not
+                 * meant to be the modules that are tested, but rather modules that provide
+                 * testing applications. Merging multiple "versions" of the same module would
+                 * cause conflicts. The same is true for generators, which are extracted and
+                 * executed.
+                 * However, we do allow different versions of the component that will merge
+                 * into different target modules. This means that we consider only modules
+                 * where the sequence is different.
+                 */
+                // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED, BELOW
+                // IT IS ASSUMED THAT THE SEQUENCE IS LATER THAN ALL EXISTING
+                if ( contains_generator || (merge != null && merge.length() > 0) )
+                    core.deletePriorVersion( module );
+                
+                pk_module = core.addModule( module );
+                for ( Artifact artifact : artifacts ) {    
+                    Hash h = core.addContent( artifact.getContent().asStream() );
+                    long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0 );
+                    if ( artifact.getName().endsWith(".tar.gz") ) {
+                        decompress( h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0 );
+                    }
+                }
+            }
+            catch ( Exception e ) {
+                
+            }
+        }
+        
+        public void finalize() {
+            Iterable<Module> modules = core.createModuleSet();
+            for ( Delayed d : delayed ) {
+                Module dmod = d.module;
+                long pk_source_module = core.findModule( dmod );
+                
+                for ( Module m : modules ) {
+                    // Since the actual types may differ, we compare fields to determine if they are the same.
+                    boolean same = true;
+                    if ( ! m.getOrganization().equals( dmod.getOrganization() ) )
+                        same = false;
+                    if ( ! m.getName().equals( dmod.getName() ))
+                        same = false;
+                    if ( ! m.getVersion().equals( dmod.getVersion() ))
+                        same = false;
+                    if ( ! m.getSequence().equals( dmod.getSequence() ))
+                        same = false;
+                    
+                    if ( same )
+                        continue;
+                    
+                    if ( d.source.merge( d.merge, dmod, m ) ) {
+                        long pk_module = core.findModule( m );
+                        
+                        List<Artifact> artifacts = dmod.getArtifacts();
+                        for ( Artifact artifact : artifacts ) {   
+                            Hash h = core.addContent( artifact.getContent().asStream() );
+                            long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module );
+                            if ( artifact.getName().endsWith(".tar.gz") ) {
+                                decompress( h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module );
+                            }
+                        }
+                    }
+                }               
+            }
+        }
     }
-
-    private static void inheritIO(final InputStream src, final PrintStream dest) {
+    
+    private static void inheritIO(final InputStream src, final PrintStream dest, final PrintStream save) {
         new Thread(new Runnable() {
             public void run() {
                 Scanner sc = new Scanner(src);
                 while (sc.hasNextLine()) {
-                    dest.println(sc.nextLine());
+                    String line = sc.nextLine();
+                    if ( dest != null )
+                        dest.println(line);
+                    if ( save != null )
+                    save.println(line);
                 }
+                
+                sc.close();
             }
         }).start();
     }
 
     private static class GeneratorExecutor implements Runnable {
+        private Core core;
         private File generators;
         private String base;
         private String shell;
         private long id;
         private String script;
 
-        public GeneratorExecutor( File generators, String base, String shell, long id, String script ) {
+        public GeneratorExecutor( Core core, File generators, String base, String shell, long id, String script ) {
+            this.core = core;
             this.generators = generators;
             this.base = base;
             this.shell = shell;
@@ -183,18 +300,21 @@ public class CommandLine {
         }
 
         private void process() {
+            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+            ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
             try {
                 String augmented_params = shell + " " + script;
                 String[] params = augmented_params.split( " " );
                 params[1] = generators.getAbsolutePath() + "/bin/" + params[1];
                 ProcessBuilder processBuilder = new ProcessBuilder();
                 processBuilder.command(params);
-                processBuilder.environment().put("CLASSPATH", generators.getAbsolutePath() + "/lib/*" + File.pathSeparator + base + "/lib/*" );
+                processBuilder.environment().put("CLASSPATH", generators.getAbsolutePath() + "/lib/*" + File.pathSeparator + base + "/platform/lib/*" + File.pathSeparator + base + "/platform/*" );
                 processBuilder.environment().put("DTF_TEST_ID", Long.toString( id ) );
 
                 Process run = processBuilder.start();
-                inheritIO(run.getInputStream(), System.out);
-                inheritIO(run.getErrorStream(), System.err);
+                inheritIO(run.getInputStream(), System.out, new PrintStream(stdout));
+                inheritIO(run.getErrorStream(), System.err, new PrintStream(stderr));
 
                 boolean running = true;
                 while (running == true) {
@@ -205,9 +325,16 @@ public class CommandLine {
                         try { Thread.sleep(250); } catch ( Exception ex ) {}
                     }
                 }
+                
+                core.updateTest( id, stdout.toString(), stderr.toString() );
             }
             catch ( Exception e ) {
-                System.err.println( "ERROR: Could not run script " + script + ", " + e );
+                String log = "ERROR: Could not run script " + script + ", " + e;
+                System.err.println( log );
+                new PrintStream( stderr ).println( log );
+            }
+            finally {
+                core.updateTest( id, stdout.toString(), stderr.toString() );
             }
         }
 
@@ -216,11 +343,46 @@ public class CommandLine {
         }
     }
 
+    private static Set<PosixFilePermission> toPosixPermissions(int mode) {
+        Set<PosixFilePermission> permissions = new HashSet<>();
+        if ((mode & 0b001_000) == 0b001_000) {
+            permissions.add(PosixFilePermission.GROUP_EXECUTE);
+        }
+        if ((mode & 0b100_000) == 0b100_000) {
+            permissions.add(PosixFilePermission.GROUP_READ);
+        }
+        if ((mode & 0b010_000) == 0b010_000) {
+            permissions.add(PosixFilePermission.GROUP_WRITE);
+        }
+
+        if ((mode & 0b001) == 0b001) {
+            permissions.add(PosixFilePermission.OTHERS_EXECUTE);
+        }
+        if ((mode & 0b100) == 0b100) {
+            permissions.add(PosixFilePermission.OTHERS_READ);
+        }
+        if ((mode & 0b010) == 0b010) {
+            permissions.add(PosixFilePermission.OTHERS_WRITE);
+        }
+
+        if ((mode & 0b001_000_000) == 0b001_000_000) {
+            permissions.add(PosixFilePermission.OWNER_EXECUTE);
+        }
+        if ((mode & 0b100_000_000) == 0b100_000_000) {
+            permissions.add(PosixFilePermission.OWNER_READ);
+        }
+        if ((mode & 0b010_000_000) == 0b010_000_000) {
+            permissions.add(PosixFilePermission.OWNER_WRITE);
+        }
+
+        return permissions;
+    }
+    
     private static void synchronize( String[] args ) {
         boolean synchronize = true;
         boolean generate = true;
-        String endpoint = null;
-
+        int prune = -1;
+        
         if (args.length > 1 && args[1].compareTo( "--help" ) == 0)
             synchronizeHelp();
 
@@ -231,15 +393,19 @@ public class CommandLine {
             else if ( args[i].compareTo( "--no-generators" ) == 0 ) {
                 generate = false;
             }
-            else if ( args[i].compareTo( "--artifact-endpoint" ) == 0 ) {
-                endpoint = args[++i];
+            else if ( args[i].compareTo( "--prune" ) == 0 ) {
+                if ( i == args.length )
+                    synchronizeHelp();
+                
+                prune = Integer.parseInt( args[i+1] );
+                if ( prune <= 0 )
+                    synchronizeHelp();
+                
+                i += 1;
             }
             else
                 synchronizeHelp();
         }
-
-        if ( System.getenv("DTF_TEST_PROJECT") == null || System.getenv("DTF_TEST_ARTIFACTS") == null || System.getenv("DTF_TEST_GENERATORS") == null || (synchronize && endpoint == null) )
-            synchronizeHelp();
 
         Core core = null;
         ArtifactProvider artifactProvider = null;
@@ -247,12 +413,9 @@ public class CommandLine {
         try {
             /* Instantiate the platform and artifact provider. */
             core = new Core( 0 );
-            //TODO: Make this a generic service lookup based on classpath.
-            artifactProvider = new QuickBuildArtifactProvider(endpoint);
 
             if ( synchronize ) {
-                String project = System.getenv("DTF_TEST_PROJECT");
-                File generators = new File( System.getenv("DTF_TEST_GENERATORS" ) );
+                File generators = new File( core.getConfig().dirGenerators() );
                 if ( generators.exists() )
                     //noinspection ResultOfMethodCallIgnored
                     org.apache.commons.io.FileUtils.deleteQuietly(generators);
@@ -261,62 +424,69 @@ public class CommandLine {
                 //noinspection ResultOfMethodCallIgnored
                 generators.setWritable( true );
 
-                artifactProvider.init();
-
-                /* Handle generators from this provider. */
-                artifactProvider.iterateGenerators( new HandleGenerator( generators ) );
-
-                /* Read the set of components from both the database and the artifact provider. */
-                Map<String, Long> db_components = core.readComponents();
-                Set<String> components = artifactProvider.getComponents( project );
-
-                /* For each sorted component from the artifact provider... */
-                for (String component : asSortedList( components )) {
-                    /**
-                     * Determine the matching database primary key by lookup or adding the component.
-                     * Note that components are not removed from the database, that is a manual operation.
-                     */
-                    long pk_component;
-                    if (!db_components.containsKey(component))
-                        pk_component = core.addComponent(component);
-                    else
-                        pk_component = db_components.get(component);
-
-                    /* Read the set of versions for the component from both the database and artifact provider. */
-                    Map<String, Long> db_versions = core.readVersions(pk_component);
-                    Set<String> versions = artifactProvider.getVersions( project, component );
-
-                    /* Delete versions found in the database but not the artifact provider. */
-                    for (Map.Entry<String, Long> db_version : db_versions.entrySet()) {
-                        if (!versions.contains(db_version.getKey())) {
-                            core.deleteVersion(db_version.getValue());
-                        }
+                // Get the list of artifact providers from the database, prepare the modules table for updates.
+                List<String> providers = core.readArtifactProviders();
+                core.prepareToLoadModules();
+                boolean noModuleErrors = true;
+                
+                HandleModule handler = new HandleModule( core );
+                List<ArtifactProvider> to_close = new ArrayList<ArtifactProvider>();
+                
+                for ( String providerName : providers ) {
+                    ArtifactProvider provider = null;
+                    try {
+                        Class<?> P = Class.forName( providerName );
+                        provider = (ArtifactProvider) P.newInstance();
+                        
+                        provider.init();
+                        to_close.add( provider );
+                        
+                        /* Handle generators from this provider. */
+                        provider.iterateModules( handler );
                     }
-
-                    /* For each sorted version from the artifact provider... */
-                    for (String version : asSortedList(versions)) {
-                        /* Determine the matching database primary key by lookup or adding the version. */
-                        long pk_version;
-                        if (!db_versions.containsKey(version))
-                            pk_version = core.addVersion(pk_component, version);
-                        else
-                            pk_version = db_versions.get(version);
-
-                        /* Create an ArtifactSet for the entire version (all platforms). */
-                        ArtifactSink artifactSet = new ArtifactSink();
-
-                        /* For each sorted platform from the artifact provider... */
-                        Set<String> platforms = artifactProvider.getPlatforms( project, component, version );
-                        for (String platform : asSortedList(platforms)) {
-                            /* Obtain the set of artifacts for this component/version/platform. */
-                            artifactProvider.iterateArtifacts( project, component, version, platform, artifactSet );
-                        }
-
-                        /* Synchronize with the database. */
-                        core.synchronizeArtifacts(pk_version, artifactSet);
+                    catch ( Exception e ) {
+                        System.err.println( e.getMessage() );
+                        noModuleErrors = false;
                     }
                 }
+                
+                handler.finalize();
+                
+                for ( ArtifactProvider p : to_close ) {
+                    p.close();
+                }
 
+                // Finalize module loading
+                if ( noModuleErrors && prune > 0 )
+                    core.finalizeLoadingModules( prune );
+                
+                // Extract all generators
+                Iterable<Module> find_generators = core.createModuleSet();
+                for ( Module M : find_generators ) {
+                    List<Artifact> artifacts = M.getArtifacts( null, "dtf_test_generator" );
+                    for ( Artifact A : artifacts ) {
+                        File f = core.getContentFile( A.getContent().getHash() );
+                        File P = new File( generators, A.getName() );
+                        FileUtils.copyFile( f, P );
+                        try {
+                            Files.setPosixFilePermissions( P.toPath(), toPosixPermissions( A.getPosixMode() ) );
+                        }
+                        catch ( UnsupportedOperationException e ) {
+                            // Windows does not support setPosixFilePermissions. Fall back.
+                            Set<PosixFilePermission> perms = toPosixPermissions( A.getPosixMode() );
+
+                            P.setExecutable( perms.contains( PosixFilePermission.GROUP_EXECUTE) || perms.contains( PosixFilePermission.OTHERS_EXECUTE), false );
+                            P.setExecutable( perms.contains( PosixFilePermission.OWNER_EXECUTE), true );
+                            
+                            P.setReadable( perms.contains( PosixFilePermission.GROUP_READ) || perms.contains( PosixFilePermission.OTHERS_READ), false );
+                            P.setReadable( perms.contains( PosixFilePermission.OWNER_READ), true );
+                            
+                            P.setWritable( perms.contains( PosixFilePermission.GROUP_WRITE) || perms.contains( PosixFilePermission.OTHERS_WRITE), false );
+                            P.setWritable( perms.contains( PosixFilePermission.OWNER_WRITE), true );
+                        }
+                    }
+                }
+                
                 // Remove all unreferenced templates and descriptions
                 core.pruneTemplates();
             }
@@ -327,16 +497,18 @@ public class CommandLine {
 
                 /* Instantiate the platform and artifact provider. */
                 Map<Long,String> scripts = core.getGenerators();
-                String shell = System.getenv("DTF_TEST_SHELL");
-                String base = System.getenv("DTF_TEST_BASE");
+                String shell = core.getConfig().shell();
+                Path currentRelativePath = Paths.get("");
+                String base = currentRelativePath.toAbsolutePath().toString();
+
                 if ( shell == null )
                     shell = "/bin/bash";
-                File generators = new File( System.getenv("DTF_TEST_GENERATORS") );
+                File generators = new File( core.getConfig().dirGenerators() );
 
-                ExecutorService executor = Executors.newFixedThreadPool( 25 );
+                ExecutorService executor = Executors.newFixedThreadPool( 5 );
 
                 for ( Map.Entry<Long,String> script : scripts.entrySet() ) {
-                    Runnable worker = new GeneratorExecutor( generators, base, shell, script.getKey(), script.getValue() );
+                    Runnable worker = new GeneratorExecutor( core, generators, base, shell, script.getKey(), script.getValue() );
                     executor.execute( worker );
                 }
 
@@ -366,8 +538,9 @@ public class CommandLine {
         }
     }
     
+    @SuppressWarnings("unused")
     private static void runner( String[] args ) {
-        if (args.length < 2 || System.getenv("DTF_TEST_PROJECT") == null || System.getenv("DTF_TEST_ARTIFACTS") == null || System.getenv("DTF_TEST_GENERATORS") == null)
+        if (args.length < 2)
             runHelp(); // exits app
 
         for (int i = 1; i < args.length; i++) {
@@ -375,6 +548,8 @@ public class CommandLine {
                 runHelp(); // exits app
             }
         }
+        
+        System.err.println( "WARN: Running tests not supported." );
        
         int runCount = -1;
         boolean manual = false;
@@ -402,84 +577,10 @@ public class CommandLine {
                 // help true
             }
         }
+        
         if (help == true)
             runHelp(); // exits app
         
-//        // setup http client
-//        HttpClient httpClient = new HttpClient();
-//        httpClient.setFollowRedirects(false); // an example of configuring the client
-//        try {
-//            httpClient.start();
-//            httpClient.stop();
-//        } catch (Exception e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
-//        
-//        System.out.println( "manual runner has setup the http client and exits" );
-
-        
-        
-        
-        
-        
-//        // connect to our message queue
-//        MessageQueueDao mq = new Sqs(); // class Sqs can be replaced with another implementation of MessageQueueDao
-//        try {
-//            mq.connect();
-//        } catch (JMSException e1) {
-//            // TODO Auto-generated catch block
-//            e1.printStackTrace();
-//        }
-//        
-//        Core core = null;
-//        // run something
-//        if (!manual) {
-//            // ask for runcount prioritized tests and run them in the order received
-//                // TODO decide: we analyze priority first, then take top runcount of them?
-//                //              or, a separate process analyzes priority in real time, and we ask it for the top runcount of them.
-//            System.out.println( "run " + runCount + " tests. Not implemented- use 'run --manual' command line with its options for now.");
-//        } else {
-//            // manual: Run the indicated test, according to its manualTestID. This will execute as many associated tests runs as are found in the database.
-//            if (manualTestInstanceNumber != -1)
-//                System.out.println( "runner: Run test number " + manualTestNumber + " on test instance number " + manualTestInstanceNumber );
-//            else
-//                System.out.println( "runner: Run all ready test instances, for test number " + manualTestNumber);
-//            try {
-//                /* Instantiate the platform and test instance access. */
-//                core = new Core( manualTestNumber );
-//
-//                // read information about the set of test instances (aka test runs), to match command-line specified manualTestNumber
-//                Set<Long> set;
-//                if (manualTestInstanceNumber != -1) {
-//                    set = core.readReadyTestInstances_test(manualTestNumber, manualTestInstanceNumber);
-//                    System.out.println( "For test number " + manualTestNumber + " and test instance number " + manualTestInstanceNumber + ", " + set.size() + " test instance(s) is/are ready and not yet run");                
-//                } else {
-//                    set = core.readReadyTestInstances_test(manualTestNumber);
-//                    System.out.println( "For test number " + manualTestNumber + ", " + set.size() + " test run(s) is/are ready and not yet run");
-//                }
-//                System.out.println("");
-//                
-//                // schedule running the n test instances in set: each becomes an independent thread
-//                int setupFailure = 0;
-//                for (Long setMember: set) {
-//                    try {
-//                        new RunnerInstance(core, setMember.longValue()); // launch independent thread, self closing
-//                    } catch (Exception e) {
-//                        setupFailure++;
-//                    }
-//                }
-//                System.out.println( "manual runner launched " + set.size() + " test run(s)" + (setupFailure==0 ? "" : (" ********** but " + setupFailure + " failed in the setup phase")) );
-//                
-//                // This must be called, but only after every test instance has been scheduled. 
-//                RunnerInstance.setupAutoThreadCleanup(); // non-blocking
-//                // this app concludes, but n processes will continue to run until their work is complete
-//            } catch (Exception e) {
-//                System.out.println( "manual runner sees Exception " + e);
-//                // TODO: kill runner thread with its thread pool executor
-//            }
-//        }
-        System.out.println( "runner() exits");
     }
     
     private static void result( String[] args ) {
@@ -511,10 +612,376 @@ public class CommandLine {
             resultHelp();
 
         Core core = new Core( 0 );
-        core.reportResult( hash, result );
+        core.reportResult( hash, result, null );
         core.close();
     }
 
+    private static class PopulateArtifact implements Artifact {
+        private Module module;
+        private String name;
+        private int artifacts;
+        
+        PopulateArtifact( Module module, String name, int artifacts ) {
+            this.module = module;
+            this.name = name;
+            this.artifacts = artifacts;
+        }
+        
+        @Override
+        public Module getModule() {
+            return module;
+        }
+
+        @Override
+        public String getConfiguration() {
+            return "default";
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        private static class TarContent implements Content {
+            private byte[] content;
+            private Hash hash;
+            
+            TarContent( String name, int artifacts ) {
+                try {
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    GzipCompressorOutputStream cos = new GzipCompressorOutputStream( bos );
+                    TarArchiveOutputStream os = new TarArchiveOutputStream( cos );
+                    
+                    for ( int artifact = 0; artifact < artifacts; artifact++ ) {
+                        String content_str = name + "-" + Integer.toString( artifact+1 );
+                        TarArchiveEntry entry = new TarArchiveEntry( content_str );
+                        byte[] content_bytes = content_str.getBytes();
+                        entry.setSize( content_bytes.length );
+                        os.putArchiveEntry( entry );
+                        os.write( content_bytes );
+                        os.closeArchiveEntry();
+                    }
+                    
+                    os.finish();
+                    os.close();
+                    cos.close();
+                    bos.close();
+                    
+                    content = bos.toByteArray();
+                    hash = new Hash( content );
+                }
+                catch ( Exception e ) {
+                    System.err.println( "ERROR: Failure to create populated artifact, " + e.getMessage() );
+                }
+            }
+            
+            @Override
+            public String getValue(Template template) throws Exception {
+                return "";
+            }
+
+            @Override
+            public Hash getHash() {
+                return hash;
+            }
+
+            @Override
+            public InputStream asStream() {
+                return new ByteArrayInputStream( content );
+            }
+
+            @Override
+            public byte[] asBytes() {
+                return content;
+            }
+        }
+        
+        private TarContent content = null;
+        @Override
+        public Content getContent() {
+            if ( content != null )
+                return content;
+            
+            content = new TarContent( name, artifacts );
+            return content;
+        }
+
+        @Override
+        public int getPosixMode() {
+            return 0b100_100_100;
+        }
+    }
+    
+    private static class PopulateModule implements Module {
+        private String org;
+        private String name;
+        private String version;
+        private int sequence;
+        private int artifacts;
+        
+        PopulateModule( String org, String name, String version, int sequence, int artifacts ) {
+            this.org = org;
+            this.name = name;
+            this.version = version;
+            this.sequence = sequence; 
+            this.artifacts = artifacts;
+        }
+        
+        @Override
+        public String getOrganization() {
+            return org;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public String getVersion() {
+            return version;
+        }
+
+        @Override
+        public String getSequence() {
+            return String.format("%05d", sequence);
+        }
+
+        @Override
+        public Map<String, String> getAttributes() {
+            return new HashMap<String,String>();
+        }
+
+        @Override
+        public List<Artifact> getArtifacts() {
+            List<Artifact> result = new ArrayList<Artifact>();
+            result.add( new PopulateArtifact( this, org + "-" + name + "-" + version + ".tar.gz", artifacts ) );
+            return result;
+        }
+
+        @Override
+        public List<Artifact> getArtifacts(String namePattern) {
+            return new ArrayList<Artifact>();
+        }
+
+        @Override
+        public List<Artifact> getArtifacts(String namePattern,
+                String configuration) {
+            return new ArrayList<Artifact>();
+        }   
+    }
+    
+    private static class PopulateProvider implements ArtifactProvider {
+        private int orgs;
+        private int modules;
+        private int versions;
+        private int artifacts;
+        
+        PopulateProvider( int orgs, int modules, int versions, int artifacts ) {
+            this.orgs = orgs;
+            this.modules = modules;
+            this.versions = versions;
+            this.artifacts = artifacts;
+        }
+        @Override
+        public void init() throws Exception {
+        }
+
+        @Override
+        public void iterateModules(ModuleNotifier moduleNotifier) throws Exception {
+            for ( int org = 0; org < orgs; org++ ) {
+                String org_str = "com.pslcl.testing.org" + Integer.toString(org+1);
+                for ( int module = 0; module < modules; module++ ) {
+                    String module_str = "module" + Integer.toString(module+1);
+                    for ( int version = 0; version < versions; version++ ) {
+                        String version_str = "v" + Integer.toString(version+1);
+                        moduleNotifier.module( this, new PopulateModule( org_str, module_str, version_str, version+1, artifacts ), null );
+                    }
+                }
+            }
+         }
+
+        @Override
+        public boolean merge(String merge, Module module, Module target) {
+            return false;
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+    
+    /**
+     * Populate the database with fictional information for testing purposes. The following
+     * data can be created based on input parameters:
+     *   test plans: enabled with the --plans option, creates the number of specified plans.
+     *   tests: enabled with the --tests option, creates the number of specified tests in each created plan.
+     *   modules: enabled with the --modules option, creates the number of specified modules.
+     *   artifacts: enabled with the --artifacts option, creates the number of specified artifacts in each module.
+     *   instances: enabled with the --instances option, creates test instances like a generator would.
+     *   results: enabled with the --results option, creates test results.
+     * @param args
+     */
+    private static void populate( String[] args ) {
+        if (args.length < 2 || args[1].compareTo("--help") == 0)
+            populateHelp();
+        
+        int plans = 0;
+        int tests = 0;
+        int instances = 0;
+        int orgs = 0;
+        int modules = 0;
+        int versions = 0;
+        int artifacts = 0;
+        String owner = null;
+        boolean results = false;
+        for (int i = 1; i < args.length; i++) {
+            if (args[i].compareTo("--plans") == 0 && args.length > i) {
+                plans = Integer.parseInt( args[i+1] );
+                i += 1;
+            }
+            else if (args[i].compareTo("--tests") == 0 && args.length > i) {
+                tests = Integer.parseInt( args[i+1] );
+                i += 1;
+            }
+            else if (args[i].compareTo("--instances") == 0 && args.length > i) {
+                instances = Integer.parseInt( args[i+1] );
+                i += 1;
+            }
+            else if (args[i].compareTo("--orgs") == 0 && args.length > i) {
+                orgs = Integer.parseInt( args[i+1] );
+                i += 1;
+            }
+            else if (args[i].compareTo("--modules") == 0 && args.length > i) {
+                modules = Integer.parseInt( args[i+1] );
+                i += 1;
+            }
+            else if (args[i].compareTo("--versions") == 0 && args.length > i) {
+                versions = Integer.parseInt( args[i+1] );
+                i += 1;
+            }
+            else if (args[i].compareTo("--artifacts") == 0 && args.length > i) {
+                artifacts = Integer.parseInt( args[i+1] );
+                i += 1;
+            }
+            else if (args[i].compareTo("--owner") == 0 && args.length > i) {
+                owner = args[i+1];
+                i += 1;
+            }
+            else if (args[i].compareTo("--results") == 0 ) {
+                results = true;
+            }
+            else
+                populateHelp();
+        }
+
+        // Check for illegal combinations
+        if ( plans == 0 && tests > 0)
+            populateHelp();
+        if ( tests == 0 && instances > 0 )
+            populateHelp();
+        if ( orgs == 0 && modules > 0 )
+            populateHelp();
+        if ( modules == 0 && artifacts > 0 )
+            populateHelp();
+        if ( (artifacts == 0 || instances == 0) && results )
+            populateHelp();
+        if ( (owner != null) && instances == 0)
+            populateHelp();
+        
+        Core core = new Core( 0 );
+        int total_artifacts = orgs * modules * versions * artifacts;
+        
+        // Populate the modules and artifacts.
+        ModuleNotifier moduleNotifier = new HandleModule( core );
+        ArtifactProvider populateProvider = new PopulateProvider( orgs, modules, versions, artifacts );
+        try {
+            populateProvider.init();
+            populateProvider.iterateModules( moduleNotifier );
+        }
+        catch ( Exception e ) {
+            System.err.println( "ERROR: Failed to iterate modules, " + e.getMessage() );
+        }
+        finally {
+            populateProvider.close();
+        }
+        
+        // We will generate a test instance for each result
+        //   A test for each 10 test instances
+        //   A test case for each 10 tests.
+        // However, all this command does is populate the test plans and tests.
+        // The rest of the work is done as a generator.
+        int test_sequence = 0;
+        for ( int test_plan = 0; test_plan < plans; test_plan++ ) {
+            String test_plan_str = Integer.toString( test_plan + 1 );
+            long pk_test_plan = core.addTestPlan( "Test Plan " + test_plan_str, "Description for test plan " + test_plan_str );
+            for ( int test = 0; test < tests; test++ ) {
+                String test_str = test_plan_str + "/" + Integer.toString( test+ 1 );
+                long pk_test = core.addTest( pk_test_plan, "Test " + test_str, "Description for test " + test_str, "" );
+                
+                // Create instances by acting as a generator.
+                Generator generator = new Generator( pk_test );
+                for ( int instance = 0; instance < instances; instance++ ) {
+                   generator.startTest();
+                   Machine simpleMachine = new Machine(generator, "simpleMachine");
+                   
+                   Artifact[] artifact_list = new Artifact[ instance + 1 ];
+                   for ( int name = 0; name < instance+1; name++ ) {
+                       // Pick the appropriate artifacts to use in this instance.
+                       // We will pick the number of artifacts based on the index of the instance.
+                       // So, instance 2 will use 3 artifacts.
+                       // We will pick artifacts based on the test we are generating sequentially.
+                       //  A1, A2, A3, A4, A5, ...
+                       //  com.pslcl.testing.org1-module1-v1.tar.gz-0
+                       int artifact_index = (test_plan+1) * (test+1) * (instance+1) * (name+1) * 13;
+                       artifact_index %= total_artifacts;
+                       int organization_index = artifact_index / (modules*versions*artifacts);
+                       artifact_index -= organization_index * (modules*versions*artifacts);
+                       int module_index = artifact_index / (versions*artifacts);
+                       artifact_index -= module_index * (versions*artifacts);
+                       int version_index = artifact_index / artifacts;
+                       artifact_index -= version_index * artifacts;
+                       
+                       String[] names = new String[1];
+                       names[0] = String.format( "com.pslcl.testing.org%d-module%d-v%d.tar.gz-%d",  organization_index+1, module_index+1, version_index+1, artifact_index+1 );
+                       Iterable<Artifact[]> simple = generator.createArtifactSet(null, null, names);
+                       artifact_list[name] = simple.iterator().next()[0];
+                   }
+                   
+                   try {
+                       simpleMachine.bind(new Attributes());
+                       simpleMachine.deploy(artifact_list);
+                   }
+                   catch ( Exception e ) {
+                       System.err.println( "ERROR: Couldn't bind an deploy instance, " + e.getMessage() );
+                   }
+                       
+                   // Log results if either we need to have results or if there is an owner. For repeatability,
+                   // We alternate pass/fail/pending for every 3 results. We alternate assigning an owner every 7
+                   // results.
+                   if ( results || owner != null ) {
+                       // Pass/Fail generation. Pass groups of 3 tests, then fail 3, then pend 3.
+                       // Owner generation. Assign owner for groups of 7, then skip 7.                    
+                       if ( ((test_sequence / 3) % 3) == 0 )
+                           generator.pass();
+                       else if ( ((test_sequence /3) % 3) == 1 )
+                           generator.fail();
+                       
+                       if ( ((test_sequence / 7) % 2) == 0 )
+                           generator.assign( owner );
+                   }
+                   
+                   test_sequence += 1;
+                   generator.completeTest();
+                }
+                
+                generator.close();
+            }
+        }
+        
+        core.close();
+    }
+    
     /**
      * This is the main entry point for the test platform. All command-line requests to the platform come through this entry
      * point. The following commands are understood, each having its own set of parameters.
@@ -539,6 +1006,9 @@ public class CommandLine {
         }
         else if ( args[0].compareTo( "result" ) == 0 ) {
             result( args );
+        }
+        else if ( args[0].compareTo( "populate" ) == 0 ) {
+            populate( args );
         }
         System.exit(0);
     }

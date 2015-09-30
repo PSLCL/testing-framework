@@ -35,11 +35,6 @@ app.controller('DashboardCtrl',
     })
   });
 
-// Reports
-app.controller('ReportsCtrl', function ($scope, $location) {
-  // TODO: Implement reports
-});
-
 // Handle login
 app.controller('LoginCtrl',
   function ($scope, $rootScope, $location, $window, Auth) {
@@ -66,44 +61,44 @@ app.controller('LogoutCtrl',
     $location.path('/login');
   });
 
-// Managing the component list
-app.controller('ComponentListCtrl',
-  function ($scope, $rootScope, $filter, $timeout, Components, Component, socket) {
+// Managing the module list
+app.controller('ModuleListCtrl',
+  function ($scope, $rootScope, $filter, $timeout, Modules, Module, socket) {
     $scope.busy = false;
-    // Get list of components
-    Components.query(
+    // Get list of modules
+    Modules.query(
       function success(results) {
-        $scope.components = results;
+        $scope.modules = results;
       });
 
-    // Filter list of components
-    $scope.getData = function (components, query) {
-      $scope.queryData = $filter('filter')(components, query);
+    // Filter list of modules
+    $scope.getData = function (modules, query) {
+      $scope.queryData = $filter('filter')(modules, query);
     };
 
-    // Delete a component by id
-    $scope.deleteComponent = function (componentId) {
-      $scope.component = Component.delete({componentId: componentId},
+    // Delete a module by id
+    $scope.deleteModule = function (moduleId) {
+      $scope.module = Module.delete({moduleId: moduleId},
         function success() {
-          Components.query(
+          Modules.query(
             function success(results) {
-              $scope.components = results;
+              $scope.modules = results;
             });
           socket.emit('get:stats');
         });
     };
 
-    // Display create component inline
+    // Display create module inline
     var display_create = false;
-    $scope.createComponent = function() {
+    $scope.createModule = function() {
       if (!display_create) {
         $scope.displayBlock = 'display-block';
         $timeout(function(){
-          $scope.createComponentClass = 'display-create';
+          $scope.createModuleClass = 'display-create';
         },100)
         display_create = true;
       } else {
-        $scope.createComponentClass = '';
+        $scope.createModuleClass = '';
         $timeout(function(){
           $scope.displayBlock = '';
         },500);
@@ -111,90 +106,90 @@ app.controller('ComponentListCtrl',
       };
     };
 
-    // Get more components
-    $scope.moreComponents = function () {
-      if ($scope.components) {
+    // Get more modules
+    $scope.moreModules = function () {
+      if ($scope.modules) {
         if ($scope.busy) return;
         $scope.busy = true;
-        var after = $scope.components[$scope.components.length - 1].pk_component;
-        Components.query({ after: after },
+        var after = $scope.modules[$scope.modules.length - 1].pk_module;
+        Modules.query({ after: after },
           function success(results) {
-            if (results[0]) $scope.components.push(results[0]);
+            if (results[0]) $scope.modules.push(results[0]);
             $scope.busy = false;
           });
       }
     };
   });
 
-// Creating a new component
-app.controller('ComponentNewCtrl',
-  function ($scope, $location, Components, socket) {
-    $scope.heading = 'Create new Component';
-    $scope.submitLabel = 'Create Component';
-    $scope.component = {
+// Creating a new module
+app.controller('ModuleNewCtrl',
+  function ($scope, $location, Modules, socket) {
+    $scope.heading = 'Create new Module';
+    $scope.submitLabel = 'Create Module';
+    $scope.module = {
       name: ''
     };
     $scope.submitFunction = function () {
-      $scope.component = Components.save(
-        $scope.component, function success(result) {
+      $scope.module = Modules.save(
+        $scope.module, function success(result) {
           socket.emit('get:stats');
-          $location.path('components/' + result.insertId);
+          $location.path('modules/' + result.insertId);
         }, function fail() {
-          console.log('Error: failed to save component.');
+          console.log('Error: failed to save module.');
         });
     };
   });
 
-// View component
-app.controller('ComponentViewCtrl',
-  function ($scope, $routeParams, $timeout, Component, ComponentTestPlan) {
+// View module
+app.controller('ModuleViewCtrl',
+  function ($scope, $routeParams, $timeout, Module, ModuleTestPlan) {
     $scope.busy = false;
-    Component.get({componentId: $routeParams.componentId},
+    Module.get({moduleId: $routeParams.moduleId},
       function success(result) {
-        $scope.component = result.component;
+        $scope.module = result.module;
         $scope.test_plans = result.test_plans;
       });
-    $scope.addTestPlan = function (componentId, testPlanId, testPlanSelected) {
-      if(componentId === testPlanSelected){
-        ComponentTestPlan.delete(
+    $scope.addTestPlan = function (moduleId, testPlanId, testPlanSelected) {
+      if(moduleId === testPlanSelected){
+        ModuleTestPlan.delete(
         {
-          fk_component: componentId,
+          fk_module: moduleId,
           fk_test_plan: testPlanId
         }, function success() {
-          Component.get({componentId: componentId},
+          Module.get({moduleId: moduleId},
             function success(result) {
-              $scope.component = result.component;
+              $scope.module = result.module;
               $scope.test_plans = result.test_plans;
             });
         });
       } else {
-        ComponentTestPlan.save(
+        ModuleTestPlan.save(
         {
-          fk_component: componentId,
+          fk_module: moduleId,
           fk_test_plan: testPlanId
         }, function success() {
-          Component.get({componentId: componentId},
+          Module.get({moduleId: moduleId},
             function success(result) {
-              $scope.component = result.component;
+              $scope.module = result.module;
               $scope.test_plans = result.test_plans;
             });
         });
       }
     };
-    $scope.removeTestPlan = function (componentId, testPlanId) {
-      ComponentTestPlan.delete(
+    $scope.removeTestPlan = function (moduleId, testPlanId) {
+      ModuleTestPlan.delete(
         {
-          fk_component: componentId,
+          fk_module: moduleId,
           fk_test_plan: testPlanId
         }, function success() {
-          Component.get({componentId: componentId},
+          Module.get({moduleId: moduleId},
             function success(result) {
-              $scope.component = result.component;
+              $scope.module = result.module;
               $scope.test_plans = result.test_plans;
             });
         });
     };
-    // Display create component inline
+    // Display create module inline
     var display_create = false;
     $scope.createTestPlan = function() {
       if (!display_create) {
@@ -217,7 +212,7 @@ app.controller('ComponentViewCtrl',
         if ($scope.busy) return;
         $scope.busy = true;
         var after = $scope.test_plans[$scope.test_plans.length - 1].pk_test_plan;
-        Component.get({componentId: $routeParams.componentId, after: after},
+        Module.get({moduleId: $routeParams.moduleId, after: after},
           function success(result) {
             if (result && result.test_plans) {
               var plans = result.test_plans;
@@ -231,30 +226,30 @@ app.controller('ComponentViewCtrl',
     };
   });
 
-// Edit component
-app.controller('ComponentEditCtrl',
-  function ($scope, $routeParams, $location, Component) {
-    $scope.heading = 'Update Component';
-    $scope.submitLabel = 'Update Component';
-    $scope.component = Component.get({componentId: $routeParams.componentId});
+// Edit module
+app.controller('ModuleEditCtrl',
+  function ($scope, $routeParams, $location, Module) {
+    $scope.heading = 'Update Module';
+    $scope.submitLabel = 'Update Module';
+    $scope.module = Module.get({moduleId: $routeParams.moduleId});
     $scope.submitFunction = function () {
-      $scope.component = Component.save({
-          componentId: $routeParams.componentId
+      $scope.module = Module.save({
+          moduleId: $routeParams.moduleId
         },
-        $scope.component, function success() {
-          $location.path('components');
+        $scope.module, function success() {
+          $location.path('modules');
         }, function fail() {
-          console.log('Error: failed to update component.');
+          console.log('Error: failed to update module.');
         });
     };
   });
 
-// Delete component
-app.controller('ComponentDeleteCtrl',
-  function ($scope, $routeParams, $location, Component, Components, socket) {
-    $scope.component = Component.delete({componentId: $routeParams.componentId},
+// Delete module
+app.controller('ModuleDeleteCtrl',
+  function ($scope, $routeParams, $location, Module, Modules, socket) {
+    $scope.module = Module.delete({moduleId: $routeParams.moduleId},
       function success() {
-        $location.path('components');
+        $location.path('modules');
         socket.emit('get:stats');
       });
   });
@@ -271,7 +266,7 @@ app.controller('TestPlanListCtrl',
     $scope.getData = function (test_plans, query) {
       $scope.queryData = $filter('filter')(test_plans, query);
     };
-    // Display create component inline
+    // Display create module inline
     var display_create = false;
     $scope.createTestPlan = function() {
       if (!display_create) {
@@ -290,7 +285,7 @@ app.controller('TestPlanListCtrl',
     };
     // Delete a test plan by id
     $scope.deleteTestPlan = function (testPlanId) {
-      $scope.component = TestPlan.delete({testPlanId: testPlanId},
+      $scope.module = TestPlan.delete({testPlanId: testPlanId},
         function success() {
           TestPlans.query(
             function success(results) {
@@ -344,7 +339,7 @@ app.controller('TestPlanViewCtrl',
       $scope.test_plan = data.test_plan;
       $scope.tests = data.tests;
     });
-    // Display create component inline
+    // Display create module inline
     var display_create = false;
     $scope.createTest = function() {
       if (!display_create) {
@@ -364,7 +359,7 @@ app.controller('TestPlanViewCtrl',
 
     // Delete a test by id
     $scope.deleteTest = function (testPlanId, testId) {
-      $scope.component = Test.delete({
+      $scope.module = Test.delete({
           testPlanId: testPlanId,
           testId: testId
         },
@@ -419,7 +414,7 @@ app.controller('TestPlanEditCtrl',
 // Delete test plan
 app.controller('TestPlanDeleteCtrl',
   function ($scope, $routeParams, $location, TestPlan, socket) {
-    $scope.component = TestPlan.delete({testPlanId: $routeParams.testPlanId},
+    $scope.module = TestPlan.delete({testPlanId: $routeParams.testPlanId},
       function success() {
         $location.path('test_plans');
         socket.emit('get:stats');
@@ -435,7 +430,7 @@ app.controller('TestListCtrl',
     $scope.getData = function (tests, query) {
       $scope.queryData = $filter('filter')(tests, query);
     };
-    // Display create component inline
+    // Display create module inline
     var display_create = false;
     $scope.createTest = function() {
       if (!display_create) {
@@ -454,7 +449,7 @@ app.controller('TestListCtrl',
     };
     // Delete a test by id
     $scope.deleteTest = function (testPlanId, testId) {
-      $scope.component = Test.delete({
+      $scope.module = Test.delete({
           testPlanId: testPlanId,
           testId: testId
         },
@@ -542,7 +537,7 @@ app.controller('TestEditCtrl',
 // Delete test plan
 app.controller('TestDeleteCtrl',
   function ($scope, $routeParams, $location, Test, socket) {
-    $scope.component = Test.delete({
+    $scope.module = Test.delete({
         testPlanId: $routeParams.testPlanId,
         testId: $routeParams.testId
       },

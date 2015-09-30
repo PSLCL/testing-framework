@@ -7,7 +7,10 @@ import java.util.UUID;
  * is always associated with a network even if no cable is created. Creating a cable exposes additional
  * control during the running of a test.
  */
-public class Cable implements Template.Exportable {
+public class Cable {
+	private String ipReference = UUID.randomUUID().toString().toUpperCase(); 
+	
+	private UUID exported;
 	
 	/**
 	 * This class represents a reference to an IP address. This reference is evaluated when the test is run.
@@ -26,11 +29,8 @@ public class Cable implements Template.Exportable {
         }
     }
 
-    private UUID exported = null;
-    private UUID ipID = UUID.randomUUID();
     public Cable(Generator generator, Machine machine, Network network) {
-        //TODO: Fix this
-        //generator.parameters.put( ipID, new IPReference( machine, network ) );
+        generator.addParameterReference(ipReference, new IPReference(machine, network));
     }
 
     public void connect() {
@@ -56,10 +56,19 @@ public class Cable implements Template.Exportable {
     public boolean isConnected() {
         throw new IllegalStateException( "Test not running." );
     }
-
-    public String getHost() {
-        // The host is not know until instantiated, so this must be a reference.
-        return ipID.toString().toUpperCase();
+    
+    /**
+     * Get a reference to an IP address which may be used as a parameter in a program action.
+     * 
+     * This reference will be resolved by the Generator when the Template is generated. If the value of
+     * the IP address is known at that time, then the reference will be replaced by the value. If the value
+     * of the IP address will not be known until the test is run, then the reference will be replaced by
+     * a value reference in the form of $(ip <machine-ref> <network-ref>).
+     * .
+     * @return a String reference to the IP address.
+     */
+    public String getIPReference(){
+    	return ipReference;
     }
 
     public void export( UUID id ) {
@@ -75,4 +84,5 @@ public class Cable implements Template.Exportable {
 
         return exported.toString().toUpperCase();
     }
+    
 }

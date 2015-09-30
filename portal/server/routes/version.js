@@ -1,14 +1,13 @@
 // Mysql Connection
 var mysql    = require('../lib/mysql');
-var env     = process.env.NODE_ENV || 'development';
-var config  = require('../config/config')[env];
+var config  = require('../../config/config');
 var squel   = require('squel');
 var Util    = require('../lib/util');
 var path    = require('path');
 var phantom = require('node-phantom');
 var async   = require('async');
 
-// [GET] List of components
+// [GET] List of modules
 exports.list = function (req, res) {
   var after_id = 0;
   var filter_str = req.param('filter');
@@ -19,26 +18,25 @@ exports.list = function (req, res) {
   // Use squel to generate sql
   var sql_query =
     squel.select()
-    .field('version.pk_version')
-    .field('version.fk_component')
+    .field('pk_module')
     .field('version')
-    .field('version.scheduled_release')
-    .field('version.actual_release')
-    .from('version');
+    .field('scheduled_release')
+    .field('actual_release')
+    .from('module');
 
   // Expression for search
   var exp = squel.expr();
   if (filter_str) {
-    exp.and('version.pk_version > ?')
-      .and("version.version LIKE ?");
+    exp.and('pk_module > ?')
+      .and("version LIKE ?");
     sql_query.where(exp, after_id, "%" + filter_str.replace(/["']/g, "") + "%");
   } else {
-    exp.and('version.pk_version > ?');
+    exp.and('pk_module > ?');
     sql_query.where(exp, after_id);
   }
 
   // Group by and page limit
-  sql_query.group('version.pk_version');
+  sql_query.group('pk_module');
     //.limit(config.page_limit);
 
   mysql.getConnection(function(err,conn) {
@@ -83,18 +81,18 @@ function testPend(o) {
 }
 
 /**
- * [Get] Report for component and (optional) version by name.
+ * [Get] Report for module and (optional) version by name.
  */
 exports.name_report = function (req, res) {
-  var component_name = req.param('component');
+  var module_name = req.param('module');
   var version_name = req.param('version');
 
   var sql_query = squel.select()
     .field('version.pk_version')
     .field('version.version')
     .from('version')
-    .join('component', '', 'component.pk_component = version.fk_component')
-    .where('component.name = \'' + component_name + '\'');
+    .join('module', '', 'module.pk_module = version.fk_module')
+    .where('module.name = \'' + module_name + '\'');
 
   if ( version_name )
     sql_query = sql_query.where('version.version = \'' + version_name + '\'');
@@ -144,9 +142,9 @@ function process_report( incl_passed, incl_failed, incl_pending, summaries, resu
   var nested = [];
 
   summaries.forEach( function (ti) {
-    var C = findPK( nested, ti.pk_component ) || {
-      pk: ti.pk_component,
-      name: ti.component_name,
+    var C = findPK( nested, ti.pk_module ) || {
+      pk: ti.pk_module,
+      name: ti.module_name,
       versions: []
     };
     if ( nested.indexOf(C) == -1 ) {
@@ -178,9 +176,9 @@ function process_report( incl_passed, incl_failed, incl_pending, summaries, resu
   });
   
   results.forEach(function (ti) {
-    var C = findPK( nested, ti.pk_component ) || {
-        pk: ti.pk_component,
-        name: ti.component_name,
+    var C = findPK( nested, ti.pk_module ) || {
+        pk: ti.pk_module,
+        name: ti.module_name,
         versions: []
     };
     if ( nested.indexOf(C) == -1 ) {
@@ -350,7 +348,7 @@ exports.descriptions = function (req, res) {
     var filter_str = req.param('filter') || "";
 
     /**
-     * Get list of test result data by component version
+     * Get list of test result data by module version
      */
     // Determine the selection, can be empty
     var where_clause = "";
@@ -360,7 +358,7 @@ exports.descriptions = function (req, res) {
         where_clause = " WHERE version.pk_version IN (" + select_str.replace(/["']/g, "") + ')';
         spacer = " AND ";
     }
-    var sql_query = "SELECT * FROM component;";
+    var sql_query = "SELECT * FROM module;";
 
     mysql.getConnection(function(err,conn) {
       conn.query(sql_query,

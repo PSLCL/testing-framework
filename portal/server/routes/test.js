@@ -1,7 +1,6 @@
 // Mysql Connection
 var mysql   = require('../lib/mysql');
-var env    = process.env.NODE_ENV || 'development';
-var config = require('../config/config')[env];
+var config = require('../../config/config');
 
 // [GET] list of tests by test plan
 exports.list = function (req, res) {
@@ -69,11 +68,14 @@ exports.create = function (req, res) {
 
 // [POST] update test by pk_test
 exports.update = function (req, res) {
+  var name = req.body['name'] || "";
+  var description = req.body['description'] || "";
+  var script = req.body['script'] || "";
   mysql.getConnection(function(err,conn) {
     conn.query(
       'UPDATE test SET name = ?, description = ?, script = ?' +
         'WHERE pk_test = ? ',
-      [req.body['name'], req.body['description'], req.body['script'], req.body['pk_test']],
+      [name, description, script, req.body['pk_test']],
       function (err,result) {
         if (err) throw err;
         res.format({

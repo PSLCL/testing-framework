@@ -15,28 +15,48 @@ var app = angular.module('qa-portal',
      'ngAnimate'
      ]);
 
+var checkLoggedin = function($q, $timeout, $http, $location, $rootScope) {
+    var deferred = $q.defer();
+    $http.get('/loggedin').success( function(user) {
+        if ( user !== '0' )
+            deferred.resolve();
+        else {
+            $rootScope.message = 'You need to log in.';
+            deferred.reject();
+            $location.url('/auth/atlassian-oauth');
+            $location.replace();
+        }
+    });
+    
+    return deferred.promise;
+};
+
 app.config(['$routeProvider',
             function ($routeProvider) {
   $routeProvider.
-  when('/components', {
-    templateUrl: 'partials/components/list.html',
-    controller: 'ComponentListCtrl'
+  when('/modules', {
+    templateUrl: 'partials/modules/list.html',
+    controller: 'ModuleListCtrl'
   }).
-  when('/components/new', {
-    templateUrl: 'partials/components/form.html',
-    controller: 'ComponentNewCtrl'
+  when('/modules/new', {
+    templateUrl: 'partials/modules/form.html',
+    controller: 'ModuleNewCtrl'
   }).
-  when('/components/:componentId', {
-    templateUrl: 'partials/components/view.html',
-    controller: 'ComponentViewCtrl'
+  when('/modules/:moduleId', {
+    templateUrl: 'partials/modules/view.html',
+    controller: 'ModuleViewCtrl'
   }).
-  when('/components/:componentId/edit', {
-    templateUrl: 'partials/components/form.html',
-    controller: 'ComponentEditCtrl'
+  when('/modules/:moduleId/edit', {
+    templateUrl: 'partials/modules/form.html',
+    controller: 'ModuleEditCtrl'
   }).
-  when('/components/:componentId/destroy', {
-    templateUrl: 'partials/components/view.html',
-    controller: 'ComponentDeleteCtrl'
+  when('/modules/:moduleId/report', {
+    templateUrl: 'partials/modules/report.html',
+    controller: 'ModuleReportCtrl'
+  }).
+  when('/modules/:moduleId/destroy', {
+    templateUrl: 'partials/modules/view.html',
+    controller: 'ModuleDeleteCtrl'
   }).
   when('/test_plans', {
     templateUrl: 'partials/test_plans/list.html',
@@ -82,21 +102,16 @@ app.config(['$routeProvider',
     templateUrl: 'partials/reports/list.html',
     controller: 'ReportsCtrl'
   }).
-  when('/login', {
-    templateUrl: 'partials/login.html',
-    controller: 'LoginCtrl'
-  }).
-  when('/logout', {
-    templateUrl: 'partials/login.html',
-    controller: 'LogoutCtrl'
-  }).
   when('/dashboard', {
     templateUrl: 'partials/dashboard.html',
     controller: 'DashboardCtrl'
   }).
   when('/admin_dashboard', {
     templateUrl: 'partials/dashboard.html',
-    controller: 'AdminDashboardCtrl'
+    controller: 'AdminDashboardCtrl',
+    resolve: {
+        loggedin: checkLoggedin
+    }
   }).
   otherwise({
     redirectTo: '/dashboard'
@@ -105,41 +120,16 @@ app.config(['$routeProvider',
 
 //Interceptor for handling request and 401 unauthorized error
 app.config(function ($httpProvider) {
-  $httpProvider.interceptors.push(
-      function ($rootScope, $location, $cookieStore, $q) {
-
-        return {
-          'request': function (request) {
-            $rootScope.currentUser = $cookieStore.get('authdata');
-            $rootScope.currentUserName = $cookieStore.get('authname');
-            if ($rootScope.currentUser) {
-              /** @namespace $httpProvider.defaults.headers.common */
-              $httpProvider.defaults.headers.common['Authorization'] =
-                'Basic ' + $rootScope.currentUser;
-            }
-            if (request.method != 'GET'
-              && !$rootScope.currentUser
-              && $location.path() != '/login'
-                && $location.path() != '/reports') {
-              $rootScope.loginError = '';
-              $rootScope.loginWarning = 'You are not currently logged in.';
-              $location.path('/login');
-            }
-            return request;
-          },
-          'responseError': function (rejection) {
-            // if we're not logged-in to the web service, redirect to login page
-            if (rejection.status === 401 && $location.path() != '/login') {
-              if ($rootScope.currentUser) {
-                $cookieStore.remove('authdata');
-                $rootScope.currentUser = '';
-                $rootScope.loginWarning = '';
-                $rootScope.loginError = 'Invalid username/password.';
-              }
-              $location.path('/login');
-            }
-            return $q.reject(rejection);
-          }
-        };
-      });
+  $httpProvider.interceptors.push(function($q, $location) {
+    return {
+      response: function(response) {
+        return response;
+      },
+      responseError: function(response) {
+        if ( response.status === 401 )
+          $location.url('/auth/atlassian-oauth');
+        return $q.reject(response);
+      }
+    };
+  });
 });

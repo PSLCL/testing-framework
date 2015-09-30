@@ -40,9 +40,8 @@
   <a href="#/test_plans" role="button">
     <button class="btn btn-small blue">Back to Test Plans</button>
   </a>
-  <h3>Add a Test</h3>
 </div>
-<div class="row list-header">
+<div class="row list-header" ng-show="user.username">
   <i class='fa fa-plus-circle {{createTestClass}}' ng-click='createTest()'></i>
   <span>Create a Test</span>
 </div>
@@ -71,6 +70,13 @@
       <textarea class="form-control" ng-model="test.description"
                     id="testDescription"
                     placeholder="Enter test description"></textarea>
+    </div>
+          <div class="form-group">
+          <textarea class="form-control" ng-model="test.script"
+                    id="testScript"
+                    placeholder="Enter test script"></textarea>
+      </div>
+    <div>
       <button class="btn btn-small green"
                       type="submit" ng-disabled="tf.$invalid">
                   {{ submitLabel }}</button>
@@ -84,10 +90,9 @@
        infinite-scroll-immediate-check="false"
        infinite-scroll-distance='1'>
   <span ng-switch-when="0">
-    <em>No tests in database. Would you like to
-          <span class='linked' ng-click='createTest()'>create one</span>?</em>
+    <em>No tests for this test plan.</em>
   </span>
-    <ul class="list-items add-component" ng-switch-default accordian-wrap>
+    <ul class="list-items add-module" ng-switch-default accordian-wrap>
       <li ng-repeat="test in tests| filter:query" accordian ng-style='{height: open_index == $index ? open_style : closed_style}'>
         <div class='list-header-group' ng-click='showInfo($index)'>
           <h1>
@@ -96,11 +101,12 @@
           </h1>
           <div class='list-action-btns'>
             <a href="#/test_plans/{{test.fk_test_plan}}/tests/{{test.pk_test}}/edit">
-              <i class='fa fa-gears'></i>
+              <i class='fa fa-pencil-square-o' title='View/Edit'></i>
             </a>
-            <i confirmed-click="deleteTest(test.fk_test_plan,test.pk_test)"
+            <i class='fa fa-line-chart' title='Report'></i>
+            <i ng-show="user.username" confirmed-click="deleteTest(test.fk_test_plan,test.pk_test)"
                               ng-confirm-click="Are you sure you want to delete the test?" 
-                              class='fa fa-trash-o'></i>
+                              class='fa fa-trash-o' title='Delete'></i>
           </div>   
         </div>  
         <div class='item-info'>

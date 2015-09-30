@@ -5,10 +5,12 @@
     <p></p>
 </div>
 <div class="row list-header">
+    <div ng-show="user.username">
     <i class='fa fa-plus-circle {{createTestPlanClass}}' ng-click='createTestPlan()'></i>
     <span>Create a Test Plan</span>
+    </div>
     <div dropdown-box class='dropdown-box-wrap' ng-click='openSort()'>
-      <ul class='component-sort'>
+      <ul class='module-sort'>
         <i class="fa fa-sort"></i>
         <li>{{selected_filter}}<li>
         <li ng-click="sort.by('name'); changeFilter('Name');">Name</li>
@@ -44,6 +46,8 @@
             <textarea class="form-control" ng-model="test_plan.description"
                       id="testPlanDescription"
                       placeholder="Enter test plan description"></textarea>
+        </div>
+        <div class="form-group">
             <button class="btn btn-small green"
                     type="submit" ng-disabled="tpf.$invalid" ng-click='createTestPlan()'>
                 {{ submitLabel }}</button>
@@ -59,8 +63,7 @@
          infinite-scroll-immediate-check="false"
          infinite-scroll-distance='1'>
       <span ng-switch-when="0">
-          <em>No test plans in database. Would you like to
-              <span class='linked' ng-click='createTestPlan()'>create one</span>?</em>
+          <em>No test plans.</em>
       </span>
       <ul class="list-items" ng-switch-default accordian-wrap>
         <li ng-repeat="test_plan in test_plans| filter:query" ng-style='{height: open_index == $index ? open_style : closed_style}' accordian>
@@ -71,11 +74,12 @@
             </h1>
             <div class="list-action-btns">
               <a href="#/test_plans/{{test_plan.pk_test_plan}}">
-                <i class='fa fa-gears'></i>
+                <i class='fa fa-pencil-square-o' title='View/Edit'></i>
               </a>
-              <i confirmed-click="deleteTestPlan(test_plan.pk_test_plan)"
+              <i class='fa fa-line-chart' title='Report'></i>
+              <i ng-show="user.username" confirmed-click="deleteTestPlan(test_plan.pk_test_plan)"
                                 ng-confirm-click="Are you sure you want to delete the test plan?" 
-                                class='fa fa-trash-o'></i>
+                                class='fa fa-trash-o' title='Delete'></i>
             </div>
             <div class='badge-items'>
               <span class="tests-badge">{{ test_plan.tests }}</span>

@@ -12,23 +12,23 @@
     <h2>Criteria for Test Plans</h2>
     <div class='box-container'>
         <div class="box-left">
-            <label for="availableComponentsR1Selector">Components</label>
-            <select id="availableComponentsR1Selector" class="selector"
-                multiple="multiple" ng-model="selectedComponent"
-                ng-options="c.name for c in availableComponentsR1">
+            <label for="availableModulesR1Selector">Modules</label>
+            <select id="availableModulesR1Selector" class="selector"
+                multiple="multiple" ng-model="selectedModule"
+                ng-options="c.organization + '#' + c.name + ';' + c.version + '(' + c.attributes + ')' for c in availableModulesR1">
             </select>
         </div>
         <div class="move-arrows">
             <i class="fa fa-angle-double-right"
-                ng-click="moveSelectedComponentsR1('selected')"></i> <i
+                ng-click="moveSelectedModulesR1('selected')"></i> <i
                 class="fa fa-angle-double-left"
-                ng-click="moveSelectedComponentsR1('available')"></i>
+                ng-click="moveSelectedModulesR1('available')"></i>
         </div>
         <div class="box-right">
-            <label for="selectedComponentsR1Selector">Selected
-                Components</label> <select id="selectedComponentsR1Selector"
-                ng-model="selectedComponent" multiple="multiple"
-                ng-options="c.name for c in selectedComponentsR1">
+            <label for="selectedModulesR1Selector">Selected
+                Modules</label> <select id="selectedModulesR1Selector"
+                ng-model="selectedModule" multiple="multiple"
+                ng-options="c.organization + '#' + c.name + ';' + c.version + '(' + c.attributes + ')' for c in selectedModulesR1">
             </select>
         </div>
     </div>
@@ -43,17 +43,17 @@
                 PDF
             </button>
             <div class="">
-                <img src="/images/logo.png">
+                <img src="/skin/logo.png">
             </div>
         </div>
-        <div class='results-results' ng-switch on="components.length">
-            <span ng-switch-when="0"> <em>No components in
+        <div class='results-results' ng-switch on="modules.length">
+            <span ng-switch-when="0"> <em>No modules in
                     database.</em>
             </span>
-            <div class='result-component'
+            <div class='result-module'
                 ng-repeat="item in reportR1 track by $index">
                 <h3>
-                    #{{ item.pk_component}} {{item.name}} <span>Test
+                    #{{ item.pk_module}} {{item.name}} <span>Test
                         Plans</span>
                 </h3>
                 <div class='result-test-plan'
@@ -81,11 +81,11 @@
     <h2>Criteria for Test Results</h2>
     <div class='box-container'>
         <div class='box-left'>
-            <label for="availableComponentsR2Selector">Components</label>
-            <select id="availableComponentsR2Selector" class="selector"
-                multiple="multiple" ng-model="r2.selectedComponent"
-                ng-change="generateAvailableVersionsR2(r2.selectedComponent)"
-                ng-options="c.name for c in availableComponentsR2">
+            <label for="availableModulesR2Selector">Modules</label>
+            <select id="availableModulesR2Selector" class="selector"
+                multiple="multiple" ng-model="r2.selectedModule"
+                ng-change="generateAvailableVersionsR2(r2.selectedModule)"
+                ng-options="c.name for c in availableModulesR2">
             </select> <label for="availableVersionsR2Selector">Versions</label> <select
                 id="availableVersionsR2Selector" class="selector"
                 multiple="multiple" ng-model="selectedVersions"
@@ -103,7 +103,7 @@
         </div>
         <div class='box-right'>
             <label for="selectedCombinationsR2Selector">Primary
-                Component/Version</label> <select
+                Module/Version</label> <select
                 id="selectedCombinationsR2Selector" class="selector"
                 multiple="multiple" ng-model="selectedVersions"
                 ng-options="v.name for v in selectedCombinationsR2">
@@ -123,25 +123,25 @@
         cg-busy="{promise:r2generation.promise}">
 
         <div class="results-header">
-            <h2>Results for Component/Version Report</h2>
+            <h2>Results for Module/Version Report</h2>
             <button class='btn btn-small blue'
                 ng-click='exportReport("r2")'>
                 <i class="fa fa-external-link btn-icon"></i>Export to
                 PDF
             </button>
             <div class="">
-                <img src="/images/logo.png">
+                <img src="/skin/logo.png">
             </div>
         </div>
 
-        <div class='results-results r2' ng-switch on='components.length'>
+        <div class='results-results r2' ng-switch on='modules.length'>
             <span ng-switch-when="0"> <em>No Results.</em>
             </span>
             <div class='r2-version'
-                ng-repeat='component in reportR2 track by $index'>
-                <div ng-repeat="version in component.versions">
+                ng-repeat='module in reportR2 track by $index'>
+                <div ng-repeat="version in module.versions">
                     <h1>Version {{ version.name }}:{{
-                        component.name }} (component {{ component.pk }},
+                        module.name }} (module {{ module.pk }},
                         version {{ version.pk}})</h1>
                     <div style="width: 100%; overflow: hidden;">
                         <div style="width: 110px; float: left;">
@@ -233,10 +233,10 @@
                                                 <div
                                                     ng-show="currentUser && instance.passed == null">
                                                     <img
-                                                        ng-click="passIt(instance, test, test_plan, version, component)"
+                                                        ng-click="passIt(instance, test, test_plan, version, module)"
                                                         src="/stylesheets/images/pass.png" />
                                                     <img
-                                                        ng-click="failIt(instance, test, test_plan, version, component)"
+                                                        ng-click="failIt(instance, test, test_plan, version, module)"
                                                         src="/stylesheets/images/fail.png" />
                                                 </div>
                                             </td>

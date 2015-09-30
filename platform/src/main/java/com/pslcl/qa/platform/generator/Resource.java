@@ -1,9 +1,11 @@
 package com.pslcl.qa.platform.generator;
 
+import java.util.Map;
 import java.util.UUID;
 
 import com.pslcl.qa.platform.Attributes;
 import com.pslcl.qa.platform.Hash;
+import com.pslcl.qa.platform.generator.Template.AttributeParameter;
 
 /**
  * This class represents a resource. Resources can represent any shared object, and are identified
@@ -11,7 +13,7 @@ import com.pslcl.qa.platform.Hash;
  * At run time the resource may present additional attributes, but will always have at least the
  * attributes specified in the bind request.
  */
-abstract class Resource {
+abstract class Resource  {
     /**
      * This class represents an action that requests a resource be bound.
      */
@@ -71,6 +73,8 @@ abstract class Resource {
     String name;
     Hash hash;
     UUID instance;
+    BindAction bound;
+    private Map<String, String> attributeMap;
 
     Resource(Generator generator, String name, Hash hash) {
         this.instance = UUID.randomUUID();
@@ -100,13 +104,27 @@ abstract class Resource {
      * @throws Exception The bind failed.
      */
     public void bind( Attributes attributes ) throws Exception {
-        generator.add( new BindAction( this, attributes ) );
-        generator.core.findResource( this );
+        if ( bound != null ) {
+            System.err.println( "Cannot bind the same resource twice." );
+            return;
+        }
         
+        bound = new BindAction( this, attributes );
+        generator.add( bound );
+        generator.core.findResource( this );
+        this.attributeMap = attributes.getAttributes();
         if ( Generator.trace )
             System.err.println(String.format("Resource %s (%s) (%s) bound with attributes '%s'.", name, hash, instance, attributes));
     }
 
+    /**
+     * Return whether the resource is bound.
+     * @return True if the resource is bound, false otherwise.
+     */
+    public boolean isBound() {
+        return bound != null;
+    }
+    
     /**
      * Return the hash that identifies the type of the resource. Each resource type is associated
      * with a set of resource providers that know how to create instances of the resource type.
@@ -121,4 +139,28 @@ abstract class Resource {
      * @return The short name of the resource.
      */
     public abstract String getDescription();
+    
+    /**
+     * Get a reference to an attribute whose value may be used as a parameter in a program action.
+     * 
+     * This reference will be resolved by the Generator when the Template is generated. If the value of
+     * the attribute is known at that time, then the reference will be replaced by the value. If the value
+     * of the attribute will not be known until the test is run, then the reference will be replaced by
+     * a value reference in the form of $(attribute <resource-ref> <attribute-name>).
+     * 
+     * @param attributeName The name of the attribute.
+     * @return a String reference to the attribute.
+     */
+    public String getAttributeReference(String attributeName){
+    	String uuid = UUID.randomUUID().toString().toUpperCase();
+    	AttributeParameter attribute;
+    	if(attributeMap != null && attributeMap.containsKey(attributeName)){
+    		attribute = new AttributeParameter(attributeName, attributeMap.get(attributeName));
+    	}
+    	else{
+    		attribute = new AttributeParameter(this, attributeName);
+    	}
+    	generator.addParameterReference(uuid, attribute);
+    	return uuid;
+    }
 }

@@ -12,7 +12,7 @@ import java.util.UUID;
 import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.TestInstance.Action;
 
-class Template implements Comparable<Template> {
+public class Template implements Comparable<Template> {
     public static interface Exportable {
         String getTag();
         void export(UUID tag);
@@ -74,21 +74,49 @@ class Template implements Comparable<Template> {
         }
     }
 
-    @SuppressWarnings("unused")
-    private static class AttributeParameter implements Parameter {
+    static class AttributeParameter implements Parameter {
         ResourceParameter resourceParameter;
         String attribute;
+        String value;
 
+        /**
+         * Create an AttributeParameter with a known value.
+         * 
+         * @param attribute the attribute name.
+         * @param value the value of the attribute.
+         */
+        public AttributeParameter( String attribute, String value ) {
+        	this.attribute = attribute;
+            this.value = value;
+        }
+
+        /**
+         * Create an AttributeParameter if the value is unknown.
+         * 
+         * @param resource The resource associated with the attribute.
+         * @param attribute The attribute name.
+         */
         public AttributeParameter( Resource resource, String attribute ) {
             this.resourceParameter = new ResourceParameter( resource );
             this.attribute = attribute;
         }
 
+        /**
+         * Get the value of the attribute. If the value of the attribute is known, then it will be returned. 
+         * If the value of the attribute will not be known until the test is run, then a value reference in the 
+         * form of $(attribute <resource-ref> <attribute-name>) will be returned instead.
+         * 
+         * @return The value or value reference.
+         */
         public String getValue( Template template ) throws Exception {
+        	if(value != null){
+        		return value;
+        	}
             return "$(attribute " + resourceParameter.getValue( template ) + " " + attribute + ")";
         }
     }
 
+    @SuppressWarnings("unused")
     private class Command {
         private String command;
         private Parameter[] parameters;
@@ -132,12 +160,12 @@ class Template implements Comparable<Template> {
     private Map<UUID,String> references = new HashMap<UUID,String>();
 
     //TODO: Cleanup
-    private Generator generator;
-    private List<Template> templates = new ArrayList<Template>();
+    //private Generator generator;
+    //private List<Template> templates = new ArrayList<Template>();
     List<Template> allTemplates = new ArrayList<Template>();
-    private List<Resource> resources = new ArrayList<Resource>();
+    //private List<Resource> resources = new ArrayList<Resource>();
     List<Content> artifacts = new ArrayList<Content>();
-    private List<Command> commands = new ArrayList<Command>();
+    //private List<Command> commands = new ArrayList<Command>();
     Hash hash = null;
     private String std_string = null;
     private long pk;

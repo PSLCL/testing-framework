@@ -1,6 +1,7 @@
 package com.pslcl.qa.runner.process;
 
 import com.pslcl.qa.runner.RunnerService;
+import com.pslcl.qa.runner.template.TemplateProvider;
 
 /**
  * 
@@ -13,71 +14,84 @@ public enum Action implements Actions {
     // See at bottom: abstract Action act(TemplateState ts);
   
 //    UNKNOWN {
-//        Action act(TemplateState tState) {
-//            long tNum = tState.getTemplateNumber();
+//        Action act(RunEntryState reState, . . .) {
+//            long reNum = reState.getRunEntryNumber();
 //            return this;
 //        }
 //    },
 
     INITIALIZE {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
-            long dtNum = dtState.getDescribedTemplateNumber();
-
-            Action retAction = dtState.getAction();
+        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+            long reNum = reState.getRunEntryNumber();
+            Action retAction = reState.getAction();
             if (retAction == INITIALIZE) {
-                dtState.setAction(ANALYZE);
-                // put new tState object to ActionStore as kvp tNum/tState
-                runnerService.runnerMachine.addNewTemplate(dtNum, dtState);
+                reState.setAction(ANALYZE);
+                // put new reState object to ActionStore as kvp reNum/reState
+                runnerService.runnerMachine.engageNewRunEntry(reNum, reState);
             } else {
-                System.out.println("Internal Error. Action.INITIALIZE() rejects dtState for dtNum " + dtNum + ". Action wrongly shown to be " + retAction);
+                System.out.println("Internal Error. Action.INITIALIZE() rejects reState for reNum " + reNum + ". Action wrongly shown to be " + retAction);
             }
             
-            // This return value for INITIALIZE is only for form; the separate ActionPipe mechanism can be moving tState forward right now, even dramatically. 
+            // This return value for INITIALIZE is only for form; the separate ActionPipe mechanism can be moving reState forward right now, even dramatically. 
             return retAction;
         }
     },
     
     ANALYZE {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
-            long dtNum = dtState.getDescribedTemplateNumber();
+        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+            long reNum = reState.getRunEntryNumber();
+            
+            // DECISION: We could check and prove that pk_run=reNum of table run has null for its result field. But we instead require that this be handled in whatever process placed reNum into the message queue. A human could manually place an reNum, and we will make a test run out of it.
             
             // TODO. Determine a priority
-            // int priority = determineAndStorePriority(dtNum, dtState);
-            // TODO: assess other things, also
-            dtState.setAction(DO);
-            return dtState.getAction();
+            // int priority = determineAndStorePriority(reNum, reState);
+            // TODO: assess other things, feed this run entry to the prioritizer. The prioritizer could be a new state between ANAYZE and DO.
+            reState.setAction(DO);
+            return reState.getAction();
         }
     },
+    
+//  PRIORITIZE,    // useful here?    
     
     DO {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
-            long dtNum = dtState.getDescribedTemplateNumber();
-            dtCore.processTemplate(dtNum, dtCore);
-            dtState.setAction(REMOVE);
-            return dtState.getAction();
+        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+            long reNum = reState.getRunEntryNumber();
+            // this is a new run entry: before returning, initiate a test run, process it to completion, gather result if available, and store the result
+            boolean result = false;
+            try {
+                result = reCore.testRun(reNum, tp);
+            } catch (Exception e) {
+                System.out.println("Action.DO() see testRun() exception: " + e);
+            }
+            
+            // TODO: store the result, perhaps with new enum value STORE_RESULT
+            
+            reState.setAction(REMOVE);
+            return reState.getAction();
         }
     },
     
-//  STORE_RESULT,
+//  STORE_RESULT,   // useful here?
     
     REMOVE {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
-            long dtNum = dtState.getDescribedTemplateNumber();
-            runnerService.actionStore.remove(dtNum);
-            dtState.setAction(DISCARDED);
-            return dtState.getAction();
+        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+            long reNum = reState.getRunEntryNumber();
+            System.out.println("Action.REMOVE() removes reNum " + reNum);
+            runnerService.actionStore.remove(reNum);
+            reState.setAction(DISCARDED);
+            return reState.getAction();
         }
     },
 
     // if called, remove tState from actionStore; try to code in a way that "DISCARDED" is never called
     DISCARDED {
-        Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService) {
-            long dtNum = dtState.getDescribedTemplateNumber();
-            runnerService.actionStore.remove(dtNum);
-            return dtState.getAction();
+        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+            long reNum = reState.getRunEntryNumber();
+            runnerService.actionStore.remove(reNum);
+            return reState.getAction();
         }
     };
 
-    abstract Action act(DescribedTemplateState dtState, DescribedTemplateCore dtCore, RunnerService runnerService);
+    abstract Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService);
     
 }

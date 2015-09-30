@@ -1,0 +1,4 @@
+You will need to generate a server certificate appropriate to your
+site/hostname and place it in config/server.pfx. Additionally you
+will need to set the password for your certificate in the config/config.js
+file.

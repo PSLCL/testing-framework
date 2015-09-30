@@ -4,7 +4,7 @@ html(lang='en', ng-app='qa-portal')
     title QA Portal
     meta(name="viewport", content="width=device-width, minimum-scale=1, maximum-scale=1")
     link(rel='stylesheet', href='/stylesheets/style.css')
-    link(href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css", rel="stylesheet")
+    link(href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css", rel="stylesheet")
     script(src='//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js')
     script(src='//ajax.googleapis.com/ajax/libs/angularjs/1.2.14/angular.js')
     script(src='//ajax.googleapis.com/ajax/libs/angularjs/1.2.14/angular-route.js')
@@ -25,38 +25,38 @@ html(lang='en', ng-app='qa-portal')
     link(rel='stylesheet', href='/stylesheets/nv.d3.css')
     link(rel='stylesheet', href='/stylesheets/angular-busy.css')
 
-  body(ng-controller='DashboardCtrl', ng-class="{'dark-gray': isActive('/login')}")
-    nav.navbar-side.dark-gray(ng-show="!isActive('/login')", class="{{sidebarClass}}")
+  body(ng-controller='DashboardCtrl')
+    nav.navbar-side(class="{{sidebarClass}}")
       .navbar-header
         i.fa.fa-bars(ng-click="hideSidebar()")
       ul
         li(ng-class="{ active: isActive('/dashboard') }")
           a(href="#/dashboard") Dashboard
             i.fa.fa-tachometer
-        li(ng-class="{ active: isActive('/components') }")
-          a(href="#/components") Components
-            i.fa.fa-cogs
+        li(ng-class="{ active: isActive('/modules') }")
+          a(href="#/modules") Modules
+            i.fa.fa-archive
         li(ng-class="{ active: isActive('/test_plans') }")
           a(href="#/test_plans") Test Plans
             i.fa.fa-list-ul
-        li(ng-class="{ active: isActive('/reports') }")
-          a(href="#/reports") Reports
-            i.fa.fa-bar-chart-o
       p 
         | Copyright © 2014
         br 
         | Panasonic Corporation,
         br
         | All Rights Reserved.
-    nav.navbar-top(ng-show="!isActive('/login')")
+    nav.navbar-top
       a(href="#/dashboard")
-        img(src='/stylesheets/images/logo.png', alt='')
+        img(src='/skin/logo.png', alt='')
       ul
-        li(ng-show="!currentUser")
-          a(href="#/login") Login
-        li(ng-show="currentUser")
-          a(href="#/logout") Logout ({{currentUserName}})
+        li(ng-show="!user.username")
+          a(href="/auth/atlassian-oauth") Login
+        li(ng-show="user.username")
+          img(ng-src="{{user.avatar}}" ng-if="user.username")
+          a(href="/logout").
+              Logged in as {{user.displayName}}<em ng-show="user.isAdmin"> (Admin)</em>, Logout
+
     div.flex-container
-      div.main-content(ng-view, ng-class="{'sidebar-inactive': isActive('/login')}", class="{{sidebarClass}}")
+      div.main-content(ng-view, class="{{sidebarClass}}")
         block content
     footer 
