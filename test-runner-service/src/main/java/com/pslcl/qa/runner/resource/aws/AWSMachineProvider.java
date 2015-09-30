@@ -41,16 +41,7 @@ public class AWSMachineProvider implements MachineProvider
     @Override
     public Future<MachineInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException
     {
-        AWSMachineInstance retAWSMachineInstance = null;
-        if (ReservedResourceWithAttributes.class.isInstance(resource))
-        {
-            // temporary, to allow progress: return matching AWSMachineInstance
-            retAWSMachineInstance = new AWSMachineInstance(ReservedResourceWithAttributes.class.cast(resource));
-        } else
-        {
-            // TODO: bind without benefit of a previous reservation
-        }
-        return executor.submit(new AWSMachineInstanceFuture());
+        return executor.submit(new AWSMachineInstanceFuture(resource));
     }
 
     @Override

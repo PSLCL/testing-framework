@@ -1,5 +1,7 @@
 package com.pslcl.qa.runner.template;
 
+import java.util.concurrent.Future;
+
 import com.pslcl.qa.runner.resource.ResourceInstance;
 
 public class ResourceInfo implements Comparable<ResourceInfo> {
@@ -17,7 +19,7 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
     // implement Comparable interface
     @Override
     public int compareTo(ResourceInfo ori) {
-        return this.resourceInstance.getReference() - ori.getReference();
+        return this.getReference() - ori.getReference();
     }
 
    

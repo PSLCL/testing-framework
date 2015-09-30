@@ -46,7 +46,7 @@ public class RunnerMachine {
     public RunnerMachine(RunnerService runnerService) {
         this.runnerService = runnerService;
         templateExecutorService = Executors.newCachedThreadPool(new TemplateRunThreadFactory());
-        tp = new TemplateProvider();
+        tp = new TemplateProvider(templateExecutorService);
     }
     
     /**

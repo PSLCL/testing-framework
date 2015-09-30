@@ -5,9 +5,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.process.DBTemplate;
+import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.IncompatibleResourceException;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.NetworkInstance;
@@ -22,9 +26,9 @@ public class TemplateProvider {
     private Map<byte[],InstancedTemplate> availableInstancedTemplates; // note: this populates in the destroy method
     private ResourceProviders resourceProviders;
     
-    public TemplateProvider() {
+    public TemplateProvider(ExecutorService templateExecutorService) {
         availableInstancedTemplates = new HashMap<byte[],InstancedTemplate>();
-        resourceProviders = new ResourceProviders(); // determines these individual ResourceProvider S, such as AWSMachineProvider, and instantiates them
+        resourceProviders = new ResourceProviders(templateExecutorService); // determines these individual ResourceProvider S, such as AWSMachineProvider, and instantiates them
     }
 
     public void destroy(byte [] template_hash, InstancedTemplate iT) {
@@ -85,23 +89,44 @@ public class TemplateProvider {
                 //       However, the ultimate rule is that an entry in the reservedResource list means that the resource is reserved, independent of what many ResourceProviders may have placed in the alternate lists. 
                 if (reservedResources.size() == originalReserveResourceRequestsSize) {
                     // bind all resources of reservedResources, and receive a ResourceInstance for each one
-                    List<? extends ResourceInstance> resourceInstances = resourceProviders.bind(reservedResources); // each element of returned list has its stepReference stored
-
-                    // TODO: analyze the success/failure of each returned ResourceInstance
+                    List<Future<? extends ResourceInstance>> resourceInstances;
+                    try {
+                        resourceInstances = resourceProviders.bind(reservedResources, null);
+                        
+                        // resourceInstances is a Future list that is returned quickly; i.e. without waiting for all the asynch binds to complete
+                        // loop, waiting for each encountered asynch .bind() to complete its work; in other words convert our .bind(multiple) call to synchronous
+                        // convert the Future list to a list of returned ResourceInstance S
+                        List<ResourceInstance> listRI = new ArrayList<>();
+                        for (Future<? extends ResourceInstance> future : resourceInstances) {
+                            try {
+                                MachineInstance machineInstance = MachineInstance.class.cast(future.get());
+                                listRI.add(machineInstance);
+                            } catch (InterruptedException | ExecutionException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                        }
+                        
+                        
+                        // TODO: analyze the success/failure of each returned ResourceInstance
+                        //   for example: it is an error that resou
+                        
+                        // for local use, form bound resource list, ordered by stepReference
+                        List<ResourceInfo> orderedResourceInfos = new ArrayList<>();
+                        for (int i=0; i<listRI.size(); i++) {
+                            ResourceInfo resourceInfo = new ResourceInfo(listRI.get(i));
+                            orderedResourceInfos.add(resourceInfo);
+                        }
+                        Collections.sort(orderedResourceInfos);
+                        System.out.println("TemplateProvider.getInstancedTemplate() has orderedResourceInfos of size " + orderedResourceInfos.size());
+                        
+                        iT.setOrderedResourceInfos(orderedResourceInfos);
+                        // TODO: set iT with more gathered info and instantiations and similar
+                    } catch (BindResourceFailedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } // each element of returned list has its stepReference stored
                     
-                    // for local use, form bound resource list, ordered by stepReference
-                    ResourceInfo resourceInfo;
-                    List<ResourceInfo> orderedResourceInfos = new ArrayList<>();
-                    for (int i=0; i<resourceInstances.size(); i++) {
-                        resourceInfo = new ResourceInfo(resourceInstances.get(i));
-                        orderedResourceInfos.add(resourceInfo);
-                    }
-                    Collections.sort(orderedResourceInfos);
-                    System.out.println("TemplateProvider.getInstancedTemplate() has orderedResourceInfos of size " + orderedResourceInfos.size());
-                    
-                    iT.setOrderedResourceInfos(orderedResourceInfos);
-                    
-                    // TODO: set iT with more gathered info and instantiations and similar
                 } else {
                     // TODO: deal with this failure to reserve some of the resources, including cleanup of whatever resources are reserved but might no longer be needed
                 }
