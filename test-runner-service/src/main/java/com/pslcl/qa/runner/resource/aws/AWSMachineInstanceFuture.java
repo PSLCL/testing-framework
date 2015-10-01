@@ -8,11 +8,12 @@ import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 public class AWSMachineInstanceFuture implements Callable<MachineInstance>
 {
     ReservedResourceWithAttributes resource;
-    
-    public AWSMachineInstanceFuture(ReservedResourceWithAttributes resource) {
+
+    public AWSMachineInstanceFuture(ReservedResourceWithAttributes resource)
+    {
         this.resource = resource;
     }
-    
+
     @Override
     public MachineInstance call() throws Exception
     {

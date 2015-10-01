@@ -54,13 +54,6 @@ public class AWSMachineProvider implements MachineProvider
     // implement ResourceProvider interface
 
     @Override
-    public void release(ResourceInstance resource)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     public void releaseReservedResource(ReservedResourceWithAttributes resource)
     {
         // TODO Auto-generated method stub
@@ -129,6 +122,13 @@ public class AWSMachineProvider implements MachineProvider
 
     @Override
     public void invalidateArtifacts(String component, String version)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void release(ResourceInstance resource, boolean isReusable)
     {
         // TODO Auto-generated method stub
 
