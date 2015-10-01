@@ -37,6 +37,11 @@ entries. Before deletion, the user is warned about the impact (“This action wi
 An authenticated user manages the “test plan” table. This includes creating new entries, editing existing entries, and deleting 
 entries. Before deletion, the user is warned about the impact (“This action will delete 50 tests and 5,000 test results.”).
 
+###A User Views a Dashboard of the System.
+
+A user (anonymous or authenticated) views a dashboard of the system. The dashboard shows summary information from the database 
+in the form of graphs.
+
 ##Future Use Cases
 
 These features are not currently supported, but may be supported in a future version of the Testing Framework.
@@ -56,11 +61,6 @@ complete (disappear from the list) or start (appear on the list). Appropriate me
 A user (anonymous or authenticated) views a dynamic list of scheduled tests. Periodically the list is updated as tests start to 
 run (removed from the list). Appropriate meta-data from the database is shown in the report. The view is able to list several 
 thousand pending tests.
-
-###A User Views a Dashboard of the System.
-
-A user (anonymous or authenticated) views a dashboard of the system. The dashboard shows summary information from the database 
-in the form of graphs.
 
 ###A User Monitors Current Performance.
 
