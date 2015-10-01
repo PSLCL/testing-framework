@@ -3,7 +3,6 @@ package com.pslcl.qa.runner.resource.aws;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.resource.CableInstance;
 import com.pslcl.qa.runner.resource.IncompatibleResourceException;
 import com.pslcl.qa.runner.resource.MachineInstance;
@@ -81,10 +80,25 @@ public class AWSMachineInstance implements MachineInstance {
 		return null;
 	}
 
-	@Override
-	public void deploy(String filename, String artifactHash) throws ArtifactNotFoundException {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public Future<Void> deploy(String filename, String artifactHash)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Future<Void> delete(String filename)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Future<Void> disconnect(NetworkInstance network)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }
