@@ -5,8 +5,8 @@ import java.util.Date;
 public class DBTemplate {
     
     long pk_template;       // INT(11) in template
-    public byte [] hash;           // BINARY(32) in template
-    public String steps;           // MEDIUMTEXT in template
+    public byte [] hash;    // BINARY(32) in template
+    public String steps;    // MEDIUMTEXT in template
     boolean enabled;        // BOOLEAN in template
     long reNum;             // referencing run.pk_run
     byte[] artifacts;       // LONGBLOB in run

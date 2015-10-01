@@ -3,12 +3,12 @@ package com.pslcl.qa.runner.resource;
 import java.util.Map;
 
 public class ResourceWithAttributesInstance implements ResourceWithAttributes {
-    private String hash;
+    private String name;
     private Map<String, String> attributes;
     private int reference;
-    
-    public ResourceWithAttributesInstance(String hash, Map<String, String> attributes, int reference) {
-        this.hash = hash;
+   
+    public ResourceWithAttributesInstance(String name, Map<String, String> attributes, int reference) {
+        this.name = name;
         this.attributes = attributes;
         this.reference = reference;
     }
@@ -16,13 +16,13 @@ public class ResourceWithAttributesInstance implements ResourceWithAttributes {
     @Override
     public String getName() {
         // TODO Auto-generated method stub
-        return null;
+        return name;
     }
 
     @Override
     public Map<String, String> getAttributes() {
         // TODO Auto-generated method stub
-        return null;
+        return attributes;
     }
 
     @Override
@@ -38,7 +38,7 @@ public class ResourceWithAttributesInstance implements ResourceWithAttributes {
      */
     public boolean matches(ResourceWithAttributes rwa) {
         // match: reference, hash and attributes are equal
-        if (this.reference == rwa.getReference() && this.hash.equals(rwa.getName())) {
+        if (this.reference == rwa.getReference() && this.name.equals(rwa.getName())) {
             // match the attribute sets to each other
             Map<String, String> rwaAttributes = rwa.getAttributes();
             if (this.attributes.size() != rwaAttributes.size())

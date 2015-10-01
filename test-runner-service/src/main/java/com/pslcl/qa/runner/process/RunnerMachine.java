@@ -62,7 +62,7 @@ public class RunnerMachine {
             RunEntryState reState = new RunEntryState(reNum, message);
             Action action = reState.getAction();  // Action.INITIALIZE
             Action nextAction = action.act(reState, null, this.tp, runnerService);            
-            // for anything returned except ACTION.DISCARDED: the new reState is stored in ActionStore
+            // .act() stores nextAction in reState and returns it
         } catch (Exception e) {
             System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling reNum " + reNum + ": " + e + ". Message remains in the QueueStore.");
         }

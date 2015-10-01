@@ -77,15 +77,15 @@ public class AWSMachineProvider implements MachineProvider
     @Override
     public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds)
     {
-        // temporary, to allow progress: return empty rqr
+        // temporary, to allow progress: add one simulated reserved reservation, place it in retRqr, and return that
         ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>());
         for (ResourceWithAttributes rwa : resources)
         {
             // TODO: actually reserve whatever is requested in parameter resources
 
             // temporary, to allow progress: return an artificially reserved resource
-            ReservedResourceWithAttributes artificialReservation = new ReservedResourceWithAttributes(rwa, this, timeoutSeconds);
-            retRqr.getReservedResources().add(artificialReservation);
+            ReservedResourceWithAttributes simulatedReservation = new ReservedResourceWithAttributes(rwa, this, timeoutSeconds);
+            retRqr.getReservedResources().add(simulatedReservation);
         }
         return retRqr;
     }

@@ -8,8 +8,8 @@ import java.util.Map;
 public interface ResourceWithAttributes {
 	
 	/**
-	 * Get the hash of the resource.
-	 * @return A hex string representing the hash of the resource.
+	 * Get the name of the resource.
+	 * @return The name.
 	 */
 	String getName();	
 	

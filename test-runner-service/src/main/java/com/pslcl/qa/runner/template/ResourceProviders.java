@@ -9,7 +9,6 @@ import java.util.concurrent.Future;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
-import com.pslcl.qa.runner.resource.ResourceNotAvailableException;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceProvider;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
@@ -25,7 +24,7 @@ import com.pslcl.qa.runner.resource.aws.AWSPersonProvider;
  */
 public class ResourceProviders implements ResourceProvider {
 
-    private List<ResourceProvider> resourceProviders;    
+    private List<ResourceProvider> resourceProviders;
 
     /**
      * constructor
@@ -58,18 +57,22 @@ public class ResourceProviders implements ResourceProvider {
 
         // invite every ResourceProvider to reserve each resource in param reserveResourceRequests, as it can and as it will
         for (ResourceProvider rp : resourceProviders) {
-            // but 1st, to avoid multiple reservations: for any success, strip param reserveResourceRequests of that entry
+            // but 1st, to avoid multiple reservations: for any past success in filling any of the several rrwa S in retRqr, strip param reserveResourceRequests of that entry
             for (ReservedResourceWithAttributes rrwa : retRqr.getReservedResources()) {
                 for (ResourceWithAttributes rwa : reserveResourceRequests) {
                     ResourceWithAttributesInstance rwai = ResourceWithAttributesInstance.class.cast(rwa);
                     if (rwai.matches(rrwa)) {
                         reserveResourceRequests.remove(rwa);
-                        break; // leaving loop avoids the trouble caused by altering reserveResourceRequests 
+                        break; // done with this rwa; as we leave the for loop, we also avoid the trouble caused by altering reserveResourceRequests 
                     }
                 }                
             }
-            if (reserveResourceRequests.isEmpty())
-                break; // the act of emptying reserveResourceRequests means all requested resources are reserved; retRqr reflects that
+            if (reserveResourceRequests.isEmpty()) {
+                // The act of finding reserveResourceRequests to be empty means all requested resources are reserved.
+                //     retRqr reflects that case: it holds all original reservation requests. 
+                //     We do not not need to check further- not for this rp and not for any remaining rp that have not been checked yet.
+                break;
+            }
 
             // this rp reserves each resource in param resources, as it can and as it will 
             ResourceQueryResult localRqr = rp.reserveIfAvailable(reserveResourceRequests, timeoutSeconds);
@@ -98,9 +101,6 @@ public class ResourceProviders implements ResourceProvider {
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback) throws BindResourceFailedException {
         // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         List<Future<? extends ResourceInstance>> retRiList = new ArrayList<>();
-        
-        // TODO: fill in here from that which is next commented out
-
         for(int i=0; i<resources.size(); i++) {
             try {
                 retRiList.add(this.bind(resources.get(i), null));
@@ -109,27 +109,8 @@ public class ResourceProviders implements ResourceProvider {
                 System.out.println("ResourceProviders.bind(List<> resources) stores null entry");
             }
         }
-        
-        
         return retRiList;
     }  
-
-//    @Override
-//    public List<? extends ResourceInstance> bind(List<? extends ResourceWithAttributes> resources) {
-//        // note: param resources is potentially a list of ReservedResourceWithAttributes, indicating to the target resource provider that it has already reserved resources within the list
-//        // subnote: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
-//        List<ResourceInstance> retRiList = new ArrayList<>();
-//        for(int i=0; i<resources.size(); i++) {
-//            try {
-//                retRiList.add(this.bind(resources.get(i)));
-//            } catch (ResourceNotFoundException e) {
-//                retRiList.add(null);
-//                System.out.println("ResourceProviders.bind(List<> resources) stores null entry");
-//            }
-//        }
-//        return retRiList;
-//    }    
-
 
     @Override
     public void releaseReservedResource(ReservedResourceWithAttributes resource) {

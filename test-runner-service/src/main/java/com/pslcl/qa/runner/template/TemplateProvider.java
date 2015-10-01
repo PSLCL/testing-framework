@@ -32,7 +32,7 @@ public class TemplateProvider {
     }
 
     public void destroy(byte [] template_hash, InstancedTemplate iT) {
-        // Can instead destroy iT. This is early impl with no smarts.
+        // Can also choose to destroy iT. This is early impl with no smarts.
         availableInstancedTemplates.put(template_hash, iT);
     }
 
@@ -61,55 +61,58 @@ public class TemplateProvider {
             int stepsReference = reserveResourceRequests.size();
             int originalReserveResourceRequestsSize = stepsReference;
             
+            // NOTE: A change is coming in the future. Steps will be organized in prioritized sets, each with a setID. The following code follows original rules.
+            
             // reserve the resource specified by each bind step, with 360 second timeout for each reservation
             ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
             if (rqr != null) {
                 // analyze the success/failure of each reserved resource, one resource for each bind step
                 List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list is not in order
                 if (invalidResources!=null && !invalidResources.isEmpty()) {
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + invalidResources.size() + " reports of invalid resource bind requests");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + invalidResources.size() + " reports of invalid resource reserve requests");
                 }
 
                 List<ResourceWithAttributes> unavailableResources = rqr.getUnavailableResources(); // list is not in order
                 if (unavailableResources!=null && !unavailableResources.isEmpty()) {
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + unavailableResources.size() + " reports of unavailable resources for the given bind requests");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + unavailableResources.size() + " reports of unavailable resources for the given reserve requests");
                 }
                 
                 List<ResourceWithAttributes> availableResources = rqr.getAvailableResources();
                 if (availableResources!=null && !availableResources.isEmpty()) {
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + availableResources.size() + " reports of available resources for the given bind requests");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + availableResources.size() + " reports of available resources for the given reserve requests");
                 }
 
                 List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
                 if (reservedResources!=null) {
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource bind requests; they are now reserved");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource reserve requests; they are now reserved");
                 }
 
                 // Note: The size of reservedResources and its entries are the important thing. Coding is intended that any reservedResource has no entries in the other three lists.
-                //       However, the ultimate rule is that an entry in the reservedResource list means that the resource is reserved, independent of what many ResourceProviders may have placed in the alternate lists. 
+                //       However, the ultimate rule is that an entry in the reservedResource list means that the resource is reserved, independent of what the other ResourceProviders may have placed in the alternate lists. 
                 if (reservedResources.size() == originalReserveResourceRequestsSize) {
                     // bind all resources of reservedResources, and receive a ResourceInstance for each one
                     List<Future<? extends ResourceInstance>> resourceInstances;
                     try {
-                        resourceInstances = resourceProviders.bind(reservedResources, null);
+                        resourceInstances = resourceProviders.bind(reservedResources, null); // start multiple asynch binds
                         
-                        // resourceInstances is a Future list that is returned quickly; i.e. without waiting for all the asynch binds to complete
-                        // loop, waiting for each encountered asynch .bind() to complete its work; in other words convert our .bind(multiple) call to synchronous
-                        // convert the Future list to a list of returned ResourceInstance S
+                        // Wait for all the multiple asynch bind calls to complete 
+                        // resourceInstances is a Future list that is returned quickly; i.e. without waiting for all the asynch binds to complete.
+                        // Loop, waiting for each encountered asynch .bind() to complete its work; in other words convert our .bind(multiple) call to synchronous.
+                        // Convert the Future list to a list of returned ResourceInstance S.
                         List<ResourceInstance> listRI = new ArrayList<>();
                         for (Future<? extends ResourceInstance> future : resourceInstances) {
                             try {
-                                MachineInstance machineInstance = MachineInstance.class.cast(future.get());
-                                listRI.add(machineInstance);
+                                ResourceInstance resourceInstance = ResourceInstance.class.cast(future.get());
+                                listRI.add(resourceInstance);
                             } catch (InterruptedException | ExecutionException e) {
-                                // TODO Auto-generated catch block
+                                // TODO: any bind fail is possibly reason to cancel all the binds
                                 e.printStackTrace();
                             }
                         }
-                        
+                        // all bind calls are now completed
                         
                         // TODO: analyze the success/failure of each returned ResourceInstance
-                        //   for example: it is an error that resou
+                        //   for example: it is an error that
                         
                         // for local use, form bound resource list, ordered by stepReference
                         List<ResourceInfo> orderedResourceInfos = new ArrayList<>();
@@ -197,7 +200,7 @@ public class TemplateProvider {
                         if (strArtifactName != null && // note: %2F within is URL encoding for "/"
                             strArtifactHash != null) {
                             int stepRef = Integer.parseInt(machineRef);
-                            // This next line takes advantage of the prior ordering of the orderedResourceInfos list held by iT. Using index value stepRef, this call returns the proper ResourceInfo that holds the correct machine to deploy to.
+                            // This next line takes advantage of the orderedResourceInfos list held by iT. Using index value stepRef, this call returns the proper ResourceInfo that holds the correct machine to deploy to.
                             ResourceInfo resourceInfo = iT.getResourceInfo(stepRef);
                             boolean success = false;
                             if (resourceInfo != null) {
@@ -224,7 +227,7 @@ public class TemplateProvider {
                         }
                         break;                    
                     case "inspect":
-                        // machineRef strInstructionsHash ArtifactInfo (strArtifactName strArtifactHash); October note: multiple ArtifactInfo may be allowed to follow
+                        // machineRef strInstructionsHash ArtifactInfo (strArtifactName strArtifactHash); October note: multiple ArtifactInfo are allowed to follow
                         System.out.println("TemplateProvider.getInstancedTemplate() finds inspect as reference " + stepsReference);
                         String strInstructionsHash = null;
                         strArtifactName = null;

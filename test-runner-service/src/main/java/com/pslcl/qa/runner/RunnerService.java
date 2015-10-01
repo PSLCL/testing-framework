@@ -70,7 +70,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     /** the process classes */
     public RunnerMachine runnerMachine = null;
-    public ActionStore actionStore = null;  /** holds state of each template */
+    public ActionStore actionStore = null; // holds state of each template; TODO: actionStore is instantiated here, but not yet otherwise used 
     public ProcessTracker processTracker = null;
     
     // public class methods
