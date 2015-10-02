@@ -91,7 +91,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
      * Init the RunnerService.
      */
     @Override
-    public void init(DaemonContext arg0) throws DaemonInitException, Exception {
+    public void init(DaemonContext daemonContext) throws DaemonInitException, Exception {
         // Initialize the service (with elevated privileges).
         // jsvc calls this to examine configuration and to create resources
         logger.info("Initializing RunnerService.");
@@ -105,7 +105,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
                 logger.debug(".registerMBean() failed: " + e.getMessage());
             }
 
-            RunnerServiceConfig config = new RunnerServiceConfig();
+            RunnerServiceConfig config = new RunnerServiceConfig(daemonContext);
             runnerMachine.init(config);
             
             // init access to the template DAO-referenced database (one is common to all instances of RunnerService)

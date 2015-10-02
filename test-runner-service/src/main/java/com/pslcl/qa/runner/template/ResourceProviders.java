@@ -15,9 +15,9 @@ import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
-import com.pslcl.qa.runner.resource.aws.AWSMachineProvider;
-import com.pslcl.qa.runner.resource.aws.AWSNetworkProvider;
-import com.pslcl.qa.runner.resource.aws.AWSPersonProvider;
+import com.pslcl.qa.runner.resource.aws.AwsMachineProvider;
+import com.pslcl.qa.runner.resource.aws.AwsNetworkProvider;
+import com.pslcl.qa.runner.resource.aws.AwsPersonProvider;
 
 /**
  * Contains ResourceProvider instantiated objects and supplies access to them 
@@ -33,9 +33,9 @@ public class ResourceProviders implements ResourceProvider {
         resourceProviders = new ArrayList<>(); // list of class objects that implement the ResourceProvider interface
 
         // TEMPORARY: hard code all known resourceProviders and instantiate each one
-        resourceProviders.add(new AWSMachineProvider(null)); // TODO: replace null
-        resourceProviders.add(new AWSPersonProvider());
-        resourceProviders.add(new AWSNetworkProvider());
+        resourceProviders.add(new AwsMachineProvider(null)); // TODO: replace null
+        resourceProviders.add(new AwsPersonProvider());
+        resourceProviders.add(new AwsNetworkProvider());
         // Note: Do not include ResourceProviders in this list
         
         // TODO: programmatically determine this list and instantiate each one, as needed

@@ -44,7 +44,7 @@ public class RunnerMachine {
      */
     public RunnerMachine(RunnerService runnerService) {
         this.runnerService = runnerService;
-        initialized = new AtomicBoolean();
+        initialized = new AtomicBoolean(false);
     }
 
     public RunnerServiceConfig getConfig()
@@ -69,11 +69,13 @@ public class RunnerMachine {
     {
         this.config = config;
         templateProvider.init(config);
+        initialized.set(true);
     }
     
     public void destroy() 
     {
         templateProvider.destroy();
+        initialized.set(false);
     }
     
     /**

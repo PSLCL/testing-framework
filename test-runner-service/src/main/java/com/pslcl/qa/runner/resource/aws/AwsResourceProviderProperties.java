@@ -1,6 +1,6 @@
 package com.pslcl.qa.runner.resource.aws;
 
-public class AWSResourceProviderProperties
+public class AwsResourceProviderProperties
 {
     /**
      * Resource Group ID - Used to tag AWS resources so that they are identifiable by the resource provider.

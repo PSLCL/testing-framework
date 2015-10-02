@@ -11,7 +11,7 @@ import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceProvider;
 import com.pslcl.qa.runner.resource.StartProgram;
 
-public class AWSMachineInstance implements MachineInstance
+public class AwsMachineInstance implements MachineInstance
 {
 
     private String name;
@@ -26,7 +26,7 @@ public class AWSMachineInstance implements MachineInstance
      * 
      * @param resource
      */
-    public AWSMachineInstance(ReservedResourceWithAttributes reservedResourceWithAttributes)
+    public AwsMachineInstance(ReservedResourceWithAttributes reservedResourceWithAttributes)
     {
         name = reservedResourceWithAttributes.getName();
         attributes = reservedResourceWithAttributes.getAttributes();

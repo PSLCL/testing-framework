@@ -22,14 +22,14 @@ import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 /**
  * Reserve, bind, control and release instances of AWS machines.
  */
-public class AWSMachineProvider implements MachineProvider
+public class AwsMachineProvider implements MachineProvider
 {
     private final AmazonEC2Client ec2Client;
-    private final AWSResourceProviderProperties properties;
-    private final List<AWSMachineInstance> instances = new ArrayList<AWSMachineInstance>();
+    private final AwsResourceProviderProperties properties;
+    private final List<AwsMachineInstance> instances = new ArrayList<AwsMachineInstance>();
     private volatile ExecutorService executor;
 
-    public AWSMachineProvider(AWSResourceProviderProperties properties)
+    public AwsMachineProvider(AwsResourceProviderProperties properties)
     {
         this.properties = properties;
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain();
@@ -46,7 +46,7 @@ public class AWSMachineProvider implements MachineProvider
     @Override
     public Future<MachineInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException
     {
-        return executor.submit(new AWSMachineInstanceFuture(resource));
+        return executor.submit(new AwsMachineInstanceFuture(resource));
     }
 
     @Override

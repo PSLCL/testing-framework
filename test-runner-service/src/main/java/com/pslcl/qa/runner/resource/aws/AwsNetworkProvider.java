@@ -15,7 +15,7 @@ import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
-public class AWSNetworkProvider implements NetworkProvider
+public class AwsNetworkProvider implements NetworkProvider
 {
 
     @Override
