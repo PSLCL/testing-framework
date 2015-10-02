@@ -3,12 +3,25 @@ package com.pslcl.qa.runner.store.instance;
 import javax.jms.JMSException;
 import javax.jms.Message;
 
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
+
 public interface QueueStoreDao {
     
     /**
      * 
+     *  @throws Exception
+     */
+    void init(RunnerServiceConfig config) throws Exception;
+    
+    /**
+     * 
+     */
+    void destroy();
+    /**
+     * 
      *  @throws JMSException
      */
+    //TODO: don't need anymore?
     void connect() throws JMSException;
     
     /**

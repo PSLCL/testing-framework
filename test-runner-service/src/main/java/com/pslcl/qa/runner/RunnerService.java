@@ -62,17 +62,13 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     // class variables
     
-    private QueueStoreDao mq = null;
-    
-    
-    /** The status tracker */
-    private StatusTracker statusTracker = null;
-    
+    private volatile QueueStoreDao mq;
+    private volatile RunnerServiceConfig config;
     
     /** the process classes */
     public final RunnerMachine runnerMachine;
-    public ActionStore actionStore = null; // holds state of each template; TODO: actionStore is instantiated here, but not yet otherwise used 
-    public ProcessTracker processTracker = null;
+    public final ActionStore actionStore; // holds state of each template; TODO: actionStore is instantiated here, but not yet otherwise used 
+    public final ProcessTracker processTracker;
     
     // public class methods
 
@@ -83,6 +79,9 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
         // Setup what we can, prior to knowing configuration
         Thread.setDefaultUncaughtExceptionHandler(this);
         runnerMachine = new RunnerMachine(this);
+        // instantiate the process classes 
+        actionStore = new ActionStore(); // TODO: any order required?
+        processTracker = new ProcessTracker(this);
     }
     
     // Daemon interface implementations
@@ -107,6 +106,9 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 
             RunnerServiceConfig config = new RunnerServiceConfig(daemonContext);
             runnerMachine.init(config);
+            //TODO: use reflection/config properties file to get this class
+            mq = new Sqs(this); // class Sqs can be replaced with another implementation of MessageQueueDao
+            mq.init(config);
             
             // init access to the template DAO-referenced database (one is common to all instances of RunnerService)
             
@@ -173,7 +175,6 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
             
             // init connection to one or more DAO-referenced message queues (these are to be common to all instances of RunnerService)
             //     note: the intent is that this or these queues not be created by project code- it is or they are separately created at install time
-            mq = new Sqs(this); // class Sqs can be replaced with another implementation of MessageQueueDao
             try {
                 mq.connect();
             } catch (JMSException e1) {
@@ -208,9 +209,6 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
         synchronized (this) { // avoid overlap of init(), start(), stop(), or destroy()
             logger.debug("Starting RunnerService.");
             
-            // instantiate the process classes 
-            actionStore = new ActionStore(); // TODO: any order required?
-            processTracker = new ProcessTracker(this);
             
             if (mq.queueStoreExists()) {
                 // Setup QueueStore DAO-referenced message handler (a standard callback from the JMS spec)
@@ -279,12 +277,11 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     public void stop() throws Exception {
         synchronized (this) { // avoid overlap of init(), start(), stop(), or destroy()
             logger.debug("Stopping RunnerService.");
-            
-            // Destroy the Status Tracker
-            statusTracker.destroy();
-            statusTracker = null;
+            //TODO: don't think this is needed
         }
         runnerMachine.destroy();
+        // Destroy the Status Tracker
+        config.getStatusTracker().destroy();
     }
 
     /**
@@ -304,12 +301,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 
     @Override
     public short getStatus() {
-        short status = (short)StatusTracker.Status.Warn.ordinal();
-        synchronized (this) {
-            if (statusTracker != null)
-                status = (short) statusTracker.getStatus().ordinal();
-        }
-        return status;
+        return (short) config.getStatusTracker().getStatus().ordinal();
     }
 
     @Override

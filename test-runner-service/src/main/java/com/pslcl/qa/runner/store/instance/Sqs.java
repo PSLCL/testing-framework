@@ -8,15 +8,18 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
+import org.slf4j.LoggerFactory;
+
 import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazon.sqs.javamessaging.SQSSession;
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.pslcl.qa.runner.RunnerService;
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
+import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration;
+import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration.AwsClientConfig;
 
 /**
  * Access AWS SQS via JMS
@@ -24,7 +27,12 @@ import com.pslcl.qa.runner.RunnerService;
  */
 public class Sqs extends MessageQueueDaoAbstract {
     
-    private final String queueStoreName = "q"; // REVIEW: hard coded
+    public static final String QueueStoreNameKey = "com.pslcl.qa.runner.store.instance.queue-name";
+    public static final String QueueStoreNameDefault = "q";
+    
+    private volatile String queueStoreName;
+    private volatile AwsClientConfig awsClientConfig;
+    
     // Note: Whether hard-coded or not, this queue is identified here as being unique. So multiple RunnerService and Sqs class objects may exist, but there is only one QueueStore message queue.
     
     private AmazonSQSMessagingClientWrapper sqsClient = null;
@@ -34,6 +42,26 @@ public class Sqs extends MessageQueueDaoAbstract {
         super(runnerService);
     }
 
+    @Override
+    public void init(RunnerServiceConfig config) throws Exception
+    {
+        queueStoreName = config.getProperties().getProperty(QueueStoreNameKey, QueueStoreNameDefault);
+        awsClientConfig = AwsClientConfiguration.getClientConfiguration(config);
+        connect(awsClientConfig);
+    }
+    
+    @Override
+    public void destroy() 
+    {
+        try
+        {
+            //TODO: should the cleanupQueueStoreAccess call to connection.stop be on this cycle only? both?
+            connection.stop();
+        } catch (JMSException e)
+        {
+            LoggerFactory.getLogger(getClass()).error("failed to cleanup Sqs connection", e);
+        }
+    }
     
     // MessageListener interface implementations
     
@@ -94,36 +122,27 @@ public class Sqs extends MessageQueueDaoAbstract {
      * @throws JMSException 
      */
     @Override
-    public void connect() throws JMSException {
+    public void connect() throws JMSException 
+    {
+        //TODO: Clint I think we can remove this connect from the interface 
+    }
+    
+    private void connect(AwsClientConfig awsClientConfig) throws Exception
+    {
         if (sqsClient == null || !queueStoreExists()) {
             if (connection != null) {
                 connection.close();
                 connection = null;
             }
 
-            try {
-                Class.forName("org.apache.commons.logging.LogFactory");           // required at run time for new ClientConfiguration()
-                Class.forName("com.fasterxml.jackson.core.Versioned");            // required at run time for Sqs connect, below
-                Class.forName("com.fasterxml.jackson.databind.ObjectMapper");     // required at run time for new ClientConfiguration()
-                Class.forName("com.fasterxml.jackson.annotation.JsonAutoDetect"); // required at run time for new ClientConfiguration()
-                Class.forName("com.amazonaws.services.sqs.AmazonSQS");            // required at run time for SQSConnectionFactory.builder()
-                Class.forName("org.joda.time.format.DateTimeFormat");             // required at run time for Sqs connect, below
-                Class.forName("org.apache.http.protocol.HttpContext");            // required at run time for Sqs connect, below
-                Class.forName("org.apache.http.conn.scheme.SchemeSocketFactory"); // required at run time for .createConnection()
-            } catch (ClassNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+            Class.forName("com.fasterxml.jackson.core.Versioned");            // required at run time for Sqs connect, below
+            Class.forName("com.amazonaws.services.sqs.AmazonSQS");            // required at run time for SQSConnectionFactory.builder()
+            Class.forName("org.joda.time.format.DateTimeFormat");             // required at run time for Sqs connect, below
+            Class.forName("org.apache.http.protocol.HttpContext");            // required at run time for Sqs connect, below
             
-            // create the builder then the connection; fill connection member for future use
-            ClientConfiguration clientConfig = new ClientConfiguration()
-                    .withConnectionTimeout(120 * 1000)
-                    .withMaxConnections(400)
-                    .withMaxErrorRetry(15);
-            DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain(); // finds available aws creds
             SQSConnectionFactory connectionFactory =  SQSConnectionFactory.builder()
-                    .withClientConfiguration(clientConfig)
-                    .withAWSCredentialsProvider(providerChain)
+                    .withClientConfiguration(awsClientConfig.clientConfig)
+                    .withAWSCredentialsProvider(awsClientConfig.providerChain)
                     .withRegion(Region.getRegion(Regions.US_WEST_2)) // REVIEW: hard coding
                     .build();
             connection = connectionFactory.createConnection();
