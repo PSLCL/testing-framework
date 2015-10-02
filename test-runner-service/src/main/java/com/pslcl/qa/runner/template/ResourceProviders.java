@@ -32,17 +32,19 @@ public class ResourceProviders implements ResourceProvider {
     public ResourceProviders() {
         resourceProviders = new ArrayList<>(); // list of class objects that implement the ResourceProvider interface
 
+    }
+    
+    public void init(RunnerServiceConfig config) throws Exception
+    {
         // TEMPORARY: hard code all known resourceProviders and instantiate each one
-        resourceProviders.add(new AwsMachineProvider(null)); // TODO: replace null
+        AwsMachineProvider awsMachineProvider = new AwsMachineProvider(null);
+        awsMachineProvider.init(config);
+        resourceProviders.add(awsMachineProvider); // TODO: replace null
         resourceProviders.add(new AwsPersonProvider());
         resourceProviders.add(new AwsNetworkProvider());
         // Note: Do not include ResourceProviders in this list
         
         // TODO: programmatically determine this list and instantiate each one, as needed
-    }
-    
-    public void init(RunnerServiceConfig config) throws Exception
-    {
     }
     
     public void destroy() 

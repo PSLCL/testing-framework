@@ -41,6 +41,10 @@ public class AwsMachineProvider implements MachineProvider
         executor = config.getBlockingExecutor();
     }
 
+    public void destroy()
+    {
+    }
+
     // implement MachineProvider interface
 
     @Override
