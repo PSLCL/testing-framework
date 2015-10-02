@@ -26,7 +26,7 @@ public class RunnerServiceConfig
         scheduledExecutor.init(executorQueueConfig);
         properties = new Properties();
         String[] args = daemonContext.getArguments();
-        if(args.length > 1 || args.length < 2)
+        if(args.length != 2)
             throw new Exception("Commandline switch " + PropertiesFileShort + " or " + PropertiesFileLong + " required");
         if(!args[0].equals(PropertiesFileShort) && !args[0].equals(PropertiesFileLong))
             throw new Exception("Commandline switch " + PropertiesFileShort + " or " + PropertiesFileLong + " required");

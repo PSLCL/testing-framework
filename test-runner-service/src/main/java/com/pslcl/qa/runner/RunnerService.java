@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
-import com.pslcl.qa.runner.config.StatusTracker;
 import com.pslcl.qa.runner.process.ActionStore;
 import com.pslcl.qa.runner.process.ProcessTracker;
 import com.pslcl.qa.runner.process.RunnerMachine;
@@ -46,6 +45,9 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 
     /** The logger used to log any messages. */
     private static final Logger logger = LoggerFactory.getLogger(RunnerService.class); // setup the SLF4J logger
+    
+    public static final String QueueStoreDaoClassKey="com.pslcl.qa.runner.mq-class";
+    public static final String QueueStoreDaoClassDefault=Sqs.class.getName();
 
 //    /**
 //     *
@@ -106,6 +108,10 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 
             RunnerServiceConfig config = new RunnerServiceConfig(daemonContext);
             runnerMachine.init(config);
+
+            // example, will plumb it later, got to get back on ir issues
+            String mqClassName = config.getProperties().getProperty(QueueStoreDaoClassKey, QueueStoreDaoClassDefault);
+            
             //TODO: use reflection/config properties file to get this class
             mq = new Sqs(this); // class Sqs can be replaced with another implementation of MessageQueueDao
             mq.init(config);
