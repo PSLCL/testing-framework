@@ -68,6 +68,7 @@ public class RunnerMachine {
     public void init(RunnerServiceConfig config) throws Exception
     {
         this.config = config;
+        templateProvider = new TemplateProvider();
         templateProvider.init(config);
         initialized.set(true);
     }
