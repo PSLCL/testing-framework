@@ -1,10 +1,9 @@
 package com.pslcl.qa.runner.process;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.pslcl.qa.runner.RunnerService;
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.template.TemplateProvider;
 
 
@@ -14,39 +13,67 @@ import com.pslcl.qa.runner.template.TemplateProvider;
  */
 public class RunnerMachine {
 
+    
     // class members
 
-    final RunnerService runnerService;
-    final ExecutorService templateExecutorService; // supplies threads for individual template tasks
-    public final TemplateProvider tp;
-
-
+    private final RunnerService runnerService;
+    private final AtomicBoolean initialized;
+    private volatile TemplateProvider templateProvider;
+    private volatile RunnerServiceConfig config;
     
     // sub classes
     
     /**
      * For threads created by templateExecutorService, specify thread name and sets daemon true
      */
-    private class TemplateRunThreadFactory implements ThreadFactory {
-        
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(r);
-            t.setDaemon(true);
-            t.setName("thread from templateExecutorService");
-            return t;
-        }
-
-    }
-
+    //TODO: double check blockingexecutor and why daemon was important here.
+//    private class TemplateRunThreadFactory implements ThreadFactory {
+//        
+//        @Override
+//        public Thread newThread(Runnable r) {
+//            Thread t = new Thread(r);
+//            t.setDaemon(true);
+//            t.setName("thread from templateExecutorService");
+//            return t;
+//        }
+//    }
+    
     /** Constructor
      * 
      * @param runnerService
      */
     public RunnerMachine(RunnerService runnerService) {
         this.runnerService = runnerService;
-        templateExecutorService = Executors.newCachedThreadPool(new TemplateRunThreadFactory());
-        tp = new TemplateProvider(templateExecutorService);
+        initialized = new AtomicBoolean();
+    }
+
+    public RunnerServiceConfig getConfig()
+    {
+        return config;
+    }
+    
+    public TemplateProvider getTemplateProvider()
+    {
+        return templateProvider;
+    }
+    
+    
+    public RunnerService getService()
+    {
+        if(!initialized.get())
+            return null;  //TODO: yea bad things are going to happen, is there a potential race here?
+        return runnerService;
+    }
+    
+    public void init(RunnerServiceConfig config) throws Exception
+    {
+        this.config = config;
+        templateProvider.init(config);
+    }
+    
+    public void destroy() 
+    {
+        templateProvider.destroy();
     }
     
     /**
@@ -61,7 +88,7 @@ public class RunnerMachine {
         try {
             RunEntryState reState = new RunEntryState(reNum, message);
             Action action = reState.getAction();  // Action.INITIALIZE
-            Action nextAction = action.act(reState, null, this.tp, runnerService);            
+            Action nextAction = action.act(reState, null, this.templateProvider, runnerService);            
             // .act() stores nextAction in reState and returns it
         } catch (Exception e) {
             System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling reNum " + reNum + ": " + e + ". Message remains in the QueueStore.");

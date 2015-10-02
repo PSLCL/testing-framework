@@ -23,7 +23,7 @@ public class RunEntryTask implements Runnable {
         this.reCore = new RunEntryCore(reNum);
         
         try {
-            runnerMachine.templateExecutorService.execute(this); // schedules call to this.run(); this is the full execution of the specified test run
+            runnerMachine.getConfig().getBlockingExecutor().execute(this); // schedules call to this.run(); this is the full execution of the specified test run
         } catch (Exception e) {
             System.out.println("RunEntryTask constructor failed for reNum " + reNum + ", with Exception " + e);
             throw e;
@@ -41,9 +41,9 @@ public class RunEntryTask implements Runnable {
         System.out.println( "RunEntryTask.run() opens reNum " + reNum);
         
         while(true) {
-            RunEntryState reState = runnerMachine.runnerService.actionStore.get(reNum);
+            RunEntryState reState = runnerMachine.getService().actionStore.get(reNum);
             Action action = reState.getAction();
-            Action nextAction = action.act(reState, reCore, runnerMachine.tp, runnerMachine.runnerService);
+            Action nextAction = action.act(reState, reCore, runnerMachine.getTemplateProvider(), runnerMachine.getService());
             System.out.println("RunEntryTask.run() ran Action " + action.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
             if (nextAction == Action.DISCARDED)
                 break; // close thread

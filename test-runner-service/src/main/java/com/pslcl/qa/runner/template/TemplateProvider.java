@@ -6,10 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.ArtifactNotFoundException;
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.process.DBTemplate;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.IncompatibleResourceException;
@@ -23,14 +23,25 @@ import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
 public class TemplateProvider {
     
-    private Map<byte[],InstancedTemplate> availableInstancedTemplates; // note: this populates in the destroy method
-    private ResourceProviders resourceProviders;
+    private final Map<byte[],InstancedTemplate> availableInstancedTemplates; // note: this populates in the destroy method
+    private final ResourceProviders resourceProviders;
     
-    public TemplateProvider(ExecutorService templateExecutorService) {
+    public TemplateProvider() 
+    {
         availableInstancedTemplates = new HashMap<byte[],InstancedTemplate>();
-        resourceProviders = new ResourceProviders(templateExecutorService); // determines these individual ResourceProvider S, such as AWSMachineProvider, and instantiates them
+        resourceProviders = new ResourceProviders();
     }
 
+    public void init(RunnerServiceConfig config) throws Exception
+    {
+        resourceProviders.init(config);
+    }
+    
+    public void destroy() 
+    {
+        resourceProviders.destroy();
+    }
+    
     public void destroy(byte [] template_hash, InstancedTemplate iT) {
         // Can also choose to destroy iT. This is early impl with no smarts.
         availableInstancedTemplates.put(template_hash, iT);

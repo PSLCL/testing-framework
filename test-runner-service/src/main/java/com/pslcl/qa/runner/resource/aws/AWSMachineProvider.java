@@ -8,6 +8,7 @@ import java.util.concurrent.Future;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.MachineProvider;
@@ -26,14 +27,18 @@ public class AWSMachineProvider implements MachineProvider
     private final AmazonEC2Client ec2Client;
     private final AWSResourceProviderProperties properties;
     private final List<AWSMachineInstance> instances = new ArrayList<AWSMachineInstance>();
-    private final ExecutorService executor;
+    private volatile ExecutorService executor;
 
-    public AWSMachineProvider(ExecutorService executor, AWSResourceProviderProperties properties)
+    public AWSMachineProvider(AWSResourceProviderProperties properties)
     {
-        this.executor = executor;
         this.properties = properties;
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain();
         ec2Client = new AmazonEC2Client(providerChain);
+    }
+    
+    public void init(RunnerServiceConfig config)
+    {
+        executor = config.getBlockingExecutor();
     }
 
     // implement MachineProvider interface
@@ -77,15 +82,15 @@ public class AWSMachineProvider implements MachineProvider
     @Override
     public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds)
     {
-        // temporary, to allow progress: add one simulated reserved reservation, place it in retRqr, and return that
+        // temporary, to allow progress: return empty rqr
         ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>());
         for (ResourceWithAttributes rwa : resources)
         {
             // TODO: actually reserve whatever is requested in parameter resources
 
             // temporary, to allow progress: return an artificially reserved resource
-            ReservedResourceWithAttributes simulatedReservation = new ReservedResourceWithAttributes(rwa, this, timeoutSeconds);
-            retRqr.getReservedResources().add(simulatedReservation);
+            ReservedResourceWithAttributes artificialReservation = new ReservedResourceWithAttributes(rwa, this, timeoutSeconds);
+            retRqr.getReservedResources().add(artificialReservation);
         }
         return retRqr;
     }
@@ -131,7 +136,7 @@ public class AWSMachineProvider implements MachineProvider
     public void release(ResourceInstance resource, boolean isReusable)
     {
         // TODO Auto-generated method stub
-
+        
     }
 
 }

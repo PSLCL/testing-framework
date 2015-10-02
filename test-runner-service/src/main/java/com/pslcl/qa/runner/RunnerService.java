@@ -25,6 +25,8 @@ import org.apache.commons.daemon.DaemonInitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
+import com.pslcl.qa.runner.config.StatusTracker;
 import com.pslcl.qa.runner.process.ActionStore;
 import com.pslcl.qa.runner.process.ProcessTracker;
 import com.pslcl.qa.runner.process.RunnerMachine;
@@ -57,7 +59,6 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 //        }
 //           
 //    }
-
     
     // class variables
     
@@ -69,7 +70,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     
     
     /** the process classes */
-    public RunnerMachine runnerMachine = null;
+    public final RunnerMachine runnerMachine;
     public ActionStore actionStore = null; // holds state of each template; TODO: actionStore is instantiated here, but not yet otherwise used 
     public ProcessTracker processTracker = null;
     
@@ -81,8 +82,8 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     public RunnerService() {
         // Setup what we can, prior to knowing configuration
         Thread.setDefaultUncaughtExceptionHandler(this);
+        runnerMachine = new RunnerMachine(this);
     }
-    
     
     // Daemon interface implementations
     
@@ -103,6 +104,9 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
             } catch (Exception e) {
                 logger.debug(".registerMBean() failed: " + e.getMessage());
             }
+
+            RunnerServiceConfig config = new RunnerServiceConfig();
+            runnerMachine.init(config);
             
             // init access to the template DAO-referenced database (one is common to all instances of RunnerService)
             
@@ -204,12 +208,8 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
         synchronized (this) { // avoid overlap of init(), start(), stop(), or destroy()
             logger.debug("Starting RunnerService.");
             
-            // Create the Status Tracker
-            statusTracker = new StatusTracker();
-
             // instantiate the process classes 
             actionStore = new ActionStore(); // TODO: any order required?
-            runnerMachine = new RunnerMachine(this);
             processTracker = new ProcessTracker(this);
             
             if (mq.queueStoreExists()) {
@@ -281,9 +281,10 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
             logger.debug("Stopping RunnerService.");
             
             // Destroy the Status Tracker
-            statusTracker.close();
+            statusTracker.destroy();
             statusTracker = null;
         }
+        runnerMachine.destroy();
     }
 
     /**
@@ -303,10 +304,10 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
 
     @Override
     public short getStatus() {
-        short status = StatusTracker.WARN;
+        short status = (short)StatusTracker.Status.Warn.ordinal();
         synchronized (this) {
             if (statusTracker != null)
-                status = statusTracker.getStatus();
+                status = (short) statusTracker.getStatus().ordinal();
         }
         return status;
     }

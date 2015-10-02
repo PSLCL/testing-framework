@@ -3,9 +3,9 @@ package com.pslcl.qa.runner.template;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
@@ -24,16 +24,16 @@ import com.pslcl.qa.runner.resource.aws.AWSPersonProvider;
  */
 public class ResourceProviders implements ResourceProvider {
 
-    private List<ResourceProvider> resourceProviders;
+    private final List<ResourceProvider> resourceProviders;
 
     /**
      * constructor
      */
-    public ResourceProviders(ExecutorService templateExecutorService) {
+    public ResourceProviders() {
         resourceProviders = new ArrayList<>(); // list of class objects that implement the ResourceProvider interface
 
         // TEMPORARY: hard code all known resourceProviders and instantiate each one
-        resourceProviders.add(new AWSMachineProvider(templateExecutorService, null)); // TODO: replace null
+        resourceProviders.add(new AWSMachineProvider(null)); // TODO: replace null
         resourceProviders.add(new AWSPersonProvider());
         resourceProviders.add(new AWSNetworkProvider());
         // Note: Do not include ResourceProviders in this list
@@ -41,6 +41,15 @@ public class ResourceProviders implements ResourceProvider {
         // TODO: programmatically determine this list and instantiate each one, as needed
     }
     
+    public void init(RunnerServiceConfig config) throws Exception
+    {
+    }
+    
+    public void destroy() 
+    {
+    }
+    
+
     @Override
     public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> reserveResourceRequests, int timeoutSeconds) {
         
