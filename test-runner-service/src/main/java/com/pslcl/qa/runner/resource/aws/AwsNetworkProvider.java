@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.NetworkInstance;
 import com.pslcl.qa.runner.resource.NetworkProvider;
@@ -15,9 +16,23 @@ import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
-public class AwsNetworkProvider implements NetworkProvider
+public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {
+    public AwsNetworkProvider()
+    {
+    }
 
+    @Override
+    public void init(RunnerServiceConfig config)
+    {
+        super.init(config);
+    }
+
+    @Override
+    public void destroy()
+    {
+    }
+    
     @Override
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback)
     {
@@ -87,5 +102,4 @@ public class AwsNetworkProvider implements NetworkProvider
         // TODO Auto-generated method stub
 
     }
-
 }

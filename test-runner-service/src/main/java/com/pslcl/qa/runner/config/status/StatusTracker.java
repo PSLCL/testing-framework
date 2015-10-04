@@ -1,4 +1,4 @@
-package com.pslcl.qa.runner.config;
+package com.pslcl.qa.runner.config.status;
 
 import java.util.List;
 

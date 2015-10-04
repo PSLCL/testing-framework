@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
+
 /**
  * This interface defines interactions with a resource provider. The primary responsibility of a resource provider is to
  * instantiate resources. However, all interactions between the platform and the resource are brokered through the
@@ -112,5 +114,16 @@ public interface ResourceProvider {
 	 * @return The map of attributes.
 	 */
 	public Map<String, String> getAttributes(String name);
-
+	
+	/**
+	 * Daemon init pipe.
+	 * @param config the current configuration.
+	 * @throws Exception if the resource can not be initialized.
+	 */
+	public void init(RunnerServiceConfig config) throws Exception;
+	
+    /**
+     * Daemon destroy pipe.
+     */
+    public void destroy();
 }

@@ -2,7 +2,10 @@
  * This work is protected by Copyright, see COPYING.txt for more information.
  */
 
-package com.pslcl.qa.runner.config;
+package com.pslcl.qa.runner.config.executor;
+
+import com.pslcl.qa.runner.config.status.StatusTracker;
+import com.pslcl.qa.runner.config.status.StatusTrackerProvider;
 
 
 /**

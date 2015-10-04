@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.PersonInstance;
 import com.pslcl.qa.runner.resource.PersonProvider;
@@ -15,9 +16,24 @@ import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
-public class AwsPersonProvider implements PersonProvider
+public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
+    public AwsPersonProvider()
+    {
+    }
 
+    @Override
+    public void init(RunnerServiceConfig config)
+    {
+        super.init(config);
+    }
+
+    @Override
+    public void destroy()
+    {
+    }
+    
+    
     @Override
     public void updateArtifact(String component, String version, String platform, String name, String artifactHash)
     {

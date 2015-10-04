@@ -3,7 +3,6 @@ package com.pslcl.qa.runner.resource.aws;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -22,25 +21,25 @@ import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 /**
  * Reserve, bind, control and release instances of AWS machines.
  */
-public class AwsMachineProvider implements MachineProvider
+public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
     private final AmazonEC2Client ec2Client;
-    private final AwsResourceProviderProperties properties;
     private final List<AwsMachineInstance> instances = new ArrayList<AwsMachineInstance>();
-    private volatile ExecutorService executor;
+    private volatile RunnerServiceConfig config;
 
-    public AwsMachineProvider(AwsResourceProviderProperties properties)
+    public AwsMachineProvider()
     {
-        this.properties = properties;
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain();
         ec2Client = new AmazonEC2Client(providerChain);
     }
     
+    @Override
     public void init(RunnerServiceConfig config)
     {
-        executor = config.getBlockingExecutor();
+        super.init(config);
     }
 
+    @Override
     public void destroy()
     {
     }
@@ -50,7 +49,7 @@ public class AwsMachineProvider implements MachineProvider
     @Override
     public Future<MachineInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException
     {
-        return executor.submit(new AwsMachineInstanceFuture(resource));
+        return config.blockingExecutor.submit(new AwsMachineInstanceFuture(resource));
     }
 
     @Override

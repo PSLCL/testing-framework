@@ -3,10 +3,18 @@ package com.pslcl.qa.runner.template;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Future;
 
+import org.slf4j.LoggerFactory;
+
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
+import com.pslcl.qa.runner.config.util.PropertiesFile;
+import com.pslcl.qa.runner.config.util.StrH.StringPair;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.MachineProvider;
+import com.pslcl.qa.runner.resource.NetworkProvider;
+import com.pslcl.qa.runner.resource.PersonProvider;
 import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
@@ -24,6 +32,14 @@ import com.pslcl.qa.runner.resource.aws.AwsPersonProvider;
  */
 public class ResourceProviders implements ResourceProvider {
 
+    public static final String MachineProviderClassKey = "pslcl.qa.runner.template.machine-provider-class"; 
+    public static final String PersonProviderClassKey = "pslcl.qa.runner.template.person-provider-class"; 
+    public static final String NetworkProviderClassKey = "pslcl.qa.runner.template.network-provider-class";
+    
+    public static final String MachineProviderClassDefault = AwsMachineProvider.class.getName();
+    public static final String PersonProviderClassDefault = AwsPersonProvider.class.getName();
+    public static final String NetworkProviderClassDefault = AwsNetworkProvider.class.getName();
+    
     private final List<ResourceProvider> resourceProviders;
 
     /**
@@ -34,21 +50,67 @@ public class ResourceProviders implements ResourceProvider {
 
     }
     
+    @Override
     public void init(RunnerServiceConfig config) throws Exception
     {
-        // TEMPORARY: hard code all known resourceProviders and instantiate each one
-        AwsMachineProvider awsMachineProvider = new AwsMachineProvider(null);
-        awsMachineProvider.init(config);
-        resourceProviders.add(awsMachineProvider); // TODO: replace null
-        resourceProviders.add(new AwsPersonProvider());
-        resourceProviders.add(new AwsNetworkProvider());
-        // Note: Do not include ResourceProviders in this list
+        config.initsb.level.incrementAndGet();
+        config.initsb.ttl(getClass().getSimpleName(), " Initialization");
+        config.initsb.level.incrementAndGet();
         
-        // TODO: programmatically determine this list and instantiate each one, as needed
+        // Note: Do not include ResourceProviders in this list
+        config.initsb.ttl(MachineProvider.class.getSimpleName(), " Initialization");
+        config.initsb.level.incrementAndGet();
+        configToProviders(config, MachineProviderClassKey, MachineProviderClassDefault);
+        config.initsb.level.decrementAndGet();
+        
+        config.initsb.ttl(PersonProvider.class.getSimpleName(), " Initialization");
+        config.initsb.level.incrementAndGet();
+        configToProviders(config, PersonProviderClassKey, PersonProviderClassDefault);
+        config.initsb.level.decrementAndGet();
+        
+        config.initsb.ttl(NetworkProvider.class.getSimpleName(), " Initialization");
+        config.initsb.level.incrementAndGet();
+        configToProviders(config, NetworkProviderClassKey, NetworkProviderClassDefault);
+        config.initsb.level.decrementAndGet();
+        config.initsb.level.decrementAndGet();
+        config.initsb.level.decrementAndGet();
     }
     
+    private void configToProviders(RunnerServiceConfig config, String key, String defaultValue) throws Exception
+    {
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(key, config.properties);
+        int size = list.size();
+        if(size == 0)
+        {
+            // add the default
+            StringPair pair = new StringPair(key, defaultValue);
+            list.add(pair);
+            ++size;
+        }
+        
+        for(int i=0; i < size; i++)
+        {
+            Entry<String,String> entry = list.get(i);
+            config.initsb.ttl(entry.getKey(), " = ", entry.getValue());
+            ResourceProvider rp = (ResourceProvider)Class.forName(entry.getValue()).newInstance();
+            rp.init(config);
+            resourceProviders.add(rp);
+        }
+    }
+    
+    @Override
     public void destroy() 
     {
+        try
+        {
+            int size = resourceProviders.size();
+            for(int i=0; i < size; i++)
+                resourceProviders.get(i).destroy();
+            resourceProviders.clear();
+        }catch(Exception e)
+        {
+            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".destroy failed", e);
+        }
     }
     
 

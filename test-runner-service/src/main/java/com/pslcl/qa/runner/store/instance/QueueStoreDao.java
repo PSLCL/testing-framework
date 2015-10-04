@@ -3,6 +3,8 @@ package com.pslcl.qa.runner.store.instance;
 import javax.jms.JMSException;
 import javax.jms.Message;
 
+import org.apache.commons.daemon.DaemonInitException;
+
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 
 public interface QueueStoreDao {

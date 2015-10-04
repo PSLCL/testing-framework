@@ -1,4 +1,4 @@
-package com.pslcl.qa.runner.config;
+package com.pslcl.qa.runner.config.status;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +18,8 @@ import org.opendof.core.oal.DOFRequest;
 import org.opendof.core.oal.DOFRequest.Subscribe;
 import org.opendof.core.oal.DOFType;
 import org.opendof.core.oal.value.DOFUInt8;
+
+import com.pslcl.qa.runner.config.executor.ScheduledExecutor;
 
 /**
  * An in-memory implementation of the <code>StatusTracker</code> interface.

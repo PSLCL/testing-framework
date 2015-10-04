@@ -2,7 +2,7 @@
  * This work is protected by Copyright, see COPYING.txt for more information.
  */
 
-package com.pslcl.qa.runner.config;
+package com.pslcl.qa.runner.config.executor;
 
 
 /**

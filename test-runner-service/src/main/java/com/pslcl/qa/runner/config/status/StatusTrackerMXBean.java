@@ -1,8 +1,8 @@
-package com.pslcl.qa.runner.config;
+package com.pslcl.qa.runner.config.status;
 
 import java.util.List;
 
-import com.pslcl.qa.runner.config.StatusTracker.Status;
+import com.pslcl.qa.runner.config.status.StatusTracker.Status;
 
 /**
  * A complementary JMX interface to the <code>StatusTrackerProvider</code> implementation.

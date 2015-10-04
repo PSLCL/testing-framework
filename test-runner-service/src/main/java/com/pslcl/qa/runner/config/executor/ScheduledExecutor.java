@@ -1,7 +1,7 @@
 /*
  * This work is protected by Copyright, see COPYING.txt for more information.
  */
-package com.pslcl.qa.runner.config;
+package com.pslcl.qa.runner.config.executor;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -9,6 +9,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.LoggerFactory;
+
+import com.pslcl.qa.runner.config.status.StatusTracker;
+import com.pslcl.qa.runner.config.status.StatusTracker.Status;
 
 /**
  * An EMIT application friendly <code>ScheduledThreadPoolExecutor</code>.

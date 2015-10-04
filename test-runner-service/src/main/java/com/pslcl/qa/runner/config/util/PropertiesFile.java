@@ -1,4 +1,4 @@
-package com.pslcl.qa.runner.config;
+package com.pslcl.qa.runner.config.util;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -6,7 +6,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Properties;
+
+import com.pslcl.qa.runner.config.util.StrH.StringPair;
 
 /**
  * Static properties file helper 
@@ -142,4 +148,48 @@ public class PropertiesFile
         }
     }
 
+    public static List<Entry<String, String>> getPropertiesForBaseKey(String baseKey, Properties properties)
+    {
+        ArrayList<Entry<String, String>> entries = new ArrayList<Entry<String, String>>();
+        Hashtable<Integer, StringPair> orderingMap = new Hashtable<Integer, StringPair>();
+        
+        int found = 0;
+        for (Entry<Object, Object> entry : properties.entrySet())
+        {
+            String key = (String) entry.getKey();
+            int index = 0;
+            if (key.startsWith(baseKey))
+            {
+                ++found;
+                char[] chars = key.toCharArray();
+                if(Character.isDigit(chars[chars.length-1]))
+                {
+                    int strIndex = 0;
+                    for(int i=chars.length-1; i >=0; i--)
+                    {
+                        if(!Character.isDigit(chars[i]))
+                        {
+                            strIndex = i + 1;
+                            break;
+                        }
+                    }
+                    index = Integer.parseInt(key.substring(strIndex));
+                }
+                orderingMap.put(index, new StringPair(entry));
+            }
+        }
+        int i=0;
+        int hit = 0;
+        do
+        {
+            StringPair pair = orderingMap.get(i);
+            if(pair != null)
+            {
+                entries.add(pair);
+                ++hit;
+            }
+            ++i;
+        }while(hit < found);
+        return entries;
+    }
 }

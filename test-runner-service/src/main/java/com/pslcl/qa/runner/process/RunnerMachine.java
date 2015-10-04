@@ -2,6 +2,8 @@ package com.pslcl.qa.runner.process;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.slf4j.LoggerFactory;
+
 import com.pslcl.qa.runner.RunnerService;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.template.TemplateProvider;
@@ -16,34 +18,15 @@ public class RunnerMachine {
     
     // class members
 
-    private final RunnerService runnerService;
     private final AtomicBoolean initialized;
     private volatile TemplateProvider templateProvider;
     private volatile RunnerServiceConfig config;
-    
-    // sub classes
-    
-    /**
-     * For threads created by templateExecutorService, specify thread name and sets daemon true
-     */
-    //TODO: double check blockingexecutor and why daemon was important here.
-//    private class TemplateRunThreadFactory implements ThreadFactory {
-//        
-//        @Override
-//        public Thread newThread(Runnable r) {
-//            Thread t = new Thread(r);
-//            t.setDaemon(true);
-//            t.setName("thread from templateExecutorService");
-//            return t;
-//        }
-//    }
     
     /** Constructor
      * 
      * @param runnerService
      */
-    public RunnerMachine(RunnerService runnerService) {
-        this.runnerService = runnerService;
+    public RunnerMachine() {
         initialized = new AtomicBoolean(false);
     }
 
@@ -61,8 +44,12 @@ public class RunnerMachine {
     public RunnerService getService()
     {
         if(!initialized.get())
-            return null;  //TODO: yea bad things are going to happen, is there a potential race here?
-        return runnerService;
+        {
+            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".getService called before daemon init completed");
+            return null;  //TODO: yea bad things are going to happen, never happen right??  
+            // remove this if no constructor and no init method could cause this ... i.e. only possible after daemon.start();
+        }
+        return config.runnerService;
     }
     
     public void init(RunnerServiceConfig config) throws Exception
@@ -91,7 +78,7 @@ public class RunnerMachine {
         try {
             RunEntryState reState = new RunEntryState(reNum, message);
             Action action = reState.getAction();  // Action.INITIALIZE
-            Action nextAction = action.act(reState, null, this.templateProvider, runnerService);            
+            Action nextAction = action.act(reState, null, this.templateProvider, config.runnerService);            
             // .act() stores nextAction in reState and returns it
         } catch (Exception e) {
             System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling reNum " + reNum + ": " + e + ". Message remains in the QueueStore.");
@@ -107,7 +94,7 @@ public class RunnerMachine {
         // boolean doProcess = determineDoProcess(reNum, reState);
         // if (doProcess)
         {
-            RunEntryState reStateOld = runnerService.actionStore.put(reNum, reState);
+            RunEntryState reStateOld = config.runnerService.actionStore.put(reNum, reState);
             // TODO: For reStateOld not null, consider: is this a bug, or shall we cleanup whatever it is that reStateOld shows has been allocated or started or whatever?
         }
         
@@ -124,7 +111,7 @@ public class RunnerMachine {
      * @param reNum
      */
     void removeTemplateRun(long reNum) {
-        RunEntryState reStateOld = runnerService.actionStore.remove(reNum);
+        RunEntryState reStateOld = config.runnerService.actionStore.remove(reNum);
         // TODO: Shall we cleanup whatever it is that reStateOld shows has been allocated or started or whatever?
     }
     

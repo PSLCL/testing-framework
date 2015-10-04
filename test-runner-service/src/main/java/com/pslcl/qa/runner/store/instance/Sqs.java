@@ -8,6 +8,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
+import org.apache.commons.daemon.DaemonInitException;
 import org.slf4j.LoggerFactory;
 
 import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
@@ -16,7 +17,6 @@ import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazon.sqs.javamessaging.SQSSession;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.pslcl.qa.runner.RunnerService;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration;
 import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration.AwsClientConfig;
@@ -38,15 +38,19 @@ public class Sqs extends MessageQueueDaoAbstract {
     private AmazonSQSMessagingClientWrapper sqsClient = null;
     private SQSConnection connection = null;
     
-    public Sqs(RunnerService runnerService) {
-        super(runnerService);
+    public Sqs() {
     }
 
     @Override
     public void init(RunnerServiceConfig config) throws Exception
     {
-        queueStoreName = config.getProperties().getProperty(QueueStoreNameKey, QueueStoreNameDefault);
+        super.init(config);
+        config.initsb.ttl("Message Queue initialization");
+        config.initsb.level.incrementAndGet();
+        queueStoreName = config.properties.getProperty(QueueStoreNameKey, QueueStoreNameDefault);
+        config.initsb.ttl(QueueStoreNameKey, " = ", queueStoreName);
         awsClientConfig = AwsClientConfiguration.getClientConfiguration(config);
+        config.initsb.level.decrementAndGet();
         connect(awsClientConfig);
     }
     
@@ -135,6 +139,13 @@ public class Sqs extends MessageQueueDaoAbstract {
                 connection = null;
             }
 
+            //TODO: Clint review as he had this code in. 
+            // this is not likely a good practice for the build system which handles compile time requirements 
+            // separate from deployed runtime requirements.  Also if using ivy or maven this will be picked up
+            // automatically as needed via the compile/runtime separation of all dependencies to any depth.
+            // suggest moving your personal eclipse build to ivy or maven.
+            // also see AwsClientConfiguration where they have been commented out there at this time.
+            
             Class.forName("com.fasterxml.jackson.core.Versioned");            // required at run time for Sqs connect, below
             Class.forName("com.amazonaws.services.sqs.AmazonSQS");            // required at run time for SQSConnectionFactory.builder()
             Class.forName("org.joda.time.format.DateTimeFormat");             // required at run time for Sqs connect, below

@@ -23,7 +23,7 @@ public class RunEntryTask implements Runnable {
         this.reCore = new RunEntryCore(reNum);
         
         try {
-            runnerMachine.getConfig().getBlockingExecutor().execute(this); // schedules call to this.run(); this is the full execution of the specified test run
+            runnerMachine.getConfig().blockingExecutor.execute(this); // schedules call to this.run(); this is the full execution of the specified test run
         } catch (Exception e) {
             System.out.println("RunEntryTask constructor failed for reNum " + reNum + ", with Exception " + e);
             throw e;
