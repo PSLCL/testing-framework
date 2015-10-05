@@ -59,6 +59,8 @@ public class RunnerServiceConfig
             if(cbase == null)
                 cbase = new DtfCli(daemonContext.getArguments());
         }
+        if(cbase == null)
+            cbase = new DtfCli(daemonContext.getArguments());
         cliBase = cbase;
         properties = cliBase.properties;
         initsb = new TabToLevel(cliBase.getInitsb());
