@@ -10,7 +10,7 @@ public abstract class AwsResourceProvider
     /**
      * Resource Group ID - Used to tag AWS resources so that they are identifiable by the resource provider.
      */
-    public volatile RunnerServiceConfig config;
+    protected volatile RunnerServiceConfig config;
     public volatile String groupId;
     
     public void init(RunnerServiceConfig config)

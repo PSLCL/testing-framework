@@ -25,7 +25,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 {
     private final AmazonEC2Client ec2Client;
     private final List<AwsMachineInstance> instances = new ArrayList<AwsMachineInstance>();
-    private volatile RunnerServiceConfig config;
 
     public AwsMachineProvider()
     {
@@ -49,6 +48,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public Future<MachineInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException
     {
+
         return config.blockingExecutor.submit(new AwsMachineInstanceFuture(resource));
     }
 
