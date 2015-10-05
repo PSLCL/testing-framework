@@ -1,5 +1,6 @@
 package com.pslcl.qa.runner.config;
 
+import java.util.Properties;
 import java.util.UUID;
 
 import org.apache.commons.daemon.DaemonContext;
@@ -10,7 +11,9 @@ import org.opendof.core.oal.DOFSystem;
 
 import com.pslcl.qa.runner.RunnerService;
 import com.pslcl.qa.runner.config.cli.CliBase;
-import com.pslcl.qa.runner.config.cli.DtfCliCommand;
+import com.pslcl.qa.runner.config.cli.CliCommand;
+import com.pslcl.qa.runner.config.cli.DtfCli;
+import com.pslcl.qa.runner.config.cli.CliDaemonContext.WindowsDaemonController;
 import com.pslcl.qa.runner.config.executor.BlockingExecutor;
 import com.pslcl.qa.runner.config.executor.BlockingExecutorConfiguration;
 import com.pslcl.qa.runner.config.executor.BlockingExecutorConfiguration.ExecutorConfig;
@@ -22,7 +25,7 @@ import com.pslcl.qa.runner.config.status.StatusTracker;
 import com.pslcl.qa.runner.config.status.StatusTrackerProvider;
 import com.pslcl.qa.runner.config.util.TabToLevel;
 
-public class RunnerServiceConfig extends CliBase
+public class RunnerServiceConfig
 {
     private final static String OpendofStatusProviderKey = "com.pslcl.qa.runner.opendof-status-provider";
     private final static String OpendofStatusProviderIdKey = "com.pslcl.qa.runner.opendof-status-provider-id";
@@ -32,9 +35,12 @@ public class RunnerServiceConfig extends CliBase
 
     public final TabToLevel initsb;
     public final StatusTracker statusTracker;
+    private final CliBase cliBase;
+    public final Properties properties;
     public volatile RunnerService runnerService;
     public volatile BlockingExecutor blockingExecutor;
     public volatile ScheduledExecutor scheduledExecutor;
+    public volatile CliCommand command;
 
     private volatile boolean provideStatus;
     private volatile DOF dof;
@@ -44,21 +50,28 @@ public class RunnerServiceConfig extends CliBase
 
     public RunnerServiceConfig(DaemonContext daemonContext, RunnerService runnerService)
     {
-        super(daemonContext.getArguments(), null, true, false, DefaultMaxHelpWidth);
         this.runnerService = runnerService;
         statusTracker = new StatusTrackerProvider();
-        initsb = new TabToLevel(getInitsb());
+        CliBase cbase = null;
+        if(daemonContext.getController() instanceof WindowsDaemonController)
+        {
+            cbase = ((WindowsDaemonController)daemonContext.getController()).cliBase;
+            if(cbase == null)
+                cbase = new DtfCli(daemonContext.getArguments());
+        }
+        cliBase = cbase;
+        properties = cliBase.properties;
+        initsb = new TabToLevel(cliBase.getInitsb());
     }
 
     public void init() throws Exception
     {
-        addCommand(new DtfCliCommand(this, null));
-        validateCommands();
+        command = cliBase.validateCommands();
 
         initsb.level.incrementAndGet(); // l1
         initsb.ttl("Status Tracker:");
         initsb.level.incrementAndGet(); // l2
-        String value = properties.getProperty(OpendofStatusProviderKey, OpendofStatusProviderDefault);
+        String value = cliBase.properties.getProperty(OpendofStatusProviderKey, OpendofStatusProviderDefault);
         initsb.ttl(OpendofStatusProviderKey, " = ", value);
         provideStatus = Boolean.parseBoolean(value);
         DOF.Config dconfig = null;
@@ -68,7 +81,7 @@ public class RunnerServiceConfig extends CliBase
         {
             dconfig = new DOF.Config.Builder().build();
             sconfig = DofSystemConfiguration.propertiesToConfig(this);
-            value = properties.getProperty(OpendofStatusProviderIdKey, OpendofStatusProviderIdDefault);
+            value = cliBase.properties.getProperty(OpendofStatusProviderIdKey, OpendofStatusProviderIdDefault);
             initsb.ttl(OpendofStatusProviderIdKey, " = ", value);
             soid = DOFObjectID.create(value);
         }

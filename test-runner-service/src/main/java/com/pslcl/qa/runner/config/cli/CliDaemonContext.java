@@ -4,14 +4,14 @@ import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonController;
 
 @SuppressWarnings("javadoc")
-public class WindowsDaemonContext implements DaemonContext
+public class CliDaemonContext implements DaemonContext
 {
     private final DaemonController controller;
     private String[] args;
     
-    public WindowsDaemonContext()
+    public CliDaemonContext(CliBase cliBase)
     {
-        controller = new WindowsDaemonController();
+        controller = new WindowsDaemonController(cliBase);
     }
 
     @Override
@@ -32,8 +32,14 @@ public class WindowsDaemonContext implements DaemonContext
         System.arraycopy(args, 0, this.args, 0, args.length);
     }
     
-    private class WindowsDaemonController implements DaemonController
+    public static class WindowsDaemonController implements DaemonController
     {
+        public final CliBase cliBase;
+        public WindowsDaemonController(CliBase cliBase)
+        {
+            this.cliBase = cliBase;
+        }
+        
         @Override
         public void shutdown() throws IllegalStateException
         {

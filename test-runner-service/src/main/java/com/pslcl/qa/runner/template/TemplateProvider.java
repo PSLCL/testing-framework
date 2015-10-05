@@ -32,6 +32,11 @@ public class TemplateProvider {
         resourceProviders = new ResourceProviders();
     }
 
+    public ResourceProviders getResourceProviders()
+    {
+        return resourceProviders;
+    }
+    
     public void init(RunnerServiceConfig config) throws Exception
     {
         resourceProviders.init(config);

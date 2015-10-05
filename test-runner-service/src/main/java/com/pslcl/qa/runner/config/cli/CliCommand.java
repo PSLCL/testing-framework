@@ -181,6 +181,7 @@ public abstract class CliCommand
      */
     public void addChild(CliCommand command)
     {
+        command.parent = this;
         commands.put(command.getCommandName(), command);
         command.cliSetup();
     }
@@ -203,7 +204,7 @@ public abstract class CliCommand
         if(commands.size() == 0)
         {
             originalArgs = cliBase.getOriginalArgs();
-            if(!originalArgs[commandDepth].equals(commandName))
+            if(!originalArgs[commandDepth].equals(commandName)) // -1 because CliBase holds 0th
                 return null;
             commandDepth++;
             if(commandDepth >= originalArgs.length && hasOptions())

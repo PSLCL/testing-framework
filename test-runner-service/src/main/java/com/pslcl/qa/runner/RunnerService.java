@@ -64,6 +64,16 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
         Thread.setDefaultUncaughtExceptionHandler(this);
     }
 
+    public RunnerMachine getRunnerMachine()
+    {
+        return runnerMachine;
+    }
+    
+    public RunnerServiceConfig getConfig()
+    {
+        return config;
+    }
+    
     // Daemon interface implementations
 
     @Override

@@ -50,6 +50,12 @@ public class ResourceProviders implements ResourceProvider {
 
     }
     
+    public List<ResourceProvider> getProviders()
+    {
+        return new ArrayList<ResourceProvider>(resourceProviders);
+    }
+    
+    
     @Override
     public void init(RunnerServiceConfig config) throws Exception
     {

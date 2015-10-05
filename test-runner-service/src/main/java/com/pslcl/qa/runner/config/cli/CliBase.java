@@ -317,7 +317,7 @@ public class CliBase extends Thread
      * @return the selected <code>CliCommand</code>
      */
     @SuppressWarnings("null")
-    protected CliCommand validateCommands()
+    public CliCommand validateCommands()
     {
         // check for no arguments help
         if(originalArgs.length == 0)
@@ -377,8 +377,8 @@ public class CliBase extends Thread
                break;
         }
         
-        boolean gotConfig = command.handleConfiguration();
-        handleLogger(command.getCommandLine(), gotConfig);
+        boolean gotConfig = activeCommand.handleConfiguration();
+        handleLogger(activeCommand.getCommandLine(), gotConfig);
         if(log.isDebugEnabled())
         {
             StrH.ttl(initsb, 1, "java.class.path:");
