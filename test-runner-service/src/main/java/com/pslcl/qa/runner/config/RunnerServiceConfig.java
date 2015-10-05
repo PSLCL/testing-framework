@@ -25,6 +25,11 @@ import com.pslcl.qa.runner.config.status.StatusTracker;
 import com.pslcl.qa.runner.config.status.StatusTrackerProvider;
 import com.pslcl.qa.runner.config.util.TabToLevel;
 
+/**
+ * Global configuration object
+ * 
+ */
+
 public class RunnerServiceConfig
 {
     private final static String OpendofStatusProviderKey = "com.pslcl.qa.runner.opendof-status-provider";
