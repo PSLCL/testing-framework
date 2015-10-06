@@ -19,6 +19,9 @@ import com.pslcl.qa.runner.config.RunnerServiceConfig;
 public class AwsClientConfiguration
 {
     public static final String AwsClientConfiKey = "com.pslcl.qa.aws.client-config";
+    public static final String EndpointKey = "pslcl.qa.runner.resource.aws.endpoint";
+    public static final String GroupIdKey = "pslcl.qa.platform.resource.aws.group-id";
+    
 
     public static final String ConnectionTimeoutKey = "com.amazonaws.client.connection-timeout";
     public static final String MaxConnectionsKey = "com.amazonaws.client.max-connections";
@@ -42,6 +45,9 @@ public class AwsClientConfiguration
     public static final String SignerOverrideKey = "com.amazonaws.client.signer-override";
     public static final String ConnectionTtlKey = "com.amazonaws.client.connection-ttl";
 
+    
+    public static final String GroupIdDefault = "AwsTestResource";
+    public static final String EndpointDefault = "ec2.us-west-2.amazonaws.com";
     public static final String ConnectionTimeoutDefault = "50000";
     public static final String MaxConnectionsDefault = "50";
     public static final String MaxErrorRetryDefault = "-1";
@@ -83,18 +89,16 @@ public class AwsClientConfiguration
         config.initsb.ttl("AWS Client Configuration:");
         config.initsb.level.incrementAndGet();
 
-        //TODO: Clint review as he had this code in. 
-        // this is not likely a good practice for the build system which handles compile time requirements 
-        // separate from deployed runtime requirements.  Also if using ivy or maven this will be picked up
-        // automatically as needed via the compile/runtime separation of all dependencies to any depth.
-        // suggest moving your personal eclipse build to ivy or maven.
+        String value = config.properties.getProperty(EndpointKey, EndpointDefault);
+        config.initsb.ttl(EndpointKey, " = ", value);
+        String endpoint = value;
         
-//            Class.forName("org.apache.commons.logging.LogFactory"); // required at run time for new ClientConfiguration()
-//            Class.forName("com.fasterxml.jackson.databind.ObjectMapper"); // required at run time for new ClientConfiguration()
-//            Class.forName("com.fasterxml.jackson.annotation.JsonAutoDetect"); // required at run time for new ClientConfiguration()
-//            Class.forName("org.apache.http.conn.scheme.SchemeSocketFactory"); // required at run time for .createConnection()
-
-        String value = config.properties.getProperty(ConnectionTimeoutKey, ConnectionTimeoutDefault);
+        value = config.properties.getProperty(GroupIdKey, GroupIdDefault);
+        config.initsb.ttl(GroupIdKey, " = ", value);
+        String groupId = value;
+        
+        
+        value = config.properties.getProperty(ConnectionTimeoutKey, ConnectionTimeoutDefault);
         config.initsb.ttl(ConnectionTimeoutKey, " = ", value);
         int connectionTimeout = Integer.parseInt(value);
         
@@ -200,6 +204,7 @@ public class AwsClientConfiguration
             .withSignerOverride(signerOverride)
             .withConnectionTTL(connectionTtl)
             .withPreemptiveBasicProxyAuth(proxyPreemptiveAuth);
+        // @formatter:on
 
         if(maxErrorRetry != -1)
             clientConfig.setMaxErrorRetry(maxErrorRetry);
@@ -215,9 +220,8 @@ public class AwsClientConfiguration
             RetryPolicy rpolicy = (RetryPolicy) Class.forName(retryPolicy).newInstance();
             clientConfig.setRetryPolicy(rpolicy);
         }
-        // @formatter:on
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain(); // finds available aws creds
-        awsClientConfig = new AwsClientConfig(clientConfig, providerChain);
+        awsClientConfig = new AwsClientConfig(clientConfig, providerChain, endpoint, groupId);
         config.properties.put(AwsClientConfiKey, awsClientConfig);
         return awsClientConfig;
     }
@@ -226,11 +230,15 @@ public class AwsClientConfiguration
     {
         public final ClientConfiguration clientConfig;
         public final DefaultAWSCredentialsProviderChain providerChain;
+        public final String endpoint;
+        public final String groupId;
 
-        public AwsClientConfig(ClientConfiguration clientConfig, DefaultAWSCredentialsProviderChain providerChain)
+        public AwsClientConfig(ClientConfiguration clientConfig, DefaultAWSCredentialsProviderChain providerChain, String endpoint, String groupId)
         {
             this.clientConfig = clientConfig;
             this.providerChain = providerChain;
+            this.endpoint = endpoint;
+            this.groupId = groupId;
         }
     }
 }

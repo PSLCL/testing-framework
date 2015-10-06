@@ -11,7 +11,7 @@ public class CliDaemonContext implements DaemonContext
     
     public CliDaemonContext(CliBase cliBase)
     {
-        controller = new WindowsDaemonController(cliBase);
+        controller = new CliDaemonController(cliBase);
     }
 
     @Override
@@ -32,10 +32,10 @@ public class CliDaemonContext implements DaemonContext
         System.arraycopy(args, 0, this.args, 0, args.length);
     }
     
-    public static class WindowsDaemonController implements DaemonController
+    public static class CliDaemonController implements DaemonController
     {
         public final CliBase cliBase;
-        public WindowsDaemonController(CliBase cliBase)
+        public CliDaemonController(CliBase cliBase)
         {
             this.cliBase = cliBase;
         }

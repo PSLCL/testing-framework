@@ -1,5 +1,6 @@
 package com.pslcl.qa.runner.resource.aws;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
@@ -13,7 +14,6 @@ import com.pslcl.qa.runner.resource.StartProgram;
 
 public class AwsMachineInstance implements MachineInstance
 {
-
     private String name;
     private Map<String, String> attributes;
     private String description;
@@ -38,77 +38,66 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public String getName()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return name;
     }
 
     @Override
     public Map<String, String> getAttributes()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return new HashMap<String, String>(attributes);
     }
 
     @Override
     public ResourceProvider getResourceProvider()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return resourceProvider;
     }
 
     @Override
     public int getReference()
     {
-        return this.reference;
+        return reference;
     }
 
     @Override
     public Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException
     {
         return null;
-        //TODO
     }
 
     @Override
     public Future<Integer> run(String command)
     {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Future<Integer> configure(String command)
     {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Future<StartProgram> start(String command)
     {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Future<Void> deploy(String filename, String artifactHash)
     {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Future<Void> delete(String filename)
     {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Future<Void> disconnect(NetworkInstance network)
     {
-        // TODO Auto-generated method stub
         return null;
     }
-
 }

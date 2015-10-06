@@ -13,7 +13,7 @@ import com.pslcl.qa.runner.RunnerService;
 import com.pslcl.qa.runner.config.cli.CliBase;
 import com.pslcl.qa.runner.config.cli.CliCommand;
 import com.pslcl.qa.runner.config.cli.DtfCli;
-import com.pslcl.qa.runner.config.cli.CliDaemonContext.WindowsDaemonController;
+import com.pslcl.qa.runner.config.cli.CliDaemonContext.CliDaemonController;
 import com.pslcl.qa.runner.config.executor.BlockingExecutor;
 import com.pslcl.qa.runner.config.executor.BlockingExecutorConfiguration;
 import com.pslcl.qa.runner.config.executor.BlockingExecutorConfiguration.ExecutorConfig;
@@ -58,9 +58,9 @@ public class RunnerServiceConfig
         this.runnerService = runnerService;
         statusTracker = new StatusTrackerProvider();
         CliBase cbase = null;
-        if(daemonContext.getController() instanceof WindowsDaemonController)
+        if(daemonContext.getController() instanceof CliDaemonController)
         {
-            cbase = ((WindowsDaemonController)daemonContext.getController()).cliBase;
+            cbase = ((CliDaemonController)daemonContext.getController()).cliBase;
             if(cbase == null)
                 cbase = new DtfCli(daemonContext.getArguments());
         }

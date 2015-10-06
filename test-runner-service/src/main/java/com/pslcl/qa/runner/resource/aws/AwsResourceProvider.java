@@ -1,31 +1,51 @@
 package com.pslcl.qa.runner.resource.aws;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
+import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration.AwsClientConfig;
 
 public abstract class AwsResourceProvider
 {
-    public static final String GroupIdKey = "pslcl.qa.platform.resource.aws.group-id";
-    public static final String GroupIdDefault = "AWSTestResource";
-    
-    /**
-     * Resource Group ID - Used to tag AWS resources so that they are identifiable by the resource provider.
-     */
+    protected final Logger log;
     protected volatile RunnerServiceConfig config;
-    public volatile String groupId;
+    protected volatile AmazonEC2Client ec2Client;
     
-    public void init(RunnerServiceConfig config)
+    protected AwsResourceProvider()
+    {
+        log = LoggerFactory.getLogger(getClass());
+    }
+    
+    protected void init(RunnerServiceConfig config) throws Exception
     {
         this.config = config;
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
-        config.initsb.level.incrementAndGet();
-        String value = config.properties.getProperty(GroupIdKey, GroupIdDefault);
-        config.initsb.ttl(GroupIdKey, " = ", value);
-        groupId = value;
+        AwsClientConfig cconfig = AwsClientConfiguration.getClientConfiguration(config);
+        ec2Client = new AmazonEC2Client(cconfig.clientConfig);
+        ec2Client.setEndpoint(cconfig.endpoint);
+        config.initsb.indentedOk();
+        
         config.initsb.level.decrementAndGet();
     }
     
-    public String getGroupId()
+    protected void destroy()
     {
-        return groupId;
+        ec2Client.shutdown();
     }
 }
+//        DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain();
+//        ec2Client.
+//        
+//        
+//        ConnectionFactory connectionFactory =  EC2ConnectionFactory.builder()
+//                        .withClientConfiguration(awsClientConfig.clientConfig)
+//                        .withAWSCredentialsProvider(awsClientConfig.providerChain)
+//                        .withRegion(Region.getRegion(Regions.US_WEST_2)) // REVIEW: hard coding
+//                        .build();
+//                connection = connectionFactory.createConnection();
+//                
+//                // check for queue; fill sqsClient member for future use
+//                sqsClient = connection.getWrappedAmazonSQSClient();
+

@@ -23,7 +23,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     }
 
     @Override
-    public void init(RunnerServiceConfig config)
+    public void init(RunnerServiceConfig config) throws Exception
     {
         super.init(config);
     }

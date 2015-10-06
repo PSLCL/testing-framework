@@ -108,8 +108,7 @@ public interface ResourceProvider {
 	/**
 	 * Get the map of attributes supported by the resource provider, for the given resource code name.
 	 * 
-	 * @param hash
-	 *            The hash for the attributes.
+	 * @param name The name for the attributes.
 	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
 	 * @return The map of attributes.
 	 */

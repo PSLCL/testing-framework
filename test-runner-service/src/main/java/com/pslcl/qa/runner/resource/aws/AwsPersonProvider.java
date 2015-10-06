@@ -23,7 +23,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     }
 
     @Override
-    public void init(RunnerServiceConfig config)
+    public void init(RunnerServiceConfig config) throws Exception
     {
         super.init(config);
     }
