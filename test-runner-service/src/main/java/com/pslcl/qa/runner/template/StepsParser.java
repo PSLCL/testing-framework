@@ -113,6 +113,10 @@ public class StepsParser {
      * @return In-order List<String> when at least the first step matches param stepType  
      */
     List<String> getNextSteps(String stepTag) {
+        if (steps == null) {
+            System.out.println("StepsParser.getNextStep() finds null steps member variable"); // I never see this; it has beenn seen before
+        }
+        
         // process any one step with this rule: step command is the first characters leading up to the first space char
         List<String> retList = null; // capacity grows as elements are added; null elements are permitted
         if (offset >= 0 &&

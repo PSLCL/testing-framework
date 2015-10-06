@@ -36,6 +36,17 @@ public class ResourceQueryResult
     }
 
     /**
+     * Add a reserved resource to the list of reserved resources.
+     *  
+     * @param rrwa The reserved resource to add.
+     */
+    public void reservedResources_add(ReservedResourceWithAttributes rrwa) {
+        synchronized (reservedResources) {
+            this.reservedResources.add(rrwa);
+        }
+    }
+    
+    /**
      * Get the list of available resources. These resources are not bound and may become unavailable after this object is created.
      * 
      * @return A list of resources available at the time this object was created.
@@ -45,6 +56,17 @@ public class ResourceQueryResult
         synchronized (reservedResources)
         {
             return new ArrayList<ResourceWithAttributes>(availableResources);
+        }
+    }
+
+    /**
+     * Add an available resource to the list of available resources.
+     *  
+     * @param rwa The available resource to add.
+     */
+    public void availabledResources_add(ResourceWithAttributes rwa) {
+        synchronized (reservedResources) {
+            this.availableResources.add(rwa);
         }
     }
 
@@ -62,6 +84,17 @@ public class ResourceQueryResult
     }
 
     /**
+     * Add an unavailable resource to the list of unavailable resources.
+     *  
+     * @param rwa The unavailable resource to add.
+     */
+    public void unavailabledResources_add(ResourceWithAttributes rwa) {
+        synchronized (reservedResources) {
+            this.availableResources.add(rwa);
+        }
+    }
+    
+    /**
      * Get the list of requested resources not understood by the resource provider.
      * 
      * @return A list of requested resources not understood by the resource provider.
@@ -73,6 +106,18 @@ public class ResourceQueryResult
             return new ArrayList<ResourceWithAttributes>(invalidResources);
         }
     }
+    
+    /**
+     * Add an invalid resource to the list of invalid resources.
+     *  
+     * @param rwa The invalid resource to add.
+     */
+    public void invalidResources_add(ResourceWithAttributes rwa) {
+        synchronized (reservedResources) {
+            this.invalidResources.add(rwa);
+        }
+    }
+    
 
     /**
      * Merge a given ResourceQueryResult to this object

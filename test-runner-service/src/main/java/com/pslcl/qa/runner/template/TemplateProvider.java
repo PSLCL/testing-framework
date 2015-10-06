@@ -100,7 +100,7 @@ public class TemplateProvider {
 
                 List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
                 if (reservedResources!=null) {
-                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource reserve requests; they are now reserved");
+                    System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource reserve requests" + (reservedResources.size() <= 0 ? "" : "; they are now reserved"));
                 }
 
                 // Note: The size of reservedResources and its entries are the important thing. Coding is intended that any reservedResource has no entries in the other three lists.

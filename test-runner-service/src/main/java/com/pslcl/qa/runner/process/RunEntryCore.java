@@ -171,21 +171,25 @@ public class RunEntryCore {
      * @return TODO
      */
     public boolean testRun(long reNum, TemplateProvider tp) throws Exception {
-        // We are an independent process. We have access
+        // We are an independent process in our own thread. We have access
         //   to an Artifact Provider
         //   to a Resource Provider
         //   to a Template Provider
         //   to everything else needed to cause our test run to execute.
-        // We might have access to the database but the goal is not to access it here- everything is found in the structure that we need to replace what is known now as this.dbDescribedTemplate.
+        // We might have access to the database but the goal is not to access it here in this method call- everything is found in structure this.dbTemplate.
         
-        // On arriving here a pk_run=runEntry exists in table run.
-        //     DECISION: We could check and prove that pk_run=reNum of table run has null for its result field. But we instead require that this be checked in whatever process placed reNum into the message queue. A human could manually place an reNum, without double checking, and we will make a test run out of it.
+        // On arriving here a reNum (aka pk_run) exists in table run.
+        //     DECISION: We could check and prove that pk_run (aka reNum) of table run has null for its result field. But we instead require that this be checked in whatever process placed reNum into the message queue. A human could manually place an reNum, without double checking, and we will make a test run out of it.
         //     We expect that no other thread will be filling our result field of table run.
-        //     We also expect, at the end of our work and with a collected result, that there will be at least one test_instance that can "connect" to our pk_run (which equals decimal number runEntry).
+        //     We understand that runs of nested templates will return a result that can possibly be stored in table run, but which may not be connected to any entry of table test_instance. 
+        //     For "top level" test runs , we expect that at least one entry of test_instance applies to it.
         //         If there is not such a test_instance, it means that some other test run has completed, and was somehow qualified to connect to all of our supposed test_instance 'S.
         //                                               The situation may be legal, but should be investigated to prove that it is legal.
 
-        // fill java class DBRunTemplate with entries from table run and its one linked entry from table template
+        // fill java class DBTemplate with entries from table run and its one linked entry from table template
+        
+        
+        
         // throw exception for template.enabled false (assume that template.steps and template.hash are not null)
         // fill DBRunTemplate.ready_time with now(). start_time was filled when the reNum entry was placed
         // fill DBRunTemplate.owner, only if null, with "test-runner-service"
