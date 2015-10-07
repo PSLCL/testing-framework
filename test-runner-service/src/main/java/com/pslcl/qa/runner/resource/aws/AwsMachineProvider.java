@@ -1,10 +1,29 @@
+/*
+ * Copyright (c) 2010-2015, Panasonic Corporation.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
 package com.pslcl.qa.runner.resource.aws;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import com.amazonaws.services.ec2.model.DescribeImagesRequest;
+import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.MachineInstance;
@@ -15,23 +34,37 @@ import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
+import com.pslcl.qa.runner.resource.aws.names.DtfAwsNames;
 
 /**
  * Reserve, bind, control and release instances of AWS machines.
  */
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
-    private final List<AwsMachineInstance> instances;
+    private final Map<String, AtomicInteger> limits;
+    private final Map<String, InstanceInfo> instances;
 
     public AwsMachineProvider()
     {
-        instances = new ArrayList<AwsMachineInstance>();
+        instances = new HashMap<String, InstanceInfo>();
+        limits = new HashMap<String, AtomicInteger>();
     }
 
     @Override
     public void init(RunnerServiceConfig config) throws Exception
     {
         super.init(config);
+        DtfAwsNames.InstanceType[] types = DtfAwsNames.InstanceType.values();
+        config.initsb.ttl("AWS Instance Type Limits:");
+        config.initsb.level.incrementAndGet();
+        for(int i=0; i < types.length; i++)
+        {
+            String key = DtfAwsNames.AwsInstanceTypeKeyBase + "." + types[i].value + DtfAwsNames.AwsInstanceTypeLimit;
+            String value = config.properties.getProperty(key, "0");
+            config.initsb.ttl(key," = ", value);
+            int limit = Integer.parseInt(value);
+            limits.put(types[i].value, new AtomicInteger(limit));
+        }
     }
 
     @Override
@@ -78,53 +111,85 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public boolean isAvailable(ResourceWithAttributes resource) throws ResourceNotFoundException
     {
-        // TODO Auto-generated method stub
-        return false;
+        // first check for invalid parameters
+        Map<String, String> attrs = resource.getAttributes();
+        DtfAwsNames.InstanceType[] types = DtfAwsNames.InstanceType.values();
+        String type = attrs.get(DtfAwsNames.AwsInstanceTypeKey);
+        boolean found = false;
+        for(int i=0; i < types.length; i++)
+        {
+            if(types[i].value.equals(type))
+            {
+                found = true;
+                break;
+            }
+        }
+        if(!found)
+            throw new ResourceNotFoundException(DtfAwsNames.AwsInstanceTypeKey + "=" + type + " is not a valid AWS instance type");
+        
+        String amiId = attrs.get(DtfAwsNames.AwsAmiIdKey);
+        if(amiId == null)
+            amiId = DtfAwsNames.AwsAmiIdDefault;
+        try
+        {
+            DescribeImagesRequest describeImagesRequest = new DescribeImagesRequest().withImageIds(amiId);
+            DescribeImagesResult result = ec2Client.describeImages(describeImagesRequest);
+        }catch(Exception e)
+        {
+            log.warn(getClass().getSimpleName() + ".isAvailable: ec2 client exception", e);
+            throw new ResourceNotFoundException("ec2 client exception", e);
+        }
+        // check for limits
+        int avail = limits.get(type).get();
+        if(avail < 1)
+            return false;
+        return true;
     }
 
     @Override
     public ResourceQueryResult queryResourceAvailability(List<ResourceWithAttributes> resources)
     {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds)
-    {
-        // can any of the following be determined on not available?
         List<ReservedResourceWithAttributes> reservedResources = new ArrayList<ReservedResourceWithAttributes>(); 
         List<ResourceWithAttributes> availableResources = new ArrayList<ResourceWithAttributes>();
         List<ResourceWithAttributes> unavailableResources = new ArrayList<ResourceWithAttributes>();
         List<ResourceWithAttributes> invalidResources = new ArrayList<ResourceWithAttributes>();
         ResourceQueryResult resourceQueryResult = new ResourceQueryResult(reservedResources, availableResources, unavailableResources, invalidResources);
-        
-        try
+        for (ResourceWithAttributes resource : resources)
         {
-            for (ResourceWithAttributes resource : resources)
+            try
             {
-                if (!isAvailable(resource))
-                    return resourceQueryResult;
+                if (isAvailable(resource))
+                    availableResources.add(resource);
+                else
+                    unavailableResources.add(resource);
             }
-            return resourceQueryResult;
-        } catch (Exception e)
-        {
-            // TODO: is this serious?
-            log.debug(getClass().getSimpleName() + ".reserveIfAvailable failed", e);
-            return resourceQueryResult;
+            catch (Exception e)
+            {
+                invalidResources.add(resource);
+                log.debug(getClass().getSimpleName() + ".queryResourceAvailable failed", e);
+            }
         }
+        return resourceQueryResult;
+    }
 
-        // temporary, to allow progress: return empty rqr
-//        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>());
-//        for (ResourceWithAttributes rwa : resources)
-//        {
-//            // TODO: actually reserve whatever is requested in parameter resources
-//
-//            // temporary, to allow progress: return an artificially reserved resource
-//            ReservedResourceWithAttributes artificialReservation = new ReservedResourceWithAttributes(rwa, this, timeoutSeconds);
-//            retRqr.getReservedResources().add(artificialReservation);
-//        }
-//        return retRqr;
+    @Override
+    public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds)
+    {
+        ResourceQueryResult queryResult = queryResourceAvailability(resources);
+        
+        List<ReservedResourceWithAttributes> reservedResources = new ArrayList<ReservedResourceWithAttributes>(); 
+        List<ResourceWithAttributes> availableResources = new ArrayList<ResourceWithAttributes>();
+        ResourceQueryResult result = new ResourceQueryResult(reservedResources, availableResources, queryResult.getUnavailableResources(), queryResult.getInvalidResources());
+        
+        for(ResourceWithAttributes requested : resources)
+        {
+            for(ResourceWithAttributes avail : availableResources)
+            {
+                if(avail.getName().equals(requested.getName()))
+                    reservedResources.add(new ReservedResourceWithAttributes(avail, this, timeoutSeconds));
+            }
+        }
+        return result;
     }
 
     @Override
@@ -169,6 +234,18 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     {
         // TODO Auto-generated method stub
 
+    }
+    
+    private class InstanceInfo
+    {
+        public final String type;
+        public final int limit;
+        
+        private InstanceInfo(String type, int limit)
+        {
+            this.type = type;
+            this.limit = limit;
+        }
     }
 }
 

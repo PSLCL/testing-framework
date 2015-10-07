@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2010-2015, Panasonic Corporation.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
 package com.pslcl.qa.runner.resource;
 
 import java.util.List;
@@ -77,21 +92,36 @@ public interface ResourceProvider {
 	 * Query the Resource Provider for the availability of the specified resources. Resources are not bound or reserved,
 	 * and availability may change after this method returns.
 	 * 
-	 * @param resources
-	 *            A list of resources with attributes.
+	 * <p>This method may move individual <code>ResourceWithAttributes</code> from the input resources into any of
+	 * the three of four lists in the returned <code>ResourceQueryResult</code>.
+	 * <ul>
+	 * <li>reservedResources - will always return an empty list</li>
+     * <li>availableResources - all <code>ResourceWithAttributes</code> from resources that could be reserved at this time.</li>
+     * <li>unavailableResources - all <code>ResourceWithAttributes</code> from resources that could not be reserved at this time.</li>
+     * <li>invalidResources - all <code>ResourceWithAttributes</code> from resources that appear to belong to me, but will fail bind with given information.</li>
+	 * </ul>
+	 * @param resources A list of resources with attributes. Must not be null, maybe empty.
 	 * @return A {@link ResourceQueryResult} containing information about the availability of resource on this resource
 	 *         provider.
 	 */
 	public ResourceQueryResult queryResourceAvailability(List<ResourceWithAttributes> resources);
 
+
 	/**
 	 * Reserve the specified resources if available. Resources will be reserved for timeoutSeconds if not greater than
 	 * the maximum timeout allowed by the resource provider.
-	 * 
-	 * @param resources
-	 *            The requested resources.
-	 * @param timeoutSecond
-	 *            The time period, in seconds, to reserve the resources.
+     * 
+     * <p>This method may move individual <code>ResourceWithAttributes</code> from the input resources into any of
+     * the three of four lists in the returned <code>ResourceQueryResult</code>.
+     * <ul>
+     * <li>reservedResources - all <code>ResourceWithAttributes</code> from resources that have be reserved at this time.</li>
+     * <li>availableResources - will always return an empty set.</li>
+     * <li>unavailableResources - all <code>ResourceWithAttributes</code> from resources that could not be reserved at this time.</li>
+     * <li>invalidResources - all <code>ResourceWithAttributes</code> from resources that appear to belong to me, but will fail bind with given information.</li>
+     * </ul>
+     * @param resources A list of resources with attributes. Must not be null, maybe empty.
+	 * @param resources The requested resources.
+	 * @param timeoutSecond The time period, in seconds, to reserve the resources.
 	 * @return The {@link ResourceQueryResult} listing the resources which were able to be reserved.
 	 */
 	public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds);

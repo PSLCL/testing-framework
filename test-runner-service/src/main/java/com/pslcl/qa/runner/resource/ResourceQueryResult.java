@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2010-2015, Panasonic Corporation.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
 package com.pslcl.qa.runner.resource;
 
 import java.util.ArrayList;
@@ -83,16 +98,16 @@ public class ResourceQueryResult
         }
     }
 
-    /**
-     * Add an unavailable resource to the list of unavailable resources.
-     *  
-     * @param rwa The unavailable resource to add.
-     */
-    public void unavailabledResources_add(ResourceWithAttributes rwa) {
-        synchronized (reservedResources) {
-            this.availableResources.add(rwa);
-        }
-    }
+//    /**
+//     * Add an unavailable resource to the list of unavailable resources.
+//     *  
+//     * @param rwa The unavailable resource to add.
+//     */
+//    public void unavailabledResourcesAdd(ResourceWithAttributes rwa) {
+//        synchronized (reservedResources) {
+//            this.availableResources.add(rwa);
+//        }
+//    }
     
     /**
      * Get the list of requested resources not understood by the resource provider.
@@ -107,16 +122,16 @@ public class ResourceQueryResult
         }
     }
     
-    /**
-     * Add an invalid resource to the list of invalid resources.
-     *  
-     * @param rwa The invalid resource to add.
-     */
-    public void invalidResources_add(ResourceWithAttributes rwa) {
-        synchronized (reservedResources) {
-            this.invalidResources.add(rwa);
-        }
-    }
+//    /**
+//     * Add an invalid resource to the list of invalid resources.
+//     *  
+//     * @param rwa The invalid resource to add.
+//     */
+//    public void invalidResourcesAdd(ResourceWithAttributes rwa) {
+//        synchronized (reservedResources) {
+//            this.invalidResources.add(rwa);
+//        }
+//    }
     
 
     /**
