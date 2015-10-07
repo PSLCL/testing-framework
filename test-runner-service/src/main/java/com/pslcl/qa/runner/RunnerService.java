@@ -19,7 +19,6 @@ import com.pslcl.qa.runner.process.ActionStore;
 import com.pslcl.qa.runner.process.ProcessTracker;
 import com.pslcl.qa.runner.process.RunnerMachine;
 import com.pslcl.qa.runner.store.instance.QueueStoreDao;
-import com.pslcl.qa.runner.store.instance.Sqs;
 //import org.eclipse.jetty.server.Connector;
 //import org.eclipse.jetty.server.HttpConfiguration;
 //import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -42,7 +41,7 @@ public class RunnerService implements Daemon, RunnerServiceMBean, UncaughtExcept
     // static declarations
 
     public static final String QueueStoreDaoClassKey = "com.pslcl.qa.runner.mq-class";
-    public static final String QueueStoreDaoClassDefault = Sqs.class.getName();
+    public static final String QueueStoreDaoClassDefault = "com.pslcl.qa.runner.resource.aws.Sqs";
 
     private volatile QueueStoreDao mq;
     private volatile RunnerServiceConfig config;

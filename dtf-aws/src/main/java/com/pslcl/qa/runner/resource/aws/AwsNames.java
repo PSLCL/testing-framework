@@ -13,9 +13,11 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource.aws.names;
+package com.pslcl.qa.runner.resource.aws;
 
-public class DtfAwsNames
+import com.amazonaws.services.ec2.model.InstanceType;
+
+public class AwsNames
 {
     public static final String AwsKeyBase = "com.amazonaws";
     public static final String AwsClientKeyBase = AwsKeyBase + ".client";
@@ -81,27 +83,11 @@ public class DtfAwsNames
     public static final String AwsInstanceSecureGroupKey = AwsInstanceKeyBase + ".secure-group";
     
     public static final String AwsAmiIdDefault = "ami-e3106686"; // Amazon Linux AMI 2015.09 (HVM), SSD Volume Type
-    public static final String AwsInstanceDefault = InstanceType.T2Medium.value;
+    public static final String AwsInstanceDefault = InstanceType.T2Medium.toString();
     
+    // use the toString() method of the aws's InstanceType for the desired Attribute String.
+    // for example attributes.put(AwsNames.AwsInstanceTypeKey, InstanceType.C1Medium.toString());
+    // the following array is for convenience in referencing the needed AWS instance type enum in this class.   
+    public static final InstanceType[] instanceTypes = InstanceType.values();
     
-    public enum InstanceType
-    {
-        // @formatter:off
-        T2Micro("t2-micro"), T2Small("t2-small"), T2Medium("t2-medium"), T2Large("t2-large"), 
-        M4Large("m4-large"), M4XLarge("m4-xlarge"), M42XLarge("m4-2xlarge"), M44XLarge("m4-4xlarge"), M410XLarge("m4-10xlarge"),
-        M3Medium("m3-medium"), M3Large("m3-large"), M3Xlarge("m3-xlarge"), M32XLarge("m3-2xlarge"),
-        C4Large("c4-large"), C4XLarge("c4-xlarge"), C42XLarge("c4-2xlarge"), C44XLarge("c4-4xlarge"), C48XLarge("c4-8xlarge"), 
-        C3Large("c3-large"), C3XLarge("c3-xlarge"), C32XLarge("c3-2xlarge"), C34XLarge("c3-4xlarge"), C38XLarge("c3-8xlarge"), 
-        G22XLarge("g2-2xlarge"), G28XLarge("g2-8xlarge"),
-        R3Large("r3-large"), R3XLarge("r3-xlarge"), R32XLarge("r3-2xlarge"), R34XLarge("r3-4xlarge"), R38XLarge("r3-8xlarge"), 
-        D2Large("d2-large"), D2XLarge("d2-xlarge"), D22XLarge("d2-2xlarge"), D24XLarge("d2-4xlarge"), D28XLarge("d2-8xlarge"), 
-        I2Large("i2-large"), I2XLarge("i2-xlarge"), I22XLarge("i2-2xlarge"), I24XLarge("i2-4xlarge"), I28XLarge("i2-8xlarge"); 
-        // @formatter:on
-        
-        private InstanceType(String value)
-        {
-            this.value = value;
-        }
-        public String value;
-    }
 }

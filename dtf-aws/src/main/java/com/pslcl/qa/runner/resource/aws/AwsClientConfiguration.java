@@ -27,10 +27,6 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.retry.RetryPolicy;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 
-/**
- * Access AWS SQS via JMS
- * 
- */
 public class AwsClientConfiguration
 {
     public static final String AwsClientConfiKey = "com.pslcl.qa.aws.client-config";

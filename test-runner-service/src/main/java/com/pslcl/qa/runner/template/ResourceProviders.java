@@ -23,9 +23,6 @@ import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
-import com.pslcl.qa.runner.resource.aws.AwsMachineProvider;
-import com.pslcl.qa.runner.resource.aws.AwsNetworkProvider;
-import com.pslcl.qa.runner.resource.aws.AwsPersonProvider;
 
 /**
  * Contains ResourceProvider instantiated objects and supplies access to them 
@@ -36,9 +33,9 @@ public class ResourceProviders implements ResourceProvider {
     public static final String PersonProviderClassKey = "pslcl.qa.runner.template.person-provider-class"; 
     public static final String NetworkProviderClassKey = "pslcl.qa.runner.template.network-provider-class";
     
-    public static final String MachineProviderClassDefault = AwsMachineProvider.class.getName();
-    public static final String PersonProviderClassDefault = AwsPersonProvider.class.getName();
-    public static final String NetworkProviderClassDefault = AwsNetworkProvider.class.getName();
+    public static final String MachineProviderClassDefault = "com.pslcl.qa.runner.resource.aws.providers.AwsMachineProvider";
+    public static final String PersonProviderClassDefault = "com.pslcl.qa.runner.resource.aws.providers.AwsPersonProvider";
+    public static final String NetworkProviderClassDefault = "com.pslcl.qa.runner.resource.aws.providers.AwsNetworkProvider";
     
     private final List<ResourceProvider> resourceProviders;
 

@@ -13,22 +13,23 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource.aws;
+package com.pslcl.qa.runner.resource.aws.providers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
+import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration;
 import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration.AwsClientConfig;
 
-public abstract class AwsResourceProvider
+public abstract class ResourceProvider
 {
     protected final Logger log;
     protected volatile RunnerServiceConfig config;
     protected volatile AmazonEC2Client ec2Client;
     
-    protected AwsResourceProvider()
+    protected ResourceProvider()
     {
         log = LoggerFactory.getLogger(getClass());
     }

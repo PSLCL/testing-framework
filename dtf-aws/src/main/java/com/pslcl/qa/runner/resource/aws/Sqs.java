@@ -1,4 +1,4 @@
-package com.pslcl.qa.runner.store.instance;
+package com.pslcl.qa.runner.resource.aws;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -8,7 +8,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.commons.daemon.DaemonInitException;
 import org.slf4j.LoggerFactory;
 
 import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
@@ -18,8 +17,8 @@ import com.amazon.sqs.javamessaging.SQSSession;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
-import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration;
 import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration.AwsClientConfig;
+import com.pslcl.qa.runner.store.instance.MessageQueueDaoAbstract;
 
 /**
  * Access AWS SQS via JMS

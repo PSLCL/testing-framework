@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource.aws;
+package com.pslcl.qa.runner.resource.aws.providers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,12 +34,12 @@ import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
-import com.pslcl.qa.runner.resource.aws.names.DtfAwsNames;
+import com.pslcl.qa.runner.resource.aws.AwsNames;
 
 /**
  * Reserve, bind, control and release instances of AWS machines.
  */
-public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
+public class AwsMachineProvider extends ResourceProvider implements MachineProvider
 {
     private final Map<String, AtomicInteger> limits;
     private final Map<String, InstanceInfo> instances;
@@ -54,17 +54,20 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     public void init(RunnerServiceConfig config) throws Exception
     {
         super.init(config);
-        DtfAwsNames.InstanceType[] types = DtfAwsNames.InstanceType.values();
+//        AwsNames.InstanceType[] types = AwsNames.instanceTypes
         config.initsb.ttl("AWS Instance Type Limits:");
         config.initsb.level.incrementAndGet();
-        for(int i=0; i < types.length; i++)
+StringBuilder sb = new StringBuilder();        
+        for(int i=0; i < AwsNames.instanceTypes.length; i++)
         {
-            String key = DtfAwsNames.AwsInstanceTypeKeyBase + "." + types[i].value + DtfAwsNames.AwsInstanceTypeLimit;
+            String key = AwsNames.AwsInstanceTypeKeyBase + "." + AwsNames.instanceTypes[i].toString() + AwsNames.AwsInstanceTypeLimit;
+sb.append("#"+key + "\n");            
             String value = config.properties.getProperty(key, "0");
             config.initsb.ttl(key," = ", value);
             int limit = Integer.parseInt(value);
-            limits.put(types[i].value, new AtomicInteger(limit));
+            limits.put(AwsNames.instanceTypes[i].toString(), new AtomicInteger(limit));
         }
+log.info(sb.toString());        
     }
 
     @Override
@@ -113,23 +116,23 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     {
         // first check for invalid parameters
         Map<String, String> attrs = resource.getAttributes();
-        DtfAwsNames.InstanceType[] types = DtfAwsNames.InstanceType.values();
-        String type = attrs.get(DtfAwsNames.AwsInstanceTypeKey);
+//        AwsNames.InstanceType[] types = AwsNames.InstanceType.values();
+        String type = attrs.get(AwsNames.AwsInstanceTypeKey);
         boolean found = false;
-        for(int i=0; i < types.length; i++)
+        for(int i=0; i < AwsNames.instanceTypes.length; i++)
         {
-            if(types[i].value.equals(type))
+            if(AwsNames.instanceTypes[i].toString().equals(type))
             {
                 found = true;
                 break;
             }
         }
         if(!found)
-            throw new ResourceNotFoundException(DtfAwsNames.AwsInstanceTypeKey + "=" + type + " is not a valid AWS instance type");
+            throw new ResourceNotFoundException(AwsNames.AwsInstanceTypeKey + "=" + type + " is not a valid AWS instance type");
         
-        String amiId = attrs.get(DtfAwsNames.AwsAmiIdKey);
+        String amiId = attrs.get(AwsNames.AwsAmiIdKey);
         if(amiId == null)
-            amiId = DtfAwsNames.AwsAmiIdDefault;
+            amiId = AwsNames.AwsAmiIdDefault;
         try
         {
             DescribeImagesRequest describeImagesRequest = new DescribeImagesRequest().withImageIds(amiId);

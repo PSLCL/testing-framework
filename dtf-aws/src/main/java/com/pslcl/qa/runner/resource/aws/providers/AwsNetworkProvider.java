@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource.aws;
+package com.pslcl.qa.runner.resource.aws.providers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,7 @@ import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
-public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
+public class AwsNetworkProvider extends ResourceProvider implements NetworkProvider
 {
     public AwsNetworkProvider()
     {

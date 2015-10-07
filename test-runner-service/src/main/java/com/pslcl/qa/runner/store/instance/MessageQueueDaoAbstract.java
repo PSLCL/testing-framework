@@ -30,7 +30,7 @@ public abstract class MessageQueueDaoAbstract implements QueueStoreDao {
      * @param message
      * @return
      */
-    boolean submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Exception {
+    public boolean submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Exception {
         try {
             config.runnerService.submitQueueStoreNumber(strQueueStoreEntryNumber, message);
             return true;
