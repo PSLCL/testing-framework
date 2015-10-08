@@ -19,12 +19,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.amazonaws.services.ec2.model.BlockDeviceMapping;
 import com.amazonaws.services.ec2.model.DescribeImagesRequest;
 import com.amazonaws.services.ec2.model.DescribeImagesResult;
+import com.amazonaws.services.ec2.model.EbsBlockDevice;
+import com.amazonaws.services.ec2.model.Filter;
+import com.amazonaws.services.ec2.model.Image;
+import com.amazonaws.services.ec2.model.ProductCode;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
+import com.pslcl.qa.runner.config.util.PropertiesFile;
+import com.pslcl.qa.runner.config.util.StrH;
+import com.pslcl.qa.runner.config.util.StrH.StringPair;
 import com.pslcl.qa.runner.resource.BindResourceFailedException;
 import com.pslcl.qa.runner.resource.MachineInstance;
 import com.pslcl.qa.runner.resource.MachineProvider;
@@ -43,33 +52,103 @@ public class AwsMachineProvider extends ResourceProvider implements MachineProvi
 {
     private final Map<String, AtomicInteger> limits;
     private final Map<String, InstanceInfo> instances;
+    private final List<Filter> defaultImageFilters;
+    private final List<String> defaultLocationFilters;
+    private volatile String defaultInstanceType;
+    private volatile String defaultLocationYear;
+    private volatile String defaultLocationMonth;
+    private volatile String defaultLocationDot;
 
     public AwsMachineProvider()
     {
         instances = new HashMap<String, InstanceInfo>();
         limits = new HashMap<String, AtomicInteger>();
+        defaultImageFilters = new ArrayList<Filter>();
+        defaultLocationFilters = new ArrayList<String>();
     }
 
     @Override
     public void init(RunnerServiceConfig config) throws Exception
     {
         super.init(config);
-//        AwsNames.InstanceType[] types = AwsNames.instanceTypes
+        config.initsb.ttl("AWS Default Instance:");
+        config.initsb.level.incrementAndGet();
+        defaultInstanceType = config.properties.getProperty(AwsNames.InstanceTypeKey, AwsNames.InstanceTypeDefault);
+        config.initsb.ttl(AwsNames.InstanceTypeKey, " = ", defaultInstanceType);
+        config.initsb.level.decrementAndGet();
         config.initsb.ttl("AWS Instance Type Limits:");
         config.initsb.level.incrementAndGet();
-StringBuilder sb = new StringBuilder();        
         for(int i=0; i < AwsNames.instanceTypes.length; i++)
         {
-            String key = AwsNames.AwsInstanceTypeKeyBase + "." + AwsNames.instanceTypes[i].toString() + AwsNames.AwsInstanceTypeLimit;
-sb.append("#"+key + "\n");            
+            String key = AwsNames.InstanceTypeKeyBase + "." + AwsNames.instanceTypes[i].toString() + AwsNames.InstanceTypeLimit;
             String value = config.properties.getProperty(key, "0");
             config.initsb.ttl(key," = ", value);
             int limit = Integer.parseInt(value);
             limits.put(AwsNames.instanceTypes[i].toString(), new AtomicInteger(limit));
         }
-log.info(sb.toString());        
-    }
+        config.initsb.level.decrementAndGet();
+        config.initsb.ttl("AWS Default Image Filters:");
+        config.initsb.level.incrementAndGet();
+        addImageFilter(AwsNames.ImageArchitectureKey, AwsNames.ImageArchitectureDefault, AwsNames.ImageArchitectureFilter);
+        addImageFilter(AwsNames.ImageHypervisorKey, AwsNames.ImageHypervisorDefault, AwsNames.ImageHypervisorFilter);
+        addImageFilter(AwsNames.ImageImageTypeKey, AwsNames.ImageImageTypeDefault, AwsNames.ImageImageTypeFilter);
+        addImageFilter(AwsNames.ImageIsPublicKey, AwsNames.ImageIsPublicDefault, AwsNames.ImageIsPublicFilter);
+        addImageFilter(AwsNames.ImageNameKey, AwsNames.ImageNameDefault, AwsNames.ImageNameFilter);
+        addImageFilter(AwsNames.ImageOwnerKey, AwsNames.ImageOwnerDefault, AwsNames.ImageOwnerFilter);
+        addImageFilter(AwsNames.ImagePlatformKey, AwsNames.ImagePlatformDefault, AwsNames.ImagePlatformFilter);
+        addImageFilter(AwsNames.ImageRootDevTypeKey, AwsNames.ImageRootDevTypeDefault, AwsNames.ImageRootDevTypeFilter);
+        addImageFilter(AwsNames.ImageStateKey, AwsNames.ImageStateDefault, AwsNames.ImageStateFilter);
+        addImageFilter(AwsNames.BlockingDeviceDeleteOnTerminationKey, AwsNames.BlockingDeviceDeleteOnTerminationDefault, AwsNames.BlockingDeviceDeleteOnTerminationFilter);
+        addImageFilter(AwsNames.BlockingDeviceVolumeTypeKey, AwsNames.BlockingDeviceVolumeTypeDefault, AwsNames.BlockingDeviceVolumeTypeFilter);
+        addImageFilter(AwsNames.BlockingDeviceVolumeSizeKey, AwsNames.BlockingDeviceVolumeSizeDefault, AwsNames.BlockingDeviceVolumeSizeFilter);
+        config.initsb.level.decrementAndGet();
+        
+        config.initsb.ttl("AWS Image Location Filters:");
+        config.initsb.level.incrementAndGet();
+        defaultLocationYear = config.properties.getProperty(AwsNames.LocationYearKey, AwsNames.LocationYearDefault);
+        config.initsb.ttl(AwsNames.LocationYearKey, " = ", defaultLocationYear);
+        defaultLocationMonth = config.properties.getProperty(AwsNames.LocationMonthKey, AwsNames.LocationMonthDefault);
+        config.initsb.ttl(AwsNames.LocationMonthKey, " = ", defaultLocationMonth);
+        defaultLocationDot = config.properties.getProperty(AwsNames.LocationDotKey, AwsNames.LocationDotDefault);
+        config.initsb.ttl(AwsNames.LocationDotKey, " = ", defaultLocationDot);
+        
+        addLocationFilters();
+        config.initsb.level.decrementAndGet();
+    }        
 
+    private void addImageFilter(String key, String defaultValue, String filterName)
+    {
+        String value = config.properties.getProperty(key, defaultValue);
+        config.initsb.ttl(key, " = ", value);
+        if(value == null)
+            return;
+        List<String> args = new ArrayList<String>();
+        args.add(value);
+        Filter filter = new Filter(filterName, args);
+        defaultImageFilters.add(filter);
+    }
+    
+    private void addLocationFilters()
+    {
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(AwsNames.LocationFeatureKey, config.properties);
+        int size = list.size();
+        if(size == 0)
+        {
+            // add the default
+            StringPair pair = new StringPair(AwsNames.LocationFeatureKey+"0", AwsNames.LocationBase);
+            list.add(pair);
+            pair = new StringPair(AwsNames.LocationFeatureKey+"1", AwsNames.LocationHvm);
+            list.add(pair);
+            size += 2;
+        }
+        for(int i=0; i < size; i++)
+        {
+            Entry<String,String> entry = list.get(i);
+            config.initsb.ttl(entry.getKey(), " = ", entry.getValue());
+            defaultLocationFilters.add(entry.getValue());
+        }
+    }
+    
     @Override
     public void destroy()
     {
@@ -117,7 +196,9 @@ log.info(sb.toString());
         // first check for invalid parameters
         Map<String, String> attrs = resource.getAttributes();
 //        AwsNames.InstanceType[] types = AwsNames.InstanceType.values();
-        String type = attrs.get(AwsNames.AwsInstanceTypeKey);
+        String type = attrs.get(AwsNames.InstanceTypeKey);
+        if(type == null)
+            type = defaultInstanceType;
         boolean found = false;
         for(int i=0; i < AwsNames.instanceTypes.length; i++)
         {
@@ -128,15 +209,140 @@ log.info(sb.toString());
             }
         }
         if(!found)
-            throw new ResourceNotFoundException(AwsNames.AwsInstanceTypeKey + "=" + type + " is not a valid AWS instance type");
+            throw new ResourceNotFoundException(AwsNames.InstanceTypeKey + "=" + type + " is not a valid AWS instance type");
         
-        String amiId = attrs.get(AwsNames.AwsAmiIdKey);
-        if(amiId == null)
-            amiId = AwsNames.AwsAmiIdDefault;
+        String amiId = attrs.get(AwsNames.InstanceAmiIdKey);
+//        if(amiId == null)
+//            amiId = AwsNames.AwsAmiIdDefault;
         try
         {
-            DescribeImagesRequest describeImagesRequest = new DescribeImagesRequest().withImageIds(amiId);
-            DescribeImagesResult result = ec2Client.describeImages(describeImagesRequest);
+            AwsNames.logInstanceTypes(log);
+            AwsNames.logImageAttributeNames(log);
+//            DescribeImagesRequest request = new DescribeImagesRequest().withImageIds(amiId);
+//            ImageAttributeName ian;
+            DescribeImagesRequest request = new DescribeImagesRequest(); //.withOwners("amazon");
+//            DescribeImagesRequest request = new DescribeImagesRequest();
+//            List<Filter> filters = new ArrayList<Filter>();
+//            List<String> args = new ArrayList<String>();
+//            args.add("i386");
+//            Filter filter = new Filter("architecture", args);
+//            filters.add(filter);
+            request.setFilters(defaultImageFilters);
+            DescribeImagesResult result = ec2Client.describeImages(request);
+            
+StringBuilder sb = new StringBuilder();
+            HashMap<String, Image> uniqueKernelIds = new HashMap<String, Image>();
+            HashMap<String, Image> uniquePlatforms = new HashMap<String, Image>();
+            HashMap<Integer, Image> uniqueSize = new HashMap<Integer, Image>();
+            HashMap<String, Image> uniqueProducts = new HashMap<String, Image>();
+            HashMap<String, Image> uniqueLocations = new HashMap<String, Image>();
+            HashMap<String, String> uniqueFeatures = new HashMap<String, String>();
+            java.util.List<Image> images = result.getImages();
+            for(Image image : images)
+            {
+                // see MAx@AWS's post at 
+                // https://forums.aws.amazon.com/thread.jspa?messageID=376434
+                // towards the bottom: 
+                // "The Amazon Linux AMI strives for a major release each March and September, 
+                // which is why you'll see our AMIs adopting a 2013.03, 2013.09, etc. naming system.
+                // dot releases off those 6 month releases look like this: 2013.09.1 and 2013.09.2."
+                // example: 
+                // amazon/aws-elasticbeanstalk-amzn-2014.09.1.x86_64-python26-pv-201410222339
+                
+                String loc = image.getImageLocation();
+                loc = StrH.getAtomicName(loc, '/');
+                String[] frags = loc.split("\\.");
+                if(frags.length > 3)
+                {
+                    int index = frags[0].lastIndexOf('-');
+                    if(index != -1)
+                    {
+                        String locHeader = frags[0].substring(0, index);
+                        String year = frags[0].substring(index+1);
+                        String month = frags[1];
+                        String dotRelease = frags[2];
+                        String description = frags[3];
+                        frags = description.split("-");
+                        sb.append("*** year: " + year + " month: " + month + " dot: " + dotRelease + " desc: " + description + "\n");
+                        int size = defaultLocationFilters.size();
+                        boolean[] fragsFound = new boolean[size];
+                        for(int i = 1; i < frags.length; i++)
+                        {
+                            if(frags[i].startsWith("20"))
+                                break;
+                            uniqueFeatures.put(frags[i], frags[i]);
+                            for(int j=0; j < size; j++)
+                            {
+                                String filter = defaultLocationFilters.get(j);
+                                if(filter.equals(frags[i]))
+                                {
+                                    fragsFound[j] = true;
+                                    break;
+                                }
+                            }
+                        }
+                        found = true;
+                        for(int i=0; i < size; i++)
+                        {
+                            if(!fragsFound[i])
+                            {
+                                found = false;
+                                break;
+                            }
+                        }
+                        if(found)
+                            uniqueLocations.put(loc, image);
+                    }
+                }
+                java.util.List<ProductCode> products = image.getProductCodes();
+                for(ProductCode product : products)
+                {
+                    String id = product.getProductCodeId();
+                    String ptype = product.getProductCodeType();
+                    String key = null;
+                    if(id != null)
+                        key = id;
+                    if(ptype != null)
+                        key += ptype;
+                    if(key != null)
+                        uniqueProducts.put(key, image);
+                }
+                java.util.List<BlockDeviceMapping> blockDeviceMap = image.getBlockDeviceMappings();
+                for(BlockDeviceMapping bdmap : blockDeviceMap)
+                {
+                    EbsBlockDevice bd = bdmap.getEbs();
+                    if(bd != null)
+                        uniqueSize.put(bd.getVolumeSize(), image);
+                }
+                String platform = image.getPlatform();
+                uniquePlatforms.put(image.getPlatform(), image);
+                uniqueKernelIds.put(image.getKernelId(), image);
+                log.info(image.toString());
+                sb.append(image.getImageId() + " - " + image.getName() + "\n");
+            }
+            sb.append("Kernel Ids: \n");
+for(Entry<String,Image> entry : uniqueKernelIds.entrySet())
+    sb.append(entry.getKey() + "\n\t" + entry.getValue().toString() + "\n");
+sb.append("Platforms: \n");
+for(Entry<String,Image> entry : uniquePlatforms.entrySet())
+    sb.append(entry.getKey() + "\n\t" + entry.getValue().toString() + "\n");
+for(Entry<Integer,Image> entry : uniqueSize.entrySet())
+    sb.append(entry.getKey() + "\n\t" + entry.getValue().toString() + "\n");
+for(Entry<String,Image> entry : uniqueProducts.entrySet())
+    sb.append(entry.getKey() + "\n\t" + entry.getValue().toString() + "\n");
+for(Entry<String,Image> entry : uniqueLocations.entrySet())
+    sb.append(entry.getKey() + "\n\t" + entry.getValue().toString() + "\n");
+for(Entry<String,String> entry : uniqueFeatures.entrySet())
+    sb.append(entry.getKey() + "\n");
+sb.append("\timages size: " + images.size() + "\n");
+sb.append("\tkernels size: " + uniqueKernelIds.size() + "\n");
+sb.append("\tplatforms size: " + uniquePlatforms.size() + "\n");
+sb.append("\tdisk size: " + uniqueSize.size() + "\n");
+sb.append("\tproducts size: " + uniqueProducts.size() + "\n");
+sb.append("\tlocations size: " + uniqueLocations.size() + "\n");
+sb.append("\tfeatures size: " + uniqueFeatures.size() + "\n");
+log.info(sb.toString());
+log.info("look here");
         }catch(Exception e)
         {
             log.warn(getClass().getSimpleName() + ".isAvailable: ec2 client exception", e);
@@ -148,7 +354,40 @@ log.info(sb.toString());
             return false;
         return true;
     }
-
+    
+//    One or more filters.
+//    architecture - The image architecture (i386 | x86_64).
+//    block-device-mapping.delete-on-termination - A Boolean value that indicates whether the Amazon EBS volume is deleted on instance termination.
+//    block-device-mapping.device-name - The device name for the EBS volume (for example, /dev/sdh).
+//    block-device-mapping.snapshot-id - The ID of the snapshot used for the EBS volume.
+//    block-device-mapping.volume-size - The volume size of the EBS volume, in GiB.
+//    block-device-mapping.volume-type - The volume type of the EBS volume (gp2 | standard | io1).
+//    description - The description of the image (provided during image creation).
+//    hypervisor - The hypervisor type (ovm | xen).
+//    image-id - The ID of the image.
+//    image-type - The image type (machine | kernel | ramdisk).
+//    is-public - A Boolean that indicates whether the image is public.
+//    kernel-id - The kernel ID.
+//    manifest-location - The location of the image manifest.
+//    name - The name of the AMI (provided during image creation).
+//    owner-alias - The AWS account alias (for example, amazon).
+//    owner-id - The AWS account ID of the image owner.
+//    platform - The platform. To only list Windows-based AMIs, use windows.
+//    product-code - The product code.
+//    product-code.type - The type of the product code (devpay | marketplace).
+//    ramdisk-id - The RAM disk ID.
+//    root-device-name - The name of the root device volume (for example, /dev/sda1).
+//    root-device-type - The type of the root device volume (ebs | instance-store).
+//    state - The state of the image (available | pending | failed).
+//    state-reason-code - The reason code for the state change.
+//    state-reason-message - The message for the state change.
+//    tag:key=value - The key/value combination of a tag assigned to the resource.
+//    tag-key - The key of a tag assigned to the resource. This filter is independent of the tag-value filter. For example, if you use both the filter "tag-key=Purpose" and the filter "tag-value=X", you get any resources assigned both the tag key Purpose (regardless of what the tag's value is), and the tag value X (regardless of what the tag's key is). If you want to list only resources where Purpose is X, see the tag:key=value filter.
+//    tag-value - The value of a tag assigned to the resource. This filter is independent of the tag-key filter.
+//    virtualization-type - The virtualization type (paravirtual | hvm).
+    
+    
+    
     @Override
     public ResourceQueryResult queryResourceAvailability(List<ResourceWithAttributes> resources)
     {
