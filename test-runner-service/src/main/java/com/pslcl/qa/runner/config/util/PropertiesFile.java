@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -163,6 +164,18 @@ public class PropertiesFile
         }
     }
 
+    public static List<Entry<String, String>> getPropertiesForBaseKey(String baseKey, Map<String, String> map)
+    {
+        Properties properties = new Properties();
+        for(Entry<String, String> entry : map.entrySet())
+        {
+            String value = entry.getValue();
+            if(value != null)
+                properties.setProperty(entry.getKey(), value);
+        }
+        return getPropertiesForBaseKey(baseKey, properties);
+    }
+    
     public static List<Entry<String, String>> getPropertiesForBaseKey(String baseKey, Properties properties)
     {
         ArrayList<Entry<String, String>> entries = new ArrayList<Entry<String, String>>();

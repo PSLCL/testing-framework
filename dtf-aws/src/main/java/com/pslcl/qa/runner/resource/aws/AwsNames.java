@@ -93,14 +93,10 @@ public class AwsNames
     public static final String InstanceTypeKeyBase = InstanceKeyBase + ".type";
     public static final String InstanceTypeLimit = "-limit";
     
-    public static final String InstanceAmiIdKey = InstanceKeyBase + ".ami-id";
+//    public static final String InstanceAmiIdKey = InstanceKeyBase + ".ami-id";
     public static final String InstanceTypeKey = InstanceKeyBase + ".type";
-//    public static final String InstanceKeyNameKey = InstanceKeyBase + ".key-name";
-//    public static final String InstanceSecureGroupKey = InstanceKeyBase + ".secure-group";
 
-    // defaulting to an ami id is bad ... they go away over time. use image below for default
-    // public static final String AwsAmiIdDefault = "ami-e3106686"; // Amazon Linux AMI 2015.09 (HVM), SSD Volume Type
-    public static final String InstanceTypeDefault = InstanceType.T2Medium.toString();
+    public static final String InstanceTypeDefault = InstanceType.M3Medium.toString();
     
     // use the toString() method of the aws's InstanceType for the desired Attribute String.
     // for example attributes.put(AwsNames.AwsInstanceTypeKey, InstanceType.C1Medium.toString());
@@ -131,6 +127,7 @@ public class AwsNames
     
     public static final String ImageArchitectureKey = ImageKeyBase + ".architecture";
     public static final String ImageHypervisorKey = ImageKeyBase + ".hypervisor";
+    public static final String ImageImageIdKey = ImageKeyBase + ".image-id";
     public static final String ImageImageTypeKey = ImageKeyBase + ".image-type";
     public static final String ImageIsPublicKey = ImageKeyBase + ".public";
     public static final String ImageNameKey = ImageKeyBase + ".name";
@@ -159,7 +156,7 @@ public class AwsNames
     public static final String ImageRootDevTypeInstaceStore = "instance-store";
     public static final String ImageRootDevTypeDefault = ImageRootDevTypeEbs;
     public static final String ImageRootDevTypeFilter = "root-device-type";
-
+    
     public static final String ImageStateAvailable = "available";
     public static final String ImageStatePending = "pending";
     public static final String ImageStateFailed = "failed";
@@ -173,6 +170,8 @@ public class AwsNames
 
     public static final String ImageIsPublicDefault = "true";
     public static final String ImageIsPublicFilter = "is-public";
+    public static final String ImageImageIdDefault = null;
+    public static final String ImageImageIdFilter = "image-id";
     public static final String ImageNameDefault = null;
     public static final String ImageNameFilter = "name";
     public static final String ImageOwnerDefault = "amazon";
@@ -229,7 +228,6 @@ public class AwsNames
     public static final String BlockingDeviceVolumeSize60 = "60";
     public static final String BlockingDeviceVolumeSizeDefault = BlockingDeviceVolumeSize8;
     
-    
     public static final String BlockingDeviceVolumeSizeFilter = "block-device-mapping.volume-size"; 
     public static final String BlockingDeviceDeleteOnTerminationDefault = "true";
     public static final String BlockingDeviceDeleteOnTerminationFilter = "block-device-mapping.delete-on-termination";
@@ -242,7 +240,6 @@ public class AwsNames
     public static final String LocationYearKey = LocationKeyBase + ".year";
     public static final String LocationMonthKey = LocationKeyBase + ".month";
     public static final String LocationDotKey = LocationKeyBase + ".dot";
-    public static final String LocationArchKey = LocationKeyBase + ".arch";
     // note that feature is a base key and can be number from 0 on up, to add as many filters as desired
     public static final String LocationFeatureKey = LocationKeyBase + ".feature";
     
@@ -274,5 +271,4 @@ public class AwsNames
     public static final String LocationYearDefault = null;
     public static final String LocationMonthDefault = null;
     public static final String LocationDotDefault = null;
-    public static final String LocationArchDefault = null;  // use the image filter for this
 }
