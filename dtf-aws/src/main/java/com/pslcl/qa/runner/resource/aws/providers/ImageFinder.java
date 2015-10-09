@@ -33,9 +33,9 @@ import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.config.util.PropertiesFile;
 import com.pslcl.qa.runner.config.util.StrH;
 import com.pslcl.qa.runner.config.util.StrH.StringPair;
-import com.pslcl.qa.runner.resource.ResourceNotFoundException;
-import com.pslcl.qa.runner.resource.ResourceWithAttributes;
+import com.pslcl.qa.runner.resource.ResourceDescription;
 import com.pslcl.qa.runner.resource.aws.AwsNames;
+import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
 
 public class ImageFinder
 {
@@ -125,7 +125,7 @@ public class ImageFinder
      * @throws ResourceNotFoundException if the criteria can not be meet.
      */
     @SuppressWarnings("null")
-    public String findImage(AmazonEC2Client ec2Client, ResourceWithAttributes resource) throws ResourceNotFoundException
+    public String findImage(AmazonEC2Client ec2Client, ResourceDescription resource) throws ResourceNotFoundException
     {
         try
         {
@@ -235,7 +235,7 @@ public class ImageFinder
         }
     }
     
-    private ImageFilterData getFilters(ResourceWithAttributes resource)
+    private ImageFilterData getFilters(ResourceDescription resource)
     {
         Map<String, String> attrs = resource.getAttributes();
         List<Filter> imageFilters = new ArrayList<Filter>();

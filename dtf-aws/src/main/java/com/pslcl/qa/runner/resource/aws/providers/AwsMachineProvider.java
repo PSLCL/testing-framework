@@ -24,27 +24,27 @@ import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
-import com.pslcl.qa.runner.resource.BindResourceFailedException;
-import com.pslcl.qa.runner.resource.MachineInstance;
-import com.pslcl.qa.runner.resource.MachineProvider;
-import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceInstance;
-import com.pslcl.qa.runner.resource.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.ReservedResource;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
-import com.pslcl.qa.runner.resource.ResourceWithAttributes;
+import com.pslcl.qa.runner.resource.ResourceDescription;
+import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.instance.MachineInstance;
+import com.pslcl.qa.runner.resource.instance.ResourceInstance;
+import com.pslcl.qa.runner.resource.provider.MachineProvider;
 
 /**
  * Reserve, bind, control and release instances of AWS machines.
  */
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
-    private final HashMap<Integer, ReservedResource> reservedResources;
+    private final HashMap<Integer, MyReservedResource> reservedResources;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
 
     public AwsMachineProvider()
     {
-        reservedResources = new HashMap<Integer, ReservedResource>();
+        reservedResources = new HashMap<Integer, MyReservedResource>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
     }
@@ -64,11 +64,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public Future<MachineInstance> bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException
+    public Future<MachineInstance> bind(ReservedResource resource) throws BindResourceFailedException
     {
         synchronized(reservedResources)
         {
-            ReservedResource reservedResource = reservedResources.get(resource.getReference());
+            MyReservedResource reservedResource = reservedResources.get(resource.getReference());
             if(reservedResource == null)
                 throw new BindResourceFailedException(resource.getName() + "(" + resource.getReference() +") is not reserved");
             reservedResource.future.cancel(true);
@@ -77,7 +77,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources)
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
     {
         synchronized (reservedResources)
         {
@@ -86,12 +86,12 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public void releaseReservedResource(ReservedResourceWithAttributes resource)
+    public void releaseReservedResource(ReservedResource resource)
     {
     }
 
     @Override
-    public boolean isAvailable(ResourceWithAttributes resource) throws ResourceNotFoundException
+    public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
     {
         InstanceType instanceType = instanceFinder.findInstance(resource);
         if (!instanceFinder.checkLimits(instanceType))
@@ -101,14 +101,14 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public ResourceQueryResult queryResourceAvailability(List<ResourceWithAttributes> resources)
+    public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources)
     {
-        List<ReservedResourceWithAttributes> reservedResources = new ArrayList<ReservedResourceWithAttributes>();
-        List<ResourceWithAttributes> availableResources = new ArrayList<ResourceWithAttributes>();
-        List<ResourceWithAttributes> unavailableResources = new ArrayList<ResourceWithAttributes>();
-        List<ResourceWithAttributes> invalidResources = new ArrayList<ResourceWithAttributes>();
+        List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
+        List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
+        List<ResourceDescription> unavailableResources = new ArrayList<ResourceDescription>();
+        List<ResourceDescription> invalidResources = new ArrayList<ResourceDescription>();
         ResourceQueryResult resourceQueryResult = new ResourceQueryResult(reservedResources, availableResources, unavailableResources, invalidResources);
-        for (ResourceWithAttributes resource : resources)
+        for (ResourceDescription resource : resources)
         {
             try
             {
@@ -126,17 +126,17 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds)
+    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
         ResourceQueryResult queryResult = queryResourceAvailability(resources);
 
-        List<ReservedResourceWithAttributes> reservedResources = new ArrayList<ReservedResourceWithAttributes>();
-        List<ResourceWithAttributes> availableResources = new ArrayList<ResourceWithAttributes>();
+        List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
+        List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
         ResourceQueryResult result = new ResourceQueryResult(reservedResources, availableResources, queryResult.getUnavailableResources(), queryResult.getInvalidResources());
 
-        for (ResourceWithAttributes requested : resources)
+        for (ResourceDescription requested : resources)
         {
-            for (ResourceWithAttributes avail : queryResult.getAvailableResources())
+            for (ResourceDescription avail : queryResult.getAvailableResources())
             {
                 if (avail.getName().equals(requested.getName()))
                 {
@@ -159,8 +159,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                             queryResult.getUnavailableResources().add(avail);
                             continue;
                         }
-                        reservedResources.add(new ReservedResourceWithAttributes(avail, this, timeoutSeconds));
-                        ReservedResource rresource = new ReservedResource(avail, instanceType);
+                        reservedResources.add(new ReservedResource(avail, this, timeoutSeconds));
+                        MyReservedResource rresource = new MyReservedResource(avail, instanceType, timeoutSeconds);
                         ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                         rresource.setFuture(future);
                     }
@@ -200,16 +200,18 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
     }
 
-    private class ReservedResource implements Runnable
+    private class MyReservedResource implements Runnable
     {
-        public final ResourceWithAttributes resource;
+        public final ResourceDescription resource;
         public final InstanceType instanceType;
         public volatile ScheduledFuture<?> future;
+        public final int timeout;  // might not be useful ... thinking time left
 
-        private ReservedResource(ResourceWithAttributes resource, InstanceType instanceType)
+        private MyReservedResource(ResourceDescription resource, InstanceType instanceType, int timeout)
         {
             this.resource = resource;
             this.instanceType = instanceType;
+            this.timeout = timeout;
         }
 
         private void setFuture(ScheduledFuture<?> future)

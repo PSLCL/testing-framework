@@ -17,14 +17,14 @@ package com.pslcl.qa.runner.resource.aws.providers;
 
 import java.util.concurrent.Callable;
 
-import com.pslcl.qa.runner.resource.MachineInstance;
-import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
+import com.pslcl.qa.runner.resource.ReservedResource;
+import com.pslcl.qa.runner.resource.instance.MachineInstance;
 
 public class AwsMachineInstanceFuture implements Callable<MachineInstance>
 {
-    ReservedResourceWithAttributes resource;
+    ReservedResource resource;
 
-    public AwsMachineInstanceFuture(ReservedResourceWithAttributes resource)
+    public AwsMachineInstanceFuture(ReservedResource resource)
     {
         this.resource = resource;
     }
@@ -33,7 +33,7 @@ public class AwsMachineInstanceFuture implements Callable<MachineInstance>
     public MachineInstance call() throws Exception
     {
         // temporary, to allow progress: return AWSMachineInstance that matches "resource"; in other words, pretend
-        MachineInstance retMachineInstance = new AwsMachineInstance(ReservedResourceWithAttributes.class.cast(resource));
+        MachineInstance retMachineInstance = new AwsMachineInstance(ReservedResource.class.cast(resource));
         return retMachineInstance;
     }
 }

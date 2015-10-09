@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
-import com.pslcl.qa.runner.resource.ResourceNotFoundException;
-import com.pslcl.qa.runner.resource.ResourceWithAttributes;
+import com.pslcl.qa.runner.resource.ResourceDescription;
 import com.pslcl.qa.runner.resource.aws.AwsNames;
+import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
 
 public class InstanceFinder
 {
@@ -55,7 +55,7 @@ public class InstanceFinder
         config.initsb.level.decrementAndGet();
     }        
 
-    public InstanceType findInstance(ResourceWithAttributes resource) throws ResourceNotFoundException
+    public InstanceType findInstance(ResourceDescription resource) throws ResourceNotFoundException
     {
         Map<String, String> attrs = resource.getAttributes();
         String type = attrs.get(AwsNames.InstanceTypeKey);

@@ -20,14 +20,14 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
-import com.pslcl.qa.runner.resource.BindResourceFailedException;
-import com.pslcl.qa.runner.resource.NetworkInstance;
-import com.pslcl.qa.runner.resource.NetworkProvider;
-import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceInstance;
-import com.pslcl.qa.runner.resource.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.ReservedResource;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
-import com.pslcl.qa.runner.resource.ResourceWithAttributes;
+import com.pslcl.qa.runner.resource.ResourceDescription;
+import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.instance.NetworkInstance;
+import com.pslcl.qa.runner.resource.instance.ResourceInstance;
+import com.pslcl.qa.runner.resource.provider.NetworkProvider;
 
 public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {
@@ -47,49 +47,49 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     }
     
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources)
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
     {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public void releaseReservedResource(ReservedResourceWithAttributes resource)
+    public void releaseReservedResource(ReservedResource resource)
     {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    public boolean isAvailable(ResourceWithAttributes resource) throws ResourceNotFoundException
+    public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
     {
         // TODO Auto-generated method stub
         return false;
     }
 
     @Override
-    public ResourceQueryResult queryResourceAvailability(List<ResourceWithAttributes> resources)
+    public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources)
     {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds)
+    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
         // temporary, to allow progress: return empty rqr
-        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>(), new ArrayList<ResourceWithAttributes>());
+        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResource>(), new ArrayList<ResourceDescription>(), new ArrayList<ResourceDescription>(), new ArrayList<ResourceDescription>());
         if (resources.size() > 0)
         {
             // temporary, to allow progress: return an artificially unavailable resource
-            ResourceWithAttributes artificialUnavailableResource = resources.get(0);
+            ResourceDescription artificialUnavailableResource = resources.get(0);
             retRqr.getUnavailableResources().add(artificialUnavailableResource);
         }
         return retRqr;
     }
 
     @Override
-    public Future<NetworkInstance> bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException
+    public Future<NetworkInstance> bind(ReservedResource resource) throws BindResourceFailedException
     {
         // TODO Auto-generated method stub
         return null;

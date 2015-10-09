@@ -19,13 +19,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import com.pslcl.qa.runner.resource.CableInstance;
-import com.pslcl.qa.runner.resource.IncompatibleResourceException;
-import com.pslcl.qa.runner.resource.MachineInstance;
-import com.pslcl.qa.runner.resource.NetworkInstance;
-import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceProvider;
-import com.pslcl.qa.runner.resource.StartProgram;
+import com.pslcl.qa.runner.resource.ReservedResource;
+import com.pslcl.qa.runner.resource.exception.IncompatibleResourceException;
+import com.pslcl.qa.runner.resource.instance.CableInstance;
+import com.pslcl.qa.runner.resource.instance.MachineInstance;
+import com.pslcl.qa.runner.resource.instance.NetworkInstance;
+import com.pslcl.qa.runner.resource.instance.StartProgram;
+import com.pslcl.qa.runner.resource.provider.ResourceProvider;
 
 public class AwsMachineInstance implements MachineInstance
 {
@@ -41,7 +41,7 @@ public class AwsMachineInstance implements MachineInstance
      * 
      * @param resource
      */
-    public AwsMachineInstance(ReservedResourceWithAttributes reservedResourceWithAttributes)
+    public AwsMachineInstance(ReservedResource reservedResourceWithAttributes)
     {
         name = reservedResourceWithAttributes.getName();
         attributes = reservedResourceWithAttributes.getAttributes();
