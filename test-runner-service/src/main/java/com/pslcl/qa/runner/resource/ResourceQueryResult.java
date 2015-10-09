@@ -177,4 +177,19 @@ public class ResourceQueryResult
             }
         }
     }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder("{reserved: ")
+            .append(reservedResources == null ? "{null}" : reservedResources.toString())
+            .append(",avilable: ")
+            .append(availableResources == null ? "{null}" : availableResources.toString())
+            .append(",unavilable: ")
+            .append(unavailableResources == null ? "{null}" : unavailableResources.toString())
+            .append(",invalid: ")
+            .append(invalidResources == null ? "{null}" : invalidResources.toString());
+        sb.append("}");
+        return sb.toString();
+    }
 }

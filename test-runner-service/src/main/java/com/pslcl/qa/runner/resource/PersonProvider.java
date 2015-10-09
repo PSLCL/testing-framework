@@ -30,7 +30,7 @@ public interface PersonProvider extends ResourceProvider, ArtifactConsumer {
 	 * @return Person object which represents the Person Resource Instance.
 	 */
 	@Override
-	public Future<PersonInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
+	public Future<PersonInstance> bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException;
 
 	/**
 	 * Acquire a list of persons. A list is returned containing Future objects that will be set with the
@@ -43,5 +43,5 @@ public interface PersonProvider extends ResourceProvider, ArtifactConsumer {
 	 * @return A list of {@link PersonInstance} objects which each represent a Person Instance.
 	 */
 	@Override
-	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback);
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources);
 }

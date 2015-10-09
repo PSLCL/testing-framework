@@ -17,50 +17,61 @@ package com.pslcl.qa.runner.resource;
 
 import java.util.Map;
 
-public class ResourceWithAttributesInstance implements ResourceWithAttributes {
+import com.pslcl.qa.runner.config.util.StrH;
+
+public class ResourceWithAttributesInstance implements ResourceWithAttributes
+{
     private String name;
     private Map<String, String> attributes;
     private int reference;
-   
-    public ResourceWithAttributesInstance(String name, Map<String, String> attributes, int reference) {
+
+    public ResourceWithAttributesInstance(String name, Map<String, String> attributes, int reference)
+    {
         this.name = name;
         this.attributes = attributes;
         this.reference = reference;
     }
 
     @Override
-    public String getName() {
+    public String getName()
+    {
         // TODO Auto-generated method stub
         return name;
     }
 
     @Override
-    public Map<String, String> getAttributes() {
+    public Map<String, String> getAttributes()
+    {
         // TODO Auto-generated method stub
         return attributes;
     }
 
     @Override
-    public int getReference() {
+    public int getReference()
+    {
         // TODO Auto-generated method stub
         return reference;
     }
-    
+
     /**
      * 
-     * @param rwa Must not be null
+     * @param resourceWithAttributes Must not be null
      * @return
      */
-    public boolean matches(ResourceWithAttributes rwa) {
+    public boolean matches(ResourceWithAttributes resourceWithAttributes)
+    {
         // match: reference, hash and attributes are equal
-        if (this.reference == rwa.getReference() && this.name.equals(rwa.getName())) {
+        if (this.reference == resourceWithAttributes.getReference() && this.name.equals(resourceWithAttributes.getName()))
+        {
             // match the attribute sets to each other
-            Map<String, String> rwaAttributes = rwa.getAttributes();
+            Map<String, String> rwaAttributes = resourceWithAttributes.getAttributes();
             if (this.attributes.size() != rwaAttributes.size())
                 return false;
             // tHese keys and values might be empty strings, but they will not be null; keys are unique in each Map
-            for (String key : this.attributes.keySet()) {
-                if (rwaAttributes.containsKey(key)) {
+            for (String key : this.attributes.keySet())
+            {
+                if (rwaAttributes.containsKey(key))
+                {
                     String value = this.attributes.get(key);
                     if (value.equals(rwaAttributes.get(key)))
                         continue;
@@ -71,4 +82,16 @@ public class ResourceWithAttributesInstance implements ResourceWithAttributes {
         return true; // every check succeeded
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder("{name: ")
+            .append(name == null ? "null" : name)
+            .append(",ref: ")
+            .append(""+reference)
+            .append(",attrs: ")
+            .append(StrH.mapToString(attributes));
+        sb.append("}");
+        return sb.toString();
+    }
 }

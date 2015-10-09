@@ -17,7 +17,6 @@ package com.pslcl.qa.runner.resource.aws.providers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
@@ -28,10 +27,9 @@ import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
-import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 
-public class AwsPersonProvider extends ResourceProvider implements PersonProvider
+public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
     public AwsPersonProvider()
     {
@@ -71,7 +69,7 @@ public class AwsPersonProvider extends ResourceProvider implements PersonProvide
     }
 
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback)
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources)
     {
         // TODO Auto-generated method stub
         return null;
@@ -113,21 +111,7 @@ public class AwsPersonProvider extends ResourceProvider implements PersonProvide
     }
 
     @Override
-    public Future<PersonInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Map<String, String> getAttributes(String name)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public List<String> getNames()
+    public Future<PersonInstance> bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException
     {
         // TODO Auto-generated method stub
         return null;

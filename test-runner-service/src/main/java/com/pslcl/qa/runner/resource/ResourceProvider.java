@@ -16,7 +16,6 @@
 package com.pslcl.qa.runner.resource;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
@@ -40,7 +39,7 @@ public interface ResourceProvider {
 	 * @return Resource object which represents the Resource Instance.
 	 * @throws BindResourceFailedException if unable to bind the resource.
 	 */
-	public Future<? extends ResourceInstance> bind(ReservedResourceWithAttributes resource, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
+	public Future<? extends ResourceInstance> bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException;
 
 	/**
 	 * Acquire a list of resources. Resources will be bound and a list containing the resulting
@@ -55,7 +54,7 @@ public interface ResourceProvider {
 	 * @return A list of ResourceInstance objects which each represent a Resource Instance.
 	 * @throws BindResourceFailedExcpetion if unable to bind all of the listed resources.
 	 */
-	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback) throws BindResourceFailedException;
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources) throws BindResourceFailedException;
 
 	/**
 	 * Release a bound resource instance. Any bound resources must be released.
@@ -126,23 +125,23 @@ public interface ResourceProvider {
 	 */
 	public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds);
 
-	/**
-	 * Get a list of resource code names supported by the Resource Provider. These code names identify supported
-	 * resource types.
-	 * 
-	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
-	 * @return A list of code name strings, each representing one resource.
-	 */
-	public List<String> getNames();
-
-	/**
-	 * Get the map of attributes supported by the resource provider, for the given resource code name.
-	 * 
-	 * @param name The name for the attributes.
-	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
-	 * @return The map of attributes.
-	 */
-	public Map<String, String> getAttributes(String name);
+//	/**
+//	 * Get a list of resource code names supported by the Resource Provider. These code names identify supported
+//	 * resource types.
+//	 * 
+//	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
+//	 * @return A list of code name strings, each representing one resource.
+//	 */
+//	public List<String> getNames();
+//
+//	/**
+//	 * Get the map of attributes supported by the resource provider, for the given resource code name.
+//	 * 
+//	 * @param name The name for the attributes.
+//	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
+//	 * @return The map of attributes.
+//	 */
+//	public Map<String, String> getAttributes(String name);
 	
 	/**
 	 * Daemon init pipe.

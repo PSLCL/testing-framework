@@ -15,7 +15,10 @@
  */
 package com.pslcl.qa.runner.resource;
 
+import java.util.Date;
 import java.util.Map;
+
+import com.pslcl.qa.runner.config.util.StrH;
 
 /**
  * A resource with attributes that has been reserved by the resource provider. After a timeout period
@@ -94,4 +97,18 @@ public class ReservedResourceWithAttributes implements ResourceWithAttributes {
 		return (int)(endTime - (System.currentTimeMillis() / 1000));
 	}
 
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder("{name: ")
+            .append(name == null ? "null" : name)
+            .append(",ref: ")
+            .append(""+reference)
+            .append(",end: ")
+            .append(new Date(endTime).toString())
+            .append(",attrs: ")
+            .append(StrH.mapToString(attributes));
+        sb.append("}");
+        return sb.toString();
+    }
 }

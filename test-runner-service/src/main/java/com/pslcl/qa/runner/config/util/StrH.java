@@ -15,6 +15,7 @@
  */
 package com.pslcl.qa.runner.config.util;
 
+import java.util.Map;
 import java.util.Map.Entry;
 
 
@@ -24,6 +25,23 @@ public class StrH
     public final static char ForwardSlashSeperator = '/';
     public final static char BackSlashSeperator = '\\';
 
+    
+    public static String mapToString(Map<?, ?> map)
+    {
+        StringBuilder sb = new StringBuilder("{[");
+        boolean firstDone = false;
+        for(Entry<?,?> entry : map.entrySet())
+        {
+            if(!firstDone)
+                firstDone = true;
+            else
+                sb.append(",");
+            sb.append("{" + entry.getKey().toString() + "," + entry.getValue().toString() + "}");
+        }
+        sb.append("]}");
+      return sb.toString();  
+    }
+    
     public static StringBuilder ttl(StringBuilder sb, int level, Object ... values)
     {
         String[] array = new String[values.length];

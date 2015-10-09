@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.process.DBTemplate;
@@ -105,26 +108,81 @@ public class TemplateProvider {
 
                 // Note: The size of reservedResources and its entries are the important thing. Coding is intended that any reservedResource has no entries in the other three lists.
                 //       However, the ultimate rule is that an entry in the reservedResource list means that the resource is reserved, independent of what the other ResourceProviders may have placed in the alternate lists. 
+                boolean synchOk = true;
                 if (reservedResources.size() == originalReserveResourceRequestsSize) {
                     // bind all resources of reservedResources, and receive a ResourceInstance for each one
                     List<Future<? extends ResourceInstance>> resourceInstances;
                     try {
-                        resourceInstances = resourceProviders.bind(reservedResources, null); // start multiple asynch binds
+                        resourceInstances = resourceProviders.bind(reservedResources); // start multiple asynch binds
                         
                         // Wait for all the multiple asynch bind calls to complete 
                         // resourceInstances is a Future list that is returned quickly; i.e. without waiting for all the asynch binds to complete.
                         // Loop, waiting for each encountered asynch .bind() to complete its work; in other words convert our .bind(multiple) call to synchronous.
                         // Convert the Future list to a list of returned ResourceInstance S.
                         List<ResourceInstance> listRI = new ArrayList<>();
-                        for (Future<? extends ResourceInstance> future : resourceInstances) {
-                            try {
-                                ResourceInstance resourceInstance = ResourceInstance.class.cast(future.get());
-                                listRI.add(resourceInstance);
-                            } catch (InterruptedException | ExecutionException e) {
-                                // TODO: any bind fail is possibly reason to cancel all the binds
-                                e.printStackTrace();
+                        int resourceCount = resourceInstances.size();
+                        while(resourceCount > 0)
+                        {
+                            for (int i=0; i < resourceCount; i++) 
+                            {
+                                Future<? extends ResourceInstance> future = resourceInstances.get(i);
+                                if(future.isDone())
+                                {
+                                    try 
+                                    {
+                                        ResourceInstance resourceInstance = future.get();
+                                        listRI.add(resourceInstance);
+                                        resourceInstances.remove(i);
+                                        break;  // just start the loop over as the size/order just changed
+                                    } 
+                                    catch (ExecutionException ee) 
+                                    {
+                                        Throwable t = ee.getCause();
+                                        String msg = ee.getLocalizedMessage();
+                                        if(t != null)
+                                            msg = t.getLocalizedMessage();
+                                        LoggerFactory.getLogger(getClass()).
+                                            info(ResourceInstance.class.getSimpleName() + " failed to startup: " + msg, ee);
+                                        synchOk = false;
+                                        break;
+                                    }
+                                    catch (InterruptedException ie) 
+                                    {
+                                        LoggerFactory.getLogger(getClass()).info("Executor pool shutdown");
+                                        synchOk = false;
+                                        break;
+                                    }
+                                }
                             }
+                            if(!synchOk)
+                            {
+                                /*
+                                 * Note: ResourceInstance implementations need to know the cancel policy we
+                                 * are using.  We will use a do cancel if running policy.  If they are the
+                                 * one failing, they should clean their self up before throwing the exception.
+                                 * If they are canceled out of their run/call method they need to clean
+                                 * their self up as well.
+                                 */
+                                for(Future<? extends ResourceInstance> future :resourceInstances)
+                                    future.cancel(true);
+                                break;
+                            }
+                            resourceCount = resourceInstances.size(); 
+                        }// while loop
+                        if(!synchOk)
+                        {
+                            /*
+                             * Outstanding futures have been canceled and should clean themselves up.
+                             * This leaves any that completed and were "got" before the failure
+                             * that needs cleaned up here.
+                             */
+                            Logger log = LoggerFactory.getLogger(getClass()); 
+                            for(ResourceInstance resource : listRI)
+                                log.error(resource.toString() + " needs destroyed");
+                            // TODO: seems we need a get Provider method in ResourceInstance so we can clean up
+                            log.error("FIXME what to do now, return?");
                         }
+                            
                         // all bind calls are now completed
                         
                         // TODO: analyze the success/failure of each returned ResourceInstance

@@ -2,7 +2,6 @@ package com.pslcl.qa.runner.template;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
 
@@ -20,7 +19,6 @@ import com.pslcl.qa.runner.resource.ResourceInstance;
 import com.pslcl.qa.runner.resource.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.ResourceProvider;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
-import com.pslcl.qa.runner.resource.ResourceStatusCallback;
 import com.pslcl.qa.runner.resource.ResourceWithAttributes;
 import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
 
@@ -158,14 +156,14 @@ public class ResourceProviders implements ResourceProvider {
     }
 
     @Override
-    public Future<? extends ResourceInstance> bind(ReservedResourceWithAttributes reservedResourceWithAttributes, ResourceStatusCallback statusCallback) throws BindResourceFailedException {
+    public Future<? extends ResourceInstance> bind(ReservedResourceWithAttributes reservedResourceWithAttributes) throws BindResourceFailedException {
         // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         System.out.println("ResourceProviders.bind() called with resourceName/resourceAttributes: " + reservedResourceWithAttributes.getName() + " / " + reservedResourceWithAttributes.getAttributes());
 
         Future<? extends ResourceInstance> retRI = null;
         try {
             // note that this bind call  must fill the return ResourceInstance with not only something like an implementation of MachineInstance or a PersonInstance, but it must fill reference, which comes from param resourceWithAttributes
-            retRI = reservedResourceWithAttributes.getResourceProvider().bind(reservedResourceWithAttributes, null);
+            retRI = reservedResourceWithAttributes.getResourceProvider().bind(reservedResourceWithAttributes);
         } catch (BindResourceFailedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -174,12 +172,12 @@ public class ResourceProviders implements ResourceProvider {
     }
 
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources, ResourceStatusCallback statusCallback) throws BindResourceFailedException {
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources) throws BindResourceFailedException {
         // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         List<Future<? extends ResourceInstance>> retRiList = new ArrayList<>();
         for(int i=0; i<resources.size(); i++) {
             try {
-                retRiList.add(this.bind(resources.get(i), null));
+                retRiList.add(this.bind(resources.get(i)));
             } catch (BindResourceFailedException e) {
                 retRiList.add(null);
                 System.out.println("ResourceProviders.bind(List<> resources) stores null entry");
@@ -206,17 +204,18 @@ public class ResourceProviders implements ResourceProvider {
         return null;
     }
 
-    @Override
-    public Map<String, String> getAttributes(String hash) {
-        // ResourceProviders does not supply hashes, attributes or descriptions.
-        return null;
-    }
-
-    @Override
-    public List<String> getNames() {
-        // TODO Auto-generated method stub
-        return null;
-    }
+//TODO: AWS implementation does not know what to do with these, chad commented them out of th interface for now    
+//    @Override
+//    public Map<String, String> getAttributes(String hash) {
+//        // ResourceProviders does not supply hashes, attributes or descriptions.
+//        return null;
+//    }
+//
+//    @Override
+//    public List<String> getNames() {
+//        // TODO Auto-generated method stub
+//        return null;
+//    }
 
     @Override
     public void release(ResourceInstance resource, boolean isReusable) {

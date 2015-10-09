@@ -23,13 +23,13 @@ import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration;
 import com.pslcl.qa.runner.resource.aws.AwsClientConfiguration.AwsClientConfig;
 
-public abstract class ResourceProvider
+public abstract class AwsResourceProvider
 {
     protected final Logger log;
     protected volatile RunnerServiceConfig config;
     protected volatile AmazonEC2Client ec2Client;
     
-    protected ResourceProvider()
+    protected AwsResourceProvider()
     {
         log = LoggerFactory.getLogger(getClass());
     }
