@@ -24,12 +24,12 @@ import java.util.List;
 public class ResourceQueryResult
 {
     // all lists guarded by reservedResources
-    private final List<ReservedResourceWithAttributes> reservedResources;
-    private final List<ResourceWithAttributes> availableResources;
-    private final List<ResourceWithAttributes> unavailableResources;
-    private final List<ResourceWithAttributes> invalidResources;
+    private final List<ReservedResource> reservedResources;
+    private final List<ResourceDescription> availableResources;
+    private final List<ResourceDescription> unavailableResources;
+    private final List<ResourceDescription> invalidResources;
 
-    public ResourceQueryResult(List<ReservedResourceWithAttributes> reservedResources, List<ResourceWithAttributes> availableResources, List<ResourceWithAttributes> unavailableResources, List<ResourceWithAttributes> invalidResources)
+    public ResourceQueryResult(List<ReservedResource> reservedResources, List<ResourceDescription> availableResources, List<ResourceDescription> unavailableResources, List<ResourceDescription> invalidResources)
     {
         this.reservedResources = reservedResources;
         this.availableResources = availableResources;
@@ -42,11 +42,11 @@ public class ResourceQueryResult
      * 
      * @return A list of reserved resources.
      */
-    public List<ReservedResourceWithAttributes> getReservedResources()
+    public List<ReservedResource> getReservedResources()
     {
         synchronized (reservedResources)
         {
-            return new ArrayList<ReservedResourceWithAttributes>(reservedResources);
+            return new ArrayList<ReservedResource>(reservedResources);
         }
     }
 
@@ -55,7 +55,7 @@ public class ResourceQueryResult
      *  
      * @param rrwa The reserved resource to add.
      */
-    public void reservedResources_add(ReservedResourceWithAttributes rrwa) {
+    public void reservedResources_add(ReservedResource rrwa) {
         synchronized (reservedResources) {
             this.reservedResources.add(rrwa);
         }
@@ -66,11 +66,11 @@ public class ResourceQueryResult
      * 
      * @return A list of resources available at the time this object was created.
      */
-    public List<ResourceWithAttributes> getAvailableResources()
+    public List<ResourceDescription> getAvailableResources()
     {
         synchronized (reservedResources)
         {
-            return new ArrayList<ResourceWithAttributes>(availableResources);
+            return new ArrayList<ResourceDescription>(availableResources);
         }
     }
 
@@ -79,7 +79,7 @@ public class ResourceQueryResult
      *  
      * @param rwa The available resource to add.
      */
-    public void availabledResources_add(ResourceWithAttributes rwa) {
+    public void availabledResources_add(ResourceDescription rwa) {
         synchronized (reservedResources) {
             this.availableResources.add(rwa);
         }
@@ -90,11 +90,11 @@ public class ResourceQueryResult
      * 
      * @return A list of resources unavailable at the time this object was created.
      */
-    public List<ResourceWithAttributes> getUnavailableResources()
+    public List<ResourceDescription> getUnavailableResources()
     {
         synchronized (reservedResources)
         {
-            return new ArrayList<ResourceWithAttributes>(unavailableResources);
+            return new ArrayList<ResourceDescription>(unavailableResources);
         }
     }
 
@@ -114,11 +114,11 @@ public class ResourceQueryResult
      * 
      * @return A list of requested resources not understood by the resource provider.
      */
-    public List<ResourceWithAttributes> getInvalidResources()
+    public List<ResourceDescription> getInvalidResources()
     {
         synchronized (reservedResources)
         {
-            return new ArrayList<ResourceWithAttributes>(invalidResources);
+            return new ArrayList<ResourceDescription>(invalidResources);
         }
     }
     
@@ -148,7 +148,7 @@ public class ResourceQueryResult
         {
 
             // Merge all reservations found in localRqr.
-            for (ReservedResourceWithAttributes rrwa : localRqr.getReservedResources())
+            for (ReservedResource rrwa : localRqr.getReservedResources())
             {
                 // record the successful reservation found in localRqr 
                 this.reservedResources.add(rrwa);
@@ -160,17 +160,17 @@ public class ResourceQueryResult
             }
 
             // Record whatever "fails" are found in localRqr
-            for (ResourceWithAttributes rwa : localRqr.getAvailableResources())
+            for (ResourceDescription rwa : localRqr.getAvailableResources())
             {
                 // this rwa is not found in incoming reservedResources, unavailableResources or invalidResources
                 this.availableResources.add(rwa); // might add to an entry from a previous call
             }
-            for (ResourceWithAttributes rwa : localRqr.getUnavailableResources())
+            for (ResourceDescription rwa : localRqr.getUnavailableResources())
             {
                 // this rwa is not found in incoming reservedResources, availableResources or invalidResources
                 this.unavailableResources.add(rwa); // might add to an entry from a previous call
             }
-            for (ResourceWithAttributes rwa : localRqr.getInvalidResources())
+            for (ResourceDescription rwa : localRqr.getInvalidResources())
             {
                 // this rwa is not found in incoming reservedResources, availableResource or unavailableResources
                 this.invalidResources.add(rwa); // might add to an entry from a previous call

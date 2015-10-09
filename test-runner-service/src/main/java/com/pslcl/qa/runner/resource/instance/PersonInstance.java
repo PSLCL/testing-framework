@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource;
+package com.pslcl.qa.runner.resource.instance;
 
 import java.util.Map;
 

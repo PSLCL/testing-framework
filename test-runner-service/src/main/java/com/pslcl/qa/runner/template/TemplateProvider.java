@@ -14,15 +14,15 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.process.DBTemplate;
-import com.pslcl.qa.runner.resource.BindResourceFailedException;
-import com.pslcl.qa.runner.resource.IncompatibleResourceException;
-import com.pslcl.qa.runner.resource.MachineInstance;
-import com.pslcl.qa.runner.resource.NetworkInstance;
-import com.pslcl.qa.runner.resource.PersonInstance;
-import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceInstance;
+import com.pslcl.qa.runner.resource.ReservedResource;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
-import com.pslcl.qa.runner.resource.ResourceWithAttributes;
+import com.pslcl.qa.runner.resource.ResourceDescription;
+import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.IncompatibleResourceException;
+import com.pslcl.qa.runner.resource.instance.MachineInstance;
+import com.pslcl.qa.runner.resource.instance.NetworkInstance;
+import com.pslcl.qa.runner.resource.instance.PersonInstance;
+import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 
 public class TemplateProvider {
     
@@ -76,7 +76,7 @@ public class TemplateProvider {
             StepsParser stepsParser = new StepsParser(dbT.steps);
             
             // Process bind steps now, since they come first; each returned list entry is self-referenced by steps line number, from 0...n
-            List<ResourceWithAttributes> reserveResourceRequests = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
+            List<ResourceDescription> reserveResourceRequests = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
             int stepsReference = reserveResourceRequests.size();
             int originalReserveResourceRequestsSize = stepsReference;
             
@@ -86,22 +86,22 @@ public class TemplateProvider {
             ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
             if (rqr != null) {
                 // analyze the success/failure of each reserved resource, one resource for each bind step
-                List<ResourceWithAttributes> invalidResources = rqr.getInvalidResources(); // list is not in order
+                List<ResourceDescription> invalidResources = rqr.getInvalidResources(); // list is not in order
                 if (invalidResources!=null && !invalidResources.isEmpty()) {
                     System.out.println("TemplateProvider.getInstancedTemplate() finds " + invalidResources.size() + " reports of invalid resource reserve requests");
                 }
 
-                List<ResourceWithAttributes> unavailableResources = rqr.getUnavailableResources(); // list is not in order
+                List<ResourceDescription> unavailableResources = rqr.getUnavailableResources(); // list is not in order
                 if (unavailableResources!=null && !unavailableResources.isEmpty()) {
                     System.out.println("TemplateProvider.getInstancedTemplate() finds " + unavailableResources.size() + " reports of unavailable resources for the given reserve requests");
                 }
                 
-                List<ResourceWithAttributes> availableResources = rqr.getAvailableResources();
+                List<ResourceDescription> availableResources = rqr.getAvailableResources();
                 if (availableResources!=null && !availableResources.isEmpty()) {
                     System.out.println("TemplateProvider.getInstancedTemplate() finds " + availableResources.size() + " reports of available resources for the given reserve requests");
                 }
 
-                List<ReservedResourceWithAttributes> reservedResources = rqr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
+                List<ReservedResource> reservedResources = rqr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
                 if (reservedResources!=null) {
                     System.out.println("TemplateProvider.getInstancedTemplate() finds " + reservedResources.size() + " successful reserve-resource reserve requests" + (reservedResources.size() <= 0 ? "" : "; they are now reserved"));
                 }
@@ -178,8 +178,7 @@ public class TemplateProvider {
                              */
                             Logger log = LoggerFactory.getLogger(getClass()); 
                             for(ResourceInstance resource : listRI)
-                                log.error(resource.toString() + " needs destroyed");
-                            // TODO: seems we need a get Provider method in ResourceInstance so we can clean up
+                                resource.getResourceProvider().release(resource, true);
                             log.error("FIXME what to do now, return?");
                         }
                             

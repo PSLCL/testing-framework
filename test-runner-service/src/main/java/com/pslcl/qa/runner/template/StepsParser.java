@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.pslcl.qa.runner.resource.ResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
+import com.pslcl.qa.runner.resource.ResourceDescription;
+import com.pslcl.qa.runner.resource.instance.ResourceWithAttributesInstance;
 
 public class StepsParser {
     
@@ -137,8 +137,8 @@ public class StepsParser {
      * 
      * @return
      */
-    List<ResourceWithAttributes> computeResourceQuery() {
-        List<ResourceWithAttributes> retList = new ArrayList<>();
+    List<ResourceDescription> computeResourceQuery() {
+        List<ResourceDescription> retList = new ArrayList<>();
         List<String> bindList = getNextSteps("bind "); // list is indexed by original line number
         for (int bindReference=0; bindReference<bindList.size(); bindReference++) {
             // add next bind resource to the resource request
@@ -162,7 +162,7 @@ public class StepsParser {
 //                        offset = -1; // done
 //                }
 
-                ResourceWithAttributes rwa = new ResourceWithAttributesInstance(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
+                ResourceDescription rwa = new ResourceWithAttributesInstance(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
                 retList.add(rwa); // or retList.add(i, ra);
             }
         }

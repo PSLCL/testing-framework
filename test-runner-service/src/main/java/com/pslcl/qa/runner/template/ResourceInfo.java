@@ -2,7 +2,7 @@ package com.pslcl.qa.runner.template;
 
 import java.util.concurrent.Future;
 
-import com.pslcl.qa.runner.resource.ResourceInstance;
+import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 
 public class ResourceInfo implements Comparable<ResourceInfo> {
     private ResourceInstance resourceInstance;

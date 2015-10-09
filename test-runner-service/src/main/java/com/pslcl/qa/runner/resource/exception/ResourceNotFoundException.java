@@ -13,21 +13,24 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource;
+package com.pslcl.qa.runner.resource.exception;
+
+import com.pslcl.qa.runner.resource.provider.ResourceProvider;
 
 /**
- * Thrown by a Resource Provider if it fails to bind a requested resource.  
+ * Exception indicating that the requested resource is not 
+ * known by the {@link ResourceProvider}.
  */
-public class BindResourceFailedException extends Exception {
-
-	private static final long serialVersionUID = 8827644619962087334L;
-
+public class ResourceNotFoundException extends Exception
+{
+    private static final long serialVersionUID = 0x238322fb087bc9eaL;
+    
     /**
      * Constructs a new exception with {@code null} as its detail message.
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
      */
-    public BindResourceFailedException() {
+    public ResourceNotFoundException() {
         super();
     }
 
@@ -39,7 +42,7 @@ public class BindResourceFailedException extends Exception {
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
-    public BindResourceFailedException(String message) {
+    public ResourceNotFoundException(String message) {
         super(message);
     }
 
@@ -57,7 +60,7 @@ public class BindResourceFailedException extends Exception {
      *         unknown.)
      * @since  1.4
      */
-    public BindResourceFailedException(String message, Throwable cause) {
+    public ResourceNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 
@@ -75,7 +78,7 @@ public class BindResourceFailedException extends Exception {
      *         unknown.)
      * @since  1.4
      */
-    public BindResourceFailedException(Throwable cause) {
+    public ResourceNotFoundException(Throwable cause) {
         super(cause);
     }
 
@@ -93,10 +96,9 @@ public class BindResourceFailedException extends Exception {
      *                           be writable
      * @since 1.7
      */
-    protected BindResourceFailedException(String message, Throwable cause,
+    protected ResourceNotFoundException(String message, Throwable cause,
                         boolean enableSuppression,
                         boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
-
 }

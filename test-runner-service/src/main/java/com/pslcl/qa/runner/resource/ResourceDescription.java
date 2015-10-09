@@ -20,7 +20,7 @@ import java.util.Map;
 /**
  * A ResourceQuery is a resource hash and a map of attributes.
  */
-public interface ResourceWithAttributes {
+public interface ResourceDescription {
 	
 	/**
 	 * Get the name of the resource.

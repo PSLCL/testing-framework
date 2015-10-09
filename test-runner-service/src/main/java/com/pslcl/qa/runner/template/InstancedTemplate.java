@@ -3,7 +3,7 @@ package com.pslcl.qa.runner.template;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.pslcl.qa.runner.resource.ResourceInstance;
+import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 
 /**
  * InstancedTemplate is all information about a template to allow it to be used, for the first time or to be re-used

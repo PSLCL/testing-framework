@@ -13,11 +13,13 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource;
+package com.pslcl.qa.runner.resource.exception;
 
 /**
- * Represents a Network Resource instance.
+ * An exception indicating that a requested resource is
+ * known but is not currently available.
  */
-public interface NetworkInstance extends ResourceInstance {
+public class ResourceNotAvailableException extends Exception {
+	private static final long serialVersionUID = 3279203537258646372L;
 
 }

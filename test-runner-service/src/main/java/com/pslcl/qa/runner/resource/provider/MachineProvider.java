@@ -13,17 +13,12 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource;
+package com.pslcl.qa.runner.resource.provider;
+
 
 /**
- * Represents a Cable Resource instance
+ * A Resource provider which allows reserving and binding of Machine resource types.
  */
-public interface CableInstance extends ResourceInstance {
-	
-	/**
-	 * The IP address associated with this cable.
-	 * 
-	 * @return
-	 */
-	public String getIPAddress();
+public interface MachineProvider extends ResourceProvider, ArtifactConsumer
+{
 }

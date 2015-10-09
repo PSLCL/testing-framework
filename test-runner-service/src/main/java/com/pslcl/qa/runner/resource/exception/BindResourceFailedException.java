@@ -13,22 +13,21 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource;
+package com.pslcl.qa.runner.resource.exception;
 
 /**
- * Exception indicating that the requested resource is not 
- * known by the {@link ResourceProvider}.
+ * Thrown by a Resource Provider if it fails to bind a requested resource.  
  */
-public class ResourceNotFoundException extends Exception
-{
-    private static final long serialVersionUID = 0x238322fb087bc9eaL;
-    
+public class BindResourceFailedException extends Exception {
+
+	private static final long serialVersionUID = 8827644619962087334L;
+
     /**
      * Constructs a new exception with {@code null} as its detail message.
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
      */
-    public ResourceNotFoundException() {
+    public BindResourceFailedException() {
         super();
     }
 
@@ -40,7 +39,7 @@ public class ResourceNotFoundException extends Exception
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
-    public ResourceNotFoundException(String message) {
+    public BindResourceFailedException(String message) {
         super(message);
     }
 
@@ -58,7 +57,7 @@ public class ResourceNotFoundException extends Exception
      *         unknown.)
      * @since  1.4
      */
-    public ResourceNotFoundException(String message, Throwable cause) {
+    public BindResourceFailedException(String message, Throwable cause) {
         super(message, cause);
     }
 
@@ -76,7 +75,7 @@ public class ResourceNotFoundException extends Exception
      *         unknown.)
      * @since  1.4
      */
-    public ResourceNotFoundException(Throwable cause) {
+    public BindResourceFailedException(Throwable cause) {
         super(cause);
     }
 
@@ -94,9 +93,10 @@ public class ResourceNotFoundException extends Exception
      *                           be writable
      * @since 1.7
      */
-    protected ResourceNotFoundException(String message, Throwable cause,
+    protected BindResourceFailedException(String message, Throwable cause,
                         boolean enableSuppression,
                         boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
+
 }

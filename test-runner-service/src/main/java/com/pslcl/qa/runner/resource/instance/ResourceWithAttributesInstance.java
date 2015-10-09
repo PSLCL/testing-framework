@@ -13,13 +13,14 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource;
+package com.pslcl.qa.runner.resource.instance;
 
 import java.util.Map;
 
 import com.pslcl.qa.runner.config.util.StrH;
+import com.pslcl.qa.runner.resource.ResourceDescription;
 
-public class ResourceWithAttributesInstance implements ResourceWithAttributes
+public class ResourceWithAttributesInstance implements ResourceDescription
 {
     private String name;
     private Map<String, String> attributes;
@@ -58,7 +59,7 @@ public class ResourceWithAttributesInstance implements ResourceWithAttributes
      * @param resourceWithAttributes Must not be null
      * @return
      */
-    public boolean matches(ResourceWithAttributes resourceWithAttributes)
+    public boolean matches(ResourceDescription resourceWithAttributes)
     {
         // match: reference, hash and attributes are equal
         if (this.reference == resourceWithAttributes.getReference() && this.name.equals(resourceWithAttributes.getName()))

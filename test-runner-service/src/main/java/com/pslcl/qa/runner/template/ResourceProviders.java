@@ -10,17 +10,17 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.config.util.PropertiesFile;
 import com.pslcl.qa.runner.config.util.StrH.StringPair;
-import com.pslcl.qa.runner.resource.BindResourceFailedException;
-import com.pslcl.qa.runner.resource.MachineProvider;
-import com.pslcl.qa.runner.resource.NetworkProvider;
-import com.pslcl.qa.runner.resource.PersonProvider;
-import com.pslcl.qa.runner.resource.ReservedResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceInstance;
-import com.pslcl.qa.runner.resource.ResourceNotFoundException;
-import com.pslcl.qa.runner.resource.ResourceProvider;
+import com.pslcl.qa.runner.resource.ReservedResource;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
-import com.pslcl.qa.runner.resource.ResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
+import com.pslcl.qa.runner.resource.ResourceDescription;
+import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.instance.ResourceInstance;
+import com.pslcl.qa.runner.resource.instance.ResourceWithAttributesInstance;
+import com.pslcl.qa.runner.resource.provider.MachineProvider;
+import com.pslcl.qa.runner.resource.provider.NetworkProvider;
+import com.pslcl.qa.runner.resource.provider.PersonProvider;
+import com.pslcl.qa.runner.resource.provider.ResourceProvider;
 
 /**
  * Contains ResourceProvider instantiated objects and supplies access to them 
@@ -116,7 +116,7 @@ public class ResourceProviders implements ResourceProvider {
     
 
     @Override
-    public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> reserveResourceRequests, int timeoutSeconds) {
+    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) {
         
         // Identify each ResourceProvider (like AWSMachineProvider) that understands specific requirements of individual elements of param ResourceWithAttributes and can reserve the corresponding resource.
         //    This class has a list of all types of ResourceProvider (like AWSMachineProvider).
@@ -124,16 +124,16 @@ public class ResourceProviders implements ResourceProvider {
         // Current solution- ask each ResourceProvider, in turn. TODO: Perhaps optimize by asking each ResourceProvider directly, taking advantage of knowledge of each resource provider's hash and attributes?
 
         // start retRqr with empty lists; afterward merge reservation results into retRqr
-        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResourceWithAttributes>(),
-                                                             new ArrayList<ResourceWithAttributes>(),
-                                                             new ArrayList<ResourceWithAttributes>(),
-                                                             new ArrayList<ResourceWithAttributes>());
+        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResource>(),
+                                                             new ArrayList<ResourceDescription>(),
+                                                             new ArrayList<ResourceDescription>(),
+                                                             new ArrayList<ResourceDescription>());
 
         // invite every ResourceProvider to reserve each resource in param reserveResourceRequests, as it can and as it will
         for (ResourceProvider rp : resourceProviders) {
             // but 1st, to avoid multiple reservations: for any past success in filling any of the several rrwa S in retRqr, strip param reserveResourceRequests of that entry
-            for (ReservedResourceWithAttributes rrwa : retRqr.getReservedResources()) {
-                for (ResourceWithAttributes rwa : reserveResourceRequests) {
+            for (ReservedResource rrwa : retRqr.getReservedResources()) {
+                for (ResourceDescription rwa : reserveResourceRequests) {
                     ResourceWithAttributesInstance rwai = ResourceWithAttributesInstance.class.cast(rwa);
                     if (rwai.matches(rrwa)) {
                         reserveResourceRequests.remove(rwa);
@@ -156,7 +156,7 @@ public class ResourceProviders implements ResourceProvider {
     }
 
     @Override
-    public Future<? extends ResourceInstance> bind(ReservedResourceWithAttributes reservedResourceWithAttributes) throws BindResourceFailedException {
+    public Future<? extends ResourceInstance> bind(ReservedResource reservedResourceWithAttributes) throws BindResourceFailedException {
         // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         System.out.println("ResourceProviders.bind() called with resourceName/resourceAttributes: " + reservedResourceWithAttributes.getName() + " / " + reservedResourceWithAttributes.getAttributes());
 
@@ -172,7 +172,7 @@ public class ResourceProviders implements ResourceProvider {
     }
 
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources) throws BindResourceFailedException {
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws BindResourceFailedException {
         // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         List<Future<? extends ResourceInstance>> retRiList = new ArrayList<>();
         for(int i=0; i<resources.size(); i++) {
@@ -187,19 +187,19 @@ public class ResourceProviders implements ResourceProvider {
     }  
 
     @Override
-    public void releaseReservedResource(ReservedResourceWithAttributes resource) {
+    public void releaseReservedResource(ReservedResource resource) {
         // TODO Auto-generated method stub
         
     }
 
     @Override
-    public boolean isAvailable(ResourceWithAttributes resource) throws ResourceNotFoundException {
+    public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException {
         // TODO Auto-generated method stub
         return false;
     }
 
     @Override
-    public ResourceQueryResult queryResourceAvailability(List<ResourceWithAttributes> resources) {
+    public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources) {
         // TODO Auto-generated method stub
         return null;
     }

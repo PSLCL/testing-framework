@@ -13,12 +13,18 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource;
+package com.pslcl.qa.runner.resource.provider;
 
 import java.util.List;
 import java.util.concurrent.Future;
 
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
+import com.pslcl.qa.runner.resource.ReservedResource;
+import com.pslcl.qa.runner.resource.ResourceQueryResult;
+import com.pslcl.qa.runner.resource.ResourceDescription;
+import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 
 /**
  * This interface defines interactions with a resource provider. The primary responsibility of a resource provider is to
@@ -39,7 +45,7 @@ public interface ResourceProvider {
 	 * @return Resource object which represents the Resource Instance.
 	 * @throws BindResourceFailedException if unable to bind the resource.
 	 */
-	public Future<? extends ResourceInstance> bind(ReservedResourceWithAttributes resource) throws BindResourceFailedException;
+	public Future<? extends ResourceInstance> bind(ReservedResource resource) throws BindResourceFailedException;
 
 	/**
 	 * Acquire a list of resources. Resources will be bound and a list containing the resulting
@@ -54,7 +60,7 @@ public interface ResourceProvider {
 	 * @return A list of ResourceInstance objects which each represent a Resource Instance.
 	 * @throws BindResourceFailedExcpetion if unable to bind all of the listed resources.
 	 */
-	public List<Future<? extends ResourceInstance>> bind(List<ReservedResourceWithAttributes> resources) throws BindResourceFailedException;
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws BindResourceFailedException;
 
 	/**
 	 * Release a bound resource instance. Any bound resources must be released.
@@ -72,7 +78,7 @@ public interface ResourceProvider {
 	 * @param resource
 	 *            The reserved resource to release.
 	 */
-	public void releaseReservedResource(ReservedResourceWithAttributes resource);
+	public void releaseReservedResource(ReservedResource resource);
 
 	/**
 	 * Check whether the specified resource is available.
@@ -85,7 +91,7 @@ public interface ResourceProvider {
 	 * @throws ResourceNotFoundException
 	 *             Thrown if the resourceHash is not known by the resource provider.
 	 */
-	public boolean isAvailable(ResourceWithAttributes resource) throws ResourceNotFoundException;
+	public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException;
 
 	/**
 	 * Query the Resource Provider for the availability of the specified resources. Resources are not bound or reserved,
@@ -103,7 +109,7 @@ public interface ResourceProvider {
 	 * @return A {@link ResourceQueryResult} containing information about the availability of resource on this resource
 	 *         provider.
 	 */
-	public ResourceQueryResult queryResourceAvailability(List<ResourceWithAttributes> resources);
+	public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources);
 
 
 	/**
@@ -123,7 +129,7 @@ public interface ResourceProvider {
 	 * @param timeoutSecond The time period, in seconds, to reserve the resources.
 	 * @return The {@link ResourceQueryResult} listing the resources which were able to be reserved.
 	 */
-	public ResourceQueryResult reserveIfAvailable(List<ResourceWithAttributes> resources, int timeoutSeconds);
+	public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
 
 //	/**
 //	 * Get a list of resource code names supported by the Resource Provider. These code names identify supported
