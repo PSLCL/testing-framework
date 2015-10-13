@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource.aws.providers;
+package com.pslcl.qa.runner.resource.aws.provider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,15 +23,15 @@ import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.ReservedResource;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceDescription;
-import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
-import com.pslcl.qa.runner.resource.instance.PersonInstance;
+import com.pslcl.qa.runner.resource.instance.NetworkInstance;
 import com.pslcl.qa.runner.resource.instance.ResourceInstance;
-import com.pslcl.qa.runner.resource.provider.PersonProvider;
+import com.pslcl.qa.runner.resource.provider.NetworkProvider;
 
-public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
+public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {
-    public AwsPersonProvider()
+    public AwsNetworkProvider()
     {
     }
 
@@ -46,28 +46,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     {
     }
     
-    
-    @Override
-    public void updateArtifact(String component, String version, String platform, String name, String artifactHash)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void removeArtifact(String component, String version, String platform, String name)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void invalidateArtifacts(String component, String version)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
     @Override
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
     {
@@ -111,7 +89,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     }
 
     @Override
-    public Future<PersonInstance> bind(ReservedResource resource) throws BindResourceFailedException
+    public Future<NetworkInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
         // TODO Auto-generated method stub
         return null;

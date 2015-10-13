@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource.aws.providers;
+package com.pslcl.qa.runner.resource.aws.provider;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,10 +25,11 @@ import java.util.concurrent.TimeUnit;
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.ReservedResource;
-import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceDescription;
-import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.ResourceQueryResult;
+import com.pslcl.qa.runner.resource.aws.instance.MachineInstanceFuture;
 import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.qa.runner.resource.instance.MachineInstance;
 import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 import com.pslcl.qa.runner.resource.provider.MachineProvider;
@@ -38,13 +39,13 @@ import com.pslcl.qa.runner.resource.provider.MachineProvider;
  */
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
-    private final HashMap<Integer, MyReservedResource> reservedResources;
+    private final HashMap<Integer, MachineReservedResource> reservedResources;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
 
     public AwsMachineProvider()
     {
-        reservedResources = new HashMap<Integer, MyReservedResource>();
+        reservedResources = new HashMap<Integer, MachineReservedResource>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
     }
@@ -64,21 +65,27 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public Future<MachineInstance> bind(ReservedResource resource) throws BindResourceFailedException
+    public Future<MachineInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
         synchronized(reservedResources)
         {
-            MyReservedResource reservedResource = reservedResources.get(resource.getReference());
+            MachineReservedResource reservedResource = reservedResources.get(resource.getReference());
             if(reservedResource == null)
-                throw new BindResourceFailedException(resource.getName() + "(" + resource.getReference() +") is not reserved");
-            reservedResource.future.cancel(true);
-            return config.blockingExecutor.submit(new AwsMachineInstanceFuture(resource));
+                throw new ResourceNotReservedException(resource.getName() + "(" + resource.getReference() +") is not reserved");
+            Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource)); 
+            reservedResource.setInstanceFuture(future);
+            reservedResource.timerFuture.cancel(true);
+            return null;
         }
     }
 
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException
     {
+        for(ReservedResource resource : resources)
+        {
+            bind(resource);
+        }
         synchronized (reservedResources)
         {
             return null;
@@ -93,15 +100,26 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
     {
+        return internalIsAvailable(resource, new MachineQueryResult());
+    }
+    
+    private boolean internalIsAvailable(ResourceDescription resource, MachineQueryResult result) throws ResourceNotFoundException
+    {
         InstanceType instanceType = instanceFinder.findInstance(resource);
         if (!instanceFinder.checkLimits(instanceType))
             return false;
-        imageFinder.findImage(ec2Client, resource);
+        result.setInstanceType(instanceType);
+        result.setImageId(imageFinder.findImage(ec2Client, resource));
         return true;
     }
 
     @Override
     public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources)
+    {
+        return internalQueryResourceAvailability(resources, new MachineQueryResult());
+    }
+    
+    private ResourceQueryResult internalQueryResourceAvailability(List<ResourceDescription> resources, MachineQueryResult result)
     {
         List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
         List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
@@ -112,7 +130,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         {
             try
             {
-                if (isAvailable(resource))
+                if (internalIsAvailable(resource, result))
                     availableResources.add(resource);
                 else
                     unavailableResources.add(resource);
@@ -128,42 +146,29 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
-        ResourceQueryResult queryResult = queryResourceAvailability(resources);
+        MachineQueryResult queryResult = new MachineQueryResult();
+        ResourceQueryResult resouceQueryResult = internalQueryResourceAvailability(resources, queryResult);
 
         List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
         List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
-        ResourceQueryResult result = new ResourceQueryResult(reservedResources, availableResources, queryResult.getUnavailableResources(), queryResult.getInvalidResources());
+        //@formatter:off
+        ResourceQueryResult result = new ResourceQueryResult(
+                                            reservedResources, 
+                                            availableResources, 
+                                            resouceQueryResult.getUnavailableResources(), 
+                                            resouceQueryResult.getInvalidResources());
+        //@formatter:on
 
         for (ResourceDescription requested : resources)
         {
-            for (ResourceDescription avail : queryResult.getAvailableResources())
+            for (ResourceDescription avail : resouceQueryResult.getAvailableResources())
             {
                 if (avail.getName().equals(requested.getName()))
                 {
-                    synchronized (reservedResources)
-                    {
-                        // final limit check/reserve could have lost it to thread switch
-                        // this is a light weight check, so redundancy not a concern
-                        InstanceType instanceType = null;
-                        // this call was already made so we know it will not fail
-                        try
-                        {
-                            instanceType = instanceFinder.findInstance(avail);
-                        } catch (Exception e)
-                        {
-                            e.printStackTrace();
-                        }
-                        if (!instanceFinder.reserveInstance(instanceType))
-                        {
-                            // it was taken by a thread switch, change to unavailable.
-                            queryResult.getUnavailableResources().add(avail);
-                            continue;
-                        }
-                        reservedResources.add(new ReservedResource(avail, this, timeoutSeconds));
-                        MyReservedResource rresource = new MyReservedResource(avail, instanceType, timeoutSeconds);
-                        ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
-                        rresource.setFuture(future);
-                    }
+                    reservedResources.add(new ReservedResource(avail, this, timeoutSeconds));
+                    MachineReservedResource rresource = new MachineReservedResource(avail, queryResult);
+                    ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
+                    rresource.setTimerFuture(future);
                 }
             }
         }
@@ -175,48 +180,88 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public void updateArtifact(String component, String version, String platform, String name, String artifactHash)
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public void removeArtifact(String component, String version, String platform, String name)
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public void invalidateArtifacts(String component, String version)
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public void release(ResourceInstance resource, boolean isReusable)
     {
-        // TODO Auto-generated method stub
-
     }
 
-    private class MyReservedResource implements Runnable
+    private class MachineQueryResult
+    {
+        private InstanceType instanceType;
+        private String imageId; 
+        
+        public MachineQueryResult()
+        {
+        }
+        
+        private synchronized void setInstanceType(InstanceType type)
+        {
+            instanceType = type;
+        }
+        
+        private synchronized InstanceType getInstanceType()
+        {
+            return instanceType;
+        }
+        
+        private synchronized void setImageId(String imageId)
+        {
+            this.imageId = imageId;
+        }
+        
+        private synchronized String getImageId()
+        {
+            return imageId;
+        }
+    }
+
+    
+    
+    public class MachineReservedResource implements Runnable
     {
         public final ResourceDescription resource;
         public final InstanceType instanceType;
-        public volatile ScheduledFuture<?> future;
-        public final int timeout;  // might not be useful ... thinking time left
+        public final String imageId;
+        private ScheduledFuture<?> timerFuture;
+        private Future<MachineInstance> instanceFuture;
 
-        private MyReservedResource(ResourceDescription resource, InstanceType instanceType, int timeout)
+        private MachineReservedResource(ResourceDescription resource, MachineQueryResult result)
         {
             this.resource = resource;
-            this.instanceType = instanceType;
-            this.timeout = timeout;
+            instanceType = result.instanceType;
+            imageId = result.imageId;
         }
 
-        private void setFuture(ScheduledFuture<?> future)
+        public synchronized void setTimerFuture(ScheduledFuture<?> future)
         {
-            this.future = future;
+            timerFuture = future;
+        }
+        
+        public synchronized ScheduledFuture<?> getTimerFuture()
+        {
+            return timerFuture;
+        }
+        
+        public synchronized void setInstanceFuture(Future<MachineInstance> future)
+        {
+            instanceFuture = future;
+        }
+        
+        public synchronized Future<MachineInstance> getInstanceFuture()
+        {
+            return instanceFuture;
         }
 
         @Override
