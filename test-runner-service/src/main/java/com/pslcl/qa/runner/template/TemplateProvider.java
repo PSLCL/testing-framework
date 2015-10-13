@@ -17,7 +17,7 @@ import com.pslcl.qa.runner.process.DBTemplate;
 import com.pslcl.qa.runner.resource.ReservedResource;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceDescription;
-import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.qa.runner.resource.exception.IncompatibleResourceException;
 import com.pslcl.qa.runner.resource.instance.MachineInstance;
 import com.pslcl.qa.runner.resource.instance.NetworkInstance;
@@ -198,7 +198,7 @@ public class TemplateProvider {
                         
                         iT.setOrderedResourceInfos(orderedResourceInfos);
                         // TODO: set iT with more gathered info and instantiations and similar
-                    } catch (BindResourceFailedException e) {
+                    } catch (ResourceNotReservedException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     } // each element of returned list has its stepReference stored

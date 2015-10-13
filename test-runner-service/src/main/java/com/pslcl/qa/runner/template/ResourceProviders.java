@@ -13,7 +13,7 @@ import com.pslcl.qa.runner.config.util.StrH.StringPair;
 import com.pslcl.qa.runner.resource.ReservedResource;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceDescription;
-import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 import com.pslcl.qa.runner.resource.instance.ResourceWithAttributesInstance;
@@ -31,9 +31,9 @@ public class ResourceProviders implements ResourceProvider {
     public static final String PersonProviderClassKey = "pslcl.qa.runner.template.person-provider-class"; 
     public static final String NetworkProviderClassKey = "pslcl.qa.runner.template.network-provider-class";
     
-    public static final String MachineProviderClassDefault = "com.pslcl.qa.runner.resource.aws.providers.AwsMachineProvider";
-    public static final String PersonProviderClassDefault = "com.pslcl.qa.runner.resource.aws.providers.AwsPersonProvider";
-    public static final String NetworkProviderClassDefault = "com.pslcl.qa.runner.resource.aws.providers.AwsNetworkProvider";
+    public static final String MachineProviderClassDefault = "com.pslcl.qa.runner.resource.aws.provider.AwsMachineProvider";
+    public static final String PersonProviderClassDefault = "com.pslcl.qa.runner.resource.aws.provider.AwsPersonProvider";
+    public static final String NetworkProviderClassDefault = "com.pslcl.qa.runner.resource.aws.provider.AwsNetworkProvider";
     
     private final List<ResourceProvider> resourceProviders;
 
@@ -156,7 +156,7 @@ public class ResourceProviders implements ResourceProvider {
     }
 
     @Override
-    public Future<? extends ResourceInstance> bind(ReservedResource reservedResourceWithAttributes) throws BindResourceFailedException {
+    public Future<? extends ResourceInstance> bind(ReservedResource reservedResourceWithAttributes) throws ResourceNotReservedException {
         // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         System.out.println("ResourceProviders.bind() called with resourceName/resourceAttributes: " + reservedResourceWithAttributes.getName() + " / " + reservedResourceWithAttributes.getAttributes());
 
@@ -164,7 +164,7 @@ public class ResourceProviders implements ResourceProvider {
         try {
             // note that this bind call  must fill the return ResourceInstance with not only something like an implementation of MachineInstance or a PersonInstance, but it must fill reference, which comes from param resourceWithAttributes
             retRI = reservedResourceWithAttributes.getResourceProvider().bind(reservedResourceWithAttributes);
-        } catch (BindResourceFailedException e) {
+        } catch (ResourceNotReservedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -172,13 +172,13 @@ public class ResourceProviders implements ResourceProvider {
     }
 
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws BindResourceFailedException {
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException {
         // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
         List<Future<? extends ResourceInstance>> retRiList = new ArrayList<>();
         for(int i=0; i<resources.size(); i++) {
             try {
                 retRiList.add(this.bind(resources.get(i)));
-            } catch (BindResourceFailedException e) {
+            } catch (ResourceNotReservedException e) {
                 retRiList.add(null);
                 System.out.println("ResourceProviders.bind(List<> resources) stores null entry");
             }

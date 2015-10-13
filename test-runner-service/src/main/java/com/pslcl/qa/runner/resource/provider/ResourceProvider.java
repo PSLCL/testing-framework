@@ -22,7 +22,7 @@ import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.resource.ReservedResource;
 import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceDescription;
-import com.pslcl.qa.runner.resource.exception.BindResourceFailedException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 
@@ -43,9 +43,9 @@ public interface ResourceProvider {
 	 * @param statusCallback
 	 *            callback for {@link ResourceStatus} change notification.
 	 * @return Resource object which represents the Resource Instance.
-	 * @throws BindResourceFailedException if unable to bind the resource.
+	 * @throws ResourceNotReservedException if unable to bind the resource.
 	 */
-	public Future<? extends ResourceInstance> bind(ReservedResource resource) throws BindResourceFailedException;
+	public Future<? extends ResourceInstance> bind(ReservedResource resource) throws ResourceNotReservedException;
 
 	/**
 	 * Acquire a list of resources. Resources will be bound and a list containing the resulting
@@ -60,7 +60,7 @@ public interface ResourceProvider {
 	 * @return A list of ResourceInstance objects which each represent a Resource Instance.
 	 * @throws BindResourceFailedExcpetion if unable to bind all of the listed resources.
 	 */
-	public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws BindResourceFailedException;
+	public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException;
 
 	/**
 	 * Release a bound resource instance. Any bound resources must be released.
