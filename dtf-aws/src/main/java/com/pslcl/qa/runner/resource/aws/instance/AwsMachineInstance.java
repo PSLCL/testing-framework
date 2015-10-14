@@ -34,7 +34,7 @@ public class AwsMachineInstance implements MachineInstance
     private String description;
     private ResourceProvider resourceProvider;
     private int timeoutSeconds;
-    private int reference;
+    private long reference;
 
     /**
      * constructor for the use case where resource was previously reserved
@@ -69,7 +69,7 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
-    public int getReference()
+    public long getReference()
     {
         return reference;
     }
