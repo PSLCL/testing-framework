@@ -29,7 +29,7 @@ public class ReservedResource implements ResourceDescription
 {
     private String name;
     private Map<String, String> attributes;
-    private int reference;
+    private long reference;
     private ResourceProvider resourceProvider;
     private long endTime;
 
@@ -52,7 +52,7 @@ public class ReservedResource implements ResourceDescription
      * @param resourceProvider
      * @param timeoutSeconds
      */
-    public ReservedResource(String name, Map<String, String> attributes, int reference, ResourceProvider resourceProvider, int timeoutSeconds)
+    public ReservedResource(String name, Map<String, String> attributes, long reference, ResourceProvider resourceProvider, int timeoutSeconds)
     {
         this.name = name;
         this.attributes = attributes;
@@ -76,7 +76,7 @@ public class ReservedResource implements ResourceDescription
     }
 
     @Override
-    public int getReference()
+    public long getReference()
     {
         return reference;
     }

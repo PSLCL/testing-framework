@@ -33,6 +33,7 @@ import com.pslcl.qa.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.qa.runner.resource.instance.MachineInstance;
 import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 import com.pslcl.qa.runner.resource.provider.MachineProvider;
+import com.pslcl.qa.runner.resource.provider.ResourceProvider;
 
 /**
  * Reserve, bind, control and release instances of AWS machines.
@@ -274,5 +275,18 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 log.info(resource.toString() + " reserve timed out");
             }
         }
+    }
+
+    @Override
+    public String getName()
+    {
+        return ResourceProvider.getTypeName(this);
+    }
+
+    @Override
+    public List<String> getAttributes()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

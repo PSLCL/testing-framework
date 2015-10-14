@@ -31,90 +31,90 @@ import com.pslcl.qa.runner.resource.instance.ResourceInstance;
  * instantiate resources. However, all interactions between the platform and the resource are brokered through the
  * provider.
  */
-public interface ResourceProvider {
+public interface ResourceProvider
+{
 
-	/**
-	 * Acquire a resource.
-	 * 
-	 * The resource must be released once it is no longer needed.
-	 *
-	 * @param resource
-	 *            A resource with attributes.
-	 * @param statusCallback
-	 *            callback for {@link ResourceStatus} change notification.
-	 * @return Resource object which represents the Resource Instance.
-	 * @throws ResourceNotReservedException if unable to bind the resource.
-	 */
-	public Future<? extends ResourceInstance> bind(ReservedResource resource) throws ResourceNotReservedException;
+    /**
+     * Acquire a resource.
+     * 
+     * The resource must be released once it is no longer needed.
+     *
+     * @param resource
+     *            A resource with attributes.
+     * @param statusCallback
+     *            callback for {@link ResourceStatus} change notification.
+     * @return Resource object which represents the Resource Instance.
+     * @throws ResourceNotReservedException if unable to bind the resource.
+     */
+    public Future<? extends ResourceInstance> bind(ReservedResource resource) throws ResourceNotReservedException;
 
-	/**
-	 * Acquire a list of resources. Resources will be bound and a list containing the resulting
-	 * ResourceInstance objects will be returned.
-	 * 
-	 * The resources must be released once they are no longer needed.
-	 *
-	 * @param resources
-	 *            A list of resources with attributes.
-	 * @param statusCallback
-	 *            callback for {@link ResourceStatus} change notification.
-	 * @return A list of ResourceInstance objects which each represent a Resource Instance.
-	 * @throws BindResourceFailedExcpetion if unable to bind all of the listed resources.
-	 */
-	public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException;
+    /**
+     * Acquire a list of resources. Resources will be bound and a list containing the resulting
+     * ResourceInstance objects will be returned.
+     * 
+     * The resources must be released once they are no longer needed.
+     *
+     * @param resources
+     *            A list of resources with attributes.
+     * @param statusCallback
+     *            callback for {@link ResourceStatus} change notification.
+     * @return A list of ResourceInstance objects which each represent a Resource Instance.
+     * @throws BindResourceFailedExcpetion if unable to bind all of the listed resources.
+     */
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException;
 
-	/**
-	 * Release a bound resource instance. Any bound resources must be released.
-	 * 
-	 * @param resource
-	 *            The resource instance to release.
-	 * @param isReusable
-	 *            Whether or not the Resource can be reused.
-	 */
-	public void release(ResourceInstance resource, boolean isReusable);
+    /**
+     * Release a bound resource instance. Any bound resources must be released.
+     * 
+     * @param resource
+     *            The resource instance to release.
+     * @param isReusable
+     *            Whether or not the Resource can be reused.
+     */
+    public void release(ResourceInstance resource, boolean isReusable);
 
-	/**
-	 * Release a reserved resource. If a resource is bound, the reservation is automatically released.
-	 * 
-	 * @param resource
-	 *            The reserved resource to release.
-	 */
-	public void releaseReservedResource(ReservedResource resource);
+    /**
+     * Release a reserved resource. If a resource is bound, the reservation is automatically released.
+     * 
+     * @param resource
+     *            The reserved resource to release.
+     */
+    public void releaseReservedResource(ReservedResource resource);
 
-	/**
-	 * Check whether the specified resource is available.
-	 * 
-	 * @param resource
-	 *            A resource with attributes.
-	 * 
-	 * @return True if the specified resource is available. False otherwise.
-	 * 
-	 * @throws ResourceNotFoundException
-	 *             Thrown if the resourceHash is not known by the resource provider.
-	 */
-	public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException;
+    /**
+     * Check whether the specified resource is available.
+     * 
+     * @param resource
+     *            A resource with attributes.
+     * 
+     * @return True if the specified resource is available. False otherwise.
+     * 
+     * @throws ResourceNotFoundException
+     *             Thrown if the resourceHash is not known by the resource provider.
+     */
+    public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException;
 
-	/**
-	 * Query the Resource Provider for the availability of the specified resources. Resources are not bound or reserved,
-	 * and availability may change after this method returns.
-	 * 
-	 * <p>This method may move individual <code>ResourceWithAttributes</code> from the input resources into any of
-	 * the three of four lists in the returned <code>ResourceQueryResult</code>.
-	 * <ul>
-	 * <li>reservedResources - will always return an empty list</li>
+    /**
+     * Query the Resource Provider for the availability of the specified resources. Resources are not bound or reserved,
+     * and availability may change after this method returns.
+     * 
+     * <p>This method may move individual <code>ResourceWithAttributes</code> from the input resources into any of
+     * the three of four lists in the returned <code>ResourceQueryResult</code>.
+     * <ul>
+     * <li>reservedResources - will always return an empty list</li>
      * <li>availableResources - all <code>ResourceWithAttributes</code> from resources that could be reserved at this time.</li>
      * <li>unavailableResources - all <code>ResourceWithAttributes</code> from resources that could not be reserved at this time.</li>
      * <li>invalidResources - all <code>ResourceWithAttributes</code> from resources that appear to belong to me, but will fail bind with given information.</li>
-	 * </ul>
-	 * @param resources A list of resources with attributes. Must not be null, maybe empty.
-	 * @return A {@link ResourceQueryResult} containing information about the availability of resource on this resource
-	 *         provider.
-	 */
-	public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources);
+     * </ul>
+     * @param resources A list of resources with attributes. Must not be null, maybe empty.
+     * @return A {@link ResourceQueryResult} containing information about the availability of resource on this resource
+     *         provider.
+     */
+    public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources);
 
-
-	/**
-	 * Reserve the specified resources if available. Resources will be reserved for timeoutSeconds if not greater than
-	 * the maximum timeout allowed by the resource provider.
+    /**
+     * Reserve the specified resources if available. Resources will be reserved for timeoutSeconds if not greater than
+     * the maximum timeout allowed by the resource provider.
      * 
      * <p>This method may move individual <code>ResourceWithAttributes</code> from the input resources into any of
      * the three of four lists in the returned <code>ResourceQueryResult</code>.
@@ -125,39 +125,78 @@ public interface ResourceProvider {
      * <li>invalidResources - all <code>ResourceWithAttributes</code> from resources that appear to belong to me, but will fail bind with given information.</li>
      * </ul>
      * @param resources A list of resources with attributes. Must not be null, maybe empty.
-	 * @param resources The requested resources.
-	 * @param timeoutSecond The time period, in seconds, to reserve the resources.
-	 * @return The {@link ResourceQueryResult} listing the resources which were able to be reserved.
-	 */
-	public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
+     * @param resources The requested resources.
+     * @param timeoutSecond The time period, in seconds, to reserve the resources.
+     * @return The {@link ResourceQueryResult} listing the resources which were able to be reserved.
+     */
+    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
 
-//	/**
-//	 * Get a list of resource code names supported by the Resource Provider. These code names identify supported
-//	 * resource types.
-//	 * 
-//	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
-//	 * @return A list of code name strings, each representing one resource.
-//	 */
-//	public List<String> getNames();
-//
-//	/**
-//	 * Get the map of attributes supported by the resource provider, for the given resource code name.
-//	 * 
-//	 * @param name The name for the attributes.
-//	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
-//	 * @return The map of attributes.
-//	 */
-//	public Map<String, String> getAttributes(String name);
-	
-	/**
-	 * Daemon init pipe.
-	 * @param config the current configuration.
-	 * @throws Exception if the resource can not be initialized.
-	 */
-	public void init(RunnerServiceConfig config) throws Exception;
-	
+    //	/**
+    //	 * Get a list of resource code names supported by the Resource Provider. These code names identify supported
+    //	 * resource types.
+    //	 * 
+    //	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
+    //	 * @return A list of code name strings, each representing one resource.
+    //	 */
+    //	public List<String> getNames();
+    //
+    //	/**
+    //	 * Get the map of attributes supported by the resource provider, for the given resource code name.
+    //	 * 
+    //	 * @param name The name for the attributes.
+    //	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
+    //	 * @return The map of attributes.
+    //	 */
+    //	public Map<String, String> getAttributes(String name);
+
+    
+    
+    /**
+     * Get the name of the provider.
+     * @return The name.
+     */
+    public String getName();
+
+    /**
+     * Get the attribute keys supported by the provider.
+     * @return The list of keys.
+     */
+    public List<String> getAttributes();
+
+
+    
+    /**
+     * Daemon init pipe.
+     * @param config the current configuration.
+     * @throws Exception if the resource can not be initialized.
+     */
+    public void init(RunnerServiceConfig config) throws Exception;
+
     /**
      * Daemon destroy pipe.
      */
     public void destroy();
+    
+    /** The name of a Machine type Provider */
+    public static final String MachineName = "machine";
+    /** The name of a Person type Provider */
+    public static final String PersonName = "person";
+    /** The name of a Network type Provider */
+    public static final String NetworkName = "network";
+    
+    /**
+     * Helper to obtain a Provider type name.
+     * @param provider the provider to report type name of.  Must not be null.
+     * @return the provider type name. Will return null if provider is not of type; <code></code>
+     */
+    public static String getTypeName(ResourceProvider provider)
+    {
+        if(provider instanceof MachineProvider)
+            return MachineName;
+        if(provider instanceof PersonProvider)
+            return PersonName;
+        if(provider instanceof NetworkProvider)
+            return NetworkName;
+        return null;
+    }
 }

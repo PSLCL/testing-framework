@@ -28,6 +28,7 @@ import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.instance.PersonInstance;
 import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 import com.pslcl.qa.runner.resource.provider.PersonProvider;
+import com.pslcl.qa.runner.resource.provider.ResourceProvider;
 
 public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
@@ -122,5 +123,17 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     {
         // TODO Auto-generated method stub
 
+    }
+    @Override
+    public String getName()
+    {
+        return ResourceProvider.getTypeName(this);
+    }
+
+    @Override
+    public List<String> getAttributes()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

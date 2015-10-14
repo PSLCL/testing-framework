@@ -26,15 +26,14 @@ import javax.swing.JOptionPane;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.opendof.core.oal.DOF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.pslcl.qa.runner.config.util.ClassInfo;
-import com.pslcl.qa.runner.config.util.StrH;
-
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.core.util.StatusPrinter;
+
+import com.pslcl.qa.runner.config.util.ClassInfo;
+import com.pslcl.qa.runner.config.util.StrH;
 
 /**
  * Command line Interface Base.
@@ -479,14 +478,6 @@ public class CliBase extends Thread
             LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
             // TODO: StatusPrinter.setPrintStream
             StatusPrinter.print(lc);
-            try
-            {
-                ClassInfo classInfo = ClassInfo.getInfo(DOF.class);
-                StrH.ttl(initsb, 1, "OAL JAR", " = ", classInfo.getLocation().toExternalForm());
-            }catch(Exception e)
-            {
-                StrH.ttl(initsb, 1, "OAL JAR", " = null");
-            }
         }
         return name;
     }

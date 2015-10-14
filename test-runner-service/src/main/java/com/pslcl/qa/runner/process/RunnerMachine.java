@@ -56,12 +56,14 @@ public class RunnerMachine {
     {
         this.config = config;
         templateProvider = new TemplateProvider();
+        config.statusTracker.registerResourceStatusListener(templateProvider);
         templateProvider.init(config);
         initialized.set(true);
     }
     
     public void destroy() 
     {
+        config.statusTracker.deregisterResourceStatusListener(templateProvider);
         templateProvider.destroy();
         initialized.set(false);
     }

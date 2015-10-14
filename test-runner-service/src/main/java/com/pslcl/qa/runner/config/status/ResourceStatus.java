@@ -13,32 +13,20 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.qa.runner.resource;
+package com.pslcl.qa.runner.config.status;
 
-import java.util.Map;
+import com.pslcl.qa.runner.resource.provider.ResourceProvider;
 
-/**
- * A ResourceQuery is a resource hash and a map of attributes.
- */
-public interface ResourceDescription
+public class ResourceStatus
 {
-    /**
-     * Get the name of the resource.
-     * @return The name.
-     */
-    public String getName();
-
-    /**
-     * Get the set of attributes for the resource.
-     * @return A map of strings representing the set of attributes for the resource.
-     */
-    public Map<String, String> getAttributes();
-
-    /**
-     * Get unique Resource provider.
-     * <p>Returns a long identifier that is unique to all instances of <code>ResourceDescription</code>.
-     * This id is only valid for the life of the <code>test-runner-service</code>
-     * @returns The unique identifier. 
-     */
-    public long getReference();
+    public final ResourceProvider provider;
+    public final StatusTracker.Status status;
+    public final long resourceId;
+    
+    public ResourceStatus(ResourceProvider provider, long resourceId, StatusTracker.Status status)
+    {
+        this.provider = provider;
+        this.resourceId = resourceId;
+        this.status = status;
+    }
 }

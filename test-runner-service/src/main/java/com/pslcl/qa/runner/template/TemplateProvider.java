@@ -13,18 +13,20 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.qa.runner.ArtifactNotFoundException;
 import com.pslcl.qa.runner.config.RunnerServiceConfig;
+import com.pslcl.qa.runner.config.status.ResourceStatus;
+import com.pslcl.qa.runner.config.status.ResourceStatusListener;
 import com.pslcl.qa.runner.process.DBTemplate;
 import com.pslcl.qa.runner.resource.ReservedResource;
-import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.ResourceDescription;
-import com.pslcl.qa.runner.resource.exception.ResourceNotReservedException;
+import com.pslcl.qa.runner.resource.ResourceQueryResult;
 import com.pslcl.qa.runner.resource.exception.IncompatibleResourceException;
+import com.pslcl.qa.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.qa.runner.resource.instance.MachineInstance;
 import com.pslcl.qa.runner.resource.instance.NetworkInstance;
 import com.pslcl.qa.runner.resource.instance.PersonInstance;
 import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 
-public class TemplateProvider {
+public class TemplateProvider implements ResourceStatusListener {
     
     private final Map<byte[],InstancedTemplate> availableInstancedTemplates; // note: this populates in the destroy method
     private final ResourceProviders resourceProviders;
@@ -538,5 +540,9 @@ public class TemplateProvider {
         }
         return iT;
     }
-    
+
+    @Override
+    public void resourceStatusChanged(ResourceStatus status)
+    {
+    }
 }

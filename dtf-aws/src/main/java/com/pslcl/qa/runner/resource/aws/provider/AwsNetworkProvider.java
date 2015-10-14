@@ -28,6 +28,7 @@ import com.pslcl.qa.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.qa.runner.resource.instance.NetworkInstance;
 import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 import com.pslcl.qa.runner.resource.provider.NetworkProvider;
+import com.pslcl.qa.runner.resource.provider.ResourceProvider;
 
 public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {
@@ -100,5 +101,17 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     {
         // TODO Auto-generated method stub
 
+    }
+    @Override
+    public String getName()
+    {
+        return ResourceProvider.getTypeName(this);
+    }
+
+    @Override
+    public List<String> getAttributes()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

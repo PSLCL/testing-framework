@@ -222,5 +222,19 @@ public class ResourceProviders implements ResourceProvider {
         // TODO Auto-generated method stub
         
     }
+
+    @Override
+    public String getName()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<String> getAttributes()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
     
 }

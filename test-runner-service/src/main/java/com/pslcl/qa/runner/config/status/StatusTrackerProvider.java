@@ -20,20 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-import org.opendof.core.oal.DOF;
-import org.opendof.core.oal.DOFInterface;
-import org.opendof.core.oal.DOFInterface.Property;
-import org.opendof.core.oal.DOFInterfaceID;
-import org.opendof.core.oal.DOFNotSupportedException;
-import org.opendof.core.oal.DOFObject;
-import org.opendof.core.oal.DOFObject.DefaultProvider;
-import org.opendof.core.oal.DOFOperation;
-import org.opendof.core.oal.DOFOperation.Provide;
-import org.opendof.core.oal.DOFRequest;
-import org.opendof.core.oal.DOFRequest.Subscribe;
-import org.opendof.core.oal.DOFType;
-import org.opendof.core.oal.value.DOFUInt8;
-
 import com.pslcl.qa.runner.config.executor.ScheduledExecutor;
 
 /**
@@ -76,7 +62,8 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
     // guarded by statusMap
     private final HashMap<String, Status> statusMap;
     private Status consolidatedStatus;
-    private DOFOperation.Provide provideOperation;
+    // guarded by resourceStatusListeners
+    private final List<ResourceStatusListener> resourceStatusListeners;
     
     /**
      * Default constructor.
@@ -85,6 +72,7 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
     {
         statusMap = new HashMap<String, Status>(); 
         consolidatedStatus = Status.Ok;
+        resourceStatusListeners = new ArrayList<ResourceStatusListener>();
     }
 
     @Override
@@ -96,11 +84,8 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
         {
             statusMap.put(name, status);
             if (status.ordinal() > this.consolidatedStatus.ordinal())
-            {
                 this.consolidatedStatus = status;
-                if(provideOperation != null)
-                    provideOperation.getObject().changed(statusProperty);
-            }else
+            else
                 update();
         }
     }
@@ -151,68 +136,8 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
     @Override
     public void destroy()
     {
-        synchronized (statusMap)
-        {
-            if(provideOperation != null)
-            {
-                provideOperation.cancel();
-                provideOperation = null;
-            }
-        }
     }
     
-    /**
-     * Begin Providing the Status interface on the given <code>DOFObject</code>.
-     * </p>
-     * Start providing the ENC interface registry <code>DeviceStatus interface</code>
-     *  "[1:{01}]".  The consolidated status of all reporting subsystems will be made 
-     *  available with any changes to the consolidated status firing a notification to
-     *  subscribers of the DeviceStatus interface. 
-
-     * @param object the <code>DOFObject</code> to provide on.
-     */
-    @Override
-    public void beginStatusProvider(DOFObject object)
-    {
-        if(object == null)
-            throw new IllegalArgumentException("object == null");
-        synchronized (statusMap)
-        {
-            provideOperation = object.beginProvide(DEF, DOF.TIMEOUT_NEVER, new ProviderImpl(), null);
-        }
-    }
-
-    /**
-     * End providing the <code>DeviceStatus interface</code>.
-     */
-    @Override
-    public void endStatusProvider()
-    {
-        synchronized (statusMap)
-        {
-            if(provideOperation != null)
-                provideOperation.cancel();
-        }
-    }
-    
-//    /**
-//     * Determines the load percentage of the service. This is a value between 0.0 and 1.0, including 1.0 as a possible value.
-//     * </p>
-//     * This default implemenation determines load based on the Operating System's CPU load and the JVM memory load.
-//     * @return the current load
-//     */
-//    @Override
-//    public float getLoad()
-//    {
-//        double cpuLoad = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
-//        MemoryUsage memUse = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
-//        double memLoad = (double) memUse.getUsed() / memUse.getMax();
-//        if (memLoad > cpuLoad)
-//            return (float) memLoad;
-//        return (float) cpuLoad;
-//    }
-    
-
     private void update()
     {
         // calls to update are within synchronized(statusMap) blocks
@@ -225,39 +150,36 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
                 status = iterStatus;
         }
         if (status != consolidatedStatus)
-        {
             consolidatedStatus = status;
-            if(provideOperation != null)
-                provideOperation.getObject().changed(statusProperty);
+    }
+
+    @Override
+    public void registerResourceStatusListener(ResourceStatusListener listener)
+    {
+        synchronized(resourceStatusListeners)
+        {
+            resourceStatusListeners.add(listener);
         }
     }
-    
-    private class ProviderImpl extends DefaultProvider
+
+    @Override
+    public void deregisterResourceStatusListener(ResourceStatusListener listener)
     {
-        @Override
-        public void get(Provide operation, DOFRequest.Get request, Property property)
+        synchronized(resourceStatusListeners)
         {
-            if(!property.getInterfaceID().equals(IID))
-                return;
-            if (property.getItemID() == statusItemId)
+            resourceStatusListeners.remove(listener);
+        }
+    }
+
+    @Override
+    public void fireResourceStatusChanged(ResourceStatus status)
+    {
+        synchronized(resourceStatusListeners)
+        {
+            for(ResourceStatusListener listener : resourceStatusListeners)
             {
-                request.respond(new DOFUInt8((short)getStatus().ordinal()));
-            } else
-            {
-                request.respond(new DOFNotSupportedException());
+                listener.resourceStatusChanged(status);
             }
         }
-
-        @Override
-        public void subscribe(Provide operation, Subscribe request, Property property, int minPeriod)
-        {
-            request.respond();
-        }
     }
-    
-    private static final int statusItemId = 1;
-    private static DOFType statusType = DOFUInt8.TYPE;
-    private static final DOFInterfaceID IID = DOFInterfaceID.create("[1:{01}]");
-    private static final DOFInterface DEF = new DOFInterface.Builder(IID).addProperty(statusItemId, false, true, statusType).build();
-    private static final DOFInterface.Property statusProperty = DEF.getProperty(statusItemId);
 }

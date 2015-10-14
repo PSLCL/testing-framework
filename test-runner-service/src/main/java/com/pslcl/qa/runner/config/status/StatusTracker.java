@@ -17,8 +17,6 @@ package com.pslcl.qa.runner.config.status;
 
 import java.util.List;
 
-import org.opendof.core.oal.DOFObject;
-
 
 /**
  * An application status tracking interface.
@@ -94,18 +92,15 @@ public interface StatusTracker
      * @param object the <code>DOFObject</code> to provide on.  Must not be null.
      */
 
-    public void beginStatusProvider(DOFObject object);
-
-    /**
-     * End providing the <code>DeviceStatus</code> interface.
-     * </p>No action taken if never started or already ended.
-     */
-    public void endStatusProvider();
-    
     /**
      * Shutdown the StatusTracker and release all resources. 
      */
     public void destroy();
+    
+    
+    public void registerResourceStatusListener(ResourceStatusListener listener);
+    public void deregisterResourceStatusListener(ResourceStatusListener listener);
+    public void fireResourceStatusChanged(ResourceStatus status);
     
     /**
      * An enumeration of all possible Status states.

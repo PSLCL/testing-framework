@@ -48,7 +48,7 @@ public class ResourceWithAttributesInstance implements ResourceDescription
     }
 
     @Override
-    public int getReference()
+    public long getReference()
     {
         // TODO Auto-generated method stub
         return reference;
