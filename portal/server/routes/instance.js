@@ -9,6 +9,80 @@ var async   = require('async');
 var _        = require('underscore');
 var d3      = require('d3');
 
+exports.view = function( req, res ) {
+  var instance_id = req.param('id');
+  var sql_query = squel
+    .select()
+    .field( 'test_instance.description' )
+    .field( 'test_instance.due_date' )
+    .field( 'test_instance.fk_described_template' )
+    .field( 'run.start_time' )
+    .field( 'run.ready_time' )
+    .field( 'run.end_time' )
+    .field( 'run.result' )
+    .field( 'template.steps' )
+    .from( 'test_instance' )
+    .left_join( 'run', null, 'run.pk_run = test_instance.fk_run' )
+    .left_join( 'described_template', null, 'described_template.pk_described_template = test_instance.fk_described_template' )
+    .left_join( 'template', null, 'template.pk_template = described_template.fk_template' )
+    .where( 'pk_test_instance = ?', instance_id );
+  
+  var query_string = sql_query.toString();
+  
+  mysql.getConnection( function( err, conn ) {
+    conn.query( query_string, function( err, result ) {
+      conn.release();
+      
+      if ( err )
+        throw err;
+      
+      res.format( {
+        'text/html': function() {
+          res.send( result[0] );
+        },
+        'application/json': function() {
+          res.send( result[0] );
+        }
+      } );
+    } );
+  } );
+};
+
+exports.lines = function( req, res ) {
+  var instance_id = req.param('id');
+  var sql_query = squel
+    .select()
+    .field( 'pk_dt_line' )
+    .field( 'fk_child_dt' )
+    .field( 'GROUP_CONCAT(fk_artifact)', 'artifacts' )
+    .field( 'description' )
+    .from( 'dt_line' )
+    .left_join( 'artifact_to_dt_line', null, 'artifact_to_dt_line.fk_dt_line = dt_line.pk_dt_line' )
+    .where( 'fk_described_template = ?', instance_id )
+    .group( 'line' )
+    .order( 'line', true );
+  
+  var query_string = sql_query.toString();
+  
+  mysql.getConnection( function( err, conn ) {
+    conn.query( query_string, function( err, result ) {
+      conn.release();
+      
+      if ( err )
+        throw err;
+      
+      res.format( {
+        'text/html': function() {
+          res.send( result );
+        },
+        'application/json': function() {
+          res.send( result );
+        }
+      } );
+    } );
+  } );
+};
+
 function buildModules( m ) {
     m.sort(function(a,b) { return a.offset - b.offset; });
     return _.map( m, function(mod) {
@@ -25,6 +99,51 @@ function expandModules( m, ls ) {
     return _.map( la, function(i) {
         return m[i];
     });
+};
+
+exports.user_tests = function (req, res) {
+  var filter_str = req.param( 'user' );
+
+  /**
+   * Get List of modules
+   */
+  var sql_query = squel
+          .select()
+          .field( 'test_instance.pk_test_instance' )
+          .field( 'run.pk_run' )
+          .from( 'test_instance' )
+          .left_join( 'run', null,
+                      'test_instance.fk_run = run.pk_run' );
+
+  // Expression for search
+  var exp = squel.expr();
+  if ( filter_str ) {
+    sql_query.where( 'owner = ?', filter_str );
+  }
+  else {
+    sql_query.where( 'owner IS NOT NULL' );
+  }
+  
+  sql_query.where( 'end_time IS NULL' );
+
+  var query_string = sql_query.toString();
+
+  mysql.getConnection( function( err, conn ) {
+    conn.query( query_string, function( err, result ) {
+      conn.release();
+      
+      if ( err )
+        throw err;
+      res.format( {
+        'text/html': function() {
+          res.send( result );
+        },
+        'application/json': function() {
+          res.send( result );
+        }
+      } );
+    } );
+  } );
 };
 
 // [GET] List of instances

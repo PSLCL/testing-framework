@@ -2,7 +2,6 @@ package com.pslcl.qa.platform.generator;
 
 import java.util.Arrays;
 
-import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.Template.Parameter;
 import com.pslcl.qa.platform.generator.Template.StringParameter;
 
@@ -100,7 +99,7 @@ public class Person extends Resource {
 
     }
 
-    private static final Hash hash = Hash.fromContent( "person" );
+    private static final String codename = "person";
 
     /**
      * Define a new person for use by a generator and with a given name.
@@ -108,7 +107,7 @@ public class Person extends Resource {
      * @param name The name of the person for logging and debugging.
      */
     public Person(Generator generator, String name) {
-        super( generator, name, hash );
+        super( generator, name, codename );
     }
 
     /**

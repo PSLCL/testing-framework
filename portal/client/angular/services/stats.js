@@ -6,9 +6,9 @@ app.factory('Stats', function ($resource) {
   return $resource('/api/v1/stats');
 });
 
-// Stats service for handling dashboard stats
-app.factory('AdminStats', function ($resource) {
-  return $resource('/api/v1/stats/admin');
+// Get runrates
+app.factory('RunRates', function ($resource) {
+  return $resource('/api/v1/runrates');
 });
 
 app.factory('AuthenticUser', function($resource) {

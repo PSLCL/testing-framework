@@ -193,7 +193,7 @@ public class DescribedTemplate {
             
             if ( R != null ) {
                 sb.append( '\t' );
-                sb.append( R.getHash().toString() );
+                sb.append( R.getCodename() );
                 sb.append( '\n' );
             }
         }

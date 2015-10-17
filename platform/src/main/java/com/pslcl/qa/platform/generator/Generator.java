@@ -3,6 +3,7 @@ package com.pslcl.qa.platform.generator;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -195,6 +196,19 @@ public class Generator {
         }
 
         activeTestInstance.assign( email );
+    }
+    
+    /**
+     * Declare the running times of a particular result. This would never be used except
+     * when populating test data.
+     */
+    public void setRunTimes( Date start, Date ready, Date complete ) {
+        if ( activeTestInstance == null ) {
+            System.err.println( "ERROR: There is no test being generated." );
+            return;
+        }
+
+        activeTestInstance.setRunTimes( start, ready, complete );
     }
     
     /**

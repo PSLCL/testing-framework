@@ -3,6 +3,7 @@ package com.pslcl.qa.platform.generator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -209,6 +210,11 @@ class TestInstance {
     private String owner = null;
     
     /**
+     * During generation of test data the different testing dates can be set.
+     */
+    private Date start = null, ready = null, complete = null;
+    
+    /**
      * All actions related to a test instance are stored in this list. Once the
      * test instance is defined completely, indicated by {@link #close()} being
      * called, then the actions are distributed among templates.
@@ -253,7 +259,7 @@ class TestInstance {
         Resource r = action.getBoundResource();
         if ( r != null ) {
             if ( boundResources.contains( r.instance ) ) {
-                System.err.println( String.format("Resource %s (%s) (%s) rebound.", r.name, r.hash, r.instance));
+                System.err.println( String.format("Resource %s (%s) (%s) rebound.", r.name, r.codename, r.instance));
             }
 
             boundResources.add( r.instance );
@@ -280,6 +286,12 @@ class TestInstance {
 
     void assign( String email ) {
         owner = email;
+    }
+    
+    void setRunTimes( Date start, Date ready, Date complete ) {
+        this.start = start;
+        this.ready = ready;
+        this.complete = complete;
     }
     
     void dump() {
@@ -327,6 +339,18 @@ class TestInstance {
 
     public String getOwner() {
         return owner;
+    }
+    
+    public Date getStart() {
+        return start;
+    }
+    
+    public Date getReady() {
+        return ready;
+    }
+    
+    public Date getComplete() {
+        return complete;
     }
     
     long getPK() {

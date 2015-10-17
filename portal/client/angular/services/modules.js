@@ -3,10 +3,10 @@ var app = angular.module('qa-portal');
 // Modules service for handling all modules
 app.factory('Modules', function ($resource) {
   return $resource('/api/v1/modules', {
-    after:   '@id',
-    all:     '@boolean',
     filter:  '@string',
-    sort_by: '@string'
+    order:   '@string',
+    limit:   '@string',
+    offset:  '@string'
   });
 });
 
@@ -26,4 +26,14 @@ app.factory('ModuleReport', function($resource) {
 // Modules to test plans
 app.factory('ModuleTestPlan', function ($resource) {
   return $resource('/api/v1/module/test_plan');
+});
+
+//Modules service for handling all modules
+app.factory('Artifacts', function ($resource) {
+  return $resource('/api/v1/modules/:moduleId/artifacts', {
+    filter:  '@string',
+    order:   '@string',
+    limit:   '@string',
+    offset:  '@string'
+  });
 });

@@ -11,11 +11,11 @@ app.controller('TestPlanListCtrl',
         $scope.test_plans = results;
       });
     // Filter list of modules
-    $scope.getData = function (test_plans, query) {
-      $scope.query_filter = query;
+    $scope.getData = function (test_plans, filter) {
+      $scope.filter = filter;
       TestPlans.query({
-          sort_by: $scope.sort_by || 'id',
-          filter: query
+          'order': $scope.order,
+          'filter': filter
         },
         function success(results) {
           $scope.test_plans = results;
@@ -64,20 +64,20 @@ app.controller('TestPlanListCtrl',
       if ($scope.test_plans) {
         if ($scope.busy) return;
         $scope.busy = true;
-        var after = $scope.test_plans[$scope.test_plans.length - 1].pk_test_plan;
+        var offset = $scope.test_plans.length;
         var params;
-        if ($scope.query_filter) {
+        if ($scope.filter) {
           params = {
-            after: after,
-            filter: $scope.query_filter,
-            sort_by: $scope.sort_by || 'id'
+            'offset': offset,
+            'filter': $scope.filter,
+            'order': $scope.order
           };
         } else {
-          params = {after: after, sort_by: $scope.sort_by || 'id'};
+          params = {'offset': offset, 'order': $scope.order};
         }
         TestPlans.query(params,
           function success(results) {
-            if (results[0]) $scope.test_plans.push(results[0]);
+            $scope.test_plans = $scope.test_plans.concat(results);
             $scope.busy = false;
           });
       }
@@ -85,19 +85,39 @@ app.controller('TestPlanListCtrl',
 
     /**
      * Setup sort by for test plans
+     * 
      * @type {Sort}
      */
-    $scope.sort = new Sort(function (sort_by) {
-      $scope.sort_by = sort_by;
+    $scope.sorter = function (order) {
+      $scope.order = order;
       var params = {};
-      if ($scope.query_filter) {
+      if ($scope.filter) {
         params = {
-          query: $scope.query_filter,
-          sort_by: sort_by
+          'filter': $scope.filter,
+          'order': order
         }
       } else {
         params = {
-          sort_by: sort_by
+          'order': order
+        }
+      }
+      TestPlans.query(params,
+        function success(results) {
+          $scope.test_plans = results;
+        });
+    };
+
+    $scope.sort = new Sort(function (order) {
+      $scope.order = order;
+      var params = {};
+      if ($scope.filter) {
+        params = {
+          'filter': $scope.filter,
+          'order': order
+        }
+      } else {
+        params = {
+          'order': order
         }
       }
       TestPlans.query(params,
@@ -129,21 +149,27 @@ app.controller('TestPlanNewCtrl',
 
 // View test plan
 app.controller('TestPlanViewCtrl',
-  function ($scope, $routeParams, $timeout, $route, TestPlan, Test, socket) {
+  function ($scope, $routeParams, $timeout, $route, TestPlan, Tests, Test, socket) {
     TestPlan.get({
       testPlanId: $routeParams.testPlanId
     }, function success(data) {
       $scope.test_plan = data.test_plan;
-      $scope.tests = data.tests;
     });
 
+    Tests.query({
+      testPlanId: $routeParams.testPlanId
+    }, function success(data) {
+      console.log(data);
+      $scope.tests = data;
+    });
+    
     // Filter list of tests
     $scope.getData = function (tests, query) {
-      $scope.query_filter = query;
-      TestPlan.get({ testPlanId: $routeParams.testPlanId, filter: query},
-        function success(results) {
-          $scope.tests = results.tests;
-        });
+    $scope.query_filter = query;
+    TestPlan.get({ testPlanId: $routeParams.testPlanId, filter: query},
+    function success(results) {
+      $scope.tests = results.tests;
+    });
     };
 
     // Display create module inline
@@ -182,6 +208,7 @@ app.controller('TestPlanViewCtrl',
 
     // Get more tests
     $scope.moreTests = function () {
+      return;
       if ($scope.tests) {
         if ($scope.busy) return;
         $scope.busy = true;
@@ -216,10 +243,10 @@ app.controller('TestPlanViewCtrl',
     // Edit test in view
     $scope.heading = 'Update Test Plan';
     $scope.submitLabel = 'Update Test Plan';
-    TestPlan.get({testPlanId: $routeParams.testPlanId},
-    function success(result) {
-      $scope.test_plan = result.test_plan;
-    });
+    // TestPlan.get({testPlanId: $routeParams.testPlanId},
+    // function success(result) {
+    // $scope.test_plan = result.test_plan;
+    // });
     $scope.testPlanSubmit = function () {
       $scope.test_plan = TestPlan.save({
           testPlanId: $routeParams.testPlanId},
@@ -234,32 +261,24 @@ app.controller('TestPlanViewCtrl',
 
   });
 
-// Edit test plan
-app.controller('TestPlanEditCtrl',
-  function ($scope, $routeParams, $location, TestPlan) {
-    $scope.heading = 'Update Test Plan';
-    $scope.submitLabel = 'Update Test Plan';
-    TestPlan.get({testPlanId: $routeParams.testPlanId},
-    function success(result) {
-      $scope.test_plan = result.test_plan;
-    });
-    $scope.testPlanSubmit = function () {
-      $scope.test_plan = TestPlan.save({
-          testPlanId: $routeParams.testPlanId},
-        $scope.test_plan, function success() {
-          $location.path('test_plans');
-        }, function fail() {
-          console.log('failed to update test plan');
-        });
-    };
-  });
+//Report on module
+app.controller( 'TestPlanReportCtrl',
+                function( $window, $scope, $routeParams, $location, TestPlan,
+                          TestPlanReport ) {
+                  $scope.exportReport = function() {
+                    $window.open( '/api/v1/modules/' + $scope.module.pk_module
+                                  + '/report_print' );
+                  };
 
-// Delete test plan
-app.controller('TestPlanDeleteCtrl',
-  function ($scope, $routeParams, $location, TestPlan, socket) {
-    $scope.module = TestPlan.delete({testPlanId: $routeParams.testPlanId},
-      function success() {
-        $location.path('test_plans');
-        socket.emit('get:stats');
-      });
-  });
+                  TestPlan.get( {
+                    testPlanId: $routeParams.testPlanId
+                  }, function success( result ) {
+                    $scope.plan = result.test_plan;
+                  } );
+
+                  TestPlanReport.get( {
+                    testPlanId: $routeParams.testPlanId
+                  }, function success( results ) {
+                    $scope.result = results;
+                  } );
+                } );

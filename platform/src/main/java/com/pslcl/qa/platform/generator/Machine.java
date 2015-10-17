@@ -4,14 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.pslcl.qa.platform.Attributes;
-import com.pslcl.qa.platform.Hash;
 
 /**
  * This class represents a machine, which is a resource that can accept artifacts and
  * run programs.
  */
 public class Machine extends Resource {
-    private static final Hash hash = Hash.fromContent( "machine" );
+    private static final String codename = "machine";
 
     /**
      * Define a new machine associated with the specified generator and with the given name.
@@ -19,7 +18,7 @@ public class Machine extends Resource {
      * @param name The name of the machine for logging and debugging.
      */
     public Machine( Generator generator, String name ) {
-        super(generator, name, hash);
+        super(generator, name, codename);
     }
 
     /**

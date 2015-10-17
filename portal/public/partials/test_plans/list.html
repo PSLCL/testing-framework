@@ -13,8 +13,12 @@
       <ul class='module-sort'>
         <i class="fa fa-sort"></i>
         <li>{{selected_filter}}<li>
-        <li ng-click="sort.by('name'); changeFilter('Name');">Name</li>
-        <li ng-click="sort.by('tests'); changeFilter('Tests');">Tests</li>
+        <li ng-click="sorter('<name'); changeFilter('Name (ascending)');">Name (ascending)</li>
+        <li ng-click="sorter('>name'); changeFilter('Name (descending)');">Name (descending)</li>
+        <li ng-click="sorter('<descriptions'); changeFilter('Description (ascending)');">Description (ascending)</li>
+        <li ng-click="sorter('>descriptions'); changeFilter('Description (descending)');">Description (descending)</li>
+        <li ng-click="sorter('<tests'); changeFilter('Tests (ascending)');">Tests (ascending)</li>
+        <li ng-click="sorter('>tests'); changeFilter('Tests (descending)');">Tests (descending)</li>
       </ul>
     </div>
     <input type="text" class="form-control search" ng-model="query"
@@ -55,9 +59,8 @@
     </form>
 </div>
 
-
 <div class="row" ng-switch on="test_plans.length">
-    <div class="col-xs-12"
+    <div class="test-plan-list"
          infinite-scroll='moreTestPlans()'
          infinite-scroll-disabled='busy'
          infinite-scroll-immediate-check="false"
@@ -66,7 +69,7 @@
           <em>No test plans.</em>
       </span>
       <ul class="list-items" ng-switch-default accordian-wrap>
-        <li ng-repeat="test_plan in test_plans| filter:query" ng-style='{height: open_index == $index ? open_style : closed_style}' accordian>
+        <li class="accordian-entry" ng-repeat="test_plan in test_plans" ng-style='{height: open_index == $index ? open_style : closed_style}' accordian>
           <div class='list-header-group' ng-click='showInfo($index)'>
             <h1>
                 <i class="fa fa-chevron-circle-right" ng-class='open_index == $index ? display_info : " "'></i>
@@ -76,7 +79,9 @@
               <a href="#/test_plans/{{test_plan.pk_test_plan}}">
                 <i class='fa fa-pencil-square-o' title='View/Edit'></i>
               </a>
-              <i class='fa fa-line-chart' title='Report'></i>
+              <a href="#/test_plans/{{test_plan.pk_test_plan}}/report">
+                <i class='fa fa-line-chart' title='Report'></i>
+              </a>
               <i ng-show="user.username" confirmed-click="deleteTestPlan(test_plan.pk_test_plan)"
                                 ng-confirm-click="Are you sure you want to delete the test plan?" 
                                 class='fa fa-trash-o' title='Delete'></i>

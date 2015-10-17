@@ -60,6 +60,11 @@ public class IvyArtifactProvider implements ArtifactProvider {
         }
 
         @Override
+        public String getStatus() {
+            return rmv.getDescriptor().getStatus();
+        }
+        
+        @Override
         public Map<String, String> getAttributes() {
             @SuppressWarnings("unchecked")
             Map<String,String> map = rmv.getDescriptor().getExtraAttributes();

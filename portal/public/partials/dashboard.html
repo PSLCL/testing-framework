@@ -1,5 +1,5 @@
 <div class='page-header'>
-    <h1>Summary</h1>
+    <h1>Module and Test Plan Summary</h1>
 </div>
 <div class="row page-text">
 </div>
@@ -9,6 +9,14 @@
             <p class="label" animate-on-change="stats.module_count">{{ stats.module_count }}</p>
         </div>
         <div class='dash-block'>
+            <h2>Artifacts</h2>
+            <p class="label" animate-on-change="stats.artifact_count">{{ stats.artifact_count }}</p>
+        </div>
+        <div class='dash-block'>
+            <h2>Untested</h2>
+            <p class="label" animate-on-change="untested_count">{{ untested_count }}</p>
+        </div>
+        <div class='dash-block'>
             <h2>Test Plans</h2>
             <p class="label" animate-on-change="stats.test_plan_count">{{ stats.test_plan_count }}</p>
         </div>
@@ -16,12 +24,42 @@
             <h2>Tests</h2>
             <p class="label" animate-on-change="stats.test_count">{{ stats.test_count }}</p>
         </div>
-        <div class='dash-block'>
-            <h2>Artifacts</h2>
-            <p class="label" animate-on-change="stats.artifact_count">{{ stats.artifact_count }}</p>
-        </div>
+</div>
+<div class='page-header'>
+    <h1>Test Summary</h1>
+</div>
+<div class="flexrow">
         <div class='dash-block'>
             <h2>Instances</h2>
             <p class="label" animate-on-change="stats.ti_count">{{ stats.ti_count }}</p>
         </div>
+        <div class='dash-block'>
+            <h2>Pending</h2>
+            <p class="label" animate-on-change="stats.ti_pending">{{ stats.ti_pending }}</p>
+        </div>
+        <div class='dash-block'>
+            <h2>Running</h2>
+            <p class="label" animate-on-change="stats.ti_running">{{ stats.ti_running }}</p>
+        </div>
+</div>
+<div class='page-header'>
+    <h1>Test Performance</h1>
+    <h2>Starting</h2>
+        <chart value="runrates.starting" type="Bar" width="1000" height="200"></chart>
+    <h2>Running</h2>
+        <div>
+            <chart value="runrates.running" type="Bar" width="1000" height="200"></chart>
+        </div>
+    <h2>Complete</h2>
+        <div>
+            <chart value="runrates.complete" type="Bar" width="1000" height="200"></chart>
+        </div>
+</div>
+<div class='page-header' ng-show="user.username">
+    <h1>Assigned Test Instances</h1>
+    <p ng-repeat="test in usertests">{{test.pk_run}}</p>
+</div>
+<div class='page-header'>
+    <h1>Untested Artifacts</h1>
+    <p ng-repeat="artifact in untested">{{artifact.pk_artifact}}</p>
 </div>

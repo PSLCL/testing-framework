@@ -14,6 +14,12 @@ app.factory('ReportVersions', function ($resource) {
   });
 });
 
+// Report owned tests
+app.factory('ReportUserTests', function ($resource) {
+  return $resource('/api/v1/user_tests', {
+    user:  '@string'
+  });
+});
 
 app.factory('ReportResult', function ($resource) {
   return $resource('/api/v1/report_result', {}, {

@@ -1,10 +1,6 @@
 <div class="report-module page-header">
-    <h1>Module Report</h1>
-    <h2>{{module.organization}}</h2>
-    <h2>{{module.name}}</h2>
-    <h2>{{module.version}}</h2>
-    <h2>{{module.attributes}}</h2>
-    <h2>{{module.sequence}}</h2>
+    <h1>Test Plan Report</h1>
+    <h2>{{plan.name}}</h2>
                 <button class='btn btn-small blue'
                 ng-click="exportReport()">
                 <i class="fa fa-external-link btn-icon"></i>Export to
@@ -63,10 +59,7 @@
            
             <div class='report-module instance'
             ng-repeat="instance in test.values track by $index">
-            <h3>{{instance.description}}<span class="id">{{instance.pk_test_instance}}</span><a href="#/instance/{{instance.pk_test_instance}}">
-                    <i class='fa fa-pencil-square-o' title='View'></i>
-                  </a>
-            </h3>
+            <h3>{{instance.description}}<span class="id">{{instance.pk_test_instance}}</span></h3>
                 <h4>Modules Used:</h4>
                 <ul class='list-module'><li ng-repeat="m in instance.module_list">{{m}}</ul>
                 <h4>Test Result:</h4><p>{{instance.result_text}}</p>

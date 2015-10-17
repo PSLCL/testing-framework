@@ -49,6 +49,8 @@ html(lang='en', ng-app='qa-portal')
       a(href="#/dashboard")
         img(src='/skin/logo.png', alt='')
       ul
+        li(ng-show="permanent_error")
+          p {{permanent_error}}
         li(ng-show="!user.username")
           a(href="/auth/atlassian-oauth") Login
         li(ng-show="user.username")

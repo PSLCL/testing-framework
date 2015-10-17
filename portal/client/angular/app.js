@@ -38,65 +38,37 @@ app.config(['$routeProvider',
     templateUrl: 'partials/modules/list.html',
     controller: 'ModuleListCtrl'
   }).
-  when('/modules/new', {
-    templateUrl: 'partials/modules/form.html',
-    controller: 'ModuleNewCtrl'
-  }).
   when('/modules/:moduleId', {
     templateUrl: 'partials/modules/view.html',
     controller: 'ModuleViewCtrl'
-  }).
-  when('/modules/:moduleId/edit', {
-    templateUrl: 'partials/modules/form.html',
-    controller: 'ModuleEditCtrl'
   }).
   when('/modules/:moduleId/report', {
     templateUrl: 'partials/modules/report.html',
     controller: 'ModuleReportCtrl'
   }).
-  when('/modules/:moduleId/destroy', {
-    templateUrl: 'partials/modules/view.html',
-    controller: 'ModuleDeleteCtrl'
-  }).
   when('/test_plans', {
     templateUrl: 'partials/test_plans/list.html',
     controller: 'TestPlanListCtrl'
-  }).
-  when('/test_plans/new', {
-    templateUrl: 'partials/test_plans/form.html',
-    controller: 'TestPlanNewCtrl'
   }).
   when('/test_plans/:testPlanId', {
     templateUrl: 'partials/test_plans/view.html',
     controller: 'TestPlanViewCtrl'
   }).
-  when('/test_plans/:testPlanId/edit', {
-    templateUrl: 'partials/test_plans/form.html',
-    controller: 'TestPlanEditCtrl'
-  }).
-  when('/test_plans/:testPlanId/destroy', {
-    templateUrl: 'partials/test_plans/view.html',
-    controller: 'TestPlanDeleteCtrl'
-  }).
-  when('/test_plans/:testPlanId/tests', {
-    templateUrl: 'partials/tests/list.html',
-    controller: 'TestListCtrl'
-  }).
-  when('/test_plans/:testPlanId/tests/new', {
-    templateUrl: 'partials/tests/form.html',
-    controller: 'TestNewCtrl'
+  when('/test_plans/:testPlanId/report', {
+    templateUrl: 'partials/test_plans/report.html',
+    controller: 'TestPlanReportCtrl'
   }).
   when('/test_plans/:testPlanId/tests/:testId', {
     templateUrl: 'partials/tests/view.html',
     controller: 'TestViewCtrl'
   }).
-  when('/test_plans/:testPlanId/tests/:testId/edit', {
-    templateUrl: 'partials/tests/form.html',
-    controller: 'TestEditCtrl'
+  when('/test_plans/:testPlanId/tests/:testId/report', {
+    templateUrl: 'partials/tests/report.html',
+    controller: 'TestReportCtrl'
   }).
-  when('/test_plans/:testPlanId/tests/:testId/destroy', {
-    templateUrl: 'partials/tests/view.html',
-    controller: 'TestDeleteCtrl'
+  when('/instance/:id', {
+    templateUrl: 'partials/instance/view.html',
+    controller: 'InstanceViewCtrl'
   }).
   when('/reports', {
     templateUrl: 'partials/reports/list.html',
@@ -105,13 +77,6 @@ app.config(['$routeProvider',
   when('/dashboard', {
     templateUrl: 'partials/dashboard.html',
     controller: 'DashboardCtrl'
-  }).
-  when('/admin_dashboard', {
-    templateUrl: 'partials/dashboard.html',
-    controller: 'AdminDashboardCtrl',
-    resolve: {
-        loggedin: checkLoggedin
-    }
   }).
   otherwise({
     redirectTo: '/dashboard'

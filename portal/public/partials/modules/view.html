@@ -13,3 +13,64 @@
     <button class="btn btn-small blue">Back to Modules</button>
   </a>
 </div>
+
+<div class="row list-header">
+    <div dropdown-box class='dropdown-box-wrap' ng-click='openSort()'>
+      <ul class='artifact-sort'>
+        <i class="fa fa-sort"></i>
+        <li>{{selected_filter}}<li>
+        <li ng-click="sort.by('<name'); changeFilter('Name (ascending)');">Name (ascending)</li>
+        <li ng-click="sort.by('>name'); changeFilter('Name (descending)');">Name (descending)</li>
+        <li ng-click="sort.by('<configuration'); changeFilter('Configuration (ascending)');">Configuration (ascending)</li>
+        <li ng-click="sort.by('>configuration'); changeFilter('Configuration (descending)');">Configuration (descending)</li>
+        <li ng-click="sort.by('<plans'); changeFilter('Test Plans (ascending)');">Test Plans (ascending)</li>
+        <li ng-click="sort.by('>plans'); changeFilter('Test Plans (descending)');">Test Plans (descending)</li>
+        <li ng-click="sort.by('<tests'); changeFilter('Tests (ascending)');">Tests (ascending)</li>
+        <li ng-click="sort.by('>tests'); changeFilter('Tests (descending)');">Tests (descending)</li>
+      </ul>
+    </div>
+    <input type="text" class="form-control search" ng-model="filter"
+           placeholder="Search for an artifact" ng-change="getData(artifacts, filter)">
+</div>
+
+<div class="row" ng-switch on="artifacts.length">
+  <div class="artifact-list"
+       infinite-scroll='moreArtifacts()'
+       infinite-scroll-disabled='busy'
+       infinite-scroll-immediate-check="false"
+       infinite-scroll-distance='1'>
+  <span ng-switch-when="0">
+    <em>No artifacts for this module.</em>
+  </span>
+    <ul class="list-items" ng-switch-default accordian-wrap>
+      <li ng-repeat="artifact in artifacts| filter:query" accordian ng-style='{height: open_index == $index ? open_style : closed_style}'>
+        <div class='list-header-group' ng-click='showInfo($index)'>
+          <h1>
+            <i class="fa fa-chevron-circle-right" ng-class='open_index == $index ? display_info : " "'></i>
+            {{ artifact.name }}
+          </h1>
+          <div class='list-action-btns'>
+            <a href="artifact/{{artifact.pk_artifact}}">
+              <i class='fa fa-download' title='Download'></i>
+            </a>
+            <a href="#/artifact/{{artifact.pk_artifact}}/report">
+              <i class='fa fa-line-chart' title='Report'></i>
+            </a>
+          </div>   
+                <div class='badge-items'>
+                  <span class="plans-badge">{{ artifact.plans }}</span>
+                </div>
+            <div class='badge-items'>
+              <span class="tests-badge">{{ artifact.tests }}</span>
+            </div>
+
+        </div>  
+        <div class='item-info'>
+          <div class='description'>
+            {{artifact.configuration}}
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>

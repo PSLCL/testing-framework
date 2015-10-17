@@ -21,9 +21,12 @@ module.exports = function (app, config, passport) {
 
   // API routes
   // Anonymous routes
-  app.get('/api/v1/stats',                              routes.index);
+  app.get('/api/v1/stats',                              routes.stats);
+  app.get('/api/v1/runrates',                           routes.runrates);
+  app.get('/api/v1/user_tests',                         instance.user_tests);
   app.get('/api/v1/modules',                         comp.list);
   app.get('/api/v1/modules/:id',                     comp.show);
+  app.get('/api/v1/modules/:id/artifacts',              artifact.list);
   app.get('/api/v1/modules/:id/report',                 comp.report);
   app.get('/api/v1/modules/:id/report_print',          comp.report_print);
   
@@ -38,6 +41,8 @@ module.exports = function (app, config, passport) {
   app.get('/api/v2/report_test_plans',                  plan.new_report);
 
   app.get('/api/v1/instances',                          instance.list);
+  app.get('/api/v1/instance/:id',                       instance.view);
+  app.get('/api/v1/template/:id',                       instance.lines);
   
   // Report routes (anonymous)
   app.get('/report/plan/:module',                    plan.name_report);
@@ -47,6 +52,7 @@ module.exports = function (app, config, passport) {
   // Artifact routes (anonymous)
   app.get('/artifact/:artifactid',                      artifact.single);
   app.get('/artifacts/:instanceid',                     artifact.multiple);
+  app.get('/api/v1/artifacts/untested',                        artifact.untested);
 
   // Authentication routes.
   app.get('/auth/atlassian-oauth',
@@ -68,8 +74,8 @@ module.exports = function (app, config, passport) {
     
         displayName = req.user.displayName;
         avatar = req.user.avatarUrls['32x32'];
-    
-        result = { "isAdmin": isAdmin, "username": req.user.username, "displayName": displayName, "avatar": avatar, "user": req.user };
+        email = req.user.emails[0].value;
+        result = { "isAdmin": isAdmin, "username": req.user.username, "displayName": displayName, "avatar": avatar, email: email, "user": req.user };
     }
     
     res.send( result );
@@ -80,19 +86,11 @@ module.exports = function (app, config, passport) {
   });
   
   // Authenticated Routes
-  app.get('/api/v1/stats/admin',                 auth, routes.admin_index);
-  app.post  ('/api/v1/modules',                  auth, comp.create);
-  app.post  ('/api/v1/modules/:id',              auth, comp.update);
-  app.delete('/api/v1/modules/:id',              auth, comp.destroy);
 
   // Test Plan routes
   app.post  ('/api/v1/test_plans',               auth, plan.create);
   app.post  ('/api/v1/test_plans/:pk_test_plan', auth, plan.update);
   app.delete('/api/v1/test_plans/:pk_test_plan', auth, plan.destroy);
-
-  // Add/Remove Test Plan from modules
-  app.delete('/api/v1/module/test_plan',         auth, comp.remove_test_plan);
-  app.post  ('/api/v1/module/test_plan',         auth, comp.add_test_plan);
 
   // Test Routes
   app.post  ('/api/v1/test_plans/:pk_test_plan/tests',  auth, test.create);

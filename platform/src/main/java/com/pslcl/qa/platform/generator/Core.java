@@ -16,6 +16,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,7 +29,6 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
-import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
@@ -82,60 +82,6 @@ public class Core {
     private Map<Long,DBDescribedTemplate> pkToDT = new HashMap<Long,DBDescribedTemplate>();
     private Map<DescribedTemplate.Key,DBDescribedTemplate> keyToDT = new HashMap<DescribedTemplate.Key,DBDescribedTemplate>();
     private Map<Long,Long> dtToTI = new HashMap<Long,Long>();
-    
-    // tech spec term of "test run" is this test instance, from table test_instance
-    private void loadTestInstances() {
-        if (connect == null) {
-            System.out.println("<internal> Core.loadTestInstances() finds no database connection and exits");
-            return;
-        }
-        
-        int testInstanceCount = 0;
-        int notYetRunCount = 0;
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        try {
-            statement = connect.createStatement();
-            // this first line gives 54606 test instances. way more than the other lines which give 2830 instances. For any one row in dt_line, there are multiple matching rows in described_template, so they get counted multiple items
-//          resultSet = statement.executeQuery( "SELECT fk_test, name, test.description, script, pk_test_instance, test_instance.fk_described_template, fk_run FROM test_instance JOIN test ON pk_test = fk_test JOIN described_template ON test_instance.fk_described_template = pk_described_template JOIN template ON fk_template = pk_template JOIN dt_line ON pk_described_template = dt_line.fk_described_template" );
-            resultSet = statement.executeQuery( "SELECT fk_test, name, test.description, script, pk_test_instance, test_instance.fk_described_template, fk_run, pk_template FROM test_instance JOIN test ON pk_test = fk_test JOIN described_template ON test_instance.fk_described_template = pk_described_template JOIN template ON fk_template = pk_template" );
-//          resultSet = statement.executeQuery( "SELECT fk_test, name, test.description, script, pk_test_instance, test_instance.fk_described_template, fk_run FROM test_instance JOIN test ON pk_test = fk_test JOIN described_template ON test_instance.fk_described_template = pk_described_template" );
-//          resultSet = statement.executeQuery( "SELECT fk_test, name, test.description, script, pk_test_instance, test_instance.fk_described_template, fk_run FROM test_instance JOIN test ON pk_test = fk_test" );
-            
-            while ( resultSet.next() ) {
-                DBTestInstance dbTestInstance = new DBTestInstance();
-                dbTestInstance.fk_test = resultSet.getLong( "fk_test" ); // table entry will not be null
-                dbTestInstance.name = resultSet.getString("name");
-                dbTestInstance.description = resultSet.getString("description");
-                dbTestInstance.script = resultSet.getString("script");
-                dbTestInstance.pk_test_instance = resultSet.getLong("pk_test_instance"); // null table entry returns 0 
-                dbTestInstance.fk_described_template = resultSet.getLong("fk_described_template"); // null table entry returns 0
-                dbTestInstance.fk_run = resultSet.getLong("fk_run"); // null table entry returns 0
-                dbTestInstance.pk_template = resultSet.getLong("pk_template");
-
-                // Add this dbTestInstance to the pktiToTi saved list. This is 1:1 relationship of pk_test_instance key to dbTestInstance.
-                pktiToTI.put(Long.valueOf(dbTestInstance.pk_test_instance), dbTestInstance);
-                
-                // Merge this dbTestInstance into the pktToTI saved list. Note: We have multiple DBTestInstance for any fk_test key
-                List<DBTestInstance> currentList = pktToTI.get(dbTestInstance.fk_test);
-                if (currentList == null) {
-                    currentList = new ArrayList<DBTestInstance>();
-                }
-                currentList.add(dbTestInstance);
-                pktToTI.put( Long.valueOf(dbTestInstance.fk_test), currentList );
-                if (dbTestInstance.fk_run == 0)
-                    ++notYetRunCount;
-                ++testInstanceCount;
-            }
-        } catch (Exception e) {
-            System.out.println("Core.loadTestInstances() exception "+ e);
-        } finally {
-            safeClose( resultSet ); resultSet = null;
-            safeClose( statement ); statement = null;
-            System.out.println("      <internal> Core.loadTestInstances() loads " + testInstanceCount + " test instances to pktToTI; yet to run count is " + notYetRunCount);
-        }
-    }
     
     private void loadHashes() {
         if (connect == null) {
@@ -486,7 +432,7 @@ public class Core {
                     
 
                     // simulated false condition, but database is readonly for a while, so this gives a quick return without storing anything
-                    reportResult( new String("junk"), false, null );
+                    reportResult( new String("junk"), false, null, null, null, null );
 
                     System.out.println( "executeTestInstance() exits after execution msec of " + sleep);
                     System.out.println("");
@@ -665,14 +611,15 @@ public class Core {
             return pk;
 
         String attributes = new Attributes( module.getAttributes()).toString();
-        //TODO: Release date, actual release date, status, order all need to be added.
+        //TODO: Release date, actual release date, order all need to be added.
         try {
-            statement = connect.prepareStatement( "INSERT INTO module (organization, name, attributes, version, sequence) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+            statement = connect.prepareStatement( "INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
             statement.setString( 1, module.getOrganization() );
             statement.setString( 2, module.getName() );
             statement.setString( 3, attributes );
             statement.setString( 4, module.getVersion() );
-            statement.setString( 5, module.getSequence() );
+            statement.setString( 5, module.getStatus() );
+            statement.setString( 6, module.getSequence() );
             statement.executeUpdate();
 
             ResultSet keys = statement.getGeneratedKeys();
@@ -731,34 +678,67 @@ public class Core {
     /**
      * Add content given a hash and inputstream. If the contents exist then the file is assumed to be correct
      * and the database is still updated.
-     * @param h The hash of the file.
      * @param is An input stream for the contents.
+     * @param length The length of the stream, or -1 if the entire stream is to be added.
      */
-    public Hash addContent( InputStream is ) {
+    public Hash addContent( InputStream is, long length ) {
         File tmp;
+        FileOutputStream os = null;
         
         try {
             tmp = File.createTempFile( "artifact",  "hash" );
-            FileOutputStream os = new FileOutputStream( tmp );
-            IOUtils.copy( is, os );
-            os.close();
+            os = new FileOutputStream( tmp );
+
+            byte[] content = new byte[ 1024 ];
+            long remaining = length > 0 ? length : 1;
+            while ( remaining > 0 ) {
+                int consumed = is.read( content, 0, content.length );
+                if ( consumed < 0 ) {
+                    // If we couldn't read the length this is an error, otherwise it is normal.
+                    if ( length > 0 ) {
+                        System.err.println( "ERROR: End of file while expanding content." );
+                        return null;
+                    }
+                    
+                    break;
+                }
+                
+                if ( length > 0 )
+                    remaining -= consumed;
+                os.write( content, 0, consumed );
+            }
         }
         catch ( Exception e ) {
             // Cannot even determine the hash, so we don't know if it has already been added or not.
             System.err.println( "ERROR: Could not add content, " + e.getMessage() );
             return null;
         }
+        finally {
+            if ( os != null ) {
+                try {
+                    os.close();
+                }
+                catch ( Exception e ) {
+                    // Ignore
+                }
+            }
+        }
         
         Hash h = Hash.fromContent( tmp );
         File target = new File( this.artifacts, h.toString() );
+        boolean ignore_insert_failure = false;
+        
         if ( target.exists() ) {
             FileUtils.deleteQuietly( tmp );
-            return h;   // Filesystem and DB must match, file already cached.
+            ignore_insert_failure = true;
         }
         
-        // If read-only and it doesn't exist, then it cannot be added.
-        if ( read_only )
-            return null;
+        // If read-only and it doesn't exist, then it cannot be added. If it was already cached, assume exists.
+        if ( read_only ) {
+            //TODO: Really need to check the DB and remove the file if it isn't present, otherwise the
+            // cache and DB are out of sync.
+            return ignore_insert_failure ? h : null;
+        }
 
         PreparedStatement statement = null;
         try {
@@ -770,7 +750,11 @@ public class Core {
             statement.executeUpdate();
         }
         catch ( Exception e ) {
-            System.err.println( "ERROR: Could not add content, " + e.getMessage() );
+            if ( ! ignore_insert_failure ) {
+                System.err.println( "ERROR: Could not add content, " + e.getMessage() );
+                FileUtils.deleteQuietly( tmp );
+                return null;
+            }
         }
         finally {
             safeClose( statement ); statement = null;
@@ -938,16 +922,18 @@ public class Core {
         private String name;
         private Attributes attributes;
         private String version;
+        private String status;
         private String sequence;
 
         
-        DBModule( Core core, long pk, String organization, String name, String attribute_string, String version, String sequence ) {
+        DBModule( Core core, long pk, String organization, String name, String attribute_string, String version, String status, String sequence ) {
             this.core = core;
             this.pk = pk;
             this.organization = organization;
             this.name = name;
             this.attributes = new Attributes(attribute_string);
             this.version = version;
+            this.status = status;
             this.sequence = sequence;
         }
         
@@ -966,6 +952,11 @@ public class Core {
             return version;
         }
 
+        @Override
+        public String getStatus() {
+            return status;
+        }
+        
         @Override
         public Map<String, String> getAttributes() {
             return attributes.getAttributes();
@@ -1128,9 +1119,9 @@ public class Core {
 
         try {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT pk_module, organization, name, attributes, version, sequence FROM module" );
+            resultSet = statement.executeQuery( "SELECT pk_module, organization, name, attributes, version, status, sequence FROM module" );
             while ( resultSet.next() ) {
-                DBModule M = new DBModule( this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                DBModule M = new DBModule( this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7) );
                 set.add( M );
             }
         }
@@ -1159,11 +1150,11 @@ public class Core {
 
         try {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( String.format( "SELECT pk_module, organization, name, attributes, version, sequence" +
+            resultSet = statement.executeQuery( String.format( "SELECT pk_module, organization, name, attributes, version, status, sequence" +
                     " FROM module" +
                     " WHERE organization = " + organization + " AND name = '" + name + "'" ) );
             while ( resultSet.next() ) {
-                DBModule M = new DBModule( this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                DBModule M = new DBModule( this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7) );
                 set.add( M );
             }
         }
@@ -1235,7 +1226,7 @@ public class Core {
                         resultSet = statement.executeQuery( query );
                         while ( resultSet.next() ) {
                             Module mod = artifact.getModule();
-                            Artifact A = new DBArtifact( this, resultSet.getLong(1), mod, resultSet.getString(7), resultSet.getString(8), resultSet.getInt(9), new Hash( resultSet.getBytes(10) ) );
+                            Artifact A = new DBArtifact( this, resultSet.getLong(1), mod, resultSet.getString(2), resultSet.getString(3), resultSet.getInt(4), new Hash( resultSet.getBytes(5) ) );
                             set.add( A );
                         }
                     }
@@ -1265,7 +1256,7 @@ public class Core {
                         String version_where = version.length() > 0 ? " AND module.version='" + version + "'" : "";
                         String configuration_where = configuration.length() > 0 ? " AND module.configuration='" + configuration + "'" : "";
                         
-                        query = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.name, artifact.configuration, artifact.mode, artifact.fk_content" +
+                        query = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.name, artifact.configuration, artifact.mode, artifact.fk_content" +
                                 " FROM artifact" +
                                 " JOIN module ON module.pk_module = artifact.fk_module" +
                                 " WHERE artiface.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s" +
@@ -1277,8 +1268,8 @@ public class Core {
                             if ( found.contains( artifact_name ) )
                                 continue;
                             
-                            DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
-                            Artifact A = new DBArtifact( this, resultSet.getLong(7), dbmod, resultSet.getString(8), resultSet.getString(9), resultSet.getInt(10), new Hash( resultSet.getBytes(11) ) );
+                            DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7) );
+                            Artifact A = new DBArtifact( this, resultSet.getLong(8), dbmod, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash( resultSet.getBytes(12) ) );
                             set.add( A );
                         }
                     }
@@ -1325,7 +1316,7 @@ public class Core {
                 if ( configuration != null )
                     configuration_match = " AND artifact.configuration='" + configuration + "'";
                 
-                String queryStr = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" +
+                String queryStr = String.format( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" +
                         " FROM artifact" +
                         " JOIN module ON module.pk_module = artifact.fk_module" +
                         " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s" +
@@ -1360,12 +1351,12 @@ public class Core {
                     if ( moduleMap.containsKey( pk_found ) )
                         module = moduleMap.get( pk_found );
                     else {
-                        module = new DBModule( this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                        module = new DBModule( this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7) );
                         moduleMap.put( pk_found, module );
                     }
                     
                     if ( artifacts[ name_index ] == null ) {
-                        Artifact A = new DBArtifact( this, resultSet.getLong(7), module, resultSet.getString(8), resultSet.getString(9), resultSet.getInt(10), new Hash( resultSet.getBytes(11) ) ); 
+                        Artifact A = new DBArtifact( this, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash( resultSet.getBytes(12) ) ); 
                         artifacts[ name_index ] = A;
                     }
                 }
@@ -1487,7 +1478,7 @@ public class Core {
             Map<Long,DBModule> modules = new HashMap<Long,DBModule>();
             
             statement = connect.createStatement();
-            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content, artifact.merged_from_module" +
+            resultSet = statement.executeQuery( "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content, artifact.merged_from_module" +
                     " FROM artifact" +
                     " JOIN module ON module.pk_module = artifact.fk_module" +
                     " WHERE module.pk_module = " + pk_module +
@@ -1505,14 +1496,14 @@ public class Core {
                 if ( modules.containsKey( pk_found ) )
                     module = modules.get( pk_found );
                 else {
-                    module = new DBModule( this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6) );
+                    module = new DBModule( this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7) );
                     modules.put( pk_found, module );
                 }
                 
                 if ( set.contains( resultSet.getString( 8 )) )
                     continue;
                 
-                Artifact A = new DBArtifact( this, resultSet.getLong(7), module, resultSet.getString(8), resultSet.getString(9), resultSet.getInt(10), new Hash( resultSet.getBytes(11) ) ); 
+                Artifact A = new DBArtifact( this, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash( resultSet.getBytes(12) ) ); 
                 set.add( A );
             }
 
@@ -1789,7 +1780,7 @@ public class Core {
         for ( int i = 0; i < dt.getActionCount(); i++ ) {
             TestInstance.Action A = dt.getAction( i );
             
-            statement = connect.prepareStatement( "INSERT INTO dt_line (fk_described_template,line,fk_child_dt,fk_resource,description) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
+            statement = connect.prepareStatement( "INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS );
             statement.setLong( 1, pk );
             statement.setInt( 2, i );
             
@@ -1799,13 +1790,7 @@ public class Core {
             else
                 statement.setLong( 3, child.getPK() );
             
-            Resource bound = A.getBoundResource();
-            if ( bound == null )
-                statement.setNull( 4, Types.NULL );
-            else
-                statement.setLong( 4,  bound.getPK() );
-
-            statement.setString( 5, A.getDescription() );
+            statement.setString( 4, A.getDescription() );
             statement.executeUpdate();
 
             long linepk = 0;
@@ -1850,9 +1835,12 @@ public class Core {
      * @param dt The described template to add.
      * @param result The result to report, if any.
      * @param owner The owner to assign, if any.
+     * @param start The start time, or null.
+     * @param ready The ready time, or null.
+     * @param complete The complete time, or null.
      * @return The key information for the added described template.
      */
-    private DBDescribedTemplate add( DescribedTemplate dt, Boolean result, String owner ) throws Exception {
+    private DBDescribedTemplate add( DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete ) throws Exception {
         DescribedTemplate.Key proposed_key = dt.getKey();
         
         if ( keyToDT.containsKey( proposed_key ) )
@@ -1864,7 +1852,7 @@ public class Core {
             @SuppressWarnings("unused")
             DBDescribedTemplate dbdt;
             if ( ! keyToDT.containsKey( child.getKey() ) )
-                dbdt = add( child, null, null );
+                dbdt = add( child, null, null, null, null, null );
             else
                 dbdt = check( child );
         }
@@ -1876,7 +1864,7 @@ public class Core {
             long pk = 0;
             long pk_template = syncTemplate( dt.getTemplate() );
             if ( result != null || owner != null )
-                reportResult( dt.getTemplate().getHash().toString(), result, owner );
+                reportResult( dt.getTemplate().getHash().toString(), result, owner, start, ready, complete );
 
             PreparedStatement statement = null;
             ResultSet query = null;
@@ -2013,7 +2001,7 @@ public class Core {
 
             if ( ! keyToDT.containsKey( key ) ) {
                 // Add the template
-                dbdt = add( ti.getTemplate(), ti.getResult(), ti.getOwner() );
+                dbdt = add( ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete() );
             }
             else
                 dbdt = check( ti.getTemplate() );
@@ -2103,7 +2091,7 @@ public class Core {
         
                 // Check the run status, fix it if the status is known.
                 if ( (dbResult != ti.getResult()) || ! (dbOwner == null ? ti.getOwner() == null : dbOwner.equals(ti.getOwner() ) ) ) {
-                    reportResult( ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner() );
+                    reportResult( ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete() );
                 }
             }
         }
@@ -2448,32 +2436,6 @@ public class Core {
         return 0;
     }
 
-    void findResource( Resource R ) {
-        PreparedStatement find_resource = null;
-        ResultSet resources = null;
-
-        try {
-            find_resource = connect.prepareStatement( "SELECT pk_resource, name FROM resource WHERE hash=?" );
-            find_resource.setBinaryStream(1, new ByteArrayInputStream(R.hash.toBytes()));
-            resources = find_resource.executeQuery();
-            while ( resources.next() ) {
-                R.pk = resources.getLong( "pk_resource" );
-                R.name = resources.getString( "name" );
-                return;
-            }
-        }
-        catch ( Exception e ) {
-            // TODO: handle
-            System.err.println( e.getMessage() );
-        }
-        finally {
-            safeClose( resources ); resources = null;
-            safeClose( find_resource ); find_resource = null;
-        }
-
-        R.pk = 0;
-    }
-    
     /**
      * Synchronize the specified test instance belonging to the specified test. The test instance
      * information itself is verified and the hashes are checked against the loaded information. If
@@ -2587,14 +2549,14 @@ public class Core {
         return pk;
     }
 
-    public void reportResult( String hash, Boolean result, String owner ) {
+    public void reportResult( String hash, Boolean result, String owner, Date start, Date ready, Date complete ) {
         PreparedStatement statement = null;
 
         if ( read_only )
             return;
 
         try {
-            statement = connect.prepareStatement( "call add_run(?, ?, ?)" );
+            statement = connect.prepareStatement( "call add_run(?, ?, ?, ?, ?, ?)" );
             statement.setString( 1, hash );
             
             if ( result != null )
@@ -2607,6 +2569,20 @@ public class Core {
             else
                 statement.setNull( 3, Types.VARCHAR );
             
+            if ( start != null )
+                statement.setTimestamp( 4, new java.sql.Timestamp( start.getTime() ) );
+            else
+                statement.setNull( 4, Types.TIMESTAMP );
+            
+            if ( ready != null )
+                statement.setTimestamp( 5, new java.sql.Timestamp( ready.getTime() ) );
+            else
+                statement.setNull( 5, Types.TIMESTAMP );
+
+            if ( complete != null )
+                statement.setTimestamp( 6, new java.sql.Timestamp( complete.getTime() ) );
+            else
+                statement.setNull( 6, Types.TIMESTAMP );
             statement.execute();
         }
         catch ( Exception e ) {
@@ -2618,50 +2594,6 @@ public class Core {
         }
     }
 
-    private static class ResourceInit {
-        Hash hash;
-        String name;
-        String description;
-        
-        ResourceInit( Hash hash, String name, String description ) {
-            this.hash = hash;
-            this.name = name;
-            this.description = description;
-        }
-    }
-    
-    ResourceInit[] resources = {
-            new ResourceInit( Hash.fromContent( "person" ), "Person", "This is a person" ),
-            new ResourceInit( Hash.fromContent( "machine" ), "Machine", "This is a machine" )
-    };
-    
-    private void addResources() {
-        PreparedStatement statement = null;
-        try {
-            for ( ResourceInit ri : resources ) {
-                statement = connect.prepareStatement ( "INSERT INTO resource (hash, name, description) VALUES (?,?,?)" );
-                statement.setBinaryStream( 1, new ByteArrayInputStream( ri.hash.toBytes() ) );
-                statement.setString( 2, ri.name );
-                statement.setString( 3, ri.description );
-                statement.execute();
-                safeClose( statement ); statement = null;
-            }
-        }
-        catch ( Exception e ) {
-            // Ignore
-        }
-        
-        safeClose( statement );
-    }
-    
-    public static class AddResources {
-        public static void main( String[] args ) {
-            Core core = new Core( 0 );
-            core.addResources();
-            core.close();
-        }
-    }
-    
     public static class TestTopLevelRelationships {
         public static void main( String[] args ) {
             Core core = new Core( 0 );

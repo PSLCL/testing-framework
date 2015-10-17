@@ -80,40 +80,16 @@ app.controller('TestViewCtrl',
     });
   });
 
-// Edit test plan
-app.controller('TestEditCtrl',
-  function ($scope, $routeParams, $location, Test) {
-    $scope.heading = 'Update Test';
-    $scope.submitLabel = 'Update Test';
-    $scope.test_plan = $routeParams.testPlanId;
-    Test.get({
+// Report
+app.controller('TestReportCtrl',
+  function ($scope, $routeParams, Test, TestReport) {
+    $scope.test = Test.get({
       testPlanId: $routeParams.testPlanId,
       testId: $routeParams.testId
-    }, function success(result) {
-      $scope.test = result;
     });
-    $scope.testSubmit = function () {
-      $scope.test = Test.save({
-          testPlanId: $routeParams.testPlanId,
-          testId: $routeParams.testId
-        },
-        $scope.test, function success() {
-          $location.path('test_plans/' + $routeParams.testPlanId);
-        }, function fail() {
-          console.log('Error: failed to update test');
-        });
-    };
-  });
-
-// Delete test plan
-app.controller('TestDeleteCtrl',
-  function ($scope, $routeParams, $location, Test, socket) {
-    $scope.module = Test.delete({
-        testPlanId: $routeParams.testPlanId,
-        testId: $routeParams.testId
-      },
-      function success() {
-        $location.path('test_plans/' + $routeParams.testPlanId);
-        socket.emit('get:stats');
-      });
+  TestReport.get( {
+    testId: $routeParams.testId
+  }, function success( results ) {
+    $scope.result = results;
+  } );
   });

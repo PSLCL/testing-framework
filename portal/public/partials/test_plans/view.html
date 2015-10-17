@@ -100,10 +100,12 @@
             {{ test.name }}
           </h1>
           <div class='list-action-btns'>
-            <a href="#/test_plans/{{test.fk_test_plan}}/tests/{{test.pk_test}}/edit">
+            <a href="#/test_plans/{{test.fk_test_plan}}/tests/{{test.pk_test}}">
               <i class='fa fa-pencil-square-o' title='View/Edit'></i>
             </a>
-            <i class='fa fa-line-chart' title='Report'></i>
+            <a href="#/test_plans/{{test.fk_test_plan}}/tests/{{test.pk_test}}/report">
+              <i class='fa fa-line-chart' title='Report'></i>
+            </a>
             <i ng-show="user.username" confirmed-click="deleteTest(test.fk_test_plan,test.pk_test)"
                               ng-confirm-click="Are you sure you want to delete the test?" 
                               class='fa fa-trash-o' title='Delete'></i>

@@ -10,7 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -106,10 +108,14 @@ public class CommandLine {
         System.out.println( "  --artifacts <num> - optional, specifies how many artifacts to populate in each module (requires --modules)." );
         System.out.println( "  --owner <email> - optional, specifies that some pending tests should be assigned to this owner (requires --instances)." );
         System.out.println( "  --results - optional, specifies whether or not to populate results (requires --instances)." );
+        System.out.println( "  --start - optional, specifies the date/time to begin creating results at (requires --results)." );
+        System.out.println( "  --end - optional, specifies the date/time to end creating results at (requires --results)." );
         System.out.println( "When creating modules, the populator will create organizations, names, and versions. A new organization" );
         System.out.println( "is created for each 10 modules, a new name for each 5." );
         System.out.println( "When creating instances, each will get progressively more complex and use different combinations of modules" );
         System.out.println( "and artifacts." );
+        System.out.println( "If results are generated and begin and end times are not specified then the results will be created uniformly" );
+        System.out.println( "during the previous week." );
         System.exit(1);
     }
 
@@ -145,7 +151,7 @@ public class CommandLine {
                         artifact = artifact.substring(2);
 
                     int mode = entry.getMode();
-                    Hash h = core.addContent( ti );
+                    Hash h = core.addContent( ti, entry.getSize() );
                     core.addArtifact( pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module );
                 }
             }
@@ -209,7 +215,7 @@ public class CommandLine {
                 
                 pk_module = core.addModule( module );
                 for ( Artifact artifact : artifacts ) {    
-                    Hash h = core.addContent( artifact.getContent().asStream() );
+                    Hash h = core.addContent( artifact.getContent().asStream(), -1 );
                     long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0 );
                     if ( artifact.getName().endsWith(".tar.gz") ) {
                         decompress( h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0 );
@@ -247,7 +253,7 @@ public class CommandLine {
                         
                         List<Artifact> artifacts = dmod.getArtifacts();
                         for ( Artifact artifact : artifacts ) {   
-                            Hash h = core.addContent( artifact.getContent().asStream() );
+                            Hash h = core.addContent( artifact.getContent().asStream(), -1 );
                             long pk_artifact = core.addArtifact( pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module );
                             if ( artifact.getName().endsWith(".tar.gz") ) {
                                 decompress( h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module );
@@ -612,7 +618,7 @@ public class CommandLine {
             resultHelp();
 
         Core core = new Core( 0 );
-        core.reportResult( hash, result, null );
+        core.reportResult( hash, result, null, null, null, null );
         core.close();
     }
 
@@ -620,11 +626,13 @@ public class CommandLine {
         private Module module;
         private String name;
         private int artifacts;
+        private long start;
         
-        PopulateArtifact( Module module, String name, int artifacts ) {
+        PopulateArtifact( Module module, String name, int artifacts, long start ) {
             this.module = module;
             this.name = name;
             this.artifacts = artifacts;
+            this.start = start;
         }
         
         @Override
@@ -646,7 +654,7 @@ public class CommandLine {
             private byte[] content;
             private Hash hash;
             
-            TarContent( String name, int artifacts ) {
+            TarContent( String name, int artifacts, long start ) {
                 try {
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
                     GzipCompressorOutputStream cos = new GzipCompressorOutputStream( bos );
@@ -655,6 +663,7 @@ public class CommandLine {
                     for ( int artifact = 0; artifact < artifacts; artifact++ ) {
                         String content_str = name + "-" + Integer.toString( artifact+1 );
                         TarArchiveEntry entry = new TarArchiveEntry( content_str );
+                        entry.setModTime( start );
                         byte[] content_bytes = content_str.getBytes();
                         entry.setSize( content_bytes.length );
                         os.putArchiveEntry( entry );
@@ -702,7 +711,7 @@ public class CommandLine {
             if ( content != null )
                 return content;
             
-            content = new TarContent( name, artifacts );
+            content = new TarContent( name, artifacts, start );
             return content;
         }
 
@@ -716,15 +725,19 @@ public class CommandLine {
         private String org;
         private String name;
         private String version;
+        private String status;
         private int sequence;
         private int artifacts;
+        private long start;
         
-        PopulateModule( String org, String name, String version, int sequence, int artifacts ) {
+        PopulateModule( String org, String name, String version, String status, int sequence, int artifacts, long start ) {
             this.org = org;
             this.name = name;
             this.version = version;
-            this.sequence = sequence; 
+            this.sequence = sequence;
+            this.status = status;
             this.artifacts = artifacts;
+            this.start = start;
         }
         
         @Override
@@ -743,6 +756,11 @@ public class CommandLine {
         }
 
         @Override
+        public String getStatus() {
+            return status;
+        }
+        
+        @Override
         public String getSequence() {
             return String.format("%05d", sequence);
         }
@@ -755,7 +773,7 @@ public class CommandLine {
         @Override
         public List<Artifact> getArtifacts() {
             List<Artifact> result = new ArrayList<Artifact>();
-            result.add( new PopulateArtifact( this, org + "-" + name + "-" + version + ".tar.gz", artifacts ) );
+            result.add( new PopulateArtifact( this, org + "-" + name + "-" + version + ".tar.gz", artifacts, start ) );
             return result;
         }
 
@@ -776,12 +794,14 @@ public class CommandLine {
         private int modules;
         private int versions;
         private int artifacts;
+        private long start;
         
-        PopulateProvider( int orgs, int modules, int versions, int artifacts ) {
+        PopulateProvider( int orgs, int modules, int versions, int artifacts, long start ) {
             this.orgs = orgs;
             this.modules = modules;
             this.versions = versions;
             this.artifacts = artifacts;
+            this.start = start;
         }
         @Override
         public void init() throws Exception {
@@ -795,7 +815,18 @@ public class CommandLine {
                     String module_str = "module" + Integer.toString(module+1);
                     for ( int version = 0; version < versions; version++ ) {
                         String version_str = "v" + Integer.toString(version+1);
-                        moduleNotifier.module( this, new PopulateModule( org_str, module_str, version_str, version+1, artifacts ), null );
+                        String status_str = "release";
+                        switch ( version % 3 ) {
+                        case 0:
+                            status_str = "nightly";
+                            break;
+                            
+                        case 1:
+                            status_str = "integration";
+                            break;
+                        }
+
+                        moduleNotifier.module( this, new PopulateModule( org_str, module_str, version_str, status_str, version+1, artifacts, start ), null );
                     }
                 }
             }
@@ -835,6 +866,9 @@ public class CommandLine {
         int artifacts = 0;
         String owner = null;
         boolean results = false;
+        long end = 0;
+        long start = 0;
+        
         for (int i = 1; i < args.length; i++) {
             if (args[i].compareTo("--plans") == 0 && args.length > i) {
                 plans = Integer.parseInt( args[i+1] );
@@ -871,6 +905,30 @@ public class CommandLine {
             else if (args[i].compareTo("--results") == 0 ) {
                 results = true;
             }
+            else if (args[i].compareTo("--start") == 0 ) {
+                SimpleDateFormat parse = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                try {
+                    Date d = parse.parse(args[i+1]);
+                    start = d.getTime();
+                }
+                catch ( Exception e ) {
+                    System.err.println( "ERROR: Could not parse date, " + e.getMessage() );
+                }
+                
+                i += 1;
+            }
+            else if (args[i].compareTo("--end") == 0 ) {
+                SimpleDateFormat parse = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                try {
+                    Date d = parse.parse(args[i+1]);
+                    end = d.getTime();
+                }
+                catch ( Exception e ) {
+                    System.err.println( "ERROR: Could not parse date, " + e.getMessage() );
+                }
+                
+                i += 1;
+            }
             else
                 populateHelp();
         }
@@ -888,13 +946,30 @@ public class CommandLine {
             populateHelp();
         if ( (owner != null) && instances == 0)
             populateHelp();
+        if ( (end != 0 || start != 0) && ! results )
+            populateHelp();
+        
+        if ( results && end == 0 & start == 0 ) {
+            end = System.currentTimeMillis();
+            start = end - (7L*24*60*60*1000);
+        }
+        
+        if ( results && end == 0 )
+            end = start + (7L*24*60*60*1000);
+        
+        if ( results && start == 0 )
+            start = end - (7L*24*60*60*1000);
+        
+        if ( start >= end )
+            populateHelp();
+        
         
         Core core = new Core( 0 );
         int total_artifacts = orgs * modules * versions * artifacts;
         
         // Populate the modules and artifacts.
         ModuleNotifier moduleNotifier = new HandleModule( core );
-        ArtifactProvider populateProvider = new PopulateProvider( orgs, modules, versions, artifacts );
+        ArtifactProvider populateProvider = new PopulateProvider( orgs, modules, versions, artifacts, start );
         try {
             populateProvider.init();
             populateProvider.iterateModules( moduleNotifier );
@@ -912,6 +987,8 @@ public class CommandLine {
         // However, all this command does is populate the test plans and tests.
         // The rest of the work is done as a generator.
         int test_sequence = 0;
+        int total_runs = plans * tests * instances;
+        
         for ( int test_plan = 0; test_plan < plans; test_plan++ ) {
             String test_plan_str = Integer.toString( test_plan + 1 );
             long pk_test_plan = core.addTestPlan( "Test Plan " + test_plan_str, "Description for test plan " + test_plan_str );
@@ -932,7 +1009,7 @@ public class CommandLine {
                        // So, instance 2 will use 3 artifacts.
                        // We will pick artifacts based on the test we are generating sequentially.
                        //  A1, A2, A3, A4, A5, ...
-                       //  com.pslcl.testing.org1-module1-v1.tar.gz-0
+                       //  com.pslcl.testing.org1-module1-v1.tar.gz-1
                        int artifact_index = (test_plan+1) * (test+1) * (instance+1) * (name+1) * 13;
                        artifact_index %= total_artifacts;
                        int organization_index = artifact_index / (modules*versions*artifacts);
@@ -960,15 +1037,41 @@ public class CommandLine {
                    // We alternate pass/fail/pending for every 3 results. We alternate assigning an owner every 7
                    // results.
                    if ( results || owner != null ) {
+                       boolean need_start = false, need_complete = false;
+                       
                        // Pass/Fail generation. Pass groups of 3 tests, then fail 3, then pend 3.
                        // Owner generation. Assign owner for groups of 7, then skip 7.                    
-                       if ( ((test_sequence / 3) % 3) == 0 )
+                       if ( ((test_sequence / 3) % 3) == 0 ) {
                            generator.pass();
-                       else if ( ((test_sequence /3) % 3) == 1 )
+                           need_start = need_complete = true;
+                       }
+                       else if ( ((test_sequence /3) % 3) == 1 ) {
                            generator.fail();
+                           need_start = need_complete = true;
+                       }
                        
-                       if ( ((test_sequence / 7) % 2) == 0 )
+                       if ( ((test_sequence / 7) % 2) == 0 ) {
                            generator.assign( owner );
+                           need_start = true;
+                       }
+                       
+                       if ( need_complete )
+                           need_start = true;
+                       
+                       // Dates are set based on the test_sequence and whether or not a result or owner is assigned.
+                       Date tstart = null;
+                       if ( need_start )
+                           tstart = new Date( start + test_sequence * ((end - start) / total_runs) );
+                       
+                       Date tready = null;
+                       if ( need_start )
+                           tready = new Date( tstart.getTime() + 5L*60*1000 );
+                       
+                       Date tcomplete = null;
+                       if ( need_complete )
+                           tcomplete = new Date( tstart.getTime() + 10L*60*1000 );
+                       
+                       generator.setRunTimes( tstart, tready, tcomplete );
                    }
                    
                    test_sequence += 1;

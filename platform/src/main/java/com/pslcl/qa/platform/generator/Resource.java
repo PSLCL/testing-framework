@@ -4,14 +4,14 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.pslcl.qa.platform.Attributes;
-import com.pslcl.qa.platform.Hash;
 import com.pslcl.qa.platform.generator.Template.AttributeParameter;
 
 /**
  * This class represents a resource. Resources can represent any shared object, and are identified
- * by a type (hash) and a set of attributes. Resources are bound to become an instance of the resource.
+ * by a codename (string) and a set of attributes. Resources are bound to become an instance of the resource.
  * At run time the resource may present additional attributes, but will always have at least the
- * attributes specified in the bind request.
+ * attributes specified in the bind request. Thay can also be assigned a human readable name for
+ * descriptions.
  */
 abstract class Resource  {
     /**
@@ -28,14 +28,14 @@ abstract class Resource  {
 
         @Override
         String getCommand( Template t ) throws Exception {
-            return String.format("bind %s %s", r.getHash().toString(), a.toString());
+            return String.format("bind %s %s", r.getCodename().toString(), a.toString());
         }
 
         @Override
         String getDescription() throws Exception {
             StringBuilder sb = new StringBuilder();
             sb.append( "Assign a resource <tt>" );
-            sb.append( r.getHash().toString() );
+            sb.append( r.getCodename().toString() );
             sb.append( "</tt> (" );
             sb.append( r.getDescription() );
             sb.append( ")" );
@@ -69,25 +69,23 @@ abstract class Resource  {
     }
 
     Generator generator;
-    long pk;
+    String codename;
     String name;
-    Hash hash;
     UUID instance;
     BindAction bound;
     private Map<String, String> attributeMap;
 
-    Resource(Generator generator, String name, Hash hash) {
+    /**
+     * Construct a resource definition.
+     * @param generator
+     * @param name
+     * @param codename
+     */
+    Resource(Generator generator, String name, String codename) {
         this.instance = UUID.randomUUID();
         this.generator = generator;
         this.name = name;
-        this.hash = hash;
-        generator.core.findResource( this );
-        if ( pk == 0 )
-            System.err.println( "ERROR: Resource " + hash.toString() + " not in database." );
-    }
-
-    long getPK() {
-        return pk;
+        this.codename = codename;
     }
     
     /**
@@ -111,10 +109,9 @@ abstract class Resource  {
         
         bound = new BindAction( this, attributes );
         generator.add( bound );
-        generator.core.findResource( this );
         this.attributeMap = attributes.getAttributes();
         if ( Generator.trace )
-            System.err.println(String.format("Resource %s (%s) (%s) bound with attributes '%s'.", name, hash, instance, attributes));
+            System.err.println(String.format("Resource %s (%s) bound with attributes '%s'.", name, instance, attributes));
     }
 
     /**
@@ -126,12 +123,11 @@ abstract class Resource  {
     }
     
     /**
-     * Return the hash that identifies the type of the resource. Each resource type is associated
-     * with a set of resource providers that know how to create instances of the resource type.
-     * @return The unique hash of the resource type.
+     * Return the code name of the resource, which must be unique and understood by the resource provider.
+     * @return The code name of the resource.
      */
-    public Hash getHash() {
-        return hash;
+    public String getCodename() {
+        return codename;
     }
     
     /**

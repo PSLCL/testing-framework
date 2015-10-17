@@ -5,7 +5,7 @@ var config = require('../../config/config');
 // [GET] list of tests by test plan
 exports.list = function (req, res) {
   mysql.getConnection(function(err,conn) {
-    conn.query('SELECT pk_test,name,fk_test_plan FROM test ' +
+    conn.query('SELECT pk_test,name,description,script,fk_test_plan FROM test ' +
       'WHERE fk_test_plan = ?', req.param('pk_test_plan'),
       function (err, result) {
         if (err) throw err;

@@ -3,9 +3,10 @@ var app = angular.module('qa-portal');
 // Test plans service for handling all test plans
 app.factory('TestPlans', function ($resource) {
   return $resource('/api/v1/test_plans', {
-    after: '@id',
-    filter: '@string',
-    sort_by: '@string'
+    filter:  '@string',
+    order:   '@string',
+    limit:   '@string',
+    offset:  '@string'
   });
 });
 
@@ -17,3 +18,8 @@ app.factory('TestPlan', function ($resource) {
     sort_by: '@string'
   });
 });
+
+app.factory('TestPlanReport', function($resource) {
+  return $resource('/api/v1/instances?plan=:testPlanId', {});
+})
+

@@ -29,6 +29,14 @@ public interface Module {
     public String getVersion();
     
     /**
+     * Return the status of the module. This will likely have meaning to the module or the organization,
+     * but no particular meaning is given by the testing framework. The information is available to
+     * the generator and may influence the level of testing required.
+     * @return
+     */
+    public String getStatus();
+    
+    /**
      * Return the sequence of the module. The sequence is used in addition to the version in order to differentiate
      * versions of a module. The sequence must sort all instances of a single version into increasing order, with
      * the latest being the most recent. The sort is done as strings, not as numbers.
