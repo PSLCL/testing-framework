@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.pslcl.qa.runner.resource.ResourceWithAttributes;
-import com.pslcl.qa.runner.resource.ResourceWithAttributesInstance;
+import com.pslcl.qa.runner.resource.ResourceDescription;
+import com.pslcl.qa.runner.resource.instance.ResourceWithAttributesInstance;
 
 public class StepsParser {
     
@@ -88,7 +88,7 @@ public class StepsParser {
         // 2 rules: every step is terminated by \n; any step can be empty (i.e. its first character can be \n)
         // parse one step
         String retStep = null;
-        if (offset >= 0) {
+        if (offset>=0 && steps!=null) {
             int termOffset = steps.indexOf('\n', offset); // -1 return means steps has no \n at or after offset
             if (termOffset >= 0) {
                 retStep = steps.substring(offset, termOffset); // trailing \n not included
@@ -113,17 +113,21 @@ public class StepsParser {
      * @return In-order List<String> when at least the first step matches param stepType  
      */
     List<String> getNextSteps(String stepTag) {
-        // process any one step with this rule: step command is the first characters leading up to the first space char
         List<String> retList = null; // capacity grows as elements are added; null elements are permitted
-        if (offset >= 0 &&
-            steps.indexOf('\n', offset) >= 0) // -1 return means steps has no \n at or after offset
-        {
-            retList = new ArrayList<String>(); // empty list
-            for (int i=0; ; i++) {
-                if (!steps.substring(offset, offset+stepTag.length()).equals(stepTag))
-                    break;
-                String strBindStep = getNextStep();
-                retList.add(i, strBindStep); // i: 0 ... n
+        if (steps == null) {
+            System.out.println("StepsParser.getNextSteps() finds null steps member variable"); // I never see this; it has beenn seen before
+        } else {
+            // process any one step with this rule: step command is the first characters leading up to the first space char
+            if (offset >= 0 &&
+                steps.indexOf('\n', offset) >= 0) // -1 return means steps has no \n at or after offset
+            {
+                retList = new ArrayList<String>(); // empty list
+                for (int i=0; ; i++) {
+                    if (!steps.substring(offset, offset+stepTag.length()).equals(stepTag))
+                        break;
+                    String strBindStep = getNextStep();
+                    retList.add(i, strBindStep); // i: 0 ... n
+                }
             }
         }
         return retList;
@@ -133,10 +137,10 @@ public class StepsParser {
      * 
      * @return
      */
-    List<ResourceWithAttributes> computeResourceQuery() {
-        List<ResourceWithAttributes> retList = new ArrayList<>();
+    List<ResourceDescription> computeResourceQuery() {
+        List<ResourceDescription> retList = new ArrayList<>();
         List<String> bindList = getNextSteps("bind "); // list is indexed by original line number
-        for (int bindReference=0; bindReference<bindList.size(); bindReference++) {
+        for (int bindReference=0; bindList!=null && bindReference<bindList.size(); bindReference++) {
             // add next bind resource to the resource request
             String bindStep = bindList.get(bindReference);
             System.out.println("StepsParser.computeResourceQuery() finds bind step " + bindReference + ": " + bindStep);
@@ -158,7 +162,7 @@ public class StepsParser {
 //                        offset = -1; // done
 //                }
 
-                ResourceWithAttributes rwa = new ResourceWithAttributesInstance(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
+                ResourceDescription rwa = new ResourceWithAttributesInstance(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
                 retList.add(rwa); // or retList.add(i, ra);
             }
         }

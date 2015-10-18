@@ -1,6 +1,6 @@
 package com.pslcl.qa.runner.template;
 
-import com.pslcl.qa.runner.resource.ResourceInstance;
+import com.pslcl.qa.runner.resource.instance.ResourceInstance;
 
 public class ResourceInfo implements Comparable<ResourceInfo> {
     private ResourceInstance resourceInstance;
@@ -9,15 +9,21 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
     private String network = null;
     private String runParams = null;
 
-    private int getReference() {
+    private long getReference() {
         return resourceInstance.getReference();
     }
-
     
     // implement Comparable interface
     @Override
-    public int compareTo(ResourceInfo ori) {
-        return this.resourceInstance.getReference() - ori.getReference();
+    public int compareTo(ResourceInfo ori) 
+    {
+        long delta = resourceInstance.getReference() - ori.resourceInstance.getReference(); 
+        
+        if(delta < 0)
+            return -1;
+        if(delta > 0)
+            return 1;
+        return 0;
     }
 
    

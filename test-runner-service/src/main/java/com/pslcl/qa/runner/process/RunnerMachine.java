@@ -1,10 +1,11 @@
 package com.pslcl.qa.runner.process;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.LoggerFactory;
 
 import com.pslcl.qa.runner.RunnerService;
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
 import com.pslcl.qa.runner.template.TemplateProvider;
 
 
@@ -14,73 +15,93 @@ import com.pslcl.qa.runner.template.TemplateProvider;
  */
 public class RunnerMachine {
 
+    
     // class members
 
-    final RunnerService runnerService;
-    final ExecutorService templateExecutorService; // supplies threads for individual template tasks
-    public final TemplateProvider tp;
-
-
+    private final AtomicBoolean initialized;
+    private volatile TemplateProvider templateProvider;
+    private volatile RunnerServiceConfig config;
     
-    // sub classes
-    
-    /**
-     * For threads created by templateExecutorService, specify thread name and sets daemon true
-     */
-    private class DescribedTemplateThreadFactory implements ThreadFactory {
-        
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(r);
-            t.setDaemon(true);
-            t.setName("threadFromTemplateExecutor");
-            return t;
-        }
-
-    }
-
     /** Constructor
      * 
      * @param runnerService
      */
-    public RunnerMachine(RunnerService runnerService) {
-        this.runnerService = runnerService;
-        templateExecutorService = Executors.newCachedThreadPool(new DescribedTemplateThreadFactory());
-        tp = new TemplateProvider();
+    public RunnerMachine() {
+        initialized = new AtomicBoolean(false);
+    }
+
+    public RunnerServiceConfig getConfig()
+    {
+        return config;
+    }
+    
+    public TemplateProvider getTemplateProvider()
+    {
+        return templateProvider;
+    }
+    
+    
+    public RunnerService getService()
+    {
+        if(!initialized.get())
+        {
+            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".getService called before daemon init completed");
+            return null;  //TODO: yea bad things are going to happen, never happen right??  
+            // remove this if no constructor and no init method could cause this ... i.e. only possible after daemon.start();
+        }
+        return config.runnerService;
+    }
+    
+    public void init(RunnerServiceConfig config) throws Exception
+    {
+        this.config = config;
+        templateProvider = new TemplateProvider();
+        config.statusTracker.registerResourceStatusListener(templateProvider);
+        templateProvider.init(config);
+        initialized.set(true);
+    }
+    
+    public void destroy() 
+    {
+        config.statusTracker.deregisterResourceStatusListener(templateProvider);
+        templateProvider.destroy();
+        initialized.set(false);
     }
     
     /**
-     * Accept new template to eventually become a test run
+     * Accept new template to become a test run, with an entry in table run
      * 
-     * @note runnerService.ackQueueStoreEntry() must eventually be called; it may quickly be called in this method, or eventually from a distant thread  
+     * @note runnerService.ackQueueStoreEntry() must eventually be called; it may quickly be called in this method, or eventually from a distant thread
+     * @oaram reNum
      * @param message An opaque Java object, used to acknowledge the message when processing is complete
      * @throws Exception
      */
-    public void initiateProcessing(long dtNum, Object message) {
+    public void initiateProcessing(long reNum, Object message) {
         try {
-            DescribedTemplateState dtState = new DescribedTemplateState(dtNum, message);
-            Action action = dtState.getAction();  // Action.INITIALIZE_INSTANCE
-            Action nextAction = action.act(dtState, null, this.tp, runnerService);            
-            // for anything returned except ACTION.DISCARDED: the new dtState is stored in ActionStore
+            RunEntryState reState = new RunEntryState(reNum, message);
+            Action action = reState.getAction();  // Action.INITIALIZE
+            Action nextAction = action.act(reState, null, this.templateProvider, config.runnerService);            
+            // .act() stores nextAction in reState and returns it
         } catch (Exception e) {
-            System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling dtNum " + dtNum + ": " + e + ". Message remains in the QueueStore.");
+            System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling reNum " + reNum + ": " + e + ". Message remains in the QueueStore.");
         }
     }
     
     /**
-     * @param dtNum
+     * @note can drop reNum, the given run entry
+     * @param reNum
      */
-    void addNewTemplate(long dtNum, DescribedTemplateState dtState) {
-        // TODO. May choose to not process this new template; would be because this RunnerService node is overloaded
-        // boolean doProcess = determineDoProcess(tNum, iState);
+    void engageNewRunEntry(long reNum, RunEntryState reState) {
+        // TODO. May choose to not process this new template; would be because this RunnerService node is overloaded. Or because this run entry already has a result stored
+        // boolean doProcess = determineDoProcess(reNum, reState);
         // if (doProcess)
         {
-            DescribedTemplateState dtStateOld = runnerService.actionStore.put(dtNum, dtState);
-            // TODO: For dtStateOld not null, consider: is this a bug, or shall we cleanup whatever it is that tStateOld shows has been allocated or started or whatever?
+            RunEntryState reStateOld = config.runnerService.actionStore.put(reNum, reState);
+            // TODO: For reStateOld not null, consider: is this a bug, or shall we cleanup whatever it is that reStateOld shows has been allocated or started or whatever?
         }
         
         try {
-            new DescribedTemplateTask(this, dtNum);
+            new RunEntryTask(this, reNum);
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -89,11 +110,11 @@ public class RunnerMachine {
 
     /**
      * 
-     * @param dtNum
+     * @param reNum
      */
-    void removeTemplate(long dtNum) {
-        DescribedTemplateState dtStateOld = runnerService.actionStore.remove(dtNum);
-        // TODO: Shall we cleanup whatever it is that dtStateOld shows has been allocated or started or whatever?
+    void removeTemplateRun(long reNum) {
+        RunEntryState reStateOld = config.runnerService.actionStore.remove(reNum);
+        // TODO: Shall we cleanup whatever it is that reStateOld shows has been allocated or started or whatever?
     }
     
 }

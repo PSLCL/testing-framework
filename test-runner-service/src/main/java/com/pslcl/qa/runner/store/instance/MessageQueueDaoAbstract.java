@@ -3,7 +3,9 @@ package com.pslcl.qa.runner.store.instance;
 import javax.jms.JMSException;
 import javax.jms.Message;
 
-import com.pslcl.qa.runner.RunnerService;
+import org.apache.commons.daemon.DaemonInitException;
+
+import com.pslcl.qa.runner.config.RunnerServiceConfig;
 
 /**
  * This DAO layer knows about JMS. Using this DAO enforces JMS compatibility.
@@ -11,10 +13,15 @@ import com.pslcl.qa.runner.RunnerService;
  *
  */
 public abstract class MessageQueueDaoAbstract implements QueueStoreDao {
-    private final RunnerService runnerService;
+    private volatile RunnerServiceConfig config;
     
-    public MessageQueueDaoAbstract(RunnerService runnerService) {
-        this.runnerService = runnerService;
+    public MessageQueueDaoAbstract() {
+    }
+    
+    @Override
+    public void init(RunnerServiceConfig config) throws Exception
+    {
+        this.config = config;
     }
     
     /**
@@ -23,9 +30,9 @@ public abstract class MessageQueueDaoAbstract implements QueueStoreDao {
      * @param message
      * @return
      */
-    boolean submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Exception {
+    public boolean submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Exception {
         try {
-            runnerService.submitQueueStoreNumber(strQueueStoreEntryNumber, message);
+            config.runnerService.submitQueueStoreNumber(strQueueStoreEntryNumber, message);
             return true;
         } catch (Exception e) {
             return false;
