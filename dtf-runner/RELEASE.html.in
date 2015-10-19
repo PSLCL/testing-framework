@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+<head><title>@PACKAGE_NAME@ Release Information</title></head>
+<body>
+<h1>@PACKAGE_NAME@ (@PACKAGE_TARNAME@) Release Information</h1>
+
+<h2>Version @PACKAGE_VERSION_FULL@</h2>
+<p>(@BUILD_DATE@, from path "@BUILD_PATH@" at commit @BUILD_REVISION@ on branch "@BUILD_BRANCH@" of repository @BUILD_REPOSITORY@)</p>
+
+<p>This is the initial public release of this project.</p>
+
+<p>More information can be found on this project at <a href="@PACKAGE_URL@">@PACKAGE_URL@</a>.</p>
+</body>
+</html>
