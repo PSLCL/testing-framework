@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.pslcl.dtf.common.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 

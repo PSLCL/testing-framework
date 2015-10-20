@@ -19,16 +19,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import com.pslcl.dtf.common.config.RunnerConfig;
-import com.pslcl.dtf.common.resource.ReservedResource;
-import com.pslcl.dtf.common.resource.ResourceDescription;
-import com.pslcl.dtf.common.resource.ResourceQueryResult;
-import com.pslcl.dtf.common.resource.exception.ResourceNotFoundException;
-import com.pslcl.dtf.common.resource.exception.ResourceNotReservedException;
-import com.pslcl.dtf.common.resource.instance.NetworkInstance;
-import com.pslcl.dtf.common.resource.instance.ResourceInstance;
-import com.pslcl.dtf.common.resource.provider.NetworkProvider;
-import com.pslcl.dtf.common.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
+import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
+import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {

@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2010-2015, Panasonic Corporation.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
 package com.pslcl.dtf.runner.template;
 
 import java.util.ArrayList;
@@ -7,20 +22,20 @@ import java.util.concurrent.Future;
 
 import org.slf4j.LoggerFactory;
 
-import com.pslcl.dtf.common.config.RunnerConfig;
-import com.pslcl.dtf.common.config.util.PropertiesFile;
-import com.pslcl.dtf.common.config.util.StrH.StringPair;
-import com.pslcl.dtf.common.resource.ReservedResource;
-import com.pslcl.dtf.common.resource.ResourceDescImpl;
-import com.pslcl.dtf.common.resource.ResourceDescription;
-import com.pslcl.dtf.common.resource.ResourceQueryResult;
-import com.pslcl.dtf.common.resource.exception.ResourceNotFoundException;
-import com.pslcl.dtf.common.resource.exception.ResourceNotReservedException;
-import com.pslcl.dtf.common.resource.instance.ResourceInstance;
-import com.pslcl.dtf.common.resource.provider.MachineProvider;
-import com.pslcl.dtf.common.resource.provider.NetworkProvider;
-import com.pslcl.dtf.common.resource.provider.PersonProvider;
-import com.pslcl.dtf.common.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceDescImpl;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
+import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
+import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
+import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.util.PropertiesFile;
+import com.pslcl.dtf.core.util.StrH.StringPair;
 
 /**
  * Contains ResourceProvider instantiated objects and supplies access to them 

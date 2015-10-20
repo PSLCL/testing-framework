@@ -20,10 +20,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.amazonaws.services.ec2.model.InstanceType;
-import com.pslcl.dtf.common.config.RunnerConfig;
-import com.pslcl.dtf.common.resource.ResourceDescription;
-import com.pslcl.dtf.common.resource.exception.ResourceNotFoundException;
-import com.pslcl.dtf.resource.aws.AwsNames;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.dtf.resource.aws.attr.AwsNames;
 
 public class InstanceFinder
 {

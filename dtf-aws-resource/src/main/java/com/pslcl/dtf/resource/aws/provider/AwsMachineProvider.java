@@ -23,16 +23,16 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.services.ec2.model.InstanceType;
-import com.pslcl.dtf.common.config.RunnerConfig;
-import com.pslcl.dtf.common.resource.ReservedResource;
-import com.pslcl.dtf.common.resource.ResourceDescription;
-import com.pslcl.dtf.common.resource.ResourceQueryResult;
-import com.pslcl.dtf.common.resource.exception.ResourceNotFoundException;
-import com.pslcl.dtf.common.resource.exception.ResourceNotReservedException;
-import com.pslcl.dtf.common.resource.instance.MachineInstance;
-import com.pslcl.dtf.common.resource.instance.ResourceInstance;
-import com.pslcl.dtf.common.resource.provider.MachineProvider;
-import com.pslcl.dtf.common.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
+import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
+import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
 
 /**

@@ -16,8 +16,8 @@ import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazon.sqs.javamessaging.SQSSession;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.pslcl.dtf.common.config.RunnerConfig;
-import com.pslcl.dtf.common.messageQueue.MessageQueueBase;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.messageQueue.MessageQueueBase;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 
 /**

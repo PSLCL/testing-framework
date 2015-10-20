@@ -20,8 +20,8 @@ import java.util.concurrent.Callable;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.pslcl.dtf.common.resource.ReservedResource;
-import com.pslcl.dtf.common.resource.instance.MachineInstance;
+import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider.MachineReservedResource;
 
 public class MachineInstanceFuture implements Callable<MachineInstance>

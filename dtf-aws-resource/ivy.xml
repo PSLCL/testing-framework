@@ -16,8 +16,8 @@
 -->
 <ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
   <info organisation="com.pslcl.dtf" module="dtf-aws-resource" revision="1.0">
-    <license name="ISC License" url="https://opendof.org/license-code/"/>
-    <repository name="com.pslcl" url="https://asset.opendof.org/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
+    <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
+    <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
     <description homepage="https://opendof.org/">
 The Interface Repository Core Library contains Java classes with functionality required by multiple Interface Repository components.
     </description>
@@ -34,18 +34,16 @@ The Interface Repository Core Library contains Java classes with functionality r
     <conf name="dist" visibility="public" description="contains only the standard, binary distribution, with no transitive dependencies"/>
   </configurations>
   <publications>
-  <!--
     <artifact conf="sources" name="${ivy.module.group}-${ivy.module}-${version.simple}.src" type="source" ext="tar.gz"/>
     <artifact conf="sources" name="${jar.name}-${version.simple}-sources"/>
     <artifact conf="dist" name="${ivy.module.group}-${ivy.module}-${version.simple}.noarch" type="dist" ext="tar.gz"/>
     <artifact conf="master" name="${jar.name}-${version.simple}"/>
     <artifact conf="javadoc" name="${jar.name}-${version.simple}-javadoc"/>
-    -->
   </publications>
   <dependencies>
-  <!--
-    <dependency org="org.opendof.tools-interface-repository" name="interface-repository-data-accessor" rev="[1,2)" conf="compile->master,compile;javadoc"/>
-    <dependency org="org.slf4j" name="slf4j-api" rev="[1.7,2)" conf="compile->master,compile"/>
-    -->
+    <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="[1,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk" rev="[1.10.23,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="com.amazonaws" name="amazon-sqs-java-messaging-lib" rev="[1,2)" conf="compile->master,compile;javadoc"/>
   </dependencies>
 </ivy-module>

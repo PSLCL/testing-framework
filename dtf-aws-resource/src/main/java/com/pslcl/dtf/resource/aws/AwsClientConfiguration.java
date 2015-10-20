@@ -17,13 +17,15 @@ package com.pslcl.dtf.resource.aws;
 
 import java.net.InetAddress;
 
+import javax.jms.JMSException;
+
 import org.apache.commons.daemon.DaemonInitException;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.retry.RetryPolicy;
-import com.pslcl.dtf.common.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
 public class AwsClientConfiguration
 {

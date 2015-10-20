@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2010-2015, Panasonic Corporation.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
 package com.pslcl.dtf.runner.template;
 
 import java.util.ArrayList;
@@ -11,19 +26,19 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.pslcl.dtf.common.artifact.ArtifactNotFoundException;
-import com.pslcl.dtf.common.config.RunnerConfig;
-import com.pslcl.dtf.common.config.status.ResourceStatus;
-import com.pslcl.dtf.common.config.status.ResourceStatusListener;
-import com.pslcl.dtf.common.resource.ReservedResource;
-import com.pslcl.dtf.common.resource.ResourceDescription;
-import com.pslcl.dtf.common.resource.ResourceQueryResult;
-import com.pslcl.dtf.common.resource.exception.IncompatibleResourceException;
-import com.pslcl.dtf.common.resource.exception.ResourceNotReservedException;
-import com.pslcl.dtf.common.resource.instance.MachineInstance;
-import com.pslcl.dtf.common.resource.instance.NetworkInstance;
-import com.pslcl.dtf.common.resource.instance.PersonInstance;
-import com.pslcl.dtf.common.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.artifact.ArtifactNotFoundException;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.config.status.ResourceStatus;
+import com.pslcl.dtf.core.runner.config.status.ResourceStatusListener;
+import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.exception.IncompatibleResourceException;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
+import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
+import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
+import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
+import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.runner.process.DBTemplate;
 
 public class TemplateProvider implements ResourceStatusListener {

@@ -30,13 +30,13 @@ import com.amazonaws.services.ec2.model.DescribeImagesRequest;
 import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Image;
-import com.pslcl.dtf.common.config.RunnerConfig;
-import com.pslcl.dtf.common.config.util.PropertiesFile;
-import com.pslcl.dtf.common.config.util.StrH;
-import com.pslcl.dtf.common.config.util.StrH.StringPair;
-import com.pslcl.dtf.common.resource.ResourceDescription;
-import com.pslcl.dtf.common.resource.exception.ResourceNotFoundException;
-import com.pslcl.dtf.resource.aws.AwsNames;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.dtf.core.util.PropertiesFile;
+import com.pslcl.dtf.core.util.StrH;
+import com.pslcl.dtf.core.util.StrH.StringPair;
+import com.pslcl.dtf.resource.aws.attr.AwsNames;
 
 public class ImageFinder
 {
