@@ -19,7 +19,7 @@
     <license name="ISC License" url="https://opensource.org/licenses/ISC"/>
     <repository name="PSLCL/testing-framework" url="https://github.com" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
     <description homepage="https://github.com/PSLCL/testing-framework/">
-The Distributed Test Framework contains Java classes with functionality required by multiple DTF components.
+The Distributed Test Framework common interfaces and core implementation.
     </description>
   </info>
   <configurations>
