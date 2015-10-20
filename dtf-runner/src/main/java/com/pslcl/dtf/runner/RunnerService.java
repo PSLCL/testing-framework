@@ -40,7 +40,7 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
  * RunnerService has no requirement that it be instantiated more than once, but it is coded to allow that possibility.
  * Static references are limited to the Action enum (holds pure code), the QueueStore (one only), and the template database (one only).
  */
-public class RunnerService implements Runner
+public class RunnerService implements Runner, RunnerServiceMBean
 {
     // static declarations
 

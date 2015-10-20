@@ -18,8 +18,8 @@
   <property name="name" value="Pansonic Distributed Test Framework AWS Attributes"/>
   <property name="javadoc.packagenames.include" value="com.pslcl.dtf.resource.aws.attr.*"/>
   <property name="javadoc.packagenames.exclude" value="*.internal"/>
-  <property name="ant.build.javac.source" value="1.8"/>
-  <property name="ant.build.javac.target" value="1.8"/>
+  <property name="ant.build.javac.source" value="1.7"/>
+  <property name="ant.build.javac.target" value="1.7"/>
   <property name="includelibs" value="none"/>
   <property name="jar.sealed" value="false"/>
 

@@ -23,7 +23,7 @@ import org.apache.commons.daemon.Daemon;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
-public interface Runner extends Daemon, RunnerMBean, UncaughtExceptionHandler
+public interface Runner extends Daemon, UncaughtExceptionHandler
 {
     public RunnerConfig getConfig();
 
