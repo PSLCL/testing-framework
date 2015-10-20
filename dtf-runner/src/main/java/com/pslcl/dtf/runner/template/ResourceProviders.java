@@ -42,13 +42,13 @@ import com.pslcl.dtf.core.util.StrH.StringPair;
  */
 public class ResourceProviders implements ResourceProvider {
 
-    public static final String MachineProviderClassKey = "pslcl.qa.runner.template.machine-provider-class"; 
-    public static final String PersonProviderClassKey = "pslcl.qa.runner.template.person-provider-class"; 
-    public static final String NetworkProviderClassKey = "pslcl.qa.runner.template.network-provider-class";
+    public static final String MachineProviderClassKey = "pslcl.dtf.runner.template.machine-provider-class"; 
+    public static final String PersonProviderClassKey = "pslcl.dtf.runner.template.person-provider-class"; 
+    public static final String NetworkProviderClassKey = "pslcl.dtf.runner.template.network-provider-class";
     
-    public static final String MachineProviderClassDefault = "com.pslcl.qa.runner.resource.aws.provider.AwsMachineProvider";
-    public static final String PersonProviderClassDefault = "com.pslcl.qa.runner.resource.aws.provider.AwsPersonProvider";
-    public static final String NetworkProviderClassDefault = "com.pslcl.qa.runner.resource.aws.provider.AwsNetworkProvider";
+    public static final String MachineProviderClassDefault = "com.pslcl.dtf.resource.aws.provider.AwsMachineProvider";
+    public static final String PersonProviderClassDefault = "com.pslcl.dtf.resource.aws.provider.AwsPersonProvider";
+    public static final String NetworkProviderClassDefault = "com.pslcl.dtf.resource.aws.provider.AwsNetworkProvider";
     
     private final List<ResourceProvider> resourceProviders;
 
