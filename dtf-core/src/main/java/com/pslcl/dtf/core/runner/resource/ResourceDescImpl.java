@@ -55,16 +55,16 @@ public class ResourceDescImpl implements ResourceDescription
 
     /**
      * 
-     * @param resourceWithAttributes Must not be null
+     * @param resourceDescription Must not be null
      * @return
      */
-    public boolean matches(ResourceDescription resourceWithAttributes)
+    public boolean matches(ResourceDescription resourceDescription)
     {
         // match: reference, hash and attributes are equal
-        if (this.reference == resourceWithAttributes.getReference() && this.name.equals(resourceWithAttributes.getName()))
+        if (this.reference == resourceDescription.getReference() && this.name.equals(resourceDescription.getName()))
         {
             // match the attribute sets to each other
-            Map<String, String> rwaAttributes = resourceWithAttributes.getAttributes();
+            Map<String, String> rwaAttributes = resourceDescription.getAttributes();
             if (this.attributes.size() != rwaAttributes.size())
                 return false;
             // tHese keys and values might be empty strings, but they will not be null; keys are unique in each Map

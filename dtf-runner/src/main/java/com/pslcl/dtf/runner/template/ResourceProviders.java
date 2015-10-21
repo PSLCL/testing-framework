@@ -133,10 +133,10 @@ public class ResourceProviders implements ResourceProvider {
     @Override
     public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) {
         
-        // Identify each ResourceProvider (like AWSMachineProvider) that understands specific requirements of individual elements of param ResourceWithAttributes and can reserve the corresponding resource.
-        //    This class has a list of all types of ResourceProvider (like AWSMachineProvider).
+        // This class has a list of all types of ResourceProvider (like AWSMachineProvider).
 
-        // Current solution- ask each ResourceProvider, in turn. TODO: Perhaps optimize by asking each ResourceProvider directly, taking advantage of knowledge of each resource provider's hash and attributes?
+    	// Identify each ResourceProvider (like AWSMachineProvider) that understands specific requirements of individual elements of param ResourceDescription and can reserve the corresponding resource.
+        // Current solution- ask each ResourceProvider, in turn. TODO: Perhaps optimize by asking each ResourceProvider directly, taking advantage of knowledge of each resource provider's hash and attributes.
 
         // start retRqr with empty lists; afterward merge reservation results into retRqr
         ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResource>(),
@@ -144,58 +144,59 @@ public class ResourceProviders implements ResourceProvider {
                                                              new ArrayList<ResourceDescription>(),
                                                              new ArrayList<ResourceDescription>());
 
-        // invite every ResourceProvider to reserve each resource in param reserveResourceRequests, as it can and as it will
+        // Until a reservation is made: Invite every known ResourceProvider to reserve each resource in param reserveResourceRequests, as it can and as it will.
         for (ResourceProvider rp : resourceProviders) {
-            // but 1st, to avoid multiple reservations: for any past success in filling any of the several rrwa S in retRqr, strip param reserveResourceRequests of that entry
-            for (ReservedResource rrwa : retRqr.getReservedResources()) {
-                for (ResourceDescription rwa : reserveResourceRequests) {
-                    ResourceDescImpl rwai = ResourceDescImpl.class.cast(rwa);
-                    if (rwai.matches(rrwa)) {
-                        reserveResourceRequests.remove(rwa);
-                        break; // done with this rwa; as we leave the for loop, we also avoid the trouble caused by altering reserveResourceRequests 
+            // but 1st, to avoid multiple reservations: for any past success in filling any of the several rrwa S in retRqr, strip list reserveResourceRequests of that entry
+            for (ReservedResource rr : retRqr.getReservedResources()) {
+                for (ResourceDescription rd : reserveResourceRequests) {
+                    ResourceDescImpl rdi = ResourceDescImpl.class.cast(rd);
+                    if (rdi.matches(rr)) {
+                        reserveResourceRequests.remove(rd);
+                        break; // done with this rd; as we leave the for loop, we also avoid the trouble caused by altering reserveResourceRequests 
                     }
                 }                
             }
             if (reserveResourceRequests.isEmpty()) {
                 // The act of finding reserveResourceRequests to be empty means all requested resources are reserved.
-                //     retRqr reflects that case: it holds all original reservation requests. 
-                //     We do not not need to check further- not for this rp and not for any remaining rp that have not been checked yet.
+                //     retRqr reflects that case: it holds all original reservation requests.
+                //     We do not not need to check further- not for this rp and not for any remaining rp that has not been checked yet.
                 break;
             }
 
-            // this rp reserves each resource in param resources, as it can and as it will 
+            // synchronous call: this ResourceProvider reserves each resource in reserveResourceRequests, as it can and as it will
             ResourceQueryResult localRqr = rp.reserveIfAvailable(reserveResourceRequests, timeoutSeconds);
+            // if ever reserve is to be handled asynchronously, then the api here could be to return Future ; this code would then convert to synchronous - wait for the computed ResourceQueryResult by using future.get() 
             retRqr.merge(localRqr); // merge localRqr into retRqr
         }
         return retRqr;
     }
 
     @Override
-    public Future<? extends ResourceInstance> bind(ReservedResource reservedResourceWithAttributes) throws ResourceNotReservedException {
-        // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
-        System.out.println("ResourceProviders.bind() called with resourceName/resourceAttributes: " + reservedResourceWithAttributes.getName() + " / " + reservedResourceWithAttributes.getAttributes());
+    public Future<? extends ResourceInstance> bind(ReservedResource reservedResource) throws ResourceNotReservedException {
+        // Note: Current implementation assumes only one instance is running of dtf-runner; so a resource reserved by a provider automatically matches this dtf-runner
+        System.out.println("ResourceProviders.bind(ReservedResource) called with resourceName/resourceAttributes: " + reservedResource.getName() + " / " + reservedResource.getAttributes());
 
         Future<? extends ResourceInstance> retRI = null;
         try {
-            // note that this bind call  must fill the return ResourceInstance with not only something like an implementation of MachineInstance or a PersonInstance, but it must fill reference, which comes from param resourceWithAttributes
-            retRI = reservedResourceWithAttributes.getResourceProvider().bind(reservedResourceWithAttributes);
+            // note that this bind call must fill the return ResourceInstance with not only something like an implementation of MachineInstance or a PersonInstance, but it must fill reference, which comes from param reservedResource
+            retRI = reservedResource.getResourceProvider().bind(reservedResource);
         } catch (ResourceNotReservedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        	System.out.println("ResourceProviders.bind(ReservedResource) receives exception from its specific resource .bind() call " + e);
+        	throw e;
         }
         return retRI;
     }
 
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException {
-        // Note: Current implementation assumes only one instance is running of test-runner-service; so a resource reserved by a provider automatically matches this test-runner-service
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> reservedResources) {
+        // Note: Current implementation assumes only one instance is running of dtf-runner; so a resource reserved by a provider automatically matches this dtf-runner
         List<Future<? extends ResourceInstance>> retRiList = new ArrayList<>();
-        for(int i=0; i<resources.size(); i++) {
+        for(int i=0; i<reservedResources.size(); i++) {
             try {
-                retRiList.add(this.bind(resources.get(i)));
+                retRiList.add(this.bind(reservedResources.get(i)));
             } catch (ResourceNotReservedException e) {
                 retRiList.add(null);
-                System.out.println("ResourceProviders.bind(List<> resources) stores null entry");
+                System.out.println("ResourceProviders.bind(List<ReservedResource>) stores one null entry in returned list");
             }
         }
         return retRiList;

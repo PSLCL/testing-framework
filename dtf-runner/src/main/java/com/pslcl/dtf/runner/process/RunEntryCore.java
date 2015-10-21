@@ -68,7 +68,7 @@ public class RunEntryCore {
                 dbTemplate.start_time = resultSet.getDate("start_time");
                 dbTemplate.ready_time = resultSet.getDate("ready_time");
                 dbTemplate.end_time = resultSet.getDate("end_time");
-                dbTemplate.result = resultSet.getBoolean("result");
+                dbTemplate.result = (resultSet.getObject("result") != null) ? resultSet.getBoolean("result") : null;
                 dbTemplate.owner = resultSet.getString("owner");
                 System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from run-template matched records for reNum " + this.reNum + ", pk_template " + dbTemplate.pk_template);
                 if (resultSet.next())
@@ -108,7 +108,7 @@ public class RunEntryCore {
                 user = "guest";
                 password = "";
             }
-            Class.forName("com.mysql.jdbc.Driver"); // required at run time only for .getConnection(): mysql-connector-java-5.1.35.jar
+            // com.mysql.jdbc.Driver required at run time only for .getConnection()
             connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
         } catch ( Exception e ) {
             System.err.println( "ERROR: RunEntryCore.openDatabase() could not open database connection, " + e.getMessage() );

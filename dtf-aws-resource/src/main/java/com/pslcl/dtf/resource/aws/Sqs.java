@@ -138,17 +138,10 @@ public class Sqs extends MessageQueueBase {
                 connection = null;
             }
 
-            //TODO: Clint review as he had this code in. 
-            // this is not likely a good practice for the build system which handles compile time requirements 
-            // separate from deployed runtime requirements.  Also if using ivy or maven this will be picked up
-            // automatically as needed via the compile/runtime separation of all dependencies to any depth.
-            // suggest moving your personal eclipse build to ivy or maven.
-            // also see AwsClientConfiguration where they have been commented out there at this time.
-            
-            Class.forName("com.fasterxml.jackson.core.Versioned");            // required at run time for Sqs connect, below
-            Class.forName("com.amazonaws.services.sqs.AmazonSQS");            // required at run time for SQSConnectionFactory.builder()
-            Class.forName("org.joda.time.format.DateTimeFormat");             // required at run time for Sqs connect, below
-            Class.forName("org.apache.http.protocol.HttpContext");            // required at run time for Sqs connect, below
+            // com.fasterxml.jackson.core.Versioned            // required at run time for Sqs connect, below
+            // com.amazonaws.services.sqs.AmazonSQS            // required at run time for SQSConnectionFactory.builder()
+            // org.joda.time.format.DateTimeFormat             // required at run time for Sqs connect
+            // org.apache.http.protocol.HttpContext            // required at run time for Sqs connect, below
             
             SQSConnectionFactory connectionFactory =  SQSConnectionFactory.builder()
                     .withClientConfiguration(awsClientConfig.clientConfig)

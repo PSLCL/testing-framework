@@ -101,11 +101,11 @@ public class ResourceQueryResult
 //    /**
 //     * Add an unavailable resource to the list of unavailable resources.
 //     *  
-//     * @param rwa The unavailable resource to add.
+//     * @param resourceDescription The unavailable resource to add.
 //     */
-//    public void unavailabledResourcesAdd(ResourceWithAttributes rwa) {
+//    public void unavailabledResourcesAdd(ResourceDescription resourceDescription) {
 //        synchronized (reservedResources) {
-//            this.availableResources.add(rwa);
+//            this.availableResources.add(resourceDescription);
 //        }
 //    }
     
@@ -125,11 +125,11 @@ public class ResourceQueryResult
 //    /**
 //     * Add an invalid resource to the list of invalid resources.
 //     *  
-//     * @param rwa The invalid resource to add.
+//     * @param resourceDescription The invalid resource to add.
 //     */
-//    public void invalidResourcesAdd(ResourceWithAttributes rwa) {
+//    public void invalidResourcesAdd(ResourceDescription resourceDescription) {
 //        synchronized (reservedResources) {
-//            this.invalidResources.add(rwa);
+//            this.invalidResources.add(resourceDescription);
 //        }
 //    }
     
@@ -138,7 +138,7 @@ public class ResourceQueryResult
      * Merge a given ResourceQueryResult to this object
      * 
      * @note Once the reservation is made (a reservedResource entry is placed into the reserved list), it will not be removed
-     * @param localRqr Caller is responsible to ensure that localRqr does not contain a ReservedResourceWithAttributes entry that is already stored in the reservedResources entry of this object.
+     * @param localRqr Caller is responsible to ensure that localRqr does not contain a ReservedResource entry that is already stored in the reservedResources entry of this object.
      */
     public void merge(ResourceQueryResult localRqr)
     {

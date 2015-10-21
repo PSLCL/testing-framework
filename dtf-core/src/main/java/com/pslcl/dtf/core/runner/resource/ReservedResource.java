@@ -35,13 +35,13 @@ public class ReservedResource implements ResourceDescription
 
     /**
      * constructor
-     * @param resourceWithAttributes
+     * @param resourceDescription
      * @param resourceProvider
      * @param timeoutSeconds
      */
-    public ReservedResource(ResourceDescription resourceWithAttributes, ResourceProvider resourceProvider, int timeoutSeconds)
+    public ReservedResource(ResourceDescription resourceDescription, ResourceProvider resourceProvider, int timeoutSeconds)
     {
-        this(resourceWithAttributes.getName(), resourceWithAttributes.getAttributes(), resourceWithAttributes.getReference(), resourceProvider, timeoutSeconds);
+        this(resourceDescription.getName(), resourceDescription.getAttributes(), resourceDescription.getReference(), resourceProvider, timeoutSeconds);
     }
 
     /**
@@ -61,7 +61,7 @@ public class ReservedResource implements ResourceDescription
         this.endTime = System.currentTimeMillis() + (timeoutSeconds * 1000);
     }
 
-    // implement ResourceWithAttributes interface
+    // implement ResourceDescription interface
 
     @Override
     public String getName()

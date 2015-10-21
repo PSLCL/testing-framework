@@ -41,13 +41,13 @@ public class AwsMachineInstance implements MachineInstance
      * 
      * @param resource
      */
-    public AwsMachineInstance(ReservedResource reservedResourceWithAttributes)
+    public AwsMachineInstance(ReservedResource reservedResource)
     {
-        name = reservedResourceWithAttributes.getName();
-        attributes = reservedResourceWithAttributes.getAttributes();
+        name = reservedResource.getName();
+        attributes = reservedResource.getAttributes();
         // description = ;
-        resourceProvider = reservedResourceWithAttributes.getResourceProvider();
-        reference = reservedResourceWithAttributes.getReference();
+        resourceProvider = reservedResource.getResourceProvider();
+        reference = reservedResource.getReference();
     }
 
     @Override
