@@ -16,14 +16,12 @@
 package com.pslcl.dtf.runner.template;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.artifact.ArtifactNotFoundException;
@@ -34,13 +32,13 @@ import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 import com.pslcl.dtf.core.runner.resource.exception.IncompatibleResourceException;
-import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.runner.process.DBTemplate;
+import com.pslcl.dtf.runner.process.RunEntryCore;
 
 public class TemplateProvider implements ResourceStatusListener {
     
@@ -87,18 +85,19 @@ public class TemplateProvider implements ResourceStatusListener {
         if (iT != null) {
             // we will now use iT
             availableInstancedTemplates.remove(dbT.hash);
-            // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the described template, they get it, and now it is not available to another user  
+            // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the instantiated template, they get it, and now it is not available to another user  
         } else {
             iT = new InstancedTemplate(String.valueOf(dbT.hash));
             // populate iT with everything needed to behave as a reusable described template
+            
+            // NOTE: A change is coming in the future. Steps will be organized in prioritized sets, each with its own setID number. The following code follows the original rules.
+
             StepsParser stepsParser = new StepsParser(dbT.steps);
             
             // Process bind steps now, since they come first; each returned list entry is self-referenced by steps line number, from 0...n
             List<ResourceDescription> reserveResourceRequests = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
             int stepsReference = reserveResourceRequests.size();
             int originalReserveResourceRequestsSize = stepsReference;
-            
-            // NOTE: A change is coming in the future. Steps will be organized in prioritized sets, each with a setID. The following code follows original rules.
             
             // reserve the resource specified by each bind step, with 360 second timeout for each reservation
             ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
@@ -211,7 +210,7 @@ public class TemplateProvider implements ResourceStatusListener {
                     // templateHash
                     System.out.println("TemplateProvider.getInstancedTemplate() finds include as reference " + stepsReference);
                     String templateHash = StepsParser.getNextSpaceTerminatedSubString(step, offset);
-                    // we do not further extract from step
+                    // we do not further extract from this step
                     if (templateHash != null) {
                         offset += templateHash.length();
                         if (++offset > step.length())
@@ -219,8 +218,16 @@ public class TemplateProvider implements ResourceStatusListener {
                     }
                     
                     if (templateHash != null) {
-
-                        // TODO: set iT with more gathered info and instantiations and similar
+                    	RunEntryCore reCore = new RunEntryCore(null); // null: this nested template has no entry in table run
+                    	// cheap temporary solution: synchronously instantiate this template
+                    	Boolean result = false;
+                    	try {
+							result = reCore.testRun(null, this);
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+                        // TODO: set iT with more gathered info and instantiations and similar, including result
                     } else {
                         System.out.println("TemplateProvider.getInstancedTemplate() finds include to be incompletely specified");
                     }

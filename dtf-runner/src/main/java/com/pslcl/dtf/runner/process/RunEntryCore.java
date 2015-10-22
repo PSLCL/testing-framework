@@ -20,20 +20,26 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.pslcl.dtf.runner.template.InstancedTemplate;
 import com.pslcl.dtf.runner.template.TemplateProvider;
 
+/**
+ * RunEntryCore is used to instantiate templates.
+ * From a top level template down, each nested template calls this class. Hence, it is recursive. 
+ */
 public class RunEntryCore {
 
     // class members
     
-    /**
-     * The connection to the database.
-     */
-    private Connection connect = null;
-    private boolean read_only = true;
-    private long reNum;
+    /** The common connection to the database. */
+    private static AtomicInteger connectCount = new AtomicInteger(0); // ref counting
+	private static Connection connect = null;
+    private static boolean read_only = true;
+
+    /* instance members */
+    private Long reNum;
     private DBTemplate dbTemplate;
 
     
@@ -52,33 +58,57 @@ public class RunEntryCore {
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-            String strRENum = String.valueOf(this.reNum);
             statement = connect.createStatement();
-
-            // these table run entries are filled: pk_run, fk_template, start_time, and maybe owner
-            // dbTemplate.reNum was filled in constructor, now fill all other entries of dbTemplate
-            //     acquire run table information for entry reNum
-            //     acquire the matching template table information
-            resultSet = statement.executeQuery( "SELECT pk_template, hash, enabled, steps, artifacts, start_time, ready_time, end_time, result, owner " +
-                                                "FROM template " +
-                                                "JOIN run ON fk_template = pk_template " +
-                                                "WHERE pk_run = " + strRENum );
-            if ( resultSet.next() ) {
-                dbTemplate.pk_template = resultSet.getLong("pk_template");
-                dbTemplate.hash = resultSet.getBytes("hash");
-                dbTemplate.enabled = resultSet.getBoolean("enabled");
-                dbTemplate.steps = resultSet.getString("steps");
-                dbTemplate.artifacts = resultSet.getBytes("artifacts");
-                dbTemplate.start_time = resultSet.getDate("start_time");
-                dbTemplate.ready_time = resultSet.getDate("ready_time");
-                dbTemplate.end_time = resultSet.getDate("end_time");
-                dbTemplate.result = (resultSet.getObject("result") != null) ? resultSet.getBoolean("result") : null;
-                dbTemplate.owner = resultSet.getString("owner");
-                System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from run-template matched records for reNum " + this.reNum + ", pk_template " + dbTemplate.pk_template);
-                if (resultSet.next())
-                    throw new Exception("resultSet wrongly has more than one entry");
+            
+            if (reNum != null) {
+            	String strRENum = String.valueOf(this.reNum);
+            	
+                // these table run entries are filled: pk_run, fk_template, start_time, and maybe owner
+                // dbTemplate.reNum was filled in constructor, now fill all other entries of dbTemplate
+                //     acquire run table information for entry reNum
+                //     acquire the matching template table information
+                resultSet = statement.executeQuery( "SELECT pk_template, hash, enabled, steps, artifacts, start_time, ready_time, end_time, result, owner " +
+                                                    "FROM template " +
+                                                    "JOIN run ON fk_template = pk_template " +
+                                                    "WHERE pk_run = " + strRENum );
+                if ( resultSet.next() ) {
+                    dbTemplate.pk_template = resultSet.getLong("pk_template");
+                    dbTemplate.hash = resultSet.getBytes("hash");
+                    dbTemplate.enabled = resultSet.getBoolean("enabled");
+                    dbTemplate.steps = resultSet.getString("steps");
+                    dbTemplate.artifacts = resultSet.getBytes("artifacts");
+                    dbTemplate.start_time = resultSet.getDate("start_time");
+                    dbTemplate.ready_time = resultSet.getDate("ready_time");
+                    dbTemplate.end_time = resultSet.getDate("end_time");
+                    dbTemplate.result = (resultSet.getObject("result") != null) ? resultSet.getBoolean("result") : null;
+                    dbTemplate.owner = resultSet.getString("owner");
+                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from run-template matched records for reNum " + this.reNum + ", pk_template " + dbTemplate.pk_template);
+                    if (resultSet.next())
+                        throw new Exception("resultSet wrongly has more than one entry");
+                } else {
+                    throw new Exception("template data not present");
+                }
             } else {
-                throw new Exception("template data not present");
+                // acquire template table information
+                resultSet = statement.executeQuery( "SELECT pk_template, hash, enabled, steps " +
+                                                    "FROM template " );
+                if ( resultSet.next() ) {
+                    dbTemplate.pk_template = resultSet.getLong("pk_template");
+                    dbTemplate.hash = resultSet.getBytes("hash");
+                    dbTemplate.enabled = resultSet.getBoolean("enabled");
+                    dbTemplate.steps = resultSet.getString("steps");
+                    dbTemplate.artifacts = null;
+                    dbTemplate.start_time = new Date();
+                    dbTemplate.ready_time = null;
+                    dbTemplate.end_time = null;
+                    dbTemplate.result = null;
+                    dbTemplate.owner = "dtf-runner";
+                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads template data only for test run with no table run entry, for pk_template " + dbTemplate.pk_template);
+                    if (resultSet.next())
+                        throw new Exception("resultSet wrongly has more than one entry");
+                } else {
+                    throw new Exception("template data not present");
+                }
             }
         } catch(Exception e) {
             System.out.println("RunEntryCore.loadRunEntryData() exception for reNum " + this.reNum + ": "+ e);
@@ -127,42 +157,44 @@ public class RunEntryCore {
      * database modifications.
      */
     private void openDatabase() {
-        if ( connect != null )
-            return;
-
-        try {
-            // Setup the connection with the DB
-            String host = System.getenv("DTF_TEST_DB_HOST");
-            String user = System.getenv("DTF_TEST_DB_USER");
-            String password = System.getenv("DTF_TEST_DB_PASSWORD");
-            read_only = true;
-            if (user != null && password != null) {
-                read_only = false;
+        if ( connect == null ) {
+            try {
+                // Setup the connection with the DB
+                String host = System.getenv("DTF_TEST_DB_HOST");
+                String user = System.getenv("DTF_TEST_DB_USER");
+                String password = System.getenv("DTF_TEST_DB_PASSWORD");
+                read_only = true;
+                if (user != null && password != null) {
+                    read_only = false;
+                }
+                if ( user == null || password == null ) {
+                    user = "guest";
+                    password = "";
+                }
+                // com.mysql.jdbc.Driver required at run time only for .getConnection()
+                connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
+            } catch ( Exception e ) {
+                System.err.println( "ERROR: RunEntryCore.openDatabase() could not open database connection, " + e.getMessage() );
             }
-            if ( user == null || password == null ) {
-                user = "guest";
-                password = "";
-            }
-            // com.mysql.jdbc.Driver required at run time only for .getConnection()
-            connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
-        } catch ( Exception e ) {
-            System.err.println( "ERROR: RunEntryCore.openDatabase() could not open database connection, " + e.getMessage() );
         }
+        connectCount.incrementAndGet();
     }
 
     /**
      * Close the database connection if it is open.
      */
     private void closeDatabase() {
-        try {
-            if ( connect != null ) {
-                connect.close();
+    	if (connectCount.decrementAndGet() <= 0) {
+            try {
+                if ( connect != null ) {
+                    connect.close();
+                }
+            } catch ( Exception e ) {
+                System.err.println( "ERROR: Could not close database connection, " + e.getMessage() );
+            } finally {
+                connect = null;
             }
-        } catch ( Exception e ) {
-            System.err.println( "ERROR: Could not close database connection, " + e.getMessage() );
-        } finally {
-            connect = null;
-        }
+    	}
     }
 
     private void safeClose( ResultSet r ) {
@@ -192,7 +224,7 @@ public class RunEntryCore {
      *
      * @param pk_described_template
      */
-    public RunEntryCore( long reNum ) {
+    public RunEntryCore( Long reNum ) {
         this.reNum = reNum;
         dbTemplate = new DBTemplate(this.reNum);
         openDatabase();
@@ -217,9 +249,11 @@ public class RunEntryCore {
     
     /**
      * Execute the test run specified by the run entry number.
-     * @return TODO
+     * @return the result of this test run
      */
-    public boolean testRun(long reNum, TemplateProvider tp) throws Exception {
+    public boolean testRun(Long reNum, TemplateProvider tp) throws Exception {
+    	// TODO: remove reNum parameter; it is built into RunEntryCore and is present in this.dbTemplate
+    	
         // We are an independent process in our own thread. We have access
         //   to an Artifact Provider
         //   to a Resource Provider
@@ -235,7 +269,10 @@ public class RunEntryCore {
     	//
     	//     A "top level" test run is the one selected by a QA group process, for the purpose of storing its returned test result in table run.
     	//         As a top level test run proceeds, nested templates may generate nested test runs, whose test results may or may not be stored in table run.
-    	//     At the time of running a top level test run, it is anticipated that the normal QA group process will have already associated a test instance with it. There is the issue of properly associating test instances with test runs: 
+    	//     At the time of running a top level test run, it is anticipated that the normal QA group process will have already associated a test instance with it, or more than one.
+    	//         Multiple test instances can link to one test run (because multiple test instances can link to one template).
+    	//             Typically, when multiple test instances link to one test run, they share the same common artifact or set of artifacts.
+    	//     There is the issue of properly associating test instances with test runs: 
         //         For any top level test run, we expect that at least one entry of table test_instance is associated with it.
     	//		   Any test instance is associated with only one test run.
         //         At the completion of a top level test run, if there is no test instance association, it means that other test runs supplanted ours.
@@ -244,91 +281,21 @@ public class RunEntryCore {
 
     	// Our input is this.dbTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
         // Instantiate the template. An instanced template has resources attached (with bind), its nested templates instanced (with include), and has enough information that we can call tp to deploy artifacts, connect networks, issue runs, etc.
-        //     iT has a class member for template nesting
-        InstancedTemplate it;
+        InstancedTemplate iT;
         try {
-            it = tp.getInstancedTemplate(this.dbTemplate); // throws Exception which fails this test run
+            iT = tp.getInstancedTemplate(this.dbTemplate); // throws Exception which fails this test run
         } catch (Exception e) {
             e.printStackTrace(); // TODO: output message
             throw e;
         }
         
-        // proceed to deploy artifacts, issue runs, etc.
+        // Instantiate the test run. To iT, deploy artifacts, issue runs, etc.
+        // TODO
         
         
         
+
         
-// - - - - - - - - - - - - - - - - - - Below is replaced by things above here
-        // this.dbDescribedTemplate is used to execute this one variation of (perhaps multiple) test instances. These test instances share the same artifact.
-        // TODO: See if the template is already available.
-        // Instance template by following steps, then apply selected artifact to the instanced template.
-        // This converts a test instance to a test raun.
-        // Running the test run generates a test result.
-        // The test result applies to as many test instances as are controlled by parameter describedTemplateNumber (to match test_instance.fk_described_template)
-//        System.out.println( "\nRunEntryCore() has data base info for dtNum " + this.pk_described_template + ", corresponding to template number " + this.dbDescribedTemplate.fk_template +
-//                            "; test instance count " + this.dbDescribedTemplate.pkdtToDBTestInstance.size() + "; recorded test run count (attached to this template number ) " + this.dbDescribedTemplate.pkdtToDBRun.size());
-//        System.out.println( "RunEntryCore() finds module set: " + this.dbDescribedTemplate.fk_module_set);
-//        System.out.println( "RunEntryCore() finds description_hash: " + this.dbDescribedTemplate.description_hash);
-//        System.out.println( "RunEntryCore() finds dtSynchronized: " + this.dbDescribedTemplate.dtSynchronized);
-//        System.out.println( "RunEntryCore() finds template_hash: " + this.dbDescribedTemplate.template_hash);
-//        System.out.println( "RunEntryCore() finds enabled: " + this.dbDescribedTemplate.enabled);
-//        System.out.println( "RunEntryCore() finds steps:\n" + this.dbDescribedTemplate.steps + "\n");
-//        
-//        int runCount = dbDescribedTemplate.pkdtToDBRun.size();
-//        System.out.println( "RunEntryCore() finds " + runCount + " associated record(s) in table run." + ((runCount==1) ? "":"") + "\n");
-//        
-//        int instanceCount = dbDescribedTemplate.pkdtToDBTestInstance.size();
-//        System.out.println( "RunEntryCore() finds " + instanceCount + " associated record(s) in table test_instance." + ((instanceCount>0)? "":" 1 or more are needed"));
-//        
-//        for (DBTestInstance dbti: dbDescribedTemplate.pkdtToDBTestInstance.values()) {
-//            System.out.println( "RunEntryCore() has data base info for test instance " + dbti.pk_test_instance );
-//            System.out.println( "RunEntryCore() finds run: " + dbti.fk_run);
-//            System.out.println( "RunEntryCore() finds due date: " + dbti.due_date);
-//            System.out.println( "RunEntryCore() finds phase: " + dbti.phase);
-//            System.out.println( "RunEntryCore() finds iSynchronized: " + dbti.iSynchronized);
-//        }
-//        System.out.println();
-//
-//        int dtLineCount = dbDescribedTemplate.pkdtToDTLine.size();
-//        System.out.println( "RunEntryCore() finds " + dtLineCount + " associated record(s) in table dt_line." + ((dtLineCount>0)? "":" 1 or more are needed"));
-//
-//        for (DBDTLine dtLine: dbDescribedTemplate.pkdtToDTLine.values()) {
-//            String strReason = dtLine.reason; // found sometimes as null, sometimes as empty string
-//            if (strReason!=null && strReason.isEmpty())
-//                strReason = "Unspecified as empty string";
-//
-//            System.out.println("\nRunEntryCore() finds line data from pk_dt_line " + dtLine.pk_dt_line + ", line " + dtLine.line +
-//                               "\nDtLineDescription " + dtLine.dtLineDescription +
-//                               "\nReason for artifact: " + strReason +
-//                               "\nArtifact Info: is_primary " + dtLine.is_primary + ", configuration " + dtLine.configuration + ", artifactName " + dtLine.artifactName + ", mode " + dtLine.mode + ", merge_source " + dtLine.merge_source +
-//                                                                                    ", derived_from_artifact " + dtLine.derived_from_artifact + ", merged_from_module " + dtLine.merged_from_module +
-//                               "\nVersion of artifact: " + dtLine.version + ", sequence " + dtLine.sequence + ", attributes " + dtLine.attributes + ", scheduled_release " + dtLine.scheduled_release +
-//                                                                                    ", actual_release " + dtLine.actual_release + ", sort_order " + dtLine.sort_order +
-//                               "\nContent of artifact: " + dtLine.pk_content + ", is_generated " + dtLine.is_generated +
-//                               "\nResource of dtLine, hash: " + dtLine.resourceHash + ", name " + dtLine.resourceName + ", description " + dtLine.resourceDescription);
-//        }
-//        System.out.println();
-//
-//        if (dbDescribedTemplate.enabled) {
-//            if (dbDescribedTemplate.template_hash != null && dbDescribedTemplate.steps != null) {
-//                System.out.println("RunEntryCore() finds enabled described template of hash " + dbDescribedTemplate.template_hash + ", with steps\n");
-//                DescribedTestRun dtr = new DescribedTestRun(dbDescribedTemplate, tp);
-//                dtr.init();
-//                dtr.initRunInfo();
-//            } else {
-//                System.out.println("RunEntryCore() finds enabled described template with unexpected null for hash, or steps, or both");
-//            }
-//        } else {
-//            System.out.println("RunEntryCore() finds disabled described template of hash " + dbDescribedTemplate.template_hash + ", with steps\n");
-//        }
-        
-        // unneeded- our real approach involves instantiating templates
-//        for (DBDTLine dtLine: dbTestInstance.pkToDTLine.values()) {
-//            if (dtLine.resourceHash!=null && dtLine.resourceDescription!=null && !dtLine.resourceDescription.isEmpty()) {
-//                System.out.println("RunEntryCore() finds valid resource hash " + dtLine.resourceHash + ", resource description " + dtLine.resourceDescription + ", of resource name " + dtLine.resourceName + "\n");
-//                ResourceProvider rp = new Machine();
-//            }
-//        }
         
         // unneeded- our real approach involves an api to come to us soon
 //        // prove that api works to get files from the build machine
@@ -350,7 +317,7 @@ public class RunEntryCore {
 //            }
 //        }
         
-        return false;
+        return false; // TODO
     }
     
     
