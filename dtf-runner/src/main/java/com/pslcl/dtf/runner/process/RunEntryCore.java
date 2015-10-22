@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Date;
 
 import com.pslcl.dtf.runner.template.InstancedTemplate;
 import com.pslcl.dtf.runner.template.TemplateProvider;
@@ -54,7 +55,10 @@ public class RunEntryCore {
             String strRENum = String.valueOf(this.reNum);
             statement = connect.createStatement();
 
-            // acquire template info; note: template to run is 1 to many
+            // these table run entries are filled: pk_run, fk_template, start_time, and maybe owner
+            // dbTemplate.reNum was filled in constructor, now fill all other entries of dbTemplate
+            //     acquire run table information for entry reNum
+            //     acquire the matching template table information
             resultSet = statement.executeQuery( "SELECT pk_template, hash, enabled, steps, artifacts, start_time, ready_time, end_time, result, owner " +
                                                 "FROM template " +
                                                 "JOIN run ON fk_template = pk_template " +
@@ -82,6 +86,37 @@ public class RunEntryCore {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
         }
+    }
+    
+    /**
+     * 
+     */
+    private void updateRunEntryData() {
+        // assume template.steps and template.hash are not null, but check enabled
+    	if (dbTemplate.enabled == false)
+    		throw new IllegalArgumentException("dbTemplate.enabled is false");
+    	dbTemplate.ready_time = new Date(); // now; assume start_time was filled when the reNum run table entry was placed
+    	if (dbTemplate.owner == null)
+    		dbTemplate.owner = "dtf-runner";
+    	writeRunEntryData(); // ready_time and owner have changed
+    }
+
+    /**
+     * 
+     */
+    private void writeRunEntryData() {
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+            statement = connect.createStatement();
+            // TODO: implement the NySQL run table write command
+            
+        } catch(Exception e) {
+            System.out.println("RunEntryCore.writeRunEntryData() exception for reNum " + dbTemplate.reNum + ": "+ e);
+        } finally {
+            safeClose( resultSet ); resultSet = null;
+            safeClose( statement ); statement = null;
+        }    	
     }
 
     /**
@@ -158,16 +193,15 @@ public class RunEntryCore {
      * @param pk_described_template
      */
     public RunEntryCore( long reNum ) {
-        //this.pk_described_template = pk_described_template;
-        //dbDescribedTemplate = new DBDescribedTemplate(this.pk_described_template);
-
         this.reNum = reNum;
         dbTemplate = new DBTemplate(this.reNum);
         openDatabase();
         if (connect == null)
             System.err.println( "RunEntryCore constructor fails without database connection");
-        else
+        else {
             loadRunEntryData();
+            updateRunEntryData(); // can throw IllegalArgumentException, and SQL write related exceptions
+        }
     }
 
     /**
@@ -190,31 +224,26 @@ public class RunEntryCore {
         //   to an Artifact Provider
         //   to a Resource Provider
         //   to a Template Provider
-        //   to everything else needed to cause our test run to execute.
-        // We might have access to the database but the goal is not to access it here in this method call- everything is found in structure this.dbTemplate.
-        
-        // On arriving here a reNum (aka pk_run) exists in table run.
-        //     DECISION: We could check and prove that pk_run (aka reNum) of table run has null for its result field. But we instead require that this be checked in whatever process placed reNum into the message queue. A human could manually place an reNum, without double checking, and we will make a test run out of it.
+        //   to everything else needed to cause our test run to execute
+        // We might have access to the database but the goal is to minimize use of it in this method call- everything is found in structure this.dbTemplate.
+    	
+        // On arriving here our reNum (aka pk_run) exists in table run.
+        //     DECISION: We could check (here or before) to prove that pk_run of table run has null for its result field.
+    	//               But we instead require that this be checked in whatever process placed reNum into the message queue.
+    	//               A human can manually place an reNum, without double checking, and we will make a test run out of it.
         //     We expect that no other thread will be filling our result field of table run.
-        //     We understand that runs of nested templates will return a result that can possibly be stored in table run, but which may not be connected to any entry of table test_instance. 
-        //     For "top level" test runs , we expect that at least one entry of test_instance applies to it.
-        //         If there is not such a test_instance, it means that some other test run has completed, and was somehow qualified to connect to all of our supposed test_instance 'S.
-        //                                               The situation may be legal, but should be investigated to prove that it is legal.
+    	//
+    	//     A "top level" test run is the one selected by a QA group process, for the purpose of storing its returned test result in table run.
+    	//         As a top level test run proceeds, nested templates may generate nested test runs, whose test results may or may not be stored in table run.
+    	//     At the time of running a top level test run, it is anticipated that the normal QA group process will have already associated a test instance with it. There is the issue of properly associating test instances with test runs: 
+        //         For any top level test run, we expect that at least one entry of table test_instance is associated with it.
+    	//		   Any test instance is associated with only one test run.
+        //         At the completion of a top level test run, if there is no test instance association, it means that other test runs supplanted ours.
+        //             This situation may be legal, but it may not be intended, and should be investigated to prove that it is legal.
+        //     We understand that test runs of nested templates will return a result that may or may not be stored in table run, but regardless of that, may not be connected to any test instance.
 
-        // fill java class DBTemplate with entries from table run and its one linked entry from table template
-        
-        
-        
-        // throw exception for template.enabled false (assume that template.steps and template.hash are not null)
-        // fill DBRunTemplate.ready_time with now(). start_time was filled when the reNum entry was placed
-        // fill DBRunTemplate.owner, only if null, with "test-runner-service"
-        // write table run from DBRunTemplate
-        
-        
-        
-        
-        
-        // An instanced template has resources attached (with bind), its nested templates instanced (with include), and has enough information that we can call tp to deploy artifacts, connect networks, issue runs, etc.
+    	// Our input is this.dbTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
+        // Instantiate the template. An instanced template has resources attached (with bind), its nested templates instanced (with include), and has enough information that we can call tp to deploy artifacts, connect networks, issue runs, etc.
         //     iT has a class member for template nesting
         InstancedTemplate it;
         try {
