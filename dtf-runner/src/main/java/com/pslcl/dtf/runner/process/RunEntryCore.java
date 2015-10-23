@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -97,6 +98,8 @@ public class RunEntryCore {
                     dbTemplate.hash = resultSet.getBytes("hash");
                     dbTemplate.enabled = resultSet.getBoolean("enabled");
                     dbTemplate.steps = resultSet.getString("steps");
+                    
+                    // run table not queried, so set defaults in dbTemplate (for the missing run table entries)
                     dbTemplate.artifacts = null;
                     dbTemplate.start_time = new Date();
                     dbTemplate.ready_time = null;
@@ -132,19 +135,44 @@ public class RunEntryCore {
     }
 
     /**
-     * 
+     * @note: does not overwrite run.pk_run, run.fk_template, run.start_time; dtf-runner does not own these
+     * @note: dtf-runner also do not own table template, and does not write it 
      */
     private void writeRunEntryData() {
         Statement statement = null;
-        ResultSet resultSet = null;
         try {
             statement = connect.createStatement();
-            // TODO: implement the NySQL run table write command
+            String strRENum = String.valueOf(dbTemplate.reNum);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             
+            String readyTime = "null";
+            if (dbTemplate.ready_time != null)
+            	readyTime = "'" + sdf.format(dbTemplate.ready_time) + "'";
+            String endTime = "null";
+            if (dbTemplate.end_time != null)
+            	endTime = "'" + sdf.format(dbTemplate.end_time) + "'";
+            String owner = "null";
+            if (dbTemplate.owner != null)
+            	owner = "'" + dbTemplate.owner + "'";
+            Boolean result = null;
+            if (dbTemplate.result != null)
+            	result = dbTemplate.result;
+            byte [] artifacts = null;
+            if (dbTemplate.artifacts != null)
+            	artifacts = dbTemplate.artifacts;
+            
+            String str = "UPDATE run " +
+                         "SET ready_time = " + readyTime + ", " +
+                               "end_time = " + endTime   + ", " +
+                                  "owner = " + owner + ", " +
+                                 "result = " + result + ", " +
+                              "artifacts = " + artifacts + " " +
+                         "WHERE pk_run = " + strRENum;
+            
+            statement.executeUpdate( str ); // returns the matching row count: 1 for pk_run row exists, or 0
         } catch(Exception e) {
             System.out.println("RunEntryCore.writeRunEntryData() exception for reNum " + dbTemplate.reNum + ": "+ e);
         } finally {
-            safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
         }    	
     }
