@@ -90,8 +90,11 @@ public class TemplateProvider implements ResourceStatusListener {
             iT = new InstancedTemplate(String.valueOf(dbT.hash));
             // populate iT with everything needed to behave as a reusable described template
             
-            // NOTE: A change is coming in the future. Steps will be organized in prioritized sets, each with its own setID number. The following code follows the original rules.
 
+            
+            
+            
+            // old parsing technique --------------------------------------------------------------
             StepsParser stepsParser = new StepsParser(dbT.steps);
             
             // Process bind steps now, since they come first; each returned list entry is self-referenced by steps line number, from 0...n
