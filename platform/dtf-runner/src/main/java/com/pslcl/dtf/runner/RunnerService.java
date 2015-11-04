@@ -99,7 +99,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
 
             config.initsb.ttl("Initialize JMX: ");
             MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-            mbs.registerMBean(this, new ObjectName("com.pslcl.qa.platform:type=RunnerService"));
+            mbs.registerMBean(this, new ObjectName("pslcl.dtf.platform:type=RunnerService"));
             config.initsb.indentedOk();
             config.initsb.ttl("Initialize RunnerMachine:");
             runnerMachine.init(config);

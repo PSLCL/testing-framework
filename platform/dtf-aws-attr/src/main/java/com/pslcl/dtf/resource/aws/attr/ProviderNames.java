@@ -20,80 +20,18 @@ import java.util.logging.Logger;
 import com.amazonaws.services.ec2.model.ImageAttributeName;
 import com.amazonaws.services.ec2.model.InstanceType;
 
-public class AwsNames
+public class ProviderNames
 {
     /* ****************************************************************************
-     * Global declarations    
-    ******************************************************************************/    
-    public static final String AwsKeyBase = "com.amazonaws";
-    public static final String GroupIdKey = AwsKeyBase + ".group-id";
-    
-    /* ****************************************************************************
-     * AWS Client Configuration declarations    
-     * see com.pslcl.qa.runner.resource.aws.AwsClientConfiguration     
-    ******************************************************************************/    
-    public static final String ClientKeyBase = AwsKeyBase + ".client";
-    
-    public static final String AwsClientConfiKey = ClientKeyBase + ".client-config"; // only used internally to cache the AWSClientConfiguration
-    public static final String ClientEndpointKey = ClientKeyBase + ".endpoint";
-
-    public static final String ClientConnectionTimeoutKey = ClientKeyBase + ".connection-timeout";
-    public static final String ClientMaxConnectionsKey = ClientKeyBase + ".max-connections";
-    public static final String ClientMaxErrorRetryKey = ClientKeyBase + ".max-error-retry";
-    public static final String ClientRetryPolicyKey = ClientKeyBase + ".retry-policy";
-    public static final String ClientLocalAddressKey = ClientKeyBase + ".local-address";
-    public static final String ClientProtocolKey = ClientKeyBase + ".protocol";
-    public static final String ClientProxyDomainKey = ClientKeyBase + ".proxy-domain";
-    public static final String ClientProxyHostKey = ClientKeyBase + ".proxy-host";
-    public static final String ClientProxyPasswordKey = ClientKeyBase + ".proxy-password";
-    public static final String ClientProxyPortKey = ClientKeyBase + ".proxy-port";
-    public static final String ClientProxyUserNameKey = ClientKeyBase + ".proxy-user-name";
-    public static final String ClientProxyWorkstationKey = ClientKeyBase + ".proxy-workstation";
-    public static final String ClientProxyPreemptiveAuthKey = ClientKeyBase + ".preemptive-proxy-auth";
-    public static final String ClientSocketTimeoutKey = ClientKeyBase + ".socket-timeout";
-    public static final String ClientUserAgentKey = ClientKeyBase + ".user-agent";
-    public static final String ClientUseReaperKey = ClientKeyBase + ".use-reaper";
-    public static final String ClientUseGzipKey = ClientKeyBase + ".use-gzip";
-    public static final String ClientReceiveBuffSizeHintKey = ClientKeyBase + ".socket-receive-buff-size-hint";
-    public static final String ClientSendBuffSizeHintKey = ClientKeyBase + ".socket-send-buff-size-hint";
-    public static final String ClientSignerOverrideKey = ClientKeyBase + ".signer-override";
-    public static final String ClientConnectionTtlKey = ClientKeyBase + ".connection-ttl";
-    
-    public static final String GroupIdDefault = "AwsTestResource";
-    public static final String ClientEndpointDefault = "ec2.us-west-2.amazonaws.com";
-    public static final String ClientConnectionTimeoutDefault = "50000";
-    public static final String ClientMaxConnectionsDefault = "50";
-    public static final String ClientMaxErrorRetryDefault = "-1";
-    public static final String ClientRetryPolicyDefault = null;
-    public static final String ClientLocalAddressDefault = null;
-    public static final String ClientProtocolDefault = "https";
-    public static final String ClientProxyDomainDefault = null;
-    public static final String ClientProxyHostDefault = null;
-    public static final String ClientProxyPasswordDefault = null;
-    public static final String ClientProxyPortDefault = "-1";
-    public static final String ClientProxyUserNameDefault = null;
-    public static final String ClientProxyWorkstationDefault = null;
-    public static final String ClientProxyPreemptiveAuthDefault = "false";
-    public static final String ClientSocketTimeoutDefault = "50000";
-    public static final String ClientUserAgentDefault = "aws-sdk-java";
-    public static final String ClientUseReaperDefault = "true";
-    public static final String ClientUseGzipDefault = "false";
-    public static final String ClientReceiveBuffSizeHintDefault = "0";
-    public static final String ClientSendBuffSizeHintDefault = "0";
-    public static final String ClientSignerOverrideDefault = null;
-    public static final String ClientConnectionTtlDefault = "-1";
-    
-    /* ****************************************************************************
      * AWS Machine Provider declarations
-     * see com.pslcl.qa.runner.resource.aws.providers.AwsMachineProvider     
+     * see com.pslcl.dtf.resource.aws.provider.AwsMachineProvider     
      * 
-     * Instance declarations    
+     * Instance type declarations    
     ******************************************************************************/    
-    public static final String InstanceKeyBase = AwsKeyBase + ".instance";
+    public static final String InstanceKeyBase = ClientNames.AwsKeyBase + ".instance";
     public static final String InstanceTypeKeyBase = InstanceKeyBase + ".type";
     public static final String InstanceTypeLimit = "-limit";
     
-//    public static final String InstanceAmiIdKey = InstanceKeyBase + ".ami-id";
     public static final String InstanceTypeKey = InstanceKeyBase + ".type";
 
     public static final String InstanceTypeDefault = InstanceType.M3Medium.toString();
@@ -123,7 +61,7 @@ public class AwsNames
     ******************************************************************************/  
     
     // These are not all the possible filters but the ones thought of possible interest to generators and building defaults
-    public static final String ImageKeyBase = AwsKeyBase + ".image";
+    public static final String ImageKeyBase = ClientNames.AwsKeyBase + ".image";
     
     public static final String ImageArchitectureKey = ImageKeyBase + ".architecture";
     public static final String ImageHypervisorKey = ImageKeyBase + ".hypervisor";
@@ -240,7 +178,7 @@ public class AwsNames
     public static final String LocationYearKey = LocationKeyBase + ".year";
     public static final String LocationMonthKey = LocationKeyBase + ".month";
     public static final String LocationDotKey = LocationKeyBase + ".dot";
-    // note that feature is a base key and can be number from 0 on up, to add as many filters as desired
+    // note that feature is a base key and can be numbered from 0 on up, to add as many filters as desired
     public static final String LocationFeatureKey = LocationKeyBase + ".feature";
     
     public static final String Location64bit = "64bit";

@@ -40,13 +40,13 @@ import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
  */
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
-    private final HashMap<Integer, MachineReservedResource> reservedResources;
+    private final HashMap<Long, MachineReservedResource> reservedResources;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
 
     public AwsMachineProvider()
     {
-        reservedResources = new HashMap<Integer, MachineReservedResource>();
+        reservedResources = new HashMap<Long, MachineReservedResource>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
     }
@@ -73,10 +73,10 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             MachineReservedResource reservedResource = reservedResources.get(resource.getReference());
             if(reservedResource == null)
                 throw new ResourceNotReservedException(resource.getName() + "(" + resource.getReference() +") is not reserved");
-            Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource)); 
+            Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource, ec2Client, config)); 
             reservedResource.setInstanceFuture(future);
-            reservedResource.timerFuture.cancel(true);
-            return null;
+//            reservedResource.timerFuture.cancel(true);
+            return future;
         }
     }
 
@@ -170,6 +170,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     MachineReservedResource rresource = new MachineReservedResource(avail, queryResult);
                     ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
+                    this.reservedResources.put(rresource.resource.getReference(), rresource);
                 }
             }
         }

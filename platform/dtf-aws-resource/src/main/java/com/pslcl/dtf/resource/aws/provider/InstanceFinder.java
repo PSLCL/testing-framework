@@ -23,7 +23,7 @@ import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
-import com.pslcl.dtf.resource.aws.attr.AwsNames;
+import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
 public class InstanceFinder
 {
@@ -39,18 +39,18 @@ public class InstanceFinder
     {
         config.initsb.ttl("AWS Instance:");
         config.initsb.level.incrementAndGet();
-        instanceType = config.properties.getProperty(AwsNames.InstanceTypeKey, AwsNames.InstanceTypeDefault);
-        config.initsb.ttl(AwsNames.InstanceTypeKey, " = ", instanceType);
+        instanceType = config.properties.getProperty(ProviderNames.InstanceTypeKey, ProviderNames.InstanceTypeDefault);
+        config.initsb.ttl(ProviderNames.InstanceTypeKey, " = ", instanceType);
         config.initsb.level.decrementAndGet();
         config.initsb.ttl("AWS Instance Type Limits:");
         config.initsb.level.incrementAndGet();
-        for(int i=0; i < AwsNames.instanceTypes.length; i++)
+        for(int i=0; i < ProviderNames.instanceTypes.length; i++)
         {
-            String key = AwsNames.InstanceTypeKeyBase + "." + AwsNames.instanceTypes[i].toString() + AwsNames.InstanceTypeLimit;
+            String key = ProviderNames.InstanceTypeKeyBase + "." + ProviderNames.instanceTypes[i].toString() + ProviderNames.InstanceTypeLimit;
             String value = config.properties.getProperty(key, "0");
             config.initsb.ttl(key," = ", value);
             int limit = Integer.parseInt(value);
-            limits.put(AwsNames.instanceTypes[i].toString(), new AtomicInteger(limit));
+            limits.put(ProviderNames.instanceTypes[i].toString(), new AtomicInteger(limit));
         }
         config.initsb.level.decrementAndGet();
     }        
@@ -58,20 +58,20 @@ public class InstanceFinder
     public InstanceType findInstance(ResourceDescription resource) throws ResourceNotFoundException
     {
         Map<String, String> attrs = resource.getAttributes();
-        String type = attrs.get(AwsNames.InstanceTypeKey);
+        String type = attrs.get(ProviderNames.InstanceTypeKey);
         if(type == null)
             type = instanceType;
         InstanceType itype = null;
-        for(int i=0; i < AwsNames.instanceTypes.length; i++)
+        for(int i=0; i < ProviderNames.instanceTypes.length; i++)
         {
-            if(AwsNames.instanceTypes[i].toString().equals(type))
+            if(ProviderNames.instanceTypes[i].toString().equals(type))
             {
-                itype = AwsNames.instanceTypes[i];
+                itype = ProviderNames.instanceTypes[i];
                 break;
             }
         }
         if(itype == null)
-            throw new ResourceNotFoundException(AwsNames.InstanceTypeKey + "=" + type + " is not a valid AWS instance type");
+            throw new ResourceNotFoundException(ProviderNames.InstanceTypeKey + "=" + type + " is not a valid AWS instance type");
         return itype;
     }    
     

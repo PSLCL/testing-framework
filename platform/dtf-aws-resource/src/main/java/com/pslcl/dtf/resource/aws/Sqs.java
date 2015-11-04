@@ -26,7 +26,7 @@ import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
  */
 public class Sqs extends MessageQueueBase {
     
-    public static final String QueueStoreNameKey = "com.pslcl.qa.runner.store.instance.queue-name";
+    public static final String QueueStoreNameKey = "pslcl.dtf.runner.store.instance.queue-name";
     public static final String QueueStoreNameDefault = "q";
     
     private volatile String queueStoreName;
