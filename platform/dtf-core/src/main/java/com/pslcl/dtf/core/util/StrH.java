@@ -225,4 +225,20 @@ public class StrH
             return key+"="+value; 
         }
     }
+    
+    public static String getAttribute(Map<String,String> map, String key, String defaultValue)
+    {
+        String value = map.get(key);
+        if(value != null)
+            return value;
+        return defaultValue;
+    }
+    
+    public static int getIntAttribute(Map<String,String> map, String key, String defaultValue)
+    {
+        String value = map.get(key);
+        if(value == null)
+            value = defaultValue;
+        return Integer.parseInt(value);
+    }
 }
