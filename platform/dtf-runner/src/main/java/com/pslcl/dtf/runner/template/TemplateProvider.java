@@ -95,7 +95,7 @@ public class TemplateProvider implements ResourceStatusListener {
             StepsParser stepsParser = new StepsParser(dbT.steps);
             
             // Process bind steps now, since they come first; each returned list entry is self-referenced by steps line number, from 0...n
-            List<ResourceDescription> reserveResourceRequests = stepsParser.computeResourceQuery(); // each element of returned list has its stepReference stored
+            List<ResourceDescription> reserveResourceRequests = stepsParser.computeResourceQuery(dbT.getTemplateId()); // each element of returned list has its stepReference stored
             int stepsReference = reserveResourceRequests.size();
             int originalReserveResourceRequestsSize = stepsReference;
             

@@ -21,12 +21,23 @@ public class ResourceStatus
 {
     public final ResourceProvider provider;
     public final StatusTracker.Status status;
+    public final String templateId;
     public final long resourceId;
     
-    public ResourceStatus(ResourceProvider provider, long resourceId, StatusTracker.Status status)
+    public ResourceStatus(ResourceProvider provider, String templateId, long resourceId, StatusTracker.Status status)
     {
         this.provider = provider;
+        this.templateId = templateId;
         this.resourceId = resourceId;
         this.status = status;
+    }
+    
+    public ResourceStatus getNewInstance(ResourceStatus resourceStatus, StatusTracker.Status status)
+    {
+        return new ResourceStatus(
+                        resourceStatus.provider,
+                        resourceStatus.templateId,
+                        resourceStatus.resourceId,
+                        status);
     }
 }

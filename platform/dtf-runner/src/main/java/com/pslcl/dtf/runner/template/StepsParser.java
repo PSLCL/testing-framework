@@ -152,7 +152,7 @@ public class StepsParser {
      * 
      * @return
      */
-    List<ResourceDescription> computeResourceQuery() {
+    List<ResourceDescription> computeResourceQuery(String templateId) {
         List<ResourceDescription> retList = new ArrayList<>();
         List<String> bindList = getNextSteps("bind "); // list is indexed by original line number
         for (int bindReference=0; bindList!=null && bindReference<bindList.size(); bindReference++) {
@@ -177,7 +177,7 @@ public class StepsParser {
 //                        offset = -1; // done
 //                }
 
-                ResourceDescription rwa = new ResourceDescImpl(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), bindReference);
+                ResourceDescription rwa = new ResourceDescImpl(resourceHash, StepsParser.getAttributeMap(strResourceAttributes), templateId, bindReference);
                 retList.add(rwa); // or retList.add(i, ra);
             }
         }

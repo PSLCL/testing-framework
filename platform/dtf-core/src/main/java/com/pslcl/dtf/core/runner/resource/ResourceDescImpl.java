@@ -21,35 +21,40 @@ import com.pslcl.dtf.core.util.StrH;
 
 public class ResourceDescImpl implements ResourceDescription
 {
-    private String name;
-    private Map<String, String> attributes;
-    private int reference;
+    private final String name;
+    private final Map<String, String> attributes;
+    private final String templateId;
+    private final int reference;
 
-    public ResourceDescImpl(String name, Map<String, String> attributes, int reference)
+    public ResourceDescImpl(String name, Map<String, String> attributes, String templateId, int reference)
     {
         this.name = name;
         this.attributes = attributes;
+        this.templateId = templateId;
         this.reference = reference;
     }
 
     @Override
     public String getName()
     {
-        // TODO Auto-generated method stub
         return name;
     }
 
     @Override
     public Map<String, String> getAttributes()
     {
-        // TODO Auto-generated method stub
         return attributes;
     }
 
     @Override
+    public String getTemplateId()
+    {
+        return templateId;
+    }
+    
+    @Override
     public long getReference()
     {
-        // TODO Auto-generated method stub
         return reference;
     }
 
@@ -61,13 +66,17 @@ public class ResourceDescImpl implements ResourceDescription
     public boolean matches(ResourceDescription resourceDescription)
     {
         // match: reference, hash and attributes are equal
-        if (this.reference == resourceDescription.getReference() && this.name.equals(resourceDescription.getName()))
+        //@formatter:off
+        if (templateId.equals(resourceDescription.getTemplateId()) && 
+            reference == resourceDescription.getReference() && 
+            name.equals(resourceDescription.getName()))
+            //@formatter:on
         {
             // match the attribute sets to each other
             Map<String, String> rwaAttributes = resourceDescription.getAttributes();
             if (this.attributes.size() != rwaAttributes.size())
                 return false;
-            // tHese keys and values might be empty strings, but they will not be null; keys are unique in each Map
+            // these keys and values might be empty strings, but they will not be null; keys are unique in each Map
             for (String key : this.attributes.keySet())
             {
                 if (rwaAttributes.containsKey(key))

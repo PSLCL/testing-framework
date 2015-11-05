@@ -174,6 +174,17 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
     @Override
     public void fireResourceStatusChanged(ResourceStatus status)
     {
+        try
+        {
+            Status currentStatus = getStatus(status.templateId);
+            if(currentStatus == status.status)
+                return;  // current == new nothing to do
+        }catch(Exception e)
+        {
+            // add it and fire
+            setStatus(status.templateId, status.status);
+        }
+        
         synchronized(resourceStatusListeners)
         {
             for(ResourceStatusListener listener : resourceStatusListeners)

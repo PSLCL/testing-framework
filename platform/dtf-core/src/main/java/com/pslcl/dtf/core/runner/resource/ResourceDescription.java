@@ -41,4 +41,13 @@ public interface ResourceDescription
      * @returns The unique identifier. 
      */
     public long getReference();
+    
+    /**
+     * Get the containing templates hash code.
+     * <p>Returns a 64 hex character string that is unique to the containing template.
+     * This id is Database sourced and so if valid for the life of its state there.
+     * @returns The stringafied hash code. 
+     */
+    public String getTemplateId();
+    
 }

@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
@@ -33,6 +34,7 @@ import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
 
 /**
@@ -68,12 +70,15 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public Future<MachineInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getTemplateId(), resource.getReference());
+        config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatus.getNewInstance(pdelayData.resourceStatus, StatusTracker.Status.Warn));
+
         synchronized(reservedResources)
         {
             MachineReservedResource reservedResource = reservedResources.get(resource.getReference());
             if(reservedResource == null)
                 throw new ResourceNotReservedException(resource.getName() + "(" + resource.getReference() +") is not reserved");
-            Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource, ec2Client, config)); 
+            Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource, ec2Client, pdelayData)); 
             reservedResource.setInstanceFuture(future);
 //            reservedResource.timerFuture.cancel(true);
             return future;

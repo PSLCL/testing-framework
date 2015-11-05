@@ -34,6 +34,8 @@ import com.amazonaws.services.ec2.model.CreateTagsRequest;
 import com.amazonaws.services.ec2.model.CreateVpcRequest;
 import com.amazonaws.services.ec2.model.DeleteSecurityGroupRequest;
 import com.amazonaws.services.ec2.model.DeleteVpcRequest;
+import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsRequest;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsResult;
 import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
@@ -48,7 +50,7 @@ import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.ec2.model.Vpc;
-import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
@@ -56,20 +58,22 @@ import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 import com.pslcl.dtf.resource.aws.instance.AwsMachineInstance.AwsInstanceState;
-import com.pslcl.dtf.resource.aws.instance.AwsMachineInstance.WaitForInstanceState;
 import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider.MachineReservedResource;
 
 public class MachineInstanceFuture implements Callable<MachineInstance>
 {
-    public static final String ErrorPrefix = "awsMachine-";
+    public static final String TagNameKey = "Name";
+    public static final String TagTemplateIdKey = "templateId";
+    public static final String TagReferenceKey = "reference";
 
     public final MachineReservedResource reservedResource;
     private final AmazonEC2Client ec2Client;
     private final Logger log;
-    private final RunnerConfig config;
+    private final ProgressiveDelayData pdelayData;
 
     private volatile String vpcCidr;
     private volatile String vpcTenancy;
@@ -83,19 +87,17 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     private volatile int ec2MaxDelay;
     private volatile int ec2MaxRetries;
     
-    private volatile String tstShortName;
-    private volatile String tstLongName;
-
     private final List<IpPermission> permissions;
 
-    public MachineInstanceFuture(MachineReservedResource reservedResource, AmazonEC2Client ec2Client, RunnerConfig config)
+    public MachineInstanceFuture(MachineReservedResource reservedResource, AmazonEC2Client ec2Client, ProgressiveDelayData pdelayData)
     {
         log = LoggerFactory.getLogger(getClass());
         this.reservedResource = reservedResource;
         this.ec2Client = ec2Client;
-        this.config = config;
+        this.pdelayData = pdelayData;
         permissions = new ArrayList<IpPermission>();
     }
+
 
     @Override
     public MachineInstance call() throws Exception
@@ -107,6 +109,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         createKeyPair("dtf-uniqueName-keypair");
         createInstance(ec2MaxDelay, ec2MaxRetries);
         MachineInstance retMachineInstance = new AwsMachineInstance(ReservedResource.class.cast(reservedResource.resource));
+        pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatus.getNewInstance(pdelayData.resourceStatus, StatusTracker.Status.Ok));
         return retMachineInstance;
     }
 
@@ -123,12 +126,44 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 //            .withKeyName(keypairName);
 //            .withSecurityGroups(sgResult.getGroupId());
         //@formatter:off
-        RunInstancesResult runResult = ec2Client.runInstances(runInstancesRequest);
-        Instance instance  = runResult.getReservation().getInstances().get(0);
-        createNameTag("dtf-ec2-something", instance.getInstanceId());
         
-        WaitForInstanceState wfis = new WaitForInstanceState(instance, AwsInstanceState.Running, config, pollDelay, timeout);
-        wfis.call();       // don't waste a thread on this one
+        RunInstancesResult runResult = null;
+        pdelayData.maxDelay = ec2MaxDelay;
+        pdelayData.maxRetries = ec2MaxRetries;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        String msg = pdelayData.getHumanName("ec2", "runInstances");
+        do
+        {
+            try
+            {
+                runResult = ec2Client.runInstances(runInstancesRequest);
+                break;
+            } catch (Exception e)
+            {
+                pdelay.handleException(msg, e);
+            }
+        }while(true);
+        
+        Instance instance  = runResult.getReservation().getInstances().get(0);
+        createNameTag(pdelayData.getFullName("ec2", null), instance.getInstanceId());
+        
+        DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(instance.getInstanceId());
+        pdelay.reset();
+        msg = pdelayData.getHumanName("ec2", "describeInstances");
+        do
+        {
+            try
+            {
+                DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
+                Instance inst = diResult.getReservations().get(0).getInstances().get(0);
+                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
+                    break;
+                pdelay.retry(pdelayData.getHumanName("ec2", "describeInstances"));
+            } catch (Exception e)
+            {
+                pdelay.handleException(msg, e);
+            }
+        }while(true);
         return instance;
     }
     
@@ -158,34 +193,37 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 
     private GroupIdentifier createSecurityGroup(Vpc vpc, boolean windows) throws Exception
     {
-        String name = tstShortName + "-sg-" + sgGroupName;
-        String description = tstLongName + " security group " + sgGroupName;
         //@formatter:off
         CreateSecurityGroupRequest request = new CreateSecurityGroupRequest()
-            .withGroupName(name)
-            .withDescription(description)
+            .withGroupName(pdelayData.getFullName("sg", null))
+            .withDescription(pdelayData.getFullName("sg", " reference: " + pdelayData.reference))
             .withVpcId(vpc.getVpcId());
         //@formatter:on
         
         GroupIdentifier groupId = null;
-        ProgressiveDelay pdelay = new ProgressiveDelay(sgMaxDelay, sgMaxRetries, config.statusTracker, tstLongName);
+        pdelayData.maxDelay = sgMaxDelay;
+        pdelayData.maxRetries = sgMaxRetries;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        CreateSecurityGroupResult sgResult = null;
+        String msg = pdelayData.getHumanName("sg", "createSecurityGroup");
         do
         {
             try
             {
-                CreateSecurityGroupResult sgResult = ec2Client.createSecurityGroup(request);
-                groupId = new GroupIdentifier().withGroupId(sgResult.getGroupId()).withGroupName(name);
+                sgResult = ec2Client.createSecurityGroup(request);
                 break;
             } catch (Exception e)
             {
-                pdelay.handleException(ErrorPrefix + "createSecurityGroup", e);
+                pdelay.handleException(msg, e);
             }
         }while(true);
+        groupId = new GroupIdentifier().withGroupId(sgResult.getGroupId()).withGroupName(pdelayData.getFullName("sg", null));
         
         
         DescribeSecurityGroupsRequest dsgRequest = new DescribeSecurityGroupsRequest().withGroupIds(groupId.getGroupId());
         boolean found = false;
         pdelay.reset();
+        msg = pdelayData.getHumanName("sg", "describeSecurityGroups " + groupId.getGroupId());
         do
         {
             try
@@ -199,19 +237,22 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                         break;
                     }
                 }
-                break;
+                if(found)
+                    break;
+                pdelay.retry(msg);
             } catch (Exception e)
             {
-                pdelay.handleException(ErrorPrefix + "describeSecurityGroups: " + groupId.getGroupId(), e);
+                pdelay.handleException(msg, e);
             }
         }while(true);
         
-        createNameTag(name, groupId.getGroupId());
+        createNameTag(pdelayData.getFullName("sg", null), groupId.getGroupId());
 
         AuthorizeSecurityGroupIngressRequest ingressRequest = 
                         new AuthorizeSecurityGroupIngressRequest().withIpPermissions(permissions).withGroupId(groupId.getGroupId());
 
         pdelay.reset();
+        msg = pdelayData.getHumanName("sg", "authorizeSecurityGroupIngress" + groupId.getGroupId());
         do
         {
             try
@@ -220,7 +261,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 break;
             } catch (Exception e)
             {
-                pdelay.handleException(ErrorPrefix + "createSecurityGroup", e);
+                pdelay.handleException(msg, e);
             }
         }while(true);
         return groupId;
@@ -274,8 +315,17 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 
     private void createNameTag(String name, String resourceId)
     {
-        ProgressiveDelay pdelay = new ProgressiveDelay(sgMaxDelay, sgMaxRetries, config.statusTracker, tstLongName);
-        CreateTagsRequest ctr = new CreateTagsRequest().withTags(new Tag("Name", name)).withResources(resourceId);
+        pdelayData.maxDelay = sgMaxDelay;
+        pdelayData.maxRetries = sgMaxRetries;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        //@formatter:off
+        CreateTagsRequest ctr = new 
+                        CreateTagsRequest().withTags(
+                                        new Tag(TagNameKey, name),
+                                        new Tag(TagTemplateIdKey, pdelayData.templateId),
+                                        new Tag(TagReferenceKey, ""+pdelayData.reference))
+                                        .withResources(resourceId);
+        //@formatter:on
         do
         {
             try
@@ -284,7 +334,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 break;
             } catch (Exception e)
             {
-                pdelay.handleException(ErrorPrefix + "createNameTag", e);
+                pdelay.handleException(name + " createTags", e);
             }
         }while(true);
     }
@@ -409,14 +459,12 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             
             format.ttl("Test names:");
             format.level.incrementAndGet();
-            tstShortName = StrH.getAttribute(map, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
-            format.ttl(ClientNames.TestShortNameKey, " = ", tstShortName);
-            tstLongName = StrH.getAttribute(map, ClientNames.TestLongNameKey, ClientNames.TestLongNameDefault);
-            format.ttl(ClientNames.TestLongNameKey, " = ", tstLongName);
+            pdelayData.preFixMostName = StrH.getAttribute(map, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+            format.ttl(ClientNames.TestShortNameKey, " = ", pdelayData.preFixMostName);
             log.debug(format.sb.toString());
         } catch (Exception e)
         {
-            throw new ProgressiveDelay(0, 0, config.statusTracker, tstLongName).handleException(ErrorPrefix + "init", e);
+            throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "init"), e);
         }
     }
 }

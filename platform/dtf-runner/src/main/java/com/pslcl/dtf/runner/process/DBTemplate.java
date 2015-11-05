@@ -30,6 +30,7 @@ public class DBTemplate {
     Date end_time;          // DATETIME in run
     Boolean result = false; // nullable BOOLEAN in run
     String owner;           // VARCHAR(128) in run
+    private volatile String templateId; // hash turned into a hex string
     
     /**
      *  Constructor
@@ -37,5 +38,24 @@ public class DBTemplate {
     DBTemplate(Long reNum) {
         this.reNum = reNum;
     }
-
+    
+    /**
+     * Return the value of the hash array as a hex String.
+     * @return hex string value of the hash array
+     */
+    public String getTemplateId()
+    {
+        if(templateId != null)
+            return templateId;
+        StringBuilder sb = new StringBuilder();
+        for(int i=0; i < hash.length; i++)
+        {
+            String value = Integer.toHexString(hash[i]);
+            if(value.length() == 1)
+                sb.append("0");
+            sb.append(value);
+        }
+        templateId = sb.toString();
+        return templateId;
+    }
 }

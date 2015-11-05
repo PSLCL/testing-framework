@@ -44,6 +44,7 @@ public class AwsMachineInstance implements MachineInstance
     private String description;
     private final ResourceProvider resourceProvider;
     private int timeoutSeconds;
+    private final String templateId;
     private final long reference;
 
     /**
@@ -58,6 +59,7 @@ public class AwsMachineInstance implements MachineInstance
         attributes = reservedResource.getAttributes();
         // description = ;
         resourceProvider = reservedResource.getResourceProvider();
+        templateId = reservedResource.getTemplateId();
         reference = reservedResource.getReference();
     }
 
@@ -77,6 +79,12 @@ public class AwsMachineInstance implements MachineInstance
     public ResourceProvider getResourceProvider()
     {
         return resourceProvider;
+    }
+
+    @Override
+    public String getTemplateId()
+    {
+        return templateId;
     }
 
     @Override
@@ -127,89 +135,89 @@ public class AwsMachineInstance implements MachineInstance
         return null;
     }
 
-    public static class WaitForInstanceState implements Callable<AwsInstanceState>
-    {
-        private final Instance instance;
-        private final AwsInstanceState state;
-        private final int pollDelay;
-        private final int timeout;
-        private final RunnerConfig config;
-        private final AtomicBoolean interrupted;
-        private final AtomicBoolean timedOut;
+//    public static class WaitForInstanceState implements Callable<AwsInstanceState>
+//    {
+//        private final Instance instance;
+//        private final AwsInstanceState state;
+//        private final int pollDelay;
+//        private final int timeout;
+//        private final RunnerConfig config;
+//        private final AtomicBoolean interrupted;
+//        private final AtomicBoolean timedOut;
+//
+//        public WaitForInstanceState(Instance instance, AwsInstanceState state, RunnerConfig config, int pollDelay, int timeout)
+//        {
+//            this.instance = instance;
+//            this.state = state;
+//            this.pollDelay = pollDelay;
+//            this.timeout = timeout;
+//            this.config = config;
+//            interrupted = new AtomicBoolean(false);
+//            timedOut = new AtomicBoolean(false);
+//        }
+//
+//        @Override
+//        public AwsInstanceState call() throws Exception
+//        {
+//            Timeout timeoutTask = new Timeout(this, config.scheduledExecutor, timeout);
+//            config.blockingExecutor.execute(timeoutTask);
+//            do
+//            {
+//                if (AwsInstanceState.getState(instance.getState().getName()) == state)
+//                {
+//                    timeoutTask.cancel();
+//                    return state;
+//                }
+//                if(interrupted.get())
+//                    throw new InterruptedException();
+//                if(timedOut.get())
+//                    throw new Exception("timedout exception");
+//                Thread.sleep(pollDelay);
+//            } while (true);
+//        }
+//
+//        public void interrupted()
+//        {
+//            interrupted.set(true);
+//        }
+//
+//        public void timeout()
+//        {
+//            timedOut.set(true);
+//        }
+//    }
 
-        public WaitForInstanceState(Instance instance, AwsInstanceState state, RunnerConfig config, int pollDelay, int timeout)
-        {
-            this.instance = instance;
-            this.state = state;
-            this.pollDelay = pollDelay;
-            this.timeout = timeout;
-            this.config = config;
-            interrupted = new AtomicBoolean(false);
-            timedOut = new AtomicBoolean(false);
-        }
-
-        @Override
-        public AwsInstanceState call() throws Exception
-        {
-            Timeout timeoutTask = new Timeout(this, config.scheduledExecutor, timeout);
-            config.blockingExecutor.execute(timeoutTask);
-            do
-            {
-                if (AwsInstanceState.getState(instance.getState().getName()) == state)
-                {
-                    timeoutTask.cancel();
-                    return state;
-                }
-                if(interrupted.get())
-                    throw new InterruptedException();
-                if(timedOut.get())
-                    throw new Exception("timedout exception");
-                Thread.sleep(pollDelay);
-            } while (true);
-        }
-
-        public void interrupted()
-        {
-            interrupted.set(true);
-        }
-
-        public void timeout()
-        {
-            timedOut.set(true);
-        }
-    }
-
-    public static class Timeout implements Runnable
-    {
-        private final AtomicBoolean cancel;
-        private final TimeoutTask timeoutTask;
-        private final WaitForInstanceState caller;
-
-        public Timeout(WaitForInstanceState caller, ScheduledExecutor timer, int timeout)
-        {
-            cancel = new AtomicBoolean(false);
-            this.caller = caller;
-            timeoutTask = new TimeoutTask(timer, timeout);
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                timeoutTask.waitForComplete();
-                caller.timeout();
-            } catch (InterruptedException e)
-            {
-                caller.interrupted();
-            }
-        }
-
-        public void cancel()
-        {
-            timeoutTask.cancel(true);
-        }
-    }
+//    public static class Timeout implements Runnable
+//    {
+//        private final AtomicBoolean cancel;
+//        private final TimeoutTask timeoutTask;
+//        private final WaitForInstanceState caller;
+//
+//        public Timeout(WaitForInstanceState caller, ScheduledExecutor timer, int timeout)
+//        {
+//            cancel = new AtomicBoolean(false);
+//            this.caller = caller;
+//            timeoutTask = new TimeoutTask(timer, timeout);
+//        }
+//
+//        @Override
+//        public void run()
+//        {
+//            try
+//            {
+//                timeoutTask.waitForComplete();
+//                caller.timeout();
+//            } catch (InterruptedException e)
+//            {
+//                caller.interrupted();
+//            }
+//        }
+//
+//        public void cancel()
+//        {
+//            timeoutTask.cancel(true);
+//        }
+//    }
 
     public enum AwsInstanceState
     {

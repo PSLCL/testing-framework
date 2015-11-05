@@ -241,4 +241,64 @@ public class StrH
             value = defaultValue;
         return Integer.parseInt(value);
     }
+    
+    public static long msToNano(long ms)
+    {
+        return 1000000 * ms;
+    }
+
+    public static long nanoToMs(long ns)
+    {
+        return ns / 1000000;
+    }
+    
+    public static String scaleMilliSeconds(long value)
+    {
+        return scaleNanoSeconds(msToNano(value));
+    }
+    
+    public static String scaleNanoSeconds(long value)
+    {
+/*
+                about max               about min
+ns:              999                            1
+mico:         999222                         1222
+ms:        999111222                      1111222
+sec:     59000111222                   1000111222
+min:   3633000111222                  60000111222
+hr:   86400000000000                3600000111222
+*/
+        if(value < 0)
+            return "0";
+        
+        if(value < 1000)
+        {// nano seconds
+            return "" + value + "ns";
+        }
+        if(value < 1000000)
+        {// micro seconds
+            return "" + (value / 1000.0) + "micos";
+        }
+        
+        if(value < 1000000000)
+        {// milli seconds
+            return "" + (value / 1000000.0) + "ms";
+        }
+        
+        if(value < 60000000000L)
+        {// seconds
+            return "" + (value / 1000000000.0) + "sec";
+        }
+        
+        if(value < 3600000000000L)
+        {// minutes
+            return "" + (value / 60000000000.0) + "min";
+        }
+        
+        if(value < 86400000000000L)
+        {// hours
+            return "" + (value / 3600000000000.0) + "hr";
+        }
+        return "" + (value / 3600000000000.0) + "hr";
+    }
 }

@@ -27,11 +27,12 @@ import com.pslcl.dtf.core.util.StrH;
  */
 public class ReservedResource implements ResourceDescription
 {
-    private String name;
-    private Map<String, String> attributes;
-    private long reference;
-    private ResourceProvider resourceProvider;
-    private long endTime;
+    private final String name;
+    private final Map<String, String> attributes;
+    private final String templateId;
+    private final long reference;
+    private final ResourceProvider resourceProvider;
+    private final long endTime;
 
     /**
      * constructor
@@ -41,7 +42,15 @@ public class ReservedResource implements ResourceDescription
      */
     public ReservedResource(ResourceDescription resourceDescription, ResourceProvider resourceProvider, int timeoutSeconds)
     {
-        this(resourceDescription.getName(), resourceDescription.getAttributes(), resourceDescription.getReference(), resourceProvider, timeoutSeconds);
+        //@formatter:off
+        this(
+            resourceDescription.getName(), 
+            resourceDescription.getAttributes(), 
+            resourceDescription.getTemplateId(), 
+            resourceDescription.getReference(), 
+            resourceProvider, 
+            timeoutSeconds);
+        //@formatter:off
     }
 
     /**
@@ -52,10 +61,20 @@ public class ReservedResource implements ResourceDescription
      * @param resourceProvider
      * @param timeoutSeconds
      */
-    public ReservedResource(String name, Map<String, String> attributes, long reference, ResourceProvider resourceProvider, int timeoutSeconds)
+    
+    //@formatter:off
+    public ReservedResource(
+        String name, 
+        Map<String, String> attributes, 
+        String templateId, 
+        long reference, 
+        ResourceProvider resourceProvider, 
+        int timeoutSeconds)
+    //@formatter:on
     {
         this.name = name;
         this.attributes = attributes;
+        this.templateId = templateId;
         this.reference = reference;
         this.resourceProvider = resourceProvider;
         this.endTime = System.currentTimeMillis() + (timeoutSeconds * 1000);
@@ -75,6 +94,12 @@ public class ReservedResource implements ResourceDescription
         return attributes;
     }
 
+    @Override
+    public String getTemplateId()
+    {
+        return templateId;
+    }
+    
     @Override
     public long getReference()
     {
