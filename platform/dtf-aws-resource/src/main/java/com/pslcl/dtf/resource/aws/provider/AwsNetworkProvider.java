@@ -29,11 +29,15 @@ import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.resource.aws.ResourcesController;
 
 public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {
-    public AwsNetworkProvider()
+    private final ResourcesController controller;
+
+    public AwsNetworkProvider(ResourcesController controller)
     {
+        this.controller = controller;
     }
 
     @Override

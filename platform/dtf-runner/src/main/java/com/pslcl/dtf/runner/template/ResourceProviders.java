@@ -30,10 +30,8 @@ import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
-import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
-import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
-import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.runner.resource.provider.ResourcesManager;
 import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.StrH.StringPair;
 
@@ -42,29 +40,24 @@ import com.pslcl.dtf.core.util.StrH.StringPair;
  */
 public class ResourceProviders implements ResourceProvider {
 
-    public static final String MachineProviderClassKey = "pslcl.dtf.runner.template.machine-provider-class"; 
-    public static final String PersonProviderClassKey = "pslcl.dtf.runner.template.person-provider-class"; 
-    public static final String NetworkProviderClassKey = "pslcl.dtf.runner.template.network-provider-class";
+    public static final String ManagerClassKey = "pslcl.dtf.runner.template.resource-manager-class"; 
+    public static final String ManagerClassDefault = "com.pslcl.dtf.resource.aws.ResourcesController";
     
-    public static final String MachineProviderClassDefault = "com.pslcl.dtf.resource.aws.provider.AwsMachineProvider";
-    public static final String PersonProviderClassDefault = "com.pslcl.dtf.resource.aws.provider.AwsPersonProvider";
-    public static final String NetworkProviderClassDefault = "com.pslcl.dtf.resource.aws.provider.AwsNetworkProvider";
-    
+    private final List<ResourcesManager> resourceManagers;
     private final List<ResourceProvider> resourceProviders;
 
     /**
      * constructor
      */
     public ResourceProviders() {
-        resourceProviders = new ArrayList<>(); // list of class objects that implement the ResourceProvider interface
-
+        resourceManagers = new ArrayList<ResourcesManager>();
+        resourceProviders = new ArrayList<ResourceProvider>();
     }
     
     public List<ResourceProvider> getProviders()
     {
         return new ArrayList<ResourceProvider>(resourceProviders);
     }
-    
     
     @Override
     public void init(RunnerConfig config) throws Exception
@@ -73,26 +66,13 @@ public class ResourceProviders implements ResourceProvider {
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
         
-        // Note: Do not include ResourceProviders in this list
-        config.initsb.ttl(MachineProvider.class.getSimpleName(), " Initialization");
+        config.initsb.ttl(ResourcesManager.class.getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
-        configToProviders(config, MachineProviderClassKey, MachineProviderClassDefault);
-        config.initsb.level.decrementAndGet();
-        
-        config.initsb.ttl(PersonProvider.class.getSimpleName(), " Initialization");
-        config.initsb.level.incrementAndGet();
-        configToProviders(config, PersonProviderClassKey, PersonProviderClassDefault);
-        config.initsb.level.decrementAndGet();
-        
-        config.initsb.ttl(NetworkProvider.class.getSimpleName(), " Initialization");
-        config.initsb.level.incrementAndGet();
-        configToProviders(config, NetworkProviderClassKey, NetworkProviderClassDefault);
-        config.initsb.level.decrementAndGet();
-        config.initsb.level.decrementAndGet();
+        configToManagers(config, ManagerClassKey, ManagerClassDefault);
         config.initsb.level.decrementAndGet();
     }
     
-    private void configToProviders(RunnerConfig config, String key, String defaultValue) throws Exception
+    private void configToManagers(RunnerConfig config, String key, String defaultValue) throws Exception
     {
         List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(key, config.properties);
         int size = list.size();
@@ -108,9 +88,10 @@ public class ResourceProviders implements ResourceProvider {
         {
             Entry<String,String> entry = list.get(i);
             config.initsb.ttl(entry.getKey(), " = ", entry.getValue());
-            ResourceProvider rp = (ResourceProvider)Class.forName(entry.getValue()).newInstance();
-            rp.init(config);
-            resourceProviders.add(rp);
+            ResourcesManager rm = (ResourcesManager)Class.forName(entry.getValue()).newInstance();
+            rm.init(config);
+            resourceManagers.add(rm);
+            resourceProviders.addAll(rm.getResourceProviders());
         }
     }
     

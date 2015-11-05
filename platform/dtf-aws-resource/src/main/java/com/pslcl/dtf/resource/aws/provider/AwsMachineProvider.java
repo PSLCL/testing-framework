@@ -22,7 +22,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.amazonaws.services.ec2.model.GroupIdentifier;
+import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceType;
+import com.amazonaws.services.ec2.model.Subnet;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
@@ -35,6 +38,7 @@ import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.ResourcesController;
 import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
 
 /**
@@ -45,9 +49,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     private final HashMap<Long, MachineReservedResource> reservedResources;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
+    private final ResourcesController controller;
 
-    public AwsMachineProvider()
+    public AwsMachineProvider(ResourcesController controller)
     {
+        this.controller = controller;
         reservedResources = new HashMap<Long, MachineReservedResource>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
@@ -233,14 +239,16 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             return imageId;
         }
     }
-
-    
     
     public class MachineReservedResource implements Runnable
     {
         public final ResourceDescription resource;
         public final InstanceType instanceType;
         public final String imageId;
+        public volatile GroupIdentifier groupId;
+        public volatile Subnet subnet;
+        public volatile Instance ec2Instance;
+        
         private ScheduledFuture<?> timerFuture;
         private Future<MachineInstance> instanceFuture;
 

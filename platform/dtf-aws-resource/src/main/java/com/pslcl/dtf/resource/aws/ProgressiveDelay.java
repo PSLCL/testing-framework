@@ -221,7 +221,10 @@ public class ProgressiveDelay
         
         public String getHumanName(String midString, String post)
         {
-            return preFixMostName + "-" + midString + "-" + templateId.substring(32) + (post == null ? "" : " " + post);
+            String tid = templateId;
+            if(templateId.length() > 16)
+                tid = templateId.substring(16);
+            return preFixMostName + "-" + midString + "-" + tid + (post == null ? "" : " " + post);
         }
     }
 }

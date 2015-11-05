@@ -181,9 +181,8 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
                 return;  // current == new nothing to do
         }catch(Exception e)
         {
-            // add it and fire
-            setStatus(status.templateId, status.status);
         }
+        setStatus(status.templateId, status.status);
         
         synchronized(resourceStatusListeners)
         {

@@ -29,11 +29,15 @@ import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.resource.aws.ResourcesController;
 
 public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
-    public AwsPersonProvider()
+    private final ResourcesController controller;
+
+    public AwsPersonProvider(ResourcesController controller)
     {
+        this.controller = controller;
     }
 
     @Override
