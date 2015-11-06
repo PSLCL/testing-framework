@@ -235,6 +235,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             {
                 // do nothing; reNum remains in InstanceStore, we will see it again
                 System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
+                throw e;
             }
         } catch (Exception e)
         {
