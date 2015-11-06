@@ -62,7 +62,7 @@ public class ProgressiveDelay
             return;  // called by handleException
         long delay = ((long) Math.pow(2, cnt) * 100L);
         delay = Math.min(delay, pdelayData.maxDelay);
-        log.debug("count: " + cnt + " delay: " + delay);
+        log.debug("count: " + cnt + " delay: " + delay + " totalwait: " + StrH.scaleMilliSeconds(totalTime.get()));
         try
         {
             Thread.sleep(delay);
@@ -192,6 +192,7 @@ public class ProgressiveDelay
         public final StatusTracker statusTracker;
         public final String templateId;
         public final long reference;
+        public volatile String testId;      
         public final ResourceStatus resourceStatus;
 
         //@formatter:off
@@ -222,8 +223,8 @@ public class ProgressiveDelay
         public String getHumanName(String midString, String post)
         {
             String tid = templateId;
-            if(templateId.length() > 16)
-                tid = templateId.substring(16);
+            if(templateId.length() > 12)
+                tid = templateId.substring(0, 12);
             return preFixMostName + "-" + midString + "-" + tid + (post == null ? "" : " " + post);
         }
     }

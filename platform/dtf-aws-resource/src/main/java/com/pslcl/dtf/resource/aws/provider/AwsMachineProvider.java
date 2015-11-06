@@ -26,6 +26,7 @@ import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.amazonaws.services.ec2.model.Subnet;
+import com.amazonaws.services.ec2.model.Vpc;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
@@ -46,7 +47,8 @@ import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
  */
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
-    private final HashMap<Long, MachineReservedResource> reservedResources;
+    private final HashMap<String, MachineInstance> boundInstances;
+    private final HashMap<Long, MachineReservedResource> reservedMachines;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
     private final ResourcesController controller;
@@ -54,9 +56,34 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     public AwsMachineProvider(ResourcesController controller)
     {
         this.controller = controller;
-        reservedResources = new HashMap<Long, MachineReservedResource>();
+        reservedMachines = new HashMap<Long, MachineReservedResource>();
+        boundInstances = new HashMap<String, MachineInstance>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
+    }
+    
+    public void addBoundInstance(String templateId, MachineInstance instance)
+    {
+        synchronized(boundInstances)
+        {
+            boundInstances.put(templateId, instance);
+        }
+    }
+
+    public void setTestId(String templateId, long testId)
+    {
+    }
+
+    public void forceCleanup()
+    {
+    }
+
+    public void release(String templateId, boolean isReusable)
+    {
+    }
+
+    public void releaseReservedResource(String templateId)
+    {
     }
 
     @Override
@@ -79,9 +106,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getTemplateId(), resource.getReference());
         config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatus.getNewInstance(pdelayData.resourceStatus, StatusTracker.Status.Warn));
 
-        synchronized(reservedResources)
+        synchronized(reservedMachines)
         {
-            MachineReservedResource reservedResource = reservedResources.get(resource.getReference());
+            MachineReservedResource reservedResource = reservedMachines.get(resource.getReference());
             if(reservedResource == null)
                 throw new ResourceNotReservedException(resource.getName() + "(" + resource.getReference() +") is not reserved");
             Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource, ec2Client, pdelayData)); 
@@ -98,7 +125,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         {
             bind(resource);
         }
-        synchronized (reservedResources)
+        synchronized (reservedMachines)
         {
             return null;
         }
@@ -181,7 +208,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     MachineReservedResource rresource = new MachineReservedResource(avail, queryResult);
                     ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
-                    this.reservedResources.put(rresource.resource.getReference(), rresource);
+                    this.reservedMachines.put(rresource.resource.getReference(), rresource);
                 }
             }
         }
@@ -245,9 +272,13 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         public final ResourceDescription resource;
         public final InstanceType instanceType;
         public final String imageId;
-        public volatile GroupIdentifier groupId;
+        public volatile GroupIdentifier groupIdentifier;
+        public volatile String groupId;
+        public volatile Vpc vpc;
         public volatile Subnet subnet;
+        public volatile String net;
         public volatile Instance ec2Instance;
+        public volatile long testId;
         
         private ScheduledFuture<?> timerFuture;
         private Future<MachineInstance> instanceFuture;
@@ -282,9 +313,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         @Override
         public void run()
         {
-            synchronized(reservedResources)
+            synchronized(reservedMachines)
             {
-                reservedResources.remove(resource.getReference());
+                reservedMachines.remove(resource.getReference());
                 instanceFinder.releaseInstance(instanceType);
                 log.info(resource.toString() + " reserve timed out");
             }

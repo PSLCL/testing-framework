@@ -49,5 +49,4 @@ public interface ResourceDescription
      * @returns The stringafied hash code. 
      */
     public String getTemplateId();
-    
 }

@@ -17,24 +17,19 @@ package com.pslcl.dtf.resource.aws.instance;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.Instance;
-import com.pslcl.dtf.core.runner.config.RunnerConfig;
-import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.exception.IncompatibleResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.StartProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.core.util.TimeoutTask;
-import com.pslcl.dtf.core.util.executor.ScheduledExecutor;
+import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider.MachineReservedResource;
 
 public class AwsMachineInstance implements MachineInstance
 {
@@ -42,25 +37,28 @@ public class AwsMachineInstance implements MachineInstance
     private final String name;
     private final Map<String, String> attributes;
     private String description;
-    private final ResourceProvider resourceProvider;
+    private final ResourceProvider provider;
     private int timeoutSeconds;
     private final String templateId;
     private final long reference;
+    private final long testId;
+    private final Instance ec2Instance;
 
     /**
      * constructor for the use case where resource was previously reserved
      * 
      * @param resource
      */
-    public AwsMachineInstance(ReservedResource reservedResource)
+    public AwsMachineInstance(MachineReservedResource reservedResource, ResourceProvider provider)
     {
         log = LoggerFactory.getLogger(getClass());
-        name = reservedResource.getName();
-        attributes = reservedResource.getAttributes();
-        // description = ;
-        resourceProvider = reservedResource.getResourceProvider();
-        templateId = reservedResource.getTemplateId();
-        reference = reservedResource.getReference();
+        name = reservedResource.resource.getName();
+        attributes = reservedResource.resource.getAttributes();
+        this.provider = provider;
+        templateId = reservedResource.resource.getTemplateId();
+        reference = reservedResource.resource.getReference();
+        testId = reservedResource.testId;   
+        ec2Instance = reservedResource.ec2Instance;
     }
 
     @Override
@@ -78,7 +76,7 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public ResourceProvider getResourceProvider()
     {
-        return resourceProvider;
+        return provider;
     }
 
     @Override

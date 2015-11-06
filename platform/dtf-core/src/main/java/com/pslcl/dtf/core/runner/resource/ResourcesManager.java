@@ -13,15 +13,22 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.core.runner.resource.provider;
+package com.pslcl.dtf.core.runner.resource;
 
 import java.util.List;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public interface ResourcesManager
 {
     public void init(RunnerConfig config) throws Exception;
     public void destroy(); 
     public List<ResourceProvider> getResourceProviders();
+    public void setTestId(String templateId, long testId);
+    public void release(String templateId, boolean isReusable);
+    public void releaseReservedResource(String templateId);
+    public void release(String templateId, long reference, boolean isReusable);
+    public void releaseReservedResource(String templateId, long reference);
+    public void forceCleanup();
 }

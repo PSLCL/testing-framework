@@ -21,7 +21,12 @@ public class InstanceNames
      * Global declarations    
     ******************************************************************************/
     public static final String InstanceKeyBase = ClientNames.AwsKeyBase + ".ec2instance";
+    public static final String AvailabilityZoneKey = InstanceKeyBase + ".avail-zone";
+    public static final String AvailabilityZoneDefault = "us-west-2a";
+    
 
+
+    
     /* ****************************************************************************
      * AWS Machine Provider bind declarations
      * see com.pslcl.dtf.resource.aws.instance.AwsMachineInstance     
@@ -50,6 +55,10 @@ public class InstanceNames
         count: 13 delay: 819200     13.6 min    27.3min     30 = 4.2 hrs    49 = 8.4hrs 86 = 16.8h  160 = 33.6hrs
                                                                             19,56,130
 */
+    private static final String shortMaxDelay = "800";  // 0.8 seconds
+    private static final String shortMaxRetries = "76"; // roughly 1 minute
+    private static final String longMaxDelay = "6400";  // roughly 6.4 seconds
+    private static final String longMaxRetries = "152"; // rouchly 16 minutes
     
     /* ****************************************************************************
      * VPC declarations
@@ -63,8 +72,8 @@ public class InstanceNames
 
     public static final String VpcCidrDefault = "10.0.0.0/24";
     public static final String VpcTenancyDefault = "default";
-    public static final String VpcMaxDelayDefault = "800"; 
-    public static final String VpcMaxRetriesDefault = "76"; // about 1 min timeout
+    public static final String VpcMaxDelayDefault = shortMaxDelay; 
+    public static final String VpcMaxRetriesDefault = shortMaxRetries;
 
     /* ****************************************************************************
      * Security Group declarations
@@ -78,8 +87,8 @@ public class InstanceNames
     
     public static final String SgNameDefault = ClientNames.TestShortNameDefault;
     public static final String SgIdDefault = null;
-    public static final String SgMaxDelayDefault = "800";      
-    public static final String SgMaxRetriesDefault = "76";  // about 1 min timeout
+    public static final String SgMaxDelayDefault = shortMaxDelay;      
+    public static final String SgMaxRetriesDefault = shortMaxRetries;  // about 1 min timeout
     
     /* ****************************************************************************
      * VPC Permissions
@@ -99,9 +108,12 @@ public class InstanceNames
     /* ****************************************************************************
      * ec2 instance declarations
     ******************************************************************************/    
-    public static final String Ec2MaxDelayKey = InstanceKeyBase + ".max-delay";       // eventually consistent starting poll delay in ms
-    public static final String Ec2MaxRetriesKey = InstanceKeyBase + ".max-retries";   // eventually consistent timeout in ms
+    public static final String Ec2MaxDelayKey = InstanceKeyBase + ".max-delay";
+    public static final String Ec2MaxRetriesKey = InstanceKeyBase + ".max-retries";
+    public static final String Ec2IamArnKey = InstanceKeyBase + ".iam-arn";
+    public static final String Ec2IamNameKey = InstanceKeyBase + ".max-retries";
+    public static final String Ec2KeyPairNameKey = InstanceKeyBase + ".keypair-name";
     
-    public static final String Ec2MaxDelayDefault = "6400";        // 10ms
-    public static final String Ec2MaxRetriesDefault = "152";   // 15 minutes
+    public static final String Ec2MaxDelayDefault = longMaxDelay;
+    public static final String Ec2MaxRetriesDefault = longMaxRetries;
 }

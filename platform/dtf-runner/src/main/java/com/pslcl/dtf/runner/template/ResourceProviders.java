@@ -27,11 +27,11 @@ import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescImpl;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.core.runner.resource.provider.ResourcesManager;
 import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.StrH.StringPair;
 
@@ -52,6 +52,11 @@ public class ResourceProviders implements ResourceProvider {
     public ResourceProviders() {
         resourceManagers = new ArrayList<ResourcesManager>();
         resourceProviders = new ArrayList<ResourceProvider>();
+    }
+    
+    public List<ResourcesManager> getManagers()
+    {
+        return new ArrayList<ResourcesManager>(resourceManagers);
     }
     
     public List<ResourceProvider> getProviders()
@@ -100,9 +105,10 @@ public class ResourceProviders implements ResourceProvider {
     {
         try
         {
-            int size = resourceProviders.size();
+            int size = resourceManagers.size();
             for(int i=0; i < size; i++)
-                resourceProviders.get(i).destroy();
+                resourceManagers.get(i).destroy();
+            resourceManagers.clear();
             resourceProviders.clear();
         }catch(Exception e)
         {

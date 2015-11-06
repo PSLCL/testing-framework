@@ -45,7 +45,9 @@ public class RunnerService implements Runner, RunnerServiceMBean
     // static declarations
 
     public static final String QueueStoreDaoClassKey = "pslcl.dtf.resource.mq-class";
+    public static final String QueueStoreDaoEnableKey = "pslcl.dtf.resource.mq-class-enable";
     public static final String QueueStoreDaoClassDefault = "com.pslcl.dtf.resource.aws.Sqs";
+    public static final String QueueStoreDaoEnableDefault = "true";
 
     private volatile MessageQueue mq;
     private volatile RunnerConfig config;
@@ -107,10 +109,16 @@ public class RunnerService implements Runner, RunnerServiceMBean
 
             config.initsb.ttl("Initialize QueueStoreDao:");
             config.initsb.level.incrementAndGet(); // l2
-            String daoClass = config.properties.getProperty(QueueStoreDaoClassKey, QueueStoreDaoClassDefault);
-            config.initsb.ttl(QueueStoreDaoClassKey, " = ", daoClass);
-            mq = (MessageQueue) Class.forName(daoClass).newInstance();
-            mq.init(config);
+            boolean enableQue =Boolean.parseBoolean(config.properties.getProperty(QueueStoreDaoEnableKey, QueueStoreDaoEnableDefault));
+            if(enableQue)
+            {
+                String daoClass = config.properties.getProperty(QueueStoreDaoClassKey, QueueStoreDaoClassDefault);
+                config.initsb.ttl(QueueStoreDaoClassKey, " = ", daoClass);
+                mq = (MessageQueue) Class.forName(daoClass).newInstance();
+                mq.init(config);
+            }else
+                config.initsb.ttl(QueueStoreDaoClassKey, " = ", "DISABLED");
+                
             config.initsb.indentedOk();
             config.initsb.level.decrementAndGet();
         } catch (Exception e)
@@ -127,14 +135,17 @@ public class RunnerService implements Runner, RunnerServiceMBean
         try
         {
             config.initsb.ttl(getClass().getSimpleName() + " start");
-            if (mq.queueStoreExists())
+            if(mq != null) // can be configured to disable the queue, see init
             {
-                // Setup QueueStore DAO-referenced message handler (a standard callback from the JMS spec)
-                mq.initQueueStoreGet();
-            } else
-            {
-                LoggerFactory.getLogger(getClass()).warn("RunnerService.start exits- QueueStore message queue not available.");
-                throw new Exception("QueueStore not available");
+                if (mq.queueStoreExists())
+                {
+                    // Setup QueueStore DAO-referenced message handler (a standard callback from the JMS spec)
+                    mq.initQueueStoreGet();
+                } else
+                {
+                    LoggerFactory.getLogger(getClass()).warn("RunnerService.start exits- QueueStore message queue not available.");
+                    throw new Exception("QueueStore not available");
+                }
             }
             config.initsb.indentedOk();
         } catch (Exception e)
