@@ -35,7 +35,7 @@ public class DBTemplate {
     /**
      *  Constructor
      */
-    DBTemplate(Long reNum) {
+    public DBTemplate(Long reNum) {
         this.reNum = reNum;
     }
     

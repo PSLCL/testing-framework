@@ -37,13 +37,18 @@ public enum Action implements Actions {
 
     INITIALIZE {
         @Override
-        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+        Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) throws Exception {
             long reNum = reState.getRunEntryNumber();
             Action retAction = reState.getAction();
             if (retAction == INITIALIZE) {
-                reState.setAction(ANALYZE);
-                // put new reState object to ActionStore as kvp reNum/reState
-                runnerService.runnerMachine.engageNewRunEntry(reNum, reState);
+                try {
+					// put new reState object to ActionStore as kvp reNum/reState
+					runnerService.runnerMachine.engageNewRunEntry(reNum, reState);
+					reState.setAction(ANALYZE);
+				} catch (Exception e) {
+					System.out.println("Action.INITIALIZE() sees exception message " + e);
+					throw e;
+				}
             } else {
                 System.out.println("Internal Error. Action.INITIALIZE() rejects reState for reNum " + reNum + ". Action wrongly shown to be " + retAction);
             }
@@ -55,7 +60,7 @@ public enum Action implements Actions {
     
     ANALYZE {
         @Override
-        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+        Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
             
             // DECISION: We could check and prove that pk_run=reNum of table run has null for its result field. But we instead require that this be handled in whatever process placed reNum into the message queue. A human could manually place an reNum, and we will make a test run out of it.
@@ -72,28 +77,24 @@ public enum Action implements Actions {
     
     DO {
         @Override
-        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+        Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
             // this is a new run entry: before returning, initiate a test run, process it to completion, gather result if available, and store the result
             boolean result = false;
             try {
-                result = reCore.testRun(new Long(reNum), tp);
+                result = reCore.testRun(new Long(reNum), runnerService.runnerMachine);
             } catch (Exception e) {
                 System.out.println("Action.DO() see testRun() exception: " + e);
             }
-            
-            // TODO: store the result, perhaps with new enum value STORE_RESULT
             
             reState.setAction(REMOVE);
             return reState.getAction();
         }
     },
     
-//  STORE_RESULT,   // useful here?
-    
     REMOVE {
         @Override
-        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+        Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
             System.out.println("Action.REMOVE() removes reNum " + reNum);
             runnerService.actionStore.remove(reNum);
@@ -105,12 +106,12 @@ public enum Action implements Actions {
     // if called, remove tState from actionStore; try to code in a way that "DISCARDED" is never called
     DISCARDED {
         @Override
-        Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService) {
+        Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();runnerService.actionStore.remove(reNum);
             return reState.getAction();
         }
     };
 
-    abstract Action act(RunEntryState reState, RunEntryCore reCore, TemplateProvider tp, RunnerService runnerService);
+    abstract Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) throws Exception;
     
 }

@@ -2,85 +2,62 @@
 setlocal
 if "[%1]"=="[]" goto nuke
 set cleanbuild="true"
-goto first
+goto core
 
 :nuke
-rd /s \Users\cadams\.ivy2\cache
-rd /s \Users\cadams\.ivy2\local\org.opendof.tools-interface-repository
-
-:first
-cd interface-repository-data-accessor
-IF "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
-if "%errorlevel%"=="0" goto core
-echo "interface-repository-data-accessor build failed"
-goto exit
+rd /s \Users\cadams\.ivy2\cache\com.pslcl.dtf
+rd /s \Users\cadams\.ivy2\local\com.pslcl.dtf
 
 :core
-echo "interface-repository-data-accessor build ok"
-cd ..\interface-repository-core
-IF "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
-if "%errorlevel%"=="0" goto allseen
-echo "interface-repository-core build failed"
+cd dtf-core
+if "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
+if "%errorlevel%"=="0" goto exec
+echo "dtf-core build failed"
 goto exit
 
-:allseen
-echo "interface-repository-core build ok"
-cd ..\interface-repository-allseen
-IF "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
-if "%errorlevel%"=="0" goto opendof
-echo "interface-repository-allseen build failed"
+:exec
+cd ..\dtf-exec
+echo "dtf-core build ok"
+if "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
+if "%errorlevel%"=="0" goto art
+echo "dtf-exec build failed"
 goto exit
 
-:opendof
-echo "interface-repository-allseen build ok"
-cd ..\interface-repository-opendof
-IF "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
-if "%errorlevel%"=="0" goto mysql
-echo "interface-repository-opendof build failed"
+:art
+cd ..\dtf-ivy-artifact
+echo "dtf-exec build ok"
+if "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
+if "%errorlevel%"=="0" goto runner
+echo "dtf-ivy-artifact build failed"
 goto exit
 
-:mysql
-echo "interface-repository-opendof build ok"
-cd ..\interface-repository-mysql
-IF "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
-if "%errorlevel%"=="0" goto servlet
-echo "interface-repository-mysql build failed"
+:runner
+cd ..\dtf-runner
+echo "dtf-ivy-artifact build ok"
+if "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
+if "%errorlevel%"=="0" goto awsa
+echo "dtf-runner build failed"
 goto exit
 
-:servlet
-echo "interface-repository-mysql build ok"
-cd ..\interface-repository-servlet
-IF "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
-if "%errorlevel%"=="0" goto cli
-echo "interface-repository-servlet build failed"
+:awsa
+cd ..\dtf-aws-attr
+echo "dtf-runner build ok"
+if "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
+if "%errorlevel%"=="0" goto awsr
+echo "dtf-aws-attr build failed"
 goto exit
 
-:cli
-echo "interface-repository-servlet build ok"
-cd ..\interface-repository-cli
-IF "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
-if "%errorlevel%"=="0" goto web
-echo "interface-repository-cli build failed"
-goto exit
-
-:web
-echo "interface-repository-cli build ok"
-cd ..\interface-repository-web
-IF "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
-if "%errorlevel%"=="0" goto app
-echo "interface-repository-web build failed"
-goto exit
-
-:app
-echo "interface-repository-web build ok"
-cd ..\interface-repository
-IF "%cleanbuild%"=="" (call ant -q dist-app) ELSE (call ant -q clean)
+:awsr
+cd ..\dtf-aws-resource
+echo "dtf-aws-attr build ok"
+if "%cleanbuild%"=="" (call ant -q dist-src dist publish) ELSE (call ant -q clean)
 if "%errorlevel%"=="0" goto ok
-echo "interface-repository build failed"
+echo "dtf-aws-resource build failed"
 goto exit
 
 :ok
 cd ..\..
-echo "interface-repository build ok"
+echo "dtf-aws-resource build ok"
 
 :exit
+endlocal
