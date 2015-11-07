@@ -208,7 +208,7 @@ public class ProgressiveDelay
             this.provider = provider;
             this.statusTracker = statusTracker;
             coord = coordinates;
-            resourceStatusEvent = new ResourceStatusEvent(coord.templateId, StatusTracker.Status.Warn, manager, provider, coord);
+            resourceStatusEvent = new ResourceStatusEvent(coord.templateId, StatusTracker.Status.Warn, coord);
         }
         
         public ResourceStatusEvent getResourceStatus(StatusTracker.Status status)

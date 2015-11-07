@@ -26,14 +26,14 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
     
     //FIXME: why is this private and unused?  if ever needed, note that reference and resourceId are no longer equivalent.
     private long getReference() {
-        return resourceInstance.getResourceId();
+        return resourceInstance.getCoordinates().resourceId;
     }
     
     // implement Comparable interface
     @Override
     public int compareTo(ResourceInfo ori) 
     {
-        long delta = resourceInstance.getResourceId() - ori.resourceInstance.getResourceId(); 
+        long delta = resourceInstance.getCoordinates().resourceId - ori.resourceInstance.getCoordinates().resourceId; 
         
         if(delta < 0)
             return -1;

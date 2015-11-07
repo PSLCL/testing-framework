@@ -16,29 +16,21 @@
 package com.pslcl.dtf.core.runner.config.status;
 
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
-import com.pslcl.dtf.core.runner.resource.ResourcesManager;
-import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class ResourceStatusEvent extends StatusEvent
 {
-    public final ResourcesManager manager;
-    public final ResourceProvider provider;
     public final ResourceCoordinates coordinate;
     
     //@formatter:off
     public ResourceStatusEvent(
                     String statusName, 
                     StatusTracker.Status status,
-                    ResourcesManager manager,
-                    ResourceProvider provider, 
                     ResourceCoordinates coordinate)
     //@formatter:on
     {
         super(statusName, status);
-        this.manager = manager;
-        this.provider = provider;
         this.coordinate = coordinate;
     }
     
@@ -47,8 +39,6 @@ public class ResourceStatusEvent extends StatusEvent
         return new ResourceStatusEvent(
                         resourceStatus.statusName,
                         resourceStatus.status,
-                        resourceStatus.manager,
-                        resourceStatus.provider,
                         resourceStatus.coordinate);
     }
     
@@ -58,8 +48,6 @@ public class ResourceStatusEvent extends StatusEvent
         TabToLevel format = new TabToLevel();
         format.ttl("statusName: " + statusName);
         format.ttl("status: " + status.name());
-        format.ttl("manager: " + manager.getClass().getName());
-        format.ttl("provider: " + provider.getClass().getName());
         format.ttl("resource coordinates:");
         format.level.incrementAndGet();
         coordinate.toString(format);

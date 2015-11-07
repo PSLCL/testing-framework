@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescImpl;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 
@@ -167,13 +168,49 @@ public class StepsParser {
         return retList;
     }
     
+    //TODO: after the merge of our two branches, the computeResourceQuery method is not being called anymore.
+    // I assume you were just in between stuff on Friday.  Before the merge this method was the only method 
+    // that would instantiate a ResourceDescImpl.  After the merge nobody is instantiating the ResourceDescImpl.
+    // Just realize that pre-merge I assumed that "reference" (bindReference below) would be a valid unique 
+    // resourceId.  I now assume this would not be the case, as the parse of a different template using the 
+    // same resource would not have the have step number.  Thus throughout all of non-runner code "reference" 
+    // has changed names to "resourceId".  Thus we now have templateId, resourceId and runId which are global
+    // publicly known values, where the reference/bindReference/stepnumber is a local implementation value
+    // only used by the TemplateProvider and does not belong in any of the dtf-core code.
+    //
+    // what you now have after the merging is a new ResourceCoordinate object which contains the templateId, 
+    // resourceId and runId in a class with hash/equals methods that allow it to be an excellent key for any
+    // map.
+    //
+    // Since the computeResourceQuery method has been disconnected, I follow back the calls to find a reasonable
+    // place to stub in the newly needed runId.  I did have the templateId wired back to the DBTemplate (which 
+    // now has code to hex string the hash), so when this gets tied back in and you get the needed new db access 
+    // in to obtain it, the runId (pk_something) wired in as well.
+    
+    /*
+     * The computeResourceQuery method is the master/original instantiator of all ResourceDescImpl objects.
+     * It will use the ResourceDescriptions.resourceIdMaster AtomicLong to obtain a jvm wide unique long id
+     * to associate with the new ResourceDescImpl as the resouceId.  The DBTemplate will provide the templateId
+     * and some other db access will provide the runId.  These three comprise the hash/equals of the coordinates.
+     *
+     * These coordinates will remain consistent through out unless the dtf-runner modifies the runId (reuse).
+     * These coordinates can get back to you in several ways
+     *  1. simply via the ResourceDefination interface of any resource you have hold of.
+     *  2. via the ResourceStatusListener callbacks (see bottom of TemplateProvider for example)
+     *  3. via any FatalResourceException.
+     *  
+     *  In all of these cases, you can use the coordinates to get the step number of the executing template
+     *  out of the following resourceToLineMap
+     */
+    Map<ResourceCoordinates, Integer> resourceToLineMap = new HashMap<ResourceCoordinates, Integer>();
+    
     /**
      * Parse consecutive bind steps to form a ResourceDescription.
      * Adjusts internal offset to match.
      * 
      * @return
      */
-    List<ResourceDescription> computeResourceQuery(String templateId) {
+    List<ResourceDescription> computeResourceQuery(String templateId, long runId) {
         List<ResourceDescription> retList = new ArrayList<>();
         List<String> bindList = getNextSteps("bind "); // list is indexed by original line number
         for (int bindReference=0; bindList!=null && bindReference<bindList.size(); bindReference++) {
@@ -197,12 +234,12 @@ public class StepsParser {
 //                    if (++offset > step.length())
 //                        offset = -1; // done
 //                }
-
-                ResourceDescription rwa = new ResourceDescImpl(resourceHash, StepsParser.peekAttributeMap(strResourceAttributes), templateId, bindReference);
+                ResourceCoordinates coord = new ResourceCoordinates(templateId, ResourceDescription.resourceIdMaster.incrementAndGet(), runId);
+                resourceToLineMap.put(coord, bindReference);
+                ResourceDescription rwa = new ResourceDescImpl(resourceHash, coord, StepsParser.peekAttributeMap(strResourceAttributes));
                 retList.add(rwa); // or retList.add(i, ra);
             }
         }
         return retList;
     }
-    
 }

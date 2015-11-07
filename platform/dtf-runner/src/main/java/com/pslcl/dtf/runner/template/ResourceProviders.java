@@ -38,7 +38,7 @@ import com.pslcl.dtf.core.util.StrH.StringPair;
 /**
  * Contains ResourceProvider instantiated objects and supplies access to them 
  */
-public class ResourceProviders// implements ResourceProvider
+public class ResourceProviders implements ResourceProvider
 {
 
     public static final String ManagerClassKey = "pslcl.dtf.runner.template.resource-manager-class"; 
@@ -191,12 +191,6 @@ public class ResourceProviders// implements ResourceProvider
     }  
 
     @Override
-    public void releaseReservedResource(ReservedResource resource) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
     public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException {
         // TODO Auto-generated method stub
         return false;
@@ -220,12 +214,6 @@ public class ResourceProviders// implements ResourceProvider
 //        // TODO Auto-generated method stub
 //        return null;
 //    }
-
-    @Override
-    public void release(ResourceInstance resource, boolean isReusable) {
-        // TODO Auto-generated method stub
-        
-    }
 
     @Override
     public String getName()
