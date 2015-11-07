@@ -45,6 +45,8 @@ import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
 /**
  * Reserve, bind, control and release instances of AWS machines.
  */
+
+@SuppressWarnings("javadoc")
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
     private final HashMap<String, MachineInstance> boundInstances;
@@ -103,14 +105,14 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public Future<MachineInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getTemplateId(), resource.getReference());
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getTemplateId(), resource.getResourceId());
         config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatus.getNewInstance(pdelayData.resourceStatus, StatusTracker.Status.Warn));
 
         synchronized(reservedMachines)
         {
-            MachineReservedResource reservedResource = reservedMachines.get(resource.getReference());
+            MachineReservedResource reservedResource = reservedMachines.get(resource.getResourceId());
             if(reservedResource == null)
-                throw new ResourceNotReservedException(resource.getName() + "(" + resource.getReference() +") is not reserved");
+                throw new ResourceNotReservedException(resource.getName() + "(" + resource.getResourceId() +") is not reserved");
             Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource, ec2Client, pdelayData)); 
             reservedResource.setInstanceFuture(future);
 //            reservedResource.timerFuture.cancel(true);
@@ -208,7 +210,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     MachineReservedResource rresource = new MachineReservedResource(avail, queryResult);
                     ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
-                    this.reservedMachines.put(rresource.resource.getReference(), rresource);
+                    this.reservedMachines.put(rresource.resource.getResourceId(), rresource);
                 }
             }
         }
@@ -315,7 +317,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         {
             synchronized(reservedMachines)
             {
-                reservedMachines.remove(resource.getReference());
+                reservedMachines.remove(resource.getResourceId());
                 instanceFinder.releaseInstance(instanceType);
                 log.info(resource.toString() + " reserve timed out");
             }

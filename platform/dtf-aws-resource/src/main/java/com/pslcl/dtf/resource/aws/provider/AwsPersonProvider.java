@@ -31,6 +31,7 @@ import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.ResourcesController;
 
+@SuppressWarnings("javadoc")
 public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
     private final ResourcesController controller;

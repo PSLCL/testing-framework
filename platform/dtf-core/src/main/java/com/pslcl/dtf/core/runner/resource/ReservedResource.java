@@ -47,7 +47,7 @@ public class ReservedResource implements ResourceDescription
             resourceDescription.getName(), 
             resourceDescription.getAttributes(), 
             resourceDescription.getTemplateId(), 
-            resourceDescription.getReference(), 
+            resourceDescription.getResourceId(), 
             resourceProvider, 
             timeoutSeconds);
         //@formatter:off
@@ -101,7 +101,7 @@ public class ReservedResource implements ResourceDescription
     }
     
     @Override
-    public long getReference()
+    public long getResourceId()
     {
         return reference;
     }

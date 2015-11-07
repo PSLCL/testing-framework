@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 import com.amazonaws.services.ec2.model.ImageAttributeName;
 import com.amazonaws.services.ec2.model.InstanceType;
 
+@SuppressWarnings("javadoc")
 public class ProviderNames
 {
     /* ****************************************************************************

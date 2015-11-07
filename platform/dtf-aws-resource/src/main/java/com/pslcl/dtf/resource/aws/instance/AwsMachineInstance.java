@@ -31,6 +31,7 @@ import com.pslcl.dtf.core.runner.resource.instance.StartProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider.MachineReservedResource;
 
+@SuppressWarnings("javadoc")
 public class AwsMachineInstance implements MachineInstance
 {
     private final Logger log;
@@ -56,7 +57,7 @@ public class AwsMachineInstance implements MachineInstance
         attributes = reservedResource.resource.getAttributes();
         this.provider = provider;
         templateId = reservedResource.resource.getTemplateId();
-        reference = reservedResource.resource.getReference();
+        reference = reservedResource.resource.getResourceId();
         testId = reservedResource.testId;   
         ec2Instance = reservedResource.ec2Instance;
     }
@@ -86,7 +87,7 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
-    public long getReference()
+    public long getResourceId()
     {
         return reference;
     }

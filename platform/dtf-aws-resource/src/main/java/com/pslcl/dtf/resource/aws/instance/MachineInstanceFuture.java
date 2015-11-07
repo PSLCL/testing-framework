@@ -70,10 +70,11 @@ import com.pslcl.dtf.resource.aws.instance.AwsMachineInstance.AwsInstanceState;
 import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider.MachineReservedResource;
 
+@SuppressWarnings("javadoc")
 public class MachineInstanceFuture implements Callable<MachineInstance>
 {
     public static final String TagNameKey = "Name";
-    public static final String TagTestIdKey = "testId";
+    public static final String TagTestIdKey = "runId";
     public static final String TagTemplateIdKey = "templateId";
     public static final String TagReferenceKey = "reference";
     
@@ -83,7 +84,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     public static final String NetMidStr = "eni";
     public static final String VpcMidStr = "vpc";
     public static final String KeyPairMidStr = "key";
-    public static final String TstIdMidStr = "tstid";   // temporary value set, you know the templateProvider has not called ResourcesManager.setTestId()
+    public static final String TstIdMidStr = "norunid";   // temporary value set, you know the templateProvider has not called ResourcesManager.setTestId()
 
     public final MachineReservedResource reservedResource;
     private final AmazonEC2Client ec2Client;

@@ -35,6 +35,7 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 
+@SuppressWarnings("javadoc")
 public class ProgressiveDelay
 {
     private final Logger log;
@@ -105,6 +106,7 @@ public class ProgressiveDelay
         pdelayData.statusTracker.setStatus(pdelayData.templateId, StatusTracker.Status.Error);
         pdelayData.statusTracker.fireResourceStatusChanged(
                         pdelayData.resourceStatus.getNewInstance(pdelayData.resourceStatus, StatusTracker.Status.Error));
+        pdelayData.statusTracker.removeStatus(pdelayData.templateId);
     }
     
     public FatalResourceException handleException(String message, Throwable t)

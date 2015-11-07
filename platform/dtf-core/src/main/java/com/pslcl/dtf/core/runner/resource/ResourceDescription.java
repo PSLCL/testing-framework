@@ -35,12 +35,12 @@ public interface ResourceDescription
     public Map<String, String> getAttributes();
 
     /**
-     * Get unique Resource provider.
+     * Get unique Resource id.
      * <p>Returns a long identifier that is unique to all instances of <code>ResourceDescription</code>.
      * This id is only valid for the life of the <code>test-runner-service</code>
      * @returns The unique identifier. 
      */
-    public long getReference();
+    public long getResourceId();
     
     /**
      * Get the containing templates hash code.

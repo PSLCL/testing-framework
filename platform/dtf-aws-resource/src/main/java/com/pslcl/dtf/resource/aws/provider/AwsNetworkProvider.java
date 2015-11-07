@@ -31,6 +31,7 @@ import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.ResourcesController;
 
+@SuppressWarnings("javadoc")
 public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {
     private final ResourcesController controller;

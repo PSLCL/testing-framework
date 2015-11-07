@@ -25,6 +25,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
+@SuppressWarnings("javadoc")
 public class InstanceFinder
 {
     private final Map<String, AtomicInteger> limits;

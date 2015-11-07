@@ -38,6 +38,7 @@ import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.StrH.StringPair;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
+@SuppressWarnings("javadoc")
 public class ImageFinder
 {
     private final Logger log;

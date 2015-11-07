@@ -16,7 +16,7 @@
 package com.pslcl.dtf.core.util.executor;
 
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
-import com.pslcl.dtf.core.runner.config.status.StatusTrackerProvider;
+import com.pslcl.dtf.core.runner.config.status.DtfStatusTracker;
 
 
 /**
@@ -43,14 +43,14 @@ public interface ExecutorQueueConfig
      * Get the <code>StatusTracker</code> to use.
      * </p>
      * @return the <code>StatusTracker</code> to use.  Must not return null.
-     * @see StatusTrackerProvider
+     * @see DtfStatusTracker
      */
     public StatusTracker getStatusTracker();
 
     /**
      * Get the <code>StatusTracker</code> subsystem name to use.
      * @return the <code>StatusTracker</code>'s subsystem name.
-     * @see StatusTrackerProvider
+     * @see DtfStatusTracker
      */
     public String getStatusSubsystemName();
 }

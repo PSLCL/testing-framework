@@ -23,6 +23,7 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 
+@SuppressWarnings("javadoc")
 public abstract class AwsResourceProvider
 {
     protected final Logger log;

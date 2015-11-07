@@ -16,22 +16,27 @@
 package com.pslcl.dtf.core.runner.resource;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.pslcl.dtf.core.util.StrH;
 
 public class ResourceDescImpl implements ResourceDescription
 {
+    private static final AtomicLong resourceIdMaster = new AtomicLong(0);
+    
     private final String name;
     private final Map<String, String> attributes;
     private final String templateId;
-    private final int reference;
+    private final long resourceId;
+    private final int stepNumber;
 
-    public ResourceDescImpl(String name, Map<String, String> attributes, String templateId, int reference)
+    public ResourceDescImpl(String name, Map<String, String> attributes, String templateId, int stepNumber)
     {
         this.name = name;
         this.attributes = attributes;
         this.templateId = templateId;
-        this.reference = reference;
+        resourceId = resourceIdMaster.incrementAndGet();
+        this.stepNumber = stepNumber;
     }
 
     @Override
@@ -53,11 +58,16 @@ public class ResourceDescImpl implements ResourceDescription
     }
     
     @Override
-    public long getReference()
+    public long getResourceId()
     {
-        return reference;
+        return resourceId;
     }
 
+    public long getStepNumber()
+    {
+        return stepNumber;
+    }
+    
     /**
      * 
      * @param resourceDescription Must not be null
@@ -68,7 +78,7 @@ public class ResourceDescImpl implements ResourceDescription
         // match: reference, hash and attributes are equal
         //@formatter:off
         if (templateId.equals(resourceDescription.getTemplateId()) && 
-            reference == resourceDescription.getReference() && 
+            resourceId == resourceDescription.getResourceId() &&
             name.equals(resourceDescription.getName()))
             //@formatter:on
         {
@@ -96,8 +106,9 @@ public class ResourceDescImpl implements ResourceDescription
     {
         StringBuilder sb = new StringBuilder("{name: ")
             .append(name == null ? "null" : name)
-            .append(",ref: ")
-            .append(""+reference)
+            .append(",templateId: " + templateId)
+            .append(",resouceId: " + resourceId)
+            .append(",stepNumber: " + stepNumber)
             .append(",attrs: ")
             .append(StrH.mapToString(attributes));
         sb.append("}");

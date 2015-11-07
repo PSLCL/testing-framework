@@ -40,7 +40,7 @@ import java.util.List;
  *  custom configuration object is also declared and handed into the init method.   
  *  </p>
  *  The service utilities provides the <code>MemoryStatusTracker</code> implementation of this interface.
- * @see StatusTrackerProvider
+ * @see DtfStatusTracker
  */
 public interface StatusTracker
 {
@@ -121,7 +121,12 @@ public interface StatusTracker
         /**
          * Typically reflects a serious abnormality occurred.
          */
-        Error;
+        Error,
+        
+        /**
+         * Typically reflects a serious abnormality occurred of which a human should be notified.
+         */
+        Human;
         
         /**
          * Return the <code>Status</code> based on the given ordinal value.
@@ -139,6 +144,8 @@ public interface StatusTracker
                     return Warn;
                 case 2:
                     return Error;
+                case 3:
+                    return Human;
                 default:
                     throw new IllegalArgumentException("ordinal " + ordinal + " does not map to a known Status");
             }

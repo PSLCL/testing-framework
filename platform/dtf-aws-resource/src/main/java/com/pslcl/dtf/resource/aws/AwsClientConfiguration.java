@@ -28,6 +28,7 @@ import com.amazonaws.retry.RetryPolicy;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
 
+@SuppressWarnings("javadoc")
 public class AwsClientConfiguration
 {
     private AwsClientConfiguration()

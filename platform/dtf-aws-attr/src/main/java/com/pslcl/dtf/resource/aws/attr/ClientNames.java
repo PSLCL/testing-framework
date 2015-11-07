@@ -16,6 +16,7 @@
 package com.pslcl.dtf.resource.aws.attr;
 
 
+@SuppressWarnings("javadoc")
 public class ClientNames
 {
     /* ****************************************************************************

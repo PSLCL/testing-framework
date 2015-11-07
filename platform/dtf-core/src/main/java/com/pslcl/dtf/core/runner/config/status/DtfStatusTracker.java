@@ -57,7 +57,7 @@ import com.pslcl.dtf.core.util.executor.ScheduledExecutor;
  * @see StatusServerStateListener
  * @see ScheduledExecutor
  */
-public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
+public class DtfStatusTracker implements StatusTracker, StatusTrackerMXBean
 {
     // guarded by statusMap
     private final HashMap<String, Status> statusMap;
@@ -68,7 +68,7 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
     /**
      * Default constructor.
      */
-    public StatusTrackerProvider()
+    public DtfStatusTracker()
     {
         statusMap = new HashMap<String, Status>(); 
         consolidatedStatus = Status.Ok;

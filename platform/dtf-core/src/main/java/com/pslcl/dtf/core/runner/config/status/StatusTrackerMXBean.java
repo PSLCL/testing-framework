@@ -28,7 +28,7 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker.Status;
  *  as well as a list of all subsystem names, and ability to obtain the individual 
  *  status of each named subsystem is provided.
  * @see StatusTracker
- * @see StatusTrackerProvider 
+ * @see DtfStatusTracker 
  */
 public interface StatusTrackerMXBean
 {
