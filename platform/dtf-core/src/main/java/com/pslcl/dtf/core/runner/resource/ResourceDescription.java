@@ -16,6 +16,7 @@
 package com.pslcl.dtf.core.runner.resource;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A ResourceQuery is a resource hash and a map of attributes.
@@ -35,18 +36,13 @@ public interface ResourceDescription
     public Map<String, String> getAttributes();
 
     /**
-     * Get unique Resource id.
-     * <p>Returns a long identifier that is unique to all instances of <code>ResourceDescription</code>.
-     * This id is only valid for the life of the <code>test-runner-service</code>
-     * @returns The unique identifier. 
+     * get the unique coordinates for a given resource object.
+     * @return the coordinates of the resource.
      */
-    public long getResourceId();
-    
+    public ResourceCoordinates getCoordinates();
+
     /**
-     * Get the containing templates hash code.
-     * <p>Returns a 64 hex character string that is unique to the containing template.
-     * This id is Database sourced and so if valid for the life of its state there.
-     * @returns The stringafied hash code. 
+     * DTF system wide source for obtaining a unique resourceId
      */
-    public String getTemplateId();
+    public static final AtomicLong resourceIdMaster = new AtomicLong(0);
 }

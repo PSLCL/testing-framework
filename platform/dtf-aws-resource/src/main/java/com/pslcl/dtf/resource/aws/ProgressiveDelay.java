@@ -23,8 +23,10 @@ import org.slf4j.LoggerFactory;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
-import com.pslcl.dtf.core.runner.config.status.ResourceStatus;
+import com.pslcl.dtf.core.runner.config.status.ResourceStatusEvent;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
+import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.FatalClientException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalInterruptedException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
@@ -75,23 +77,21 @@ public class ProgressiveDelay
         if(cnt >= pdelayData.maxRetries - 1)
         {
             String msg = getErrorMessage(message, true);
-            FatalTimeoutException e = new FatalServerTimeoutException(pdelayData.templateId, pdelayData.reference, msg);
+            FatalTimeoutException e = new FatalServerTimeoutException(pdelayData.coord, msg);
             e.setMaxDelay(pdelayData.maxDelay);
             e.setMaxRetries(pdelayData.maxRetries);
             e.setTotalWaitTime(StrH.scaleMilliSeconds(totalTime.get()));
             e.fillInStackTrace();
             log.warn(msg, e);
-            handleStatusTracker();
+            handleStatusTracker(StatusTracker.Status.Error);
             throw e;
         }
     }
     
     private String getErrorMessage(String message, boolean timeout)
     {
-        TabToLevel format = new TabToLevel(null);
-        format.ttl("\nTemplateId: ", pdelayData.templateId);
-        format.level.incrementAndGet();
-        format.ttl("reference: ", pdelayData.reference);
+        TabToLevel format = new TabToLevel();
+        pdelayData.coord.toString(format);
         format.ttl("message: ", message);
         if(timeout)
         {
@@ -101,12 +101,12 @@ public class ProgressiveDelay
         return format.sb.toString();
     }
     
-    private void handleStatusTracker()
+    private void handleStatusTracker(StatusTracker.Status status)
     {
-        pdelayData.statusTracker.setStatus(pdelayData.templateId, StatusTracker.Status.Error);
+        pdelayData.statusTracker.setStatus(pdelayData.coord.templateId, status);
         pdelayData.statusTracker.fireResourceStatusChanged(
-                        pdelayData.resourceStatus.getNewInstance(pdelayData.resourceStatus, StatusTracker.Status.Error));
-        pdelayData.statusTracker.removeStatus(pdelayData.templateId);
+                        pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Error));
+        pdelayData.statusTracker.removeStatus(pdelayData.coord.templateId);
     }
     
     public FatalResourceException handleException(String message, Throwable t)
@@ -119,8 +119,8 @@ public class ProgressiveDelay
             {
                 String msg = getErrorMessage(message, false);
                 log.warn(msg, t);
-                handleStatusTracker();
-                return new FatalServerException(pdelayData.templateId, pdelayData.reference, msg, t);
+                handleStatusTracker(StatusTracker.Status.Human);
+                return new FatalServerException(pdelayData.coord, msg, t);
             }
             try
             {
@@ -130,11 +130,11 @@ public class ProgressiveDelay
             {
                 String msg = getErrorMessage(message, true);
                 log.warn(msg, t);
-                FatalTimeoutException ftoe = new FatalServerTimeoutException(pdelayData.templateId, pdelayData.reference, msg, t);
+                FatalTimeoutException ftoe = new FatalServerTimeoutException(pdelayData.coord, msg, t);
                 ftoe.setMaxDelay(pdelayData.maxDelay);
                 ftoe.setMaxRetries(pdelayData.maxRetries);
                 ftoe.setTotalWaitTime(StrH.scaleMilliSeconds(totalTime.get()));
-                handleStatusTracker();
+                handleStatusTracker(StatusTracker.Status.Error);
                 return ftoe;
             }
         }
@@ -152,37 +152,37 @@ public class ProgressiveDelay
                 {
                     String msg = getErrorMessage(message, false);
                     log.warn(msg, t);
-                    FatalTimeoutException ftoe = new FatalServerTimeoutException(pdelayData.templateId, pdelayData.reference, msg, t);
+                    FatalTimeoutException ftoe = new FatalServerTimeoutException(pdelayData.coord, msg, t);
                     ftoe.setMaxDelay(pdelayData.maxDelay);
                     ftoe.setMaxRetries(pdelayData.maxRetries);
                     ftoe.setTotalWaitTime(StrH.scaleMilliSeconds(totalTime.get()));
-                    handleStatusTracker();
+                    handleStatusTracker(StatusTracker.Status.Error);
                     return ftoe;
                 }
             }
             String msg = getErrorMessage(message, false);
             log.warn(msg, t);
-            handleStatusTracker();
-            return new FatalClientException(pdelayData.templateId, pdelayData.reference, msg, t);
+            handleStatusTracker(StatusTracker.Status.Human);
+            return new FatalClientException(pdelayData.coord, msg, t);
         }
         if(t instanceof IllegalArgumentException)
         {
             String msg = getErrorMessage(message, false);
             log.warn(msg, t);
-            handleStatusTracker();
-            return new FatalClientException(pdelayData.templateId, pdelayData.reference, msg, t);
+            handleStatusTracker(StatusTracker.Status.Human);
+            return new FatalClientException(pdelayData.coord, msg, t);
         }
         if(t instanceof InterruptedException)
         {
             String msg = getErrorMessage(message, false);
             log.warn(msg, t);
-            handleStatusTracker();
-            return new FatalInterruptedException(pdelayData.templateId, pdelayData.reference, msg, t);
+            handleStatusTracker(StatusTracker.Status.Error);
+            return new FatalInterruptedException(pdelayData.coord, msg, t);
         }
         String msg = getErrorMessage(message, false);
         log.warn(msg, t);
-        handleStatusTracker();
-        return new FatalClientException(pdelayData.templateId, pdelayData.reference, msg, t);
+        handleStatusTracker(StatusTracker.Status.Human);
+        return new FatalClientException(pdelayData.coord, msg, t);
     }
     
     public static class ProgressiveDelayData 
@@ -190,43 +190,42 @@ public class ProgressiveDelay
         public volatile String preFixMostName;
         public volatile int maxDelay;
         public volatile int maxRetries; 
+        public final ResourcesManager manager; 
         public final ResourceProvider provider; 
         public final StatusTracker statusTracker;
-        public final String templateId;
-        public final long reference;
-        public volatile String testId;      
-        public final ResourceStatus resourceStatus;
+        public final ResourceCoordinates coord;
+        public final ResourceStatusEvent resourceStatusEvent;
 
         //@formatter:off
         public ProgressiveDelayData(
+                        ResourcesManager manager,
                         ResourceProvider provider, 
-                        StatusTracker statusTracker, 
-                        String templateId, 
-                        long reference)
+                        StatusTracker statusTracker,
+                        ResourceCoordinates coordinates)
         //@formatter:off
         {
+            this.manager = manager;
             this.provider = provider;
             this.statusTracker = statusTracker;
-            this.templateId = templateId;
-            this.reference = reference;
-            resourceStatus = new ResourceStatus(provider, templateId, reference, StatusTracker.Status.Warn);
+            coord = coordinates;
+            resourceStatusEvent = new ResourceStatusEvent(coord.templateId, StatusTracker.Status.Warn, manager, provider, coord);
         }
         
-        public ResourceStatus getResourceStatus(StatusTracker.Status status)
+        public ResourceStatusEvent getResourceStatus(StatusTracker.Status status)
         {
-            return resourceStatus.getNewInstance(resourceStatus, status);
+            return resourceStatusEvent.getNewInstance(resourceStatusEvent, status);
         }
         
         public String getFullName(String midString, String post)
         {
-            return preFixMostName + "-" + midString + "-" + templateId + (post == null ? "" : " " + post);
+            return preFixMostName + "-" + midString + "-" + coord.templateId + (post == null ? "" : " " + post);
         }
         
         public String getHumanName(String midString, String post)
         {
-            String tid = templateId;
-            if(templateId.length() > 12)
-                tid = templateId.substring(0, 12);
+            String tid = coord.templateId;
+            if(coord.templateId.length() > 12)
+                tid = coord.templateId.substring(0, 12);
             return preFixMostName + "-" + midString + "-" + tid + (post == null ? "" : " " + post);
         }
     }

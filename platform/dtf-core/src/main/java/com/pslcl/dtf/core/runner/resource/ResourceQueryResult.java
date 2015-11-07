@@ -18,9 +18,7 @@ package com.pslcl.dtf.core.runner.resource;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Hold and resolve results
- */
+@SuppressWarnings("javadoc")
 public class ResourceQueryResult
 {
     // all lists guarded by reservedResources

@@ -15,29 +15,24 @@
  */
 package com.pslcl.dtf.core.runner.config.status;
 
-import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-
-public class ResourceStatus
+@SuppressWarnings("javadoc")
+public class StatusEvent
 {
-    public final ResourceProvider provider;
+    public final String statusName;
     public final StatusTracker.Status status;
-    public final String templateId;
-    public final long resourceId;
     
-    public ResourceStatus(ResourceProvider provider, String templateId, long resourceId, StatusTracker.Status status)
+    public StatusEvent(String statusName, StatusTracker.Status status)
     {
-        this.provider = provider;
-        this.templateId = templateId;
-        this.resourceId = resourceId;
+        this.statusName = statusName;
         this.status = status;
     }
     
-    public ResourceStatus getNewInstance(ResourceStatus resourceStatus, StatusTracker.Status status)
+    @Override
+    public String toString()
     {
-        return new ResourceStatus(
-                        resourceStatus.provider,
-                        resourceStatus.templateId,
-                        resourceStatus.resourceId,
-                        status);
+        StringBuilder sb = new StringBuilder(null);
+        sb.append("statusName: " + statusName);
+        sb.append(" status: " + status.name());
+        return sb.toString();
     }
 }

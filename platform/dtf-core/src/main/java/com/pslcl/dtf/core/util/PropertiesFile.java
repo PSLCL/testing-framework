@@ -164,6 +164,7 @@ public class PropertiesFile
         }
     }
 
+    @SuppressWarnings("javadoc")
     public static List<Entry<String, String>> getPropertiesForBaseKey(String baseKey, Map<String, String> map)
     {
         Properties properties = new Properties();
@@ -176,6 +177,7 @@ public class PropertiesFile
         return getPropertiesForBaseKey(baseKey, properties);
     }
     
+    @SuppressWarnings("javadoc")
     public static List<Entry<String, String>> getPropertiesForBaseKey(String baseKey, Properties properties)
     {
         ArrayList<Entry<String, String>> entries = new ArrayList<Entry<String, String>>();

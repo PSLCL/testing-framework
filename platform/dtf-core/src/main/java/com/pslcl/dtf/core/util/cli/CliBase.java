@@ -134,6 +134,7 @@ public class CliBase extends Thread
     private final Map<String, CliCommand> commands;
     private final String version;
     private final StringBuilder initsb;
+    @SuppressWarnings("javadoc")
     public final Properties properties;
     private AtomicBoolean nonCommandCli;
     protected volatile Logger log;

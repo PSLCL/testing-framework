@@ -38,7 +38,8 @@ import com.pslcl.dtf.core.util.StrH.StringPair;
 /**
  * Contains ResourceProvider instantiated objects and supplies access to them 
  */
-public class ResourceProviders implements ResourceProvider {
+public class ResourceProviders// implements ResourceProvider
+{
 
     public static final String ManagerClassKey = "pslcl.dtf.runner.template.resource-manager-class"; 
     public static final String ManagerClassDefault = "com.pslcl.dtf.resource.aws.ResourcesController";
@@ -137,7 +138,7 @@ public class ResourceProviders implements ResourceProvider {
             for (ReservedResource rr : retRqr.getReservedResources()) {
                 for (ResourceDescription rd : reserveResourceRequests) {
                     ResourceDescImpl rdi = ResourceDescImpl.class.cast(rd);
-                    if (rdi.matches(rr)) {
+                    if (rdi.equals(rr)) {
                         reserveResourceRequests.remove(rd);
                         break; // done with this rd; as we leave the for loop, we also avoid the trouble caused by altering reserveResourceRequests 
                     }

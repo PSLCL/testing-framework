@@ -39,7 +39,7 @@ public class ClassInfo {
      * 
      * @param className The name of the class including package.
      * @return The version of the class's package.
-     * @throws Exception the exception
+     * @throws ClassNotFoundException if invalid className
      */
     public static ClassInfo getInfo(String className) throws ClassNotFoundException {
         if( className == null )
@@ -60,7 +60,7 @@ public class ClassInfo {
      * @param className The name of the class including package.
      * @param classLoader The class's associated class loader.
      * @return The version of the class's package.
-     * @throws Exception the exception
+     * @throws ClassNotFoundException if invalid className
      */
     public static ClassInfo getInfo(String className, ClassLoader classLoader) throws ClassNotFoundException {
         if( className == null || classLoader == null )
@@ -92,12 +92,6 @@ public class ClassInfo {
     	return ci;
     }
 
-    /**
-     * Get the version of a class's package.
-     *
-     * @param c The class.
-     * @return The version of the class's package.
-     */
     private ClassInfo(Class<?> c) {
         this.c = c;
         this.pkg = c.getPackage();

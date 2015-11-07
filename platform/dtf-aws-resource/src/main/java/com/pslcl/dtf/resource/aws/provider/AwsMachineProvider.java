@@ -30,6 +30,7 @@ import com.amazonaws.services.ec2.model.Vpc;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
@@ -39,7 +40,7 @@ import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.ResourcesController;
+import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
 
 /**
@@ -53,11 +54,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     private final HashMap<Long, MachineReservedResource> reservedMachines;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
-    private final ResourcesController controller;
+    private final AwsResourcesManager manager;
 
-    public AwsMachineProvider(ResourcesController controller)
+    public AwsMachineProvider(AwsResourcesManager controller)
     {
-        this.controller = controller;
+        this.manager = controller;
         reservedMachines = new HashMap<Long, MachineReservedResource>();
         boundInstances = new HashMap<String, MachineInstance>();
         instanceFinder = new InstanceFinder();
@@ -72,7 +73,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         }
     }
 
-    public void setTestId(String templateId, long testId)
+    public void setRunId(String templateId, long runId)
     {
     }
 
@@ -105,14 +106,16 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public Future<MachineInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getTemplateId(), resource.getResourceId());
-        config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatus.getNewInstance(pdelayData.resourceStatus, StatusTracker.Status.Warn));
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(
+                        manager, this, config.statusTracker, resource.getCoordinates());
+        config.statusTracker.fireResourceStatusChanged(
+                        pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Warn));
 
         synchronized(reservedMachines)
         {
-            MachineReservedResource reservedResource = reservedMachines.get(resource.getResourceId());
+            MachineReservedResource reservedResource = reservedMachines.get(resource.getCoordinates().resourceId);
             if(reservedResource == null)
-                throw new ResourceNotReservedException(resource.getName() + "(" + resource.getResourceId() +") is not reserved");
+                throw new ResourceNotReservedException(resource.getName() + "(" + resource.getCoordinates().resourceId +") is not reserved");
             Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource, ec2Client, pdelayData)); 
             reservedResource.setInstanceFuture(future);
 //            reservedResource.timerFuture.cancel(true);
@@ -133,7 +136,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         }
     }
 
-    @Override
     public void releaseReservedResource(ReservedResource resource)
     {
     }
@@ -206,11 +208,13 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 if (avail.getName().equals(requested.getName()))
                 {
-                    reservedResources.add(new ReservedResource(avail, this, timeoutSeconds));
-                    MachineReservedResource rresource = new MachineReservedResource(avail, queryResult);
+                    requested.getCoordinates().setManager(manager);
+                    requested.getCoordinates().setProvider(this);
+                    reservedResources.add(new ReservedResource(requested.getCoordinates(), avail.getAttributes(), timeoutSeconds));
+                    MachineReservedResource rresource = new MachineReservedResource(avail, requested.getCoordinates(), queryResult);
                     ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
-                    this.reservedMachines.put(rresource.resource.getResourceId(), rresource);
+                    this.reservedMachines.put(requested.getCoordinates().resourceId, rresource);
                 }
             }
         }
@@ -234,7 +238,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     {
     }
 
-    @Override
     public void release(ResourceInstance resource, boolean isReusable)
     {
     }
@@ -280,12 +283,12 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         public volatile Subnet subnet;
         public volatile String net;
         public volatile Instance ec2Instance;
-        public volatile long testId;
+        public volatile long runId;
         
         private ScheduledFuture<?> timerFuture;
         private Future<MachineInstance> instanceFuture;
 
-        private MachineReservedResource(ResourceDescription resource, MachineQueryResult result)
+        private MachineReservedResource(ResourceDescription resource, ResourceCoordinates newCoord, MachineQueryResult result)
         {
             this.resource = resource;
             instanceType = result.instanceType;
@@ -317,7 +320,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         {
             synchronized(reservedMachines)
             {
-                reservedMachines.remove(resource.getResourceId());
+                reservedMachines.remove(resource.getCoordinates().resourceId);
                 instanceFinder.releaseInstance(instanceType);
                 log.info(resource.toString() + " reserve timed out");
             }

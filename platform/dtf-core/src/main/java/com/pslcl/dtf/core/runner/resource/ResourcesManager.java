@@ -88,10 +88,11 @@ public interface ResourcesManager
      * that it will likely be asking for the same resource again soon.  
      * The implementation should then optimize this resource where possible.
      * @param templateId The templateId associated with the resource.  Must never be null.
+     * @param resourceId the resource to be released.
      * @param isReusable If true, the implementation should optimize, otherwise it 
      * should destroy the resource. 
      */
-    public void release(String templateId, long reference, boolean isReusable);
+    public void release(String templateId, long resourceId, boolean isReusable);
 
     /**
      * Catastrophic call for cleanup.

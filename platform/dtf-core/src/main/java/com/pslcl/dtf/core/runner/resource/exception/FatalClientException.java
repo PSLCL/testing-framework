@@ -15,6 +15,8 @@
  */
 package com.pslcl.dtf.core.runner.resource.exception;
 
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
+
 /**
  * Thrown by a Resource Provider if it fails to bind a requested resource.  
  */
@@ -27,9 +29,9 @@ public class FatalClientException extends FatalException
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
      */
-    public FatalClientException(String templateId, long reference)
+    public FatalClientException(ResourceCoordinates coordinates)
     {
-        super(templateId, reference);
+        super(coordinates);
     }
 
     /**
@@ -40,9 +42,9 @@ public class FatalClientException extends FatalException
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
-    public FatalClientException(String templateId, long reference, String message)
+    public FatalClientException(ResourceCoordinates coordinates, String message)
     {
-        super(templateId, reference, message);
+        super(coordinates, message);
     }
 
     /**
@@ -59,9 +61,9 @@ public class FatalClientException extends FatalException
      *         unknown.)
      * @since  1.4
      */
-    public FatalClientException(String templateId, long reference, String message, Throwable cause)
+    public FatalClientException(ResourceCoordinates coordinates, String message, Throwable cause)
     {
-        super(templateId, reference, message, cause);
+        super(coordinates, message, cause);
     }
 
     /**
@@ -78,9 +80,9 @@ public class FatalClientException extends FatalException
      *         unknown.)
      * @since  1.4
      */
-    public FatalClientException(String templateId, long reference, Throwable cause)
+    public FatalClientException(ResourceCoordinates coordinates, Throwable cause)
     {
-        super(templateId, reference, cause);
+        super(coordinates, cause);
     }
 
     /**

@@ -55,24 +55,6 @@ public interface ResourceProvider
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException;
 
     /**
-     * Release a bound resource instance. Any bound resources must be released.
-     * 
-     * @param resource
-     *            The resource instance to release.
-     * @param isReusable
-     *            Whether or not the Resource can be reused.
-     */
-    public void release(ResourceInstance resource, boolean isReusable);
-
-    /**
-     * Release a reserved resource. If a resource is bound, the reservation is automatically released.
-     * 
-     * @param resource
-     *            The reserved resource to release.
-     */
-    public void releaseReservedResource(ReservedResource resource);
-
-    /**
      * Check whether the specified resource is available.
      * 
      * @param resource

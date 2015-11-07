@@ -74,9 +74,9 @@ import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider.MachineReservedRes
 public class MachineInstanceFuture implements Callable<MachineInstance>
 {
     public static final String TagNameKey = "Name";
-    public static final String TagTestIdKey = "runId";
+    public static final String TagRunIdKey = "runId";
     public static final String TagTemplateIdKey = "templateId";
-    public static final String TagReferenceKey = "reference";
+    public static final String TagResourceIdKey = "resourceId";
     
     public static final String Ec2MidStr = "ec2";
     public static final String SgMidStr = "sg";
@@ -84,7 +84,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     public static final String NetMidStr = "eni";
     public static final String VpcMidStr = "vpc";
     public static final String KeyPairMidStr = "key";
-    public static final String TstIdMidStr = "norunid";   // temporary value set, you know the templateProvider has not called ResourcesManager.setTestId()
+    public static final String TstIdMidStr = "norunid";   // temporary value set, you know the templateProvider has not called ResourcesManager.setRunId()
 
     public final MachineReservedResource reservedResource;
     private final AmazonEC2Client ec2Client;
@@ -116,7 +116,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         this.reservedResource = reservedResource;
         this.ec2Client = ec2Client;
         this.pdelayData = pdelayData;
-        pdelayData.testId = pdelayData.getHumanName(TstIdMidStr, null);
+//        pdelayData.coord.runId = pdelayData.getHumanName(TstIdMidStr, null);
         permissions = new ArrayList<IpPermission>();
     }
 
@@ -132,12 +132,12 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 //            reservedResource.net = createNetworkInterface(reservedResource.subnet.getSubnetId(), reservedResource.groupId.getGroupId());
             reservedResource.ec2Instance = createInstance(reservedResource.groupId, reservedResource.subnet.getSubnetId());
 //            reservedResource.ec2Instance = createInstance("test", reservedResource.net);
-            MachineInstance retMachineInstance = new AwsMachineInstance(reservedResource, pdelayData.provider);
-            pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatus.getNewInstance(pdelayData.resourceStatus, StatusTracker.Status.Ok));
+            MachineInstance retMachineInstance = new AwsMachineInstance(reservedResource);
+            pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
     //      createKeyPair("dtf-uniqueName-keypair");
     //      String netId = createNetworkInterface(subnet.getSubnetId(), groupId.getGroupId());
     //        listSecurityGroups();
-            ((AwsMachineProvider)pdelayData.provider).addBoundInstance(pdelayData.templateId, retMachineInstance);
+            ((AwsMachineProvider)pdelayData.provider).addBoundInstance(pdelayData.coord.templateId, retMachineInstance);
             return retMachineInstance;
         }catch(FatalResourceException e)
         {
@@ -315,7 +315,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         //@formatter:off
         CreateSecurityGroupRequest request = new CreateSecurityGroupRequest()
             .withGroupName(pdelayData.getFullName(SgMidStr, null))
-            .withDescription(pdelayData.getFullName(SgMidStr, " reference: " + pdelayData.reference));
+            .withDescription(pdelayData.getFullName(SgMidStr, " resourceId: " + pdelayData.coord.resourceId));
 //            .withVpcId(vpc.getVpcId());
         //@formatter:on
         
@@ -474,9 +474,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         CreateTagsRequest ctr = new 
                         CreateTagsRequest().withTags(
                                         new Tag(TagNameKey, name),
-                                        new Tag(TagTestIdKey, pdelayData.testId),
-                                        new Tag(TagTemplateIdKey, pdelayData.templateId),
-                                        new Tag(TagReferenceKey, ""+pdelayData.reference))
+                                        new Tag(TagRunIdKey, Long.toHexString(pdelayData.coord.getRunId())),
+                                        new Tag(TagTemplateIdKey, pdelayData.coord.templateId),
+                                        new Tag(TagResourceIdKey, Long.toHexString(pdelayData.coord.resourceId)))
                                         .withResources(resourceId);
         //@formatter:on
         do
@@ -571,11 +571,10 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     {
         try
         {
-            TabToLevel format = new TabToLevel(null);
+            TabToLevel format = new TabToLevel();
             format.ttl("\nEc2 Instance:");
             format.level.incrementAndGet();
-            format.ttl("templateId", " = " + pdelayData.templateId);
-            format.ttl("reference", " = " + pdelayData.reference);
+            format.ttl(pdelayData.coord.toString(format));
             Map<String, String> map = reservedResource.resource.getAttributes();
             
             format.ttl("Vpc:");

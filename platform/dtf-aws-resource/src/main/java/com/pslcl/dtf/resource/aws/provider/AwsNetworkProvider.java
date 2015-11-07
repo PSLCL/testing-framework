@@ -29,14 +29,14 @@ import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.resource.aws.ResourcesController;
+import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 
 @SuppressWarnings("javadoc")
 public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {
-    private final ResourcesController controller;
+    private final AwsResourcesManager controller;
 
-    public AwsNetworkProvider(ResourcesController controller)
+    public AwsNetworkProvider(AwsResourcesManager controller)
     {
         this.controller = controller;
     }
@@ -59,7 +59,6 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         return null;
     }
 
-    @Override
     public void releaseReservedResource(ReservedResource resource)
     {
         // TODO Auto-generated method stub
@@ -101,7 +100,6 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         return null;
     }
 
-    @Override
     public void release(ResourceInstance resource, boolean isReusable)
     {
         // TODO Auto-generated method stub

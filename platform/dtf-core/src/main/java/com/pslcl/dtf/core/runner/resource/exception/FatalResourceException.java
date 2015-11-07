@@ -15,6 +15,8 @@
  */
 package com.pslcl.dtf.core.runner.resource.exception;
 
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
+
 /**
  * Thrown by a Resource Provider if it fails to bind a requested resource.  
  */
@@ -22,19 +24,17 @@ public class FatalResourceException extends Exception
 {
     private static final long serialVersionUID = 8827644619962087334L;
 
-    private final String templateId;
-    private final long reference;
+    private final ResourceCoordinates coordinates;
     
     /**
      * Constructs a new exception with {@code null} as its detail message.
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
      */
-    public FatalResourceException(String templateId, long reference)
+    public FatalResourceException(ResourceCoordinates coordinates)
     {
         super();
-        this.templateId = templateId;
-        this.reference = reference;
+        this.coordinates = coordinates;
     }
 
     /**
@@ -45,11 +45,10 @@ public class FatalResourceException extends Exception
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
-    public FatalResourceException(String templateId, long reference, String message)
+    public FatalResourceException(ResourceCoordinates coordinates, String message)
     {
         super(message);
-        this.templateId = templateId;
-        this.reference = reference;
+        this.coordinates = coordinates;
     }
 
     /**
@@ -66,11 +65,10 @@ public class FatalResourceException extends Exception
      *         unknown.)
      * @since  1.4
      */
-    public FatalResourceException(String templateId, long reference, String message, Throwable cause)
+    public FatalResourceException(ResourceCoordinates coordinates, String message, Throwable cause)
     {
         super(message, cause);
-        this.templateId = templateId;
-        this.reference = reference;
+        this.coordinates = coordinates;
     }
 
     /**
@@ -87,11 +85,10 @@ public class FatalResourceException extends Exception
      *         unknown.)
      * @since  1.4
      */
-    public FatalResourceException(String templateId, long reference, Throwable cause)
+    public FatalResourceException(ResourceCoordinates coordinates, Throwable cause)
     {
         super(cause);
-        this.templateId = templateId;
-        this.reference = reference;
+        this.coordinates = coordinates;
     }
 
     /**
@@ -111,17 +108,15 @@ public class FatalResourceException extends Exception
     protected FatalResourceException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
     {
         super(message, cause, enableSuppression, writableStackTrace);
-        this.templateId = null;
-        this.reference = 0;
+        this.coordinates = null;
     }
 
-    public String getTemplateId()
+    /**
+     * return the ResourceCoordinates of the failed resource
+     * @return the coordinates
+     */
+    public ResourceCoordinates getResourceCoordinates()
     {
-        return templateId;
-    }
-    
-    public long getReference()
-    {
-        return reference;
+        return coordinates;
     }
 }

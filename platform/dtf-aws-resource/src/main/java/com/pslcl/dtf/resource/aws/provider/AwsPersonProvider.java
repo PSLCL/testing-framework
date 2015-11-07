@@ -29,14 +29,14 @@ import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.resource.aws.ResourcesController;
+import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 
 @SuppressWarnings("javadoc")
 public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
-    private final ResourcesController controller;
+    private final AwsResourcesManager controller;
 
-    public AwsPersonProvider(ResourcesController controller)
+    public AwsPersonProvider(AwsResourcesManager controller)
     {
         this.controller = controller;
     }
@@ -81,7 +81,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         return null;
     }
 
-    @Override
     public void releaseReservedResource(ReservedResource resource)
     {
         // TODO Auto-generated method stub
@@ -123,7 +122,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         return null;
     }
 
-    @Override
     public void release(ResourceInstance resource, boolean isReusable)
     {
         // TODO Auto-generated method stub

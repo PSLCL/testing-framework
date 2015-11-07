@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.Instance;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.exception.IncompatibleResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
@@ -38,27 +39,16 @@ public class AwsMachineInstance implements MachineInstance
     private final String name;
     private final Map<String, String> attributes;
     private String description;
-    private final ResourceProvider provider;
     private int timeoutSeconds;
-    private final String templateId;
-    private final long reference;
-    private final long testId;
+    private final ResourceCoordinates coordinates;
     private final Instance ec2Instance;
 
-    /**
-     * constructor for the use case where resource was previously reserved
-     * 
-     * @param resource
-     */
-    public AwsMachineInstance(MachineReservedResource reservedResource, ResourceProvider provider)
+    public AwsMachineInstance(MachineReservedResource reservedResource)
     {
         log = LoggerFactory.getLogger(getClass());
         name = reservedResource.resource.getName();
         attributes = reservedResource.resource.getAttributes();
-        this.provider = provider;
-        templateId = reservedResource.resource.getTemplateId();
-        reference = reservedResource.resource.getResourceId();
-        testId = reservedResource.testId;   
+        coordinates = reservedResource.resource.getCoordinates();
         ec2Instance = reservedResource.ec2Instance;
     }
 
@@ -77,20 +67,15 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public ResourceProvider getResourceProvider()
     {
-        return provider;
+        return coordinates.getProvider();
     }
 
     @Override
-    public String getTemplateId()
+    public ResourceCoordinates getCoordinates()
     {
-        return templateId;
+        return coordinates;
     }
 
-    @Override
-    public long getResourceId()
-    {
-        return reference;
-    }
 
     @Override
     public Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException

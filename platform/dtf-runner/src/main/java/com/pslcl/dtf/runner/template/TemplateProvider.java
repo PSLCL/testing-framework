@@ -18,9 +18,12 @@ package com.pslcl.dtf.runner.template;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.LoggerFactory;
+
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
-import com.pslcl.dtf.core.runner.config.status.ResourceStatus;
+import com.pslcl.dtf.core.runner.config.status.ResourceStatusEvent;
 import com.pslcl.dtf.core.runner.config.status.ResourceStatusListener;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.runner.process.DBTemplate;
 import com.pslcl.dtf.runner.process.RunEntryCore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
@@ -29,6 +32,7 @@ public class TemplateProvider implements ResourceStatusListener {
     
     private final Map<byte[],InstancedTemplate> availableInstancedTemplates; // note: this populates in the destroy method
     private final ResourceProviders resourceProviders;
+    private volatile StatusTracker statusTracker;
     
     public TemplateProvider() 
     {
@@ -43,12 +47,15 @@ public class TemplateProvider implements ResourceStatusListener {
     
     public void init(RunnerConfig config) throws Exception
     {
+        statusTracker = config.statusTracker;
+        statusTracker.registerResourceStatusListener(this);
         resourceProviders.init(config);
     }
     
     public void destroy() 
     {
         resourceProviders.destroy();
+        statusTracker.deregisterResourceStatusListener(this);
     }
     
     public void destroy(byte [] template_hash, InstancedTemplate iT) {
@@ -534,7 +541,21 @@ public class TemplateProvider implements ResourceStatusListener {
 //    }
             
     @Override
-    public void resourceStatusChanged(ResourceStatus status)
+    public void resourceStatusChanged(ResourceStatusEvent status)
     {
+        LoggerFactory.getLogger(getClass()).debug("\n" + getClass().getSimpleName() + ".resourceStatusChanged hit: " + status.toString());
+        switch(status.status)
+        {
+            case Error:
+                break;
+            case Human:
+                break;
+            case Ok:
+                break;
+            case Warn:
+                break;
+            default:
+                break;
+        }
     }
 }

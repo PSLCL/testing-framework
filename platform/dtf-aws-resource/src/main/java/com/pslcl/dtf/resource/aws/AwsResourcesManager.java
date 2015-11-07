@@ -28,14 +28,14 @@ import com.pslcl.dtf.resource.aws.provider.AwsNetworkProvider;
 import com.pslcl.dtf.resource.aws.provider.AwsPersonProvider;
 
 @SuppressWarnings("javadoc")
-public class ResourcesController implements ResourcesManager
+public class AwsResourcesManager implements ResourcesManager
 {
     private final List<ResourceProvider> resourceProviders;
     private final AwsMachineProvider machineProvider;
     private final AwsNetworkProvider networkProvider;
     private final AwsPersonProvider personProvider;
 
-    public ResourcesController()
+    public AwsResourcesManager()
     {
         resourceProviders = new ArrayList<ResourceProvider>();
         machineProvider = new AwsMachineProvider(this);
@@ -91,9 +91,9 @@ public class ResourcesController implements ResourcesManager
     }
 
     @Override
-    public void setRunId(String templateId, long testId)
+    public void setRunId(String templateId, long runId)
     {
-        machineProvider.setTestId(templateId, testId);
+        machineProvider.setRunId(templateId, runId);
     }
 
     @Override
@@ -109,7 +109,7 @@ public class ResourcesController implements ResourcesManager
     }
 
     @Override
-    public void release(String templateId, long reference, boolean isReusable)
+    public void release(String templateId, long resourceId, boolean isReusable)
     {
         throw new RuntimeException("not implemented");
     }

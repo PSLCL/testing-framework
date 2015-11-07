@@ -98,9 +98,23 @@ public interface StatusTracker
     public void destroy();
     
     
+    /**
+     * Register a ResourceStatusListener
+     * @param listener to be registered
+     */
     public void registerResourceStatusListener(ResourceStatusListener listener);
+    
+    /**
+     * Deregister a ResourceStatusListener
+     * @param listener to be registered
+     */
     public void deregisterResourceStatusListener(ResourceStatusListener listener);
-    public void fireResourceStatusChanged(ResourceStatus status);
+    
+    /**
+     * Fire a resource status changed event
+     * @param statusEvent event to signal.
+     */
+    public void fireResourceStatusChanged(ResourceStatusEvent statusEvent);
     
     /**
      * An enumeration of all possible Status states.

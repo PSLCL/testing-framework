@@ -20,63 +20,19 @@ import java.util.Map;
 
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.StrH;
+import com.pslcl.dtf.core.util.TabToLevel;
 
-/**
- * A resource with attributes that has been reserved by the resource provider. After a timeout period
- * specified by timeoutSeconds has passed, or if the resource is bound, the resource is no longer reserved.
- */
+@SuppressWarnings("javadoc")
 public class ReservedResource implements ResourceDescription
 {
-    private final String name;
     private final Map<String, String> attributes;
-    private final String templateId;
-    private final long reference;
-    private final ResourceProvider resourceProvider;
+    private final ResourceCoordinates coordinates;
     private final long endTime;
 
-    /**
-     * constructor
-     * @param resourceDescription
-     * @param resourceProvider
-     * @param timeoutSeconds
-     */
-    public ReservedResource(ResourceDescription resourceDescription, ResourceProvider resourceProvider, int timeoutSeconds)
+    public ReservedResource(ResourceCoordinates coordinates, Map<String, String> attributes, int timeoutSeconds)
     {
-        //@formatter:off
-        this(
-            resourceDescription.getName(), 
-            resourceDescription.getAttributes(), 
-            resourceDescription.getTemplateId(), 
-            resourceDescription.getResourceId(), 
-            resourceProvider, 
-            timeoutSeconds);
-        //@formatter:off
-    }
-
-    /**
-     * constructor
-     * @param name
-     * @param attributes
-     * @param reference
-     * @param resourceProvider
-     * @param timeoutSeconds
-     */
-    
-    //@formatter:off
-    public ReservedResource(
-        String name, 
-        Map<String, String> attributes, 
-        String templateId, 
-        long reference, 
-        ResourceProvider resourceProvider, 
-        int timeoutSeconds)
-    //@formatter:on
-    {
-        this.name = name;
+        this.coordinates = coordinates;
         this.attributes = attributes;
-        this.templateId = templateId;
-        this.reference = reference;
-        this.resourceProvider = resourceProvider;
         this.endTime = System.currentTimeMillis() + (timeoutSeconds * 1000);
     }
 
@@ -85,7 +41,9 @@ public class ReservedResource implements ResourceDescription
     @Override
     public String getName()
     {
-        return name;
+        if(coordinates.getProvider() == null)
+            throw new IllegalArgumentException("getName has been called but the given coordinates did not contain a provider");
+        return coordinates.getProvider().getName();
     }
 
     @Override
@@ -95,17 +53,11 @@ public class ReservedResource implements ResourceDescription
     }
 
     @Override
-    public String getTemplateId()
+    public ResourceCoordinates getCoordinates()
     {
-        return templateId;
+        return coordinates;
     }
     
-    @Override
-    public long getResourceId()
-    {
-        return reference;
-    }
-
     // instance methods
 
     /**
@@ -114,7 +66,7 @@ public class ReservedResource implements ResourceDescription
      */
     public ResourceProvider getResourceProvider()
     {
-        return resourceProvider;
+        return coordinates.getProvider();
     }
 
     /**
@@ -129,8 +81,12 @@ public class ReservedResource implements ResourceDescription
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder("{name: ").append(name == null ? "null" : name).append(",ref: ").append("" + reference).append(",end: ").append(new Date(endTime).toString()).append(",attrs: ").append(StrH.mapToString(attributes));
-        sb.append("}");
-        return sb.toString();
+        TabToLevel format = new TabToLevel();
+        format.ttl("\nReservedResource:");
+        format.level.incrementAndGet();
+        coordinates.toString(format);
+        format.ttl(StrH.mapToString(attributes));
+        format.ttl(new Date(endTime).toString());
+        return format.sb.toString();
     }
 }

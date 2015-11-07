@@ -16,27 +16,28 @@
 package com.pslcl.dtf.core.runner.resource;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.pslcl.dtf.core.util.StrH;
+import com.pslcl.dtf.core.util.TabToLevel;
 
+@SuppressWarnings("javadoc")
 public class ResourceDescImpl implements ResourceDescription
 {
-    private static final AtomicLong resourceIdMaster = new AtomicLong(0);
-    
     private final String name;
+    private final ResourceCoordinates coordinates;
     private final Map<String, String> attributes;
-    private final String templateId;
-    private final long resourceId;
-    private final int stepNumber;
 
-    public ResourceDescImpl(String name, Map<String, String> attributes, String templateId, int stepNumber)
+    /**
+     * Construct a ResourceDescription object.
+     * @param name
+     * @param coordinatates
+     * @param attributes
+     */
+    public ResourceDescImpl(String name, ResourceCoordinates coordinates,  Map<String, String> attributes)
     {
         this.name = name;
+        this.coordinates = coordinates;
         this.attributes = attributes;
-        this.templateId = templateId;
-        resourceId = resourceIdMaster.incrementAndGet();
-        this.stepNumber = stepNumber;
     }
 
     @Override
@@ -46,72 +47,68 @@ public class ResourceDescImpl implements ResourceDescription
     }
 
     @Override
+    public ResourceCoordinates getCoordinates()
+    {
+        return coordinates;
+    }
+    
+    @Override
     public Map<String, String> getAttributes()
     {
         return attributes;
     }
 
     @Override
-    public String getTemplateId()
+    public int hashCode()
     {
-        return templateId;
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((attributes == null) ? 0 : attributes.hashCode());
+        result = prime * result + ((coordinates == null) ? 0 : coordinates.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        return result;
     }
-    
+
     @Override
-    public long getResourceId()
+    public boolean equals(Object obj)
     {
-        return resourceId;
-    }
-
-    public long getStepNumber()
-    {
-        return stepNumber;
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (!(obj instanceof ResourceDescImpl))
+            return false;
+        ResourceDescImpl other = (ResourceDescImpl) obj;
+        if (attributes == null)
+        {
+            if (other.attributes != null)
+                return false;
+        } else if (!attributes.equals(other.attributes))
+            return false;
+        if (coordinates == null)
+        {
+            if (other.coordinates != null)
+                return false;
+        } else if (!coordinates.equals(other.coordinates))
+            return false;
+        if (name == null)
+        {
+            if (other.name != null)
+                return false;
+        } else if (!name.equals(other.name))
+            return false;
+        return true;
     }
     
-    /**
-     * 
-     * @param resourceDescription Must not be null
-     * @return
-     */
-    public boolean matches(ResourceDescription resourceDescription)
-    {
-        // match: reference, hash and attributes are equal
-        //@formatter:off
-        if (templateId.equals(resourceDescription.getTemplateId()) && 
-            resourceId == resourceDescription.getResourceId() &&
-            name.equals(resourceDescription.getName()))
-            //@formatter:on
-        {
-            // match the attribute sets to each other
-            Map<String, String> rwaAttributes = resourceDescription.getAttributes();
-            if (this.attributes.size() != rwaAttributes.size())
-                return false;
-            // these keys and values might be empty strings, but they will not be null; keys are unique in each Map
-            for (String key : this.attributes.keySet())
-            {
-                if (rwaAttributes.containsKey(key))
-                {
-                    String value = this.attributes.get(key);
-                    if (value.equals(rwaAttributes.get(key)))
-                        continue;
-                }
-                return false;
-            }
-        }
-        return true; // every check succeeded
-    }
-
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder("{name: ")
-            .append(name == null ? "null" : name)
-            .append(",templateId: " + templateId)
-            .append(",resouceId: " + resourceId)
-            .append(",stepNumber: " + stepNumber)
-            .append(",attrs: ")
-            .append(StrH.mapToString(attributes));
-        sb.append("}");
-        return sb.toString();
+        TabToLevel format = new TabToLevel();
+        format.ttl("\nResourceDescImpl:");
+        format.level.incrementAndGet();
+        format.ttl("name: ", name);
+        coordinates.toString(format);
+        format.ttl(StrH.mapToString(attributes));
+        return format.sb.toString();
     }
 }
