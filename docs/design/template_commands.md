@@ -5,8 +5,8 @@
 
 ##Bind
 
-The bind command requests a [Resource](resources.md) instance. The format of the line following the command is a hash 
-(64 characters), followed by a space, followed by an attribute list. The reference to the resource instance is the line index in 
+The bind command requests a [Resource](resources.md) instance. The format of the line following the command is a resource
+name(e.g. 'machine', 'network', 'person'), followed by a space, followed by an attribute list. The reference to the resource instance is the line index in 
 the file, zero based.
 
 ##Include
