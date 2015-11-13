@@ -64,11 +64,13 @@ included directly in the template (bind) or indirectly via another template
 A template is instantiated by the [Test Runner Service](test_runner_service.md) in order to use it as a test run or to be used by 
 another template. Template instances continue to exist until the Test Runner Service releases them. 
 
-A template is instantiated by executing all of its steps. Steps within the same set may be executed in parallel. All steps
+A template is instantiated by executing all of its steps. Steps within the same set may be executed in parallel and in any order. All steps
 in a set must [complete](template_commands.md) before the next set of steps are executed. This means that each step should be in a 
 set that is executed after any sets containing steps that it is dependent on. For example, A [*deploy*](template_commands.md#deploy) 
 command should belong to a set that is executed after the set containing the [Bind](template_commands.md#bind) command for the 
 [Machine](resources.md) that it references.
+
+Template instantiation will fail if any steps are encountered which cannot be parsed.
 
 ##Template Reuse
 
