@@ -1674,7 +1674,7 @@ public class Core
             while (resultSet.next())
             {
                 // Ignore dtf_test_generator artifacts that are merged from other modules
-                int merged_from_module = resultSet.getInt(12);
+                int merged_from_module = resultSet.getInt(13);
                 if (merged_from_module > 0 && "dtf_test_generator".equals(configuration))
                     continue;
 
