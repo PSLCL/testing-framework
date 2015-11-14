@@ -45,7 +45,7 @@
 	
 	<target name="dist" depends="build" description="resolve and retrieve dependencies with ivy">
     <!-- Use Apache Ivy to resolve & retrieve dependencies -->
-    <ivy:retrieve conf="master"/>
+    <ivy:retrieve conf="compile"/>
   </target>
 
 </project>

@@ -24,13 +24,14 @@ The Distributed Test Framework Main.
   </info>
   <configurations>
     <conf name="master" visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
+    <conf name="compile" visibility="public" description="this is the default scope, used if none is specified. Compile dependencies are available in all classpaths."/>
   </configurations>
   <dependencies>
-    <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="master"/>
-    <dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="[1,2)" conf="master"/>
-    <dependency org="com.pslcl.dtf" name="dtf-aws-resource" rev="[1,2)" conf="master"/>
-    <dependency org="com.pslcl.dtf" name="dtf-exec" rev="[1,2)" conf="master"/>
-    <dependency org="com.pslcl.dtf" name="dtf-ivy-artifact" rev="[1,2)" conf="master"/>
-    <dependency org="com.pslcl.dtf" name="dtf-runner" rev="[1,2)" conf="master"/>
+    <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="com.pslcl.dtf" name="dtf-aws-resource" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="com.pslcl.dtf" name="dtf-exec" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="com.pslcl.dtf" name="dtf-ivy-artifact" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="com.pslcl.dtf" name="dtf-runner" rev="[1,2)" conf="compile->master,compile"/>
   </dependencies>
 </ivy-module>
