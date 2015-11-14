@@ -197,8 +197,6 @@
       <fileset dir="." includes="*.html"/>
     </copy>
 	
-	<copy file="./README.md" todir="${dist.dir}" overwrite="true"/>
-
     <!-- Generate a jar file for the library and javadocs -->
     <jar jarfile="${dist.dir}/${jar.name}-${version.simple}.jar" basedir="${class.dir}">
       <fileset dir="${unjar.dir}" includes="**"/>
