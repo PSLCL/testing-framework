@@ -14,7 +14,7 @@
 **  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="base" default="dist" basedir=".">
-	<target name="dist">
+	<target name="build">
 		<sequential>
 			<subant inheritall="true" inheritrefs="true" buildpath="dtf-aws-attr">
 				<target name="dist"/>
@@ -42,4 +42,10 @@
 			</subant>
 		</sequential>
 	</target>
+	
+	<target name="dist" depends="build" description="resolve and retrieve dependencies with ivy">
+    <!-- Use Apache Ivy to resolve & retrieve dependencies -->
+    <ivy:retrieve conf="master"/>
+  </target>
+
 </project>

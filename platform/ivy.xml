@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+**  Copyright (c) 2015, Panasonic Corporation.
+**
+**  Permission to use, copy, modify, and/or distribute this software for any
+**  purpose with or without fee is hereby granted, provided that the above
+**  copyright notice and this permission notice appear in all copies.
+**
+**  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+**  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+**  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+**  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+**  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+**  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+**  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+-->
+<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
+  <info organisation="com.pslcl.dtf" module="main" revision="1.0">
+    <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
+    <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
+    <description homepage="https://opendof.org/">
+The Distributed Test Framework Main.
+    </description>
+  </info>
+  <configurations>
+    <conf name="master" visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
+  </configurations>
+  <dependencies>
+    <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="master"/>
+    <dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="[1,2)" conf="master"/>
+    <dependency org="com.pslcl.dtf" name="dtf-aws-resource" rev="[1,2)" conf="master"/>
+    <dependency org="com.pslcl.dtf" name="dtf-exec" rev="[1,2)" conf="master"/>
+    <dependency org="com.pslcl.dtf" name="dtf-ivy-artifact" rev="[1,2)" conf="master"/>
+    <dependency org="com.pslcl.dtf" name="dtf-runner" rev="[1,2)" conf="master"/>
+  </dependencies>
+</ivy-module>
