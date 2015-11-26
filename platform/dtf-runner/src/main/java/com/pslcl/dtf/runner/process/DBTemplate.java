@@ -39,6 +39,10 @@ public class DBTemplate {
         this.reNum = reNum;
     }
     
+    public boolean checkValidTemplateInfo() {
+    	return (this.hash!=null && this.steps!=null && this.enabled);
+    }
+    
     /**
      * Return the value of the hash array as a hex String.
      * @return hex string value of the hash array

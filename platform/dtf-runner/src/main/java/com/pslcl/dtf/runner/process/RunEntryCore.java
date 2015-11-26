@@ -271,7 +271,7 @@ public class RunEntryCore {
         if (connect != null) {
             topDBTemplate = new DBTemplate(this.reNum);
             try {
-            	// filla all fields of topDBTemplate from the existing existing database entries
+            	// fill all fields of topDBTemplate from the existing existing database entries
 				loadRunEntryData(); // throws Exception for no database entry for this.reNum
 				storeReadyRunEntryData(); // can throw IllegalArgumentException for template.enabled false, and SQL write related exceptions
 			} catch (Exception e) {
@@ -305,7 +305,7 @@ public class RunEntryCore {
      * Execute the test run specified by the run entry number.
      * @return the result of this test run; result is stored already
      */
-    public boolean testRun(Long reNum, RunnerMachine runnerMachine) {
+    public boolean testRun(Long reNum, RunnerMachine runnerMachine) throws Exception {
         // TODO: remove reNum parameter; it is built into RunEntryCore and is present in this.topDBTemplate
 
         // We are an independent process in our own thread. We have access
@@ -343,8 +343,8 @@ public class RunEntryCore {
             this.topDBTemplate.result = new Boolean(true);
             runnerMachine.getTemplateProvider().releaseTemplate(iT); // this is the only releaseTemplate() call; if iT is not held for reuse, this call releases its nested templates.
         } catch (Exception e) {
-            // .getInstancedTemplate() must clean up
-            e.printStackTrace(); // TODO: output message
+            // TODO: remember that .getInstancedTemplate() must clean up
+            throw e;
         }
         storeResultRunEntryData();
         return this.topDBTemplate.result.booleanValue();

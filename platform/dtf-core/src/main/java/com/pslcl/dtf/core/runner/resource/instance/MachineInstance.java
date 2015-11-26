@@ -68,17 +68,17 @@ public interface MachineInstance extends ResourceInstance {
 	Future<Void> disconnect(NetworkInstance network);
 
 	/**
-	 * Run an executable command on a machine and return a Future with the result of the set command once execution has
-	 * completed. A non-zero result indicates that the test has failed.
+	 * Run an executable command on a machine and return a Future with the {@link RunnableProgram} set command once execution has
+	 * completed. Within the return object is a program run result; non-zero indicates that the test has failed.
 	 * 
 	 * This method is the equivalent of a template {@code run} command and cannot modify the machine.
 	 * 
 	 * @param command
 	 *            An executable command, including arguments, to be run on the machine.
 	 *
-	 * @return A {@link Future<Integer>} containing the result of the command once execution has completed.
+	 * @return A {@link RunnableProgram} containing the information about the command once execution has completed.
 	 */
-	Future<Integer> run(String command);
+	Future<RunnableProgram> run(String command);
 
 	/**
 	 * Run an executable command on a machine that modifies the machine in some way. Returns a Future with the result of
@@ -94,7 +94,7 @@ public interface MachineInstance extends ResourceInstance {
 	Future<Integer> configure(String command);
 
 	/**
-	 * Start an executable command on a machine and return a Future with the {@link StartProgram} set once the program
+	 * Start an executable command on a machine and return a Future with the {@link RunnableProgram} set once the program
 	 * has successfully started.
 	 * 
 	 * This method is the equivalent of a template {@code start} command and cannot modify the machine.
@@ -104,6 +104,6 @@ public interface MachineInstance extends ResourceInstance {
 	 *
 	 * @return A {@link Future<Integer>} containing the result of the command once execution has completed.
 	 */
-	Future<StartProgram> start(String command);
-
+	Future<RunnableProgram> start(String command);
+	
 }
