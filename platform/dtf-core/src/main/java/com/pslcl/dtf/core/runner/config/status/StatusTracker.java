@@ -140,7 +140,7 @@ public interface StatusTracker
         /**
          * Typically reflects a serious abnormality occurred of which a human should be notified.
          */
-        Human;
+        Alert;
         
         /**
          * Return the <code>Status</code> based on the given ordinal value.
@@ -159,7 +159,7 @@ public interface StatusTracker
                 case 2:
                     return Error;
                 case 3:
-                    return Human;
+                    return Alert;
                 default:
                     throw new IllegalArgumentException("ordinal " + ordinal + " does not map to a known Status");
             }

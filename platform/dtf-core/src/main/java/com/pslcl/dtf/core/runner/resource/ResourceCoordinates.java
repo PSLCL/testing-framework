@@ -117,14 +117,12 @@ public class ResourceCoordinates
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((manager == null) ? 0 : manager.hashCode());
-        result = prime * result + ((provider == null) ? 0 : provider.hashCode());
         result = prime * result + (int) (resourceId ^ (resourceId >>> 32));
         result = prime * result + (int) (runId ^ (runId >>> 32));
         result = prime * result + ((templateId == null) ? 0 : templateId.hashCode());
         return result;
     }
-
+    // DO NOT include manager and provider in equals/hashCode
     @Override
     public boolean equals(Object obj)
     {
@@ -135,18 +133,6 @@ public class ResourceCoordinates
         if (!(obj instanceof ResourceCoordinates))
             return false;
         ResourceCoordinates other = (ResourceCoordinates) obj;
-        if (manager == null)
-        {
-            if (other.manager != null)
-                return false;
-        } else if (!manager.equals(other.manager))
-            return false;
-        if (provider == null)
-        {
-            if (other.provider != null)
-                return false;
-        } else if (!provider.equals(other.provider))
-            return false;
         if (resourceId != other.resourceId)
             return false;
         if (runId != other.runId)
