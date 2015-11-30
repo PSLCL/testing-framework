@@ -28,7 +28,7 @@ import com.pslcl.dtf.core.runner.resource.exception.IncompatibleResourceExceptio
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
-import com.pslcl.dtf.core.runner.resource.instance.StartProgram;
+import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider.MachineReservedResource;
 
@@ -84,7 +84,7 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
-    public Future<Integer> run(String command)
+    public Future<RunnableProgram> run(String command)
     {
         return null;
     }
@@ -96,7 +96,7 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
-    public Future<StartProgram> start(String command)
+    public Future<RunnableProgram> start(String command)
     {
         return null;
     }
@@ -231,4 +231,10 @@ public class AwsMachineInstance implements MachineInstance
 
         public final String awsState;
     }
+
+//	@Override
+//	public Future<Integer> stop(String command) {
+//		// TODO Auto-generated method stub; comes from adding stop to the parent Java interface
+//		return null;
+//	}
 }

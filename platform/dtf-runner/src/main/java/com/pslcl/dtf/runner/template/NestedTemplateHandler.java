@@ -30,34 +30,36 @@ public class NestedTemplateHandler {
         int localStepReference = stepsParser.getStepReference(); // 0, because template includes are always first
         // instance them in parallel, each in their own thread
         List<String> includeSteps = stepsParser.getNextSteps("include "); // trailing space is required
-        List<Future<? extends InstancedTemplate>> futures = new ArrayList<>();
+        List<Future<? extends ReferencedNestedTemplate>> futures = new ArrayList<>();
         for (String includeStep: includeSteps) {
-            String includeText = StepsParser.peekNextSpaceTerminatedSubString(includeStep, 0); // get "include" substring
-            includeText += " "; // append the trailing space
-            String templateHashText = StepsParser.peekNextSpaceTerminatedSubString(includeStep, (includeText.length()));
+        	String includeText = StepsParser.peekNextSubString(includeStep, 0) + " "; // move past include hash parameter, past "include" substring and its trailing space
+            String templateHashText = StepsParser.peekNextSubString(includeStep, (includeText.length()));
             DBTemplate nestedDBTemplate = new DBTemplate(null); // null: a nested template has no reNum (run entry number)
             // use reCore to fill nestedDBTemplate. todo: nestedDBTemplate can be truncated
 
-            // db code
+            // TODO: db code
 
 
-
-            // start up instantiation of this nested template
-            NestedTemplateTask task = new NestedTemplateTask(localStepReference, reCore, nestedDBTemplate, runnerMachine);
-            Future<InstancedTemplate> future = runnerMachine.getConfig().blockingExecutor.submit(task);
-            futures.add(future);
+            if (nestedDBTemplate.checkValidTemplateInfo()) {
+                // start up instantiation of this nested template; work takes place in its own thread, as task.call()
+                NestedTemplateTask task = new NestedTemplateTask(localStepReference, reCore, nestedDBTemplate, runnerMachine);
+                Future<ReferencedNestedTemplate> future = runnerMachine.getConfig().blockingExecutor.submit(task);
+                futures.add(future);
+            } else {
+            	LoggerFactory.getLogger(getClass()).warn("NestedTemplateHandler.instanceNestedTemplates() include step template reference " + futures.size() + " has inadequate template info");
+            	throw new Exception("inadequate template info");
+            }
             ++localStepReference;
         }
 
         // collect resultant InstancedTemplates from n nested templates
-        List<InstancedTemplate> localListNestedIT = new ArrayList<>();
-        for (Future<? extends InstancedTemplate> future : futures) {
+        for (Future<? extends ReferencedNestedTemplate> future : futures) {
             // future can be null (submit task failed early); ; or can be an InstancedTemplate
             boolean fail = true;
             try {
-                InstancedTemplate localIT = future.get();
-                if (localIT != null) {
-                    localListNestedIT.add(localIT);
+                ReferencedNestedTemplate rnt= future.get();
+                if (rnt != null) {
+                	this.iT.markNestedTemplate(rnt.nestedStepReference, rnt.instancedTemplate);
                     fail = false;
                 }
             } catch (InterruptedException ee) {
@@ -71,11 +73,11 @@ public class NestedTemplateHandler {
             }
 
             if (fail) {
-                // TODO: cleanup each InstancedTemplate from listNestedIT
-                // TODO: throw Exception to the caller
+                // cleanup
+            	this.iT.destroyNestedTemplate();
+            	throw new Exception("nested template failure");
             }
             
-            iT.setListNestedIT(localListNestedIT);
         }
         // We discard our information about each future (i.e. Future<? extends InstancedTemplate>). Our API is with each InstancedTemplate in listNestedIT.
 

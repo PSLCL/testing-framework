@@ -151,9 +151,8 @@ public class ResourceProviders implements ResourceProvider
                 break;
             }
 
-            // synchronous call: this ResourceProvider reserves each resource in reserveResourceRequests, as it can and as it will
+            // asynch behavior
             ResourceQueryResult localRqr = rp.reserveIfAvailable(reserveResourceRequests, timeoutSeconds);
-            // if ever reserve is to be handled asynchronously, then the api here could be to return Future ; this code would then convert to synchronous - wait for the computed ResourceQueryResult by using future.get() 
             retRqr.merge(localRqr); // merge localRqr into retRqr
         }
         return retRqr;

@@ -27,4 +27,19 @@ public interface CableInstance extends ResourceInstance {
 	 * @return
 	 */
 	public String getIPAddress();
+	
+	/**
+	 * The machine that this cable connects to a network.
+	 *   
+	 * @return
+	 */
+	public MachineInstance getMachineInstance();
+
+	
+	/**
+	 * The network that this cable connect a machine to.
+	 *   
+	 * @return
+	 */
+	public NetworkInstance getNetworkInstance();
 }
