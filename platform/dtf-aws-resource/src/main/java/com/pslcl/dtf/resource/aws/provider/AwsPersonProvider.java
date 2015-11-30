@@ -54,27 +54,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     
     
     @Override
-    public void updateArtifact(String component, String version, String platform, String name, String artifactHash)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void removeArtifact(String component, String version, String platform, String name)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void invalidateArtifacts(String component, String version)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
     {
         // TODO Auto-generated method stub

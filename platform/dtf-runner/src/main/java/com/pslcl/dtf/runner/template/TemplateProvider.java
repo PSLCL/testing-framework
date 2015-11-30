@@ -549,7 +549,7 @@ public class TemplateProvider implements ResourceStatusListener {
         {
             case Error:
                 break;
-            case Human:
+            case Alert:
                 break;
             case Ok:
                 break;

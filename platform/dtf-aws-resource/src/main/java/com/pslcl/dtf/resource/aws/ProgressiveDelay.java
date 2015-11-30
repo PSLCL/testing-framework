@@ -119,7 +119,7 @@ public class ProgressiveDelay
             {
                 String msg = getErrorMessage(message, false);
                 log.warn(msg, t);
-                handleStatusTracker(StatusTracker.Status.Human);
+                handleStatusTracker(StatusTracker.Status.Alert);
                 return new FatalServerException(pdelayData.coord, msg, t);
             }
             try
@@ -162,14 +162,14 @@ public class ProgressiveDelay
             }
             String msg = getErrorMessage(message, false);
             log.warn(msg, t);
-            handleStatusTracker(StatusTracker.Status.Human);
+            handleStatusTracker(StatusTracker.Status.Alert);
             return new FatalClientException(pdelayData.coord, msg, t);
         }
         if(t instanceof IllegalArgumentException)
         {
             String msg = getErrorMessage(message, false);
             log.warn(msg, t);
-            handleStatusTracker(StatusTracker.Status.Human);
+            handleStatusTracker(StatusTracker.Status.Alert);
             return new FatalClientException(pdelayData.coord, msg, t);
         }
         if(t instanceof InterruptedException)
@@ -181,7 +181,7 @@ public class ProgressiveDelay
         }
         String msg = getErrorMessage(message, false);
         log.warn(msg, t);
-        handleStatusTracker(StatusTracker.Status.Human);
+        handleStatusTracker(StatusTracker.Status.Alert);
         return new FatalClientException(pdelayData.coord, msg, t);
     }
     

@@ -221,23 +221,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         return result;
     }
 
-    // implement ArtifactConsumer interface
-
-    @Override
-    public void updateArtifact(String component, String version, String platform, String name, String artifactHash)
-    {
-    }
-
-    @Override
-    public void removeArtifact(String component, String version, String platform, String name)
-    {
-    }
-
-    @Override
-    public void invalidateArtifacts(String component, String version)
-    {
-    }
-
     public void release(ResourceInstance resource, boolean isReusable)
     {
     }

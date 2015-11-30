@@ -42,7 +42,7 @@ public class ResourceProviders implements ResourceProvider
 {
 
     public static final String ManagerClassKey = "pslcl.dtf.runner.template.resource-manager-class"; 
-    public static final String ManagerClassDefault = "com.pslcl.dtf.resource.aws.ResourcesController";
+    public static final String ManagerClassDefault = "com.pslcl.dtf.resource.aws.AwsResourcesManager";
     
     private final List<ResourcesManager> resourceManagers;
     private final List<ResourceProvider> resourceProviders;
