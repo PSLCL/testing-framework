@@ -71,33 +71,31 @@ public class StartHandler {
 		return retList;
 	}
 
-	void initiateStart(List<ProgramInfo> programInfos) throws Exception {
+	/**
+	 * 
+	 * @param startInfos
+	 * @throws Exception
+	 */
+	void initiateStart(List<ProgramInfo> startInfos) throws Exception {
         // start multiple asynch starts (note: we expect only one start in any one step set or even in any one template, but we will process multiple starts, anyway)
 		this.futuresOfStartState = new ArrayList<StartState>();
-		StartState.setAllProgramsRan(true); // initialize this to be useful while we process steps of our current setID
-		for (ProgramInfo programInfo : programInfos) {
-			ResourceInstance resourceInstance = programInfo.getResourceInstance();
-			// We know that resourceInstance is a MachineInstance, because a start step always directs its work to MachineInstance.
-			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!resourceInstance.getClass().isAssignableFrom(MachineInstance.class)) {
+		StartState.setAllProgramsRan(true); // initialize this to be useful while we process every step of our current setID
+		for (ProgramInfo startInfo : startInfos) {
+			try {
+				MachineInstance mi = startInfo.computeProgramRunInformation();
+				String runProgramCommandLine = startInfo.getComputedCommandLine();
+				Future<RunnableProgram> future = mi.start(runProgramCommandLine);
+				// future:
+				//     can be a null (start failed while in the act of creating a Future), or
+				//     can be a Future<RunnableProgram>, for which an eventual call to future.get():
+				//        returns a RunnableProgram from start completion (the RunnableProgram refers to a program that was started and now may or may not be running), or
+				//        throws an exception from start error-out (e.g. the program did not properly start)
+				
+				futuresOfStartState.add(new StartState(future, mi));
+			} catch (Exception e) {
 				StartState.setAllProgramsRan(false);
-				throw new Exception("Specified program target is not a MachineInstance");
-			}
-			MachineInstance mi = MachineInstance.class.cast(resourceInstance);
-			String startProgramCommandLine = programInfo.getProgramName();
-			List<String> params = programInfo.getParameters();
-			for (String param: params) {
-				startProgramCommandLine += ' ';
-				startProgramCommandLine += param;
-			}
-			Future<RunnableProgram> future = mi.start(startProgramCommandLine);
-			// future:
-			//     can be a null (start failed while in the act of creating a Future), or
-			//     can be a Future<RunnableProgram>, for which an eventual call to future.get():
-			//        returns a RunnableProgram from start completion (the RunnableProgram refers to a program that was started and may or may not be running), or
-			//        throws an exception from start error-out (e.g. the program did not properly start)
-			
-			futuresOfStartState.add(new StartState(future, mi));
+				throw e;
+			}			
 		}
     }
 

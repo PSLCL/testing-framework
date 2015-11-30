@@ -69,33 +69,31 @@ public class ConfigureHandler {
 		return retList;
 	}
 	
+	/**
+	 * 
+	 * @param configureInfos
+	 * @throws Exception
+	 */
 	void initiateConfigure(List<ProgramInfo> configureInfos) throws Exception {
         // start multiple asynch configures
 		this.futuresOfConfigureState = new ArrayList<ConfigureState>();
-		ConfigureState.setAllProgramsRan(true); // initialize this to be useful while we process steps of our current setID
+		ConfigureState.setAllProgramsRan(true); // initialize this to be useful while we process every step of our current setID
 		for (ProgramInfo configureInfo : configureInfos) {
-			ResourceInstance resourceInstance = configureInfo.getResourceInstance();
-			// We know resourceInstance is a MachineInstance, because a configure step always directs its work to MachineInstance.
-			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!resourceInstance.getClass().isAssignableFrom(MachineInstance.class)) {
+			try {
+				MachineInstance mi = configureInfo.computeProgramRunInformation();
+				String configureProgramCommandLine = configureInfo.getComputedCommandLine();
+				Future<Integer> future = mi.configure(configureProgramCommandLine);
+				// future:
+				//     can be a null (configure failed while in the act of creating a Future), or
+				//     can be a Future<Integer>, for which an eventual call to future.get():
+				//        returns an Integer from configure completion (the Integer is the run result of the configuring program, or
+				//        throws an exception from configure error-out (e.g. the configuring program did not properly run)
+				
+				futuresOfConfigureState.add(new ConfigureState(future, mi));
+			} catch (Exception e) {
 				ConfigureState.setAllProgramsRan(false);
-				throw new Exception("Specified configure target is not a MachineInstance");
+				throw e;
 			}
-			MachineInstance mi = MachineInstance.class.cast(resourceInstance);
-			String configureProgramCommandLine = configureInfo.getProgramName();
-			List<String> params = configureInfo.getParameters();
-			for (String param: params) {
-				configureProgramCommandLine += ' ';
-				configureProgramCommandLine += param;
-			}
-			Future<Integer> future = mi.configure(configureProgramCommandLine);
-			// future:
-			//     can be a null (configure failed while in the act of creating a Future), or
-			//     can be a Future<Integer>, for which an eventual call to future.get():
-			//        returns an Integer from configure completion (the Integer is the run result of the configuring program, e.g. configureInfo.getProgramName()), or
-			//        throws an exception from configure error-out (e.g. the configuring program did not properly run)
-			
-			futuresOfConfigureState.add(new ConfigureState(future, mi));
 		}
 	}
 	

@@ -73,30 +73,23 @@ public class RunHandler {
 	void initiateRun(List<ProgramInfo> programInfos) throws Exception {
         // start multiple asynch runs
 		this.futuresOfRunState = new ArrayList<RunState>();
-		RunState.setAllProgramsRan(true); // initialize this to be useful while we process steps of our current setID
-		for (ProgramInfo programInfo : programInfos) {
-			ResourceInstance resourceInstance = programInfo.getResourceInstance();
-			// We know that resourceInstance is a MachineInstance, because a run step always directs its work to MachineInstance.
-			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!resourceInstance.getClass().isAssignableFrom(MachineInstance.class)) {
+		RunState.setAllProgramsRan(true); // initialize this to be useful while we process every step of our current setID
+		for (ProgramInfo runInfo : programInfos) {
+			try {
+				MachineInstance mi = runInfo.computeProgramRunInformation();
+				String runProgramCommandLine = runInfo.getComputedCommandLine();
+				Future<RunnableProgram> future = mi.start(runProgramCommandLine);
+				// future:
+				//     can be a null (run failed while in the act of creating a Future), or
+				//     can be a Future<RunnableProgram>, for which an eventual call to future.get():
+				//        returns a RunnableProgram from run completion (the RunnableProgram refers to a program that was run and has now completed running and has returned a result), or
+				//        throws an exception from run error-out (e.g. the program did not actually run or did not properly run)
+				
+				futuresOfRunState.add(new RunState(future, mi));
+			} catch (Exception e) {
 				RunState.setAllProgramsRan(false);
-				throw new Exception("Specified program target is not a MachineInstance");
-			}
-			MachineInstance mi = MachineInstance.class.cast(resourceInstance);
-			String runProgramCommandLine = programInfo.getProgramName();
-			List<String> params = programInfo.getParameters();
-			for (String param: params) {
-				runProgramCommandLine += ' ';
-				runProgramCommandLine += param;
-			}
-			Future<RunnableProgram> future = mi.run(runProgramCommandLine);
-			// future:
-			//     can be a null (run failed while in the act of creating a Future), or
-			//     can be a Future<RunnableProgram>, for which an eventual call to future.get():
-			//        returns a RunnableProgram from run completion (the RunnableProgram refers to a program that was run and has now completed running and has returned a result), or
-			//        throws an exception from run error-out (e.g. the program did not actually run or did not properly run)
-			
-			futuresOfRunState.add(new RunState(future, mi));
+				throw e;
+			}			
 		}
     }	
 
