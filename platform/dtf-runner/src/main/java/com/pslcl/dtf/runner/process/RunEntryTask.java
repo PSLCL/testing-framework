@@ -52,16 +52,23 @@ public class RunEntryTask implements Runnable {
      */
     @Override
     public void run() {
-        // this thread can block for possibly days at a time while waiting for the test run to return a test result and otherwise complete itself
+        // this thread blocks while waiting for the test run to return a test result and otherwise complete itself (if needed, block could be for days at a time)
         System.out.println( "RunEntryTask.run() opens reNum " + reNum);
         
         while(true) {
             RunEntryState reState = runnerMachine.getService().actionStore.get(reNum);
             Action action = reState.getAction();
-            Action nextAction = action.act(reState, reCore, runnerMachine.getTemplateProvider(), runnerMachine.getService());
-            System.out.println("RunEntryTask.run() ran Action " + action.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
-            if (nextAction == Action.DISCARDED)
-                break; // close thread
+            Action nextAction;
+			try {
+				nextAction = action.act(reState, reCore, runnerMachine.getService());
+	            System.out.println("RunEntryTask.run() ran Action " + action.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
+	            if (nextAction == Action.DISCARDED)
+	                break; // close thread
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

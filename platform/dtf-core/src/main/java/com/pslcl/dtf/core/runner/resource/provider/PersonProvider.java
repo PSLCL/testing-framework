@@ -19,6 +19,6 @@ package com.pslcl.dtf.core.runner.resource.provider;
 /**
  * A Resource provider which allows reserving and binding of Person resource types.
  */
-public interface PersonProvider extends ResourceProvider, ArtifactConsumer
+public interface PersonProvider extends ResourceProvider
 {
 }

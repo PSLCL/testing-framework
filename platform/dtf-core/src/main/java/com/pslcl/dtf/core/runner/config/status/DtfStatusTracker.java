@@ -53,11 +53,9 @@ import com.pslcl.dtf.core.util.executor.ScheduledExecutor;
  *  </ul> 
  * @see StatusTracker 
  * @see StatusTrackerMXBean 
- * @see StatusConnectionStateListener
- * @see StatusServerStateListener
  * @see ScheduledExecutor
  */
-public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
+public class DtfStatusTracker implements StatusTracker, StatusTrackerMXBean
 {
     // guarded by statusMap
     private final HashMap<String, Status> statusMap;
@@ -68,7 +66,7 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
     /**
      * Default constructor.
      */
-    public StatusTrackerProvider()
+    public DtfStatusTracker()
     {
         statusMap = new HashMap<String, Status>(); 
         consolidatedStatus = Status.Ok;
@@ -172,8 +170,18 @@ public class StatusTrackerProvider implements StatusTracker, StatusTrackerMXBean
     }
 
     @Override
-    public void fireResourceStatusChanged(ResourceStatus status)
+    public void fireResourceStatusChanged(ResourceStatusEvent status)
     {
+        try
+        {
+            Status currentStatus = getStatus(status.statusName);
+            if(currentStatus == status.status)
+                return;  // current == new nothing to do
+        }catch(Exception e)
+        {
+        }
+        setStatus(status.statusName, status.status);
+        
         synchronized(resourceStatusListeners)
         {
             for(ResourceStatusListener listener : resourceStatusListeners)

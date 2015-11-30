@@ -18,80 +18,97 @@ package com.pslcl.dtf.core.runner.resource;
 import java.util.Map;
 
 import com.pslcl.dtf.core.util.StrH;
+import com.pslcl.dtf.core.util.TabToLevel;
 
+@SuppressWarnings("javadoc")
 public class ResourceDescImpl implements ResourceDescription
 {
-    private String name;
-    private Map<String, String> attributes;
-    private int reference;
+    private final String name;
+    private final ResourceCoordinates coordinates;
+    private final Map<String, String> attributes;
 
-    public ResourceDescImpl(String name, Map<String, String> attributes, int reference)
+    /**
+     * Construct a ResourceDescription object.
+     * @param name
+     * @param coordinatates
+     * @param attributes
+     */
+    public ResourceDescImpl(String name, ResourceCoordinates coordinates,  Map<String, String> attributes)
     {
         this.name = name;
+        this.coordinates = coordinates;
         this.attributes = attributes;
-        this.reference = reference;
     }
 
     @Override
     public String getName()
     {
-        // TODO Auto-generated method stub
         return name;
     }
 
     @Override
+    public ResourceCoordinates getCoordinates()
+    {
+        return coordinates;
+    }
+    
+    @Override
     public Map<String, String> getAttributes()
     {
-        // TODO Auto-generated method stub
         return attributes;
     }
 
     @Override
-    public long getReference()
+    public int hashCode()
     {
-        // TODO Auto-generated method stub
-        return reference;
-    }
-
-    /**
-     * 
-     * @param resourceDescription Must not be null
-     * @return
-     */
-    public boolean matches(ResourceDescription resourceDescription)
-    {
-        // match: reference, hash and attributes are equal
-        if (this.reference == resourceDescription.getReference() && this.name.equals(resourceDescription.getName()))
-        {
-            // match the attribute sets to each other
-            Map<String, String> rwaAttributes = resourceDescription.getAttributes();
-            if (this.attributes.size() != rwaAttributes.size())
-                return false;
-            // tHese keys and values might be empty strings, but they will not be null; keys are unique in each Map
-            for (String key : this.attributes.keySet())
-            {
-                if (rwaAttributes.containsKey(key))
-                {
-                    String value = this.attributes.get(key);
-                    if (value.equals(rwaAttributes.get(key)))
-                        continue;
-                }
-                return false;
-            }
-        }
-        return true; // every check succeeded
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((attributes == null) ? 0 : attributes.hashCode());
+        result = prime * result + ((coordinates == null) ? 0 : coordinates.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        return result;
     }
 
     @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (!(obj instanceof ResourceDescImpl))
+            return false;
+        ResourceDescImpl other = (ResourceDescImpl) obj;
+        if (attributes == null)
+        {
+            if (other.attributes != null)
+                return false;
+        } else if (!attributes.equals(other.attributes))
+            return false;
+        if (coordinates == null)
+        {
+            if (other.coordinates != null)
+                return false;
+        } else if (!coordinates.equals(other.coordinates))
+            return false;
+        if (name == null)
+        {
+            if (other.name != null)
+                return false;
+        } else if (!name.equals(other.name))
+            return false;
+        return true;
+    }
+    
+    @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder("{name: ")
-            .append(name == null ? "null" : name)
-            .append(",ref: ")
-            .append(""+reference)
-            .append(",attrs: ")
-            .append(StrH.mapToString(attributes));
-        sb.append("}");
-        return sb.toString();
+        TabToLevel format = new TabToLevel();
+        format.ttl("\nResourceDescImpl:");
+        format.level.incrementAndGet();
+        format.ttl("name: ", name);
+        coordinates.toString(format);
+        format.ttl(StrH.mapToString(attributes));
+        return format.sb.toString();
     }
 }

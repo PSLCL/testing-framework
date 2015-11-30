@@ -91,14 +91,15 @@ public class RunnerMachine {
      * @param message An opaque Java object, used to acknowledge the message when processing is complete
      * @throws Exception
      */
-    public void initiateProcessing(long reNum, Object message) {
+    public void initiateProcessing(long reNum, Object message) throws Exception {
         try {
             RunEntryState reState = new RunEntryState(reNum, message);
             Action action = reState.getAction();  // Action.INITIALIZE
-            Action nextAction = action.act(reState, null, this.templateProvider, getService());            
+            Action nextAction = action.act(reState, null, getService());            
             // .act() stores nextAction in reState and returns it
         } catch (Exception e) {
             System.out.println("RunnerProcessor.initiateProcessing() finds Exception while handling reNum " + reNum + ": " + e + ". Message remains in the QueueStore.");
+            throw e;
         }
     }
     
@@ -106,7 +107,7 @@ public class RunnerMachine {
      * @note can drop reNum, the given run entry
      * @param reNum
      */
-    void engageNewRunEntry(long reNum, RunEntryState reState) {
+    void engageNewRunEntry(long reNum, RunEntryState reState) throws Exception {
         // TODO. May choose to not process this new template; would be because this RunnerService node is overloaded. Or because this run entry already has a result stored
         // boolean doProcess = determineDoProcess(reNum, reState);
         // if (doProcess)
@@ -116,11 +117,12 @@ public class RunnerMachine {
         }
         
         try {
+            // launch independent thread
             new RunEntryTask(this, reNum);
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } // launch independent thread
+        	throw e;
+        }
+        
     }
 
     /**

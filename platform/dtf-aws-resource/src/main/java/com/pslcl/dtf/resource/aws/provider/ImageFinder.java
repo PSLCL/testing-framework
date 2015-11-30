@@ -36,8 +36,9 @@ import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.StrH.StringPair;
-import com.pslcl.dtf.resource.aws.attr.AwsNames;
+import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
+@SuppressWarnings("javadoc")
 public class ImageFinder
 {
     private final Logger log;
@@ -60,29 +61,29 @@ public class ImageFinder
         this.config = config;
         config.initsb.ttl("AWS Image Filters:");
         config.initsb.level.incrementAndGet();
-        addImageFilter(AwsNames.ImageArchitectureKey, AwsNames.ImageArchitectureDefault);
-        addImageFilter(AwsNames.ImageHypervisorKey, AwsNames.ImageHypervisorDefault);
-        addImageFilter(AwsNames.ImageImageIdKey, AwsNames.ImageImageIdDefault);
-        addImageFilter(AwsNames.ImageImageTypeKey, AwsNames.ImageImageTypeDefault);
-        addImageFilter(AwsNames.ImageIsPublicKey, AwsNames.ImageIsPublicDefault);
-        addImageFilter(AwsNames.ImageNameKey, AwsNames.ImageNameDefault);
-        addImageFilter(AwsNames.ImageOwnerKey, AwsNames.ImageOwnerDefault);
-        addImageFilter(AwsNames.ImagePlatformKey, AwsNames.ImagePlatformDefault);
-        addImageFilter(AwsNames.ImageRootDevTypeKey, AwsNames.ImageRootDevTypeDefault);
-        addImageFilter(AwsNames.ImageStateKey, AwsNames.ImageStateDefault);
-        addImageFilter(AwsNames.BlockingDeviceDeleteOnTerminationKey, AwsNames.BlockingDeviceDeleteOnTerminationDefault);
-        addImageFilter(AwsNames.BlockingDeviceVolumeTypeKey, AwsNames.BlockingDeviceVolumeTypeDefault);
-        addImageFilter(AwsNames.BlockingDeviceVolumeSizeKey, AwsNames.BlockingDeviceVolumeSizeDefault);
+        addImageFilter(ProviderNames.ImageArchitectureKey, ProviderNames.ImageArchitectureDefault);
+        addImageFilter(ProviderNames.ImageHypervisorKey, ProviderNames.ImageHypervisorDefault);
+        addImageFilter(ProviderNames.ImageImageIdKey, ProviderNames.ImageImageIdDefault);
+        addImageFilter(ProviderNames.ImageImageTypeKey, ProviderNames.ImageImageTypeDefault);
+        addImageFilter(ProviderNames.ImageIsPublicKey, ProviderNames.ImageIsPublicDefault);
+        addImageFilter(ProviderNames.ImageNameKey, ProviderNames.ImageNameDefault);
+        addImageFilter(ProviderNames.ImageOwnerKey, ProviderNames.ImageOwnerDefault);
+        addImageFilter(ProviderNames.ImagePlatformKey, ProviderNames.ImagePlatformDefault);
+        addImageFilter(ProviderNames.ImageRootDevTypeKey, ProviderNames.ImageRootDevTypeDefault);
+        addImageFilter(ProviderNames.ImageStateKey, ProviderNames.ImageStateDefault);
+        addImageFilter(ProviderNames.BlockingDeviceDeleteOnTerminationKey, ProviderNames.BlockingDeviceDeleteOnTerminationDefault);
+        addImageFilter(ProviderNames.BlockingDeviceVolumeTypeKey, ProviderNames.BlockingDeviceVolumeTypeDefault);
+        addImageFilter(ProviderNames.BlockingDeviceVolumeSizeKey, ProviderNames.BlockingDeviceVolumeSizeDefault);
         config.initsb.level.decrementAndGet();
         
         config.initsb.ttl("AWS Image Location Filters:");
         config.initsb.level.incrementAndGet();
-        defaultLocationYear = config.properties.getProperty(AwsNames.LocationYearKey, AwsNames.LocationYearDefault);
-        config.initsb.ttl(AwsNames.LocationYearKey, " = ", defaultLocationYear);
-        defaultLocationMonth = config.properties.getProperty(AwsNames.LocationMonthKey, AwsNames.LocationMonthDefault);
-        config.initsb.ttl(AwsNames.LocationMonthKey, " = ", defaultLocationMonth);
-        defaultLocationDot = config.properties.getProperty(AwsNames.LocationDotKey, AwsNames.LocationDotDefault);
-        config.initsb.ttl(AwsNames.LocationDotKey, " = ", defaultLocationDot);
+        defaultLocationYear = config.properties.getProperty(ProviderNames.LocationYearKey, ProviderNames.LocationYearDefault);
+        config.initsb.ttl(ProviderNames.LocationYearKey, " = ", defaultLocationYear);
+        defaultLocationMonth = config.properties.getProperty(ProviderNames.LocationMonthKey, ProviderNames.LocationMonthDefault);
+        config.initsb.ttl(ProviderNames.LocationMonthKey, " = ", defaultLocationMonth);
+        defaultLocationDot = config.properties.getProperty(ProviderNames.LocationDotKey, ProviderNames.LocationDotDefault);
+        config.initsb.ttl(ProviderNames.LocationDotKey, " = ", defaultLocationDot);
         
         addLocationFilters();
         config.initsb.level.decrementAndGet();
@@ -99,14 +100,14 @@ public class ImageFinder
     
     private void addLocationFilters()
     {
-        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(AwsNames.LocationFeatureKey, config.properties);
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.LocationFeatureKey, config.properties);
         int size = list.size();
         if(size == 0)
         {
             // add the default
-            StringPair pair = new StringPair(AwsNames.LocationFeatureKey+"0", AwsNames.LocationBase);
+            StringPair pair = new StringPair(ProviderNames.LocationFeatureKey+"0", ProviderNames.LocationBase);
             list.add(pair);
-            pair = new StringPair(AwsNames.LocationFeatureKey+"1", AwsNames.LocationHvm);
+            pair = new StringPair(ProviderNames.LocationFeatureKey+"1", ProviderNames.LocationHvm);
             list.add(pair);
             size += 2;
         }
@@ -245,30 +246,30 @@ public class ImageFinder
         String locationMonth = null;
         String locationDot = null;
         
-        if(addImageFilter(AwsNames.ImageImageIdKey, AwsNames.ImageImageIdFilter, attrs, imageFilters))
+        if(addImageFilter(ProviderNames.ImageImageIdKey, ProviderNames.ImageImageIdFilter, attrs, imageFilters))
             return new ImageFilterData(imageFilters, locationFilters, locationYear, locationMonth, locationDot);
         
-        if(addImageFilter(AwsNames.ImageNameKey, AwsNames.ImageNameFilter, attrs, imageFilters))
+        if(addImageFilter(ProviderNames.ImageNameKey, ProviderNames.ImageNameFilter, attrs, imageFilters))
             return new ImageFilterData(imageFilters, locationFilters, locationYear, locationMonth, locationDot);
         
-        addImageFilter(AwsNames.ImageArchitectureKey, AwsNames.ImageArchitectureFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.ImageHypervisorKey, AwsNames.ImageHypervisorFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.ImageImageTypeKey, AwsNames.ImageImageTypeFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.ImageIsPublicKey, AwsNames.ImageIsPublicFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImageArchitectureKey, ProviderNames.ImageArchitectureFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImageHypervisorKey, ProviderNames.ImageHypervisorFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImageImageTypeKey, ProviderNames.ImageImageTypeFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImageIsPublicKey, ProviderNames.ImageIsPublicFilter, attrs, imageFilters);
 //        addImageFilter(AwsNames.ImageNameKey, AwsNames.ImageNameFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.ImageOwnerKey, AwsNames.ImageOwnerFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.ImagePlatformKey, AwsNames.ImagePlatformFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.ImageRootDevTypeKey, AwsNames.ImageRootDevTypeFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.ImageStateKey, AwsNames.ImageStateFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.BlockingDeviceDeleteOnTerminationKey, AwsNames.BlockingDeviceDeleteOnTerminationFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.BlockingDeviceVolumeTypeKey, AwsNames.BlockingDeviceVolumeTypeFilter, attrs, imageFilters);
-        addImageFilter(AwsNames.BlockingDeviceVolumeSizeKey, AwsNames.BlockingDeviceVolumeSizeFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImageOwnerKey, ProviderNames.ImageOwnerFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImagePlatformKey, ProviderNames.ImagePlatformFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImageRootDevTypeKey, ProviderNames.ImageRootDevTypeFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImageStateKey, ProviderNames.ImageStateFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.BlockingDeviceDeleteOnTerminationKey, ProviderNames.BlockingDeviceDeleteOnTerminationFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.BlockingDeviceVolumeTypeKey, ProviderNames.BlockingDeviceVolumeTypeFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.BlockingDeviceVolumeSizeKey, ProviderNames.BlockingDeviceVolumeSizeFilter, attrs, imageFilters);
         
-        locationYear = config.properties.getProperty(AwsNames.LocationYearKey, defaultLocationYear);
-        locationMonth = config.properties.getProperty(AwsNames.LocationMonthKey, defaultLocationMonth);
-        locationDot = config.properties.getProperty(AwsNames.LocationDotKey, defaultLocationDot);
+        locationYear = config.properties.getProperty(ProviderNames.LocationYearKey, defaultLocationYear);
+        locationMonth = config.properties.getProperty(ProviderNames.LocationMonthKey, defaultLocationMonth);
+        locationDot = config.properties.getProperty(ProviderNames.LocationDotKey, defaultLocationDot);
         
-        List<Entry<String, String>> flist = PropertiesFile.getPropertiesForBaseKey(AwsNames.LocationFeatureKey, attrs);
+        List<Entry<String, String>> flist = PropertiesFile.getPropertiesForBaseKey(ProviderNames.LocationFeatureKey, attrs);
         for(Entry<String,String> entry : flist)
             locationFilters.add(entry.getValue());
         if(flist.size() == 0)

@@ -40,7 +40,7 @@ import java.util.List;
  *  custom configuration object is also declared and handed into the init method.   
  *  </p>
  *  The service utilities provides the <code>MemoryStatusTracker</code> implementation of this interface.
- * @see StatusTrackerProvider
+ * @see DtfStatusTracker
  */
 public interface StatusTracker
 {
@@ -98,9 +98,23 @@ public interface StatusTracker
     public void destroy();
     
     
+    /**
+     * Register a ResourceStatusListener
+     * @param listener to be registered
+     */
     public void registerResourceStatusListener(ResourceStatusListener listener);
+    
+    /**
+     * Deregister a ResourceStatusListener
+     * @param listener to be registered
+     */
     public void deregisterResourceStatusListener(ResourceStatusListener listener);
-    public void fireResourceStatusChanged(ResourceStatus status);
+    
+    /**
+     * Fire a resource status changed event
+     * @param statusEvent event to signal.
+     */
+    public void fireResourceStatusChanged(ResourceStatusEvent statusEvent);
     
     /**
      * An enumeration of all possible Status states.
@@ -121,7 +135,12 @@ public interface StatusTracker
         /**
          * Typically reflects a serious abnormality occurred.
          */
-        Error;
+        Error,
+        
+        /**
+         * Typically reflects a serious abnormality occurred of which a human should be notified.
+         */
+        Alert;
         
         /**
          * Return the <code>Status</code> based on the given ordinal value.
@@ -139,6 +158,8 @@ public interface StatusTracker
                     return Warn;
                 case 2:
                     return Error;
+                case 3:
+                    return Alert;
                 default:
                     throw new IllegalArgumentException("ordinal " + ordinal + " does not map to a known Status");
             }

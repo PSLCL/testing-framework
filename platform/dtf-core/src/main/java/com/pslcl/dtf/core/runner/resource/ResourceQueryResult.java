@@ -18,9 +18,7 @@ package com.pslcl.dtf.core.runner.resource;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Hold and resolve results
- */
+@SuppressWarnings("javadoc")
 public class ResourceQueryResult
 {
     // all lists guarded by reservedResources
@@ -183,9 +181,9 @@ public class ResourceQueryResult
     {
         StringBuilder sb = new StringBuilder("{reserved: ")
             .append(reservedResources == null ? "{null}" : reservedResources.toString())
-            .append(",avilable: ")
+            .append(",available: ")
             .append(availableResources == null ? "{null}" : availableResources.toString())
-            .append(",unavilable: ")
+            .append(",unaivilable: ")
             .append(unavailableResources == null ? "{null}" : unavailableResources.toString())
             .append(",invalid: ")
             .append(invalidResources == null ? "{null}" : invalidResources.toString());

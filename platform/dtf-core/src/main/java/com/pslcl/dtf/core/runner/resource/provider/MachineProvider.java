@@ -19,6 +19,6 @@ package com.pslcl.dtf.core.runner.resource.provider;
 /**
  * A Resource provider which allows reserving and binding of Machine resource types.
  */
-public interface MachineProvider extends ResourceProvider, ArtifactConsumer
+public interface MachineProvider extends ResourceProvider
 {
 }

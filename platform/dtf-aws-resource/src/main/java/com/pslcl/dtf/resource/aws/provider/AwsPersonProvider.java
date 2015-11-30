@@ -29,11 +29,16 @@ import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 
+@SuppressWarnings("javadoc")
 public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
-    public AwsPersonProvider()
+    private final AwsResourcesManager controller;
+
+    public AwsPersonProvider(AwsResourcesManager controller)
     {
+        this.controller = controller;
     }
 
     @Override
@@ -49,34 +54,12 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     
     
     @Override
-    public void updateArtifact(String component, String version, String platform, String name, String artifactHash)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void removeArtifact(String component, String version, String platform, String name)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void invalidateArtifacts(String component, String version)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
     {
         // TODO Auto-generated method stub
         return null;
     }
 
-    @Override
     public void releaseReservedResource(ReservedResource resource)
     {
         // TODO Auto-generated method stub
@@ -118,7 +101,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         return null;
     }
 
-    @Override
     public void release(ResourceInstance resource, boolean isReusable)
     {
         // TODO Auto-generated method stub

@@ -21,7 +21,7 @@ import org.apache.commons.daemon.DaemonContext;
 
 import com.pslcl.dtf.core.runner.Runner;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
-import com.pslcl.dtf.core.runner.config.status.StatusTrackerProvider;
+import com.pslcl.dtf.core.runner.config.status.DtfStatusTracker;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.core.util.cli.CliBase;
 import com.pslcl.dtf.core.util.cli.CliCommand;
@@ -55,7 +55,7 @@ public class RunnerConfig
     public RunnerConfig(DaemonContext daemonContext, Runner runnerService)
     {
         this.runnerService = runnerService;
-        statusTracker = new StatusTrackerProvider();
+        statusTracker = new DtfStatusTracker();
         CliBase cbase = null;
         if(daemonContext.getController() instanceof CliDaemonController)
         {

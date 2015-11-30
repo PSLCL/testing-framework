@@ -15,7 +15,8 @@
  */
 package com.pslcl.dtf.core.runner.config.status;
 
+@SuppressWarnings("javadoc")
 public interface ResourceStatusListener
 {
-    public void resourceStatusChanged(ResourceStatus status);
+    public void resourceStatusChanged(ResourceStatusEvent statusEvent);
 }

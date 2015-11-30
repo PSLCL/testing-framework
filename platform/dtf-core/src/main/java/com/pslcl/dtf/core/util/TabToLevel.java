@@ -23,6 +23,11 @@ public class TabToLevel
     public final StringBuilder sb;
     public final AtomicInteger level;
     
+    public TabToLevel()
+    {
+        this(null);
+    }
+    
     public TabToLevel(StringBuilder sbIn)
     {
         if(sbIn == null)
@@ -39,6 +44,14 @@ public class TabToLevel
         tabToLevel(true, array);
     }
 
+    public void ttln(Object ... values)
+    {
+        String[] array = new String[values.length];
+        for(int i=0; i < array.length; i++)
+            array[i] = (values[i] == null ? "null" : values[i].toString());
+        tabToLevel(false, array);
+    }
+    
     public void tabToLevel(boolean eol, String ... values)
     {
         for(int i=0; i < level.get(); i++)
@@ -55,5 +68,4 @@ public class TabToLevel
         ttl("ok");
         level.decrementAndGet();
     }
-    
 }

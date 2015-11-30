@@ -23,16 +23,17 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
     private String instructionsHash = null;
     private String network = null;
     private String runParams = null;
-
+    
+    //FIXME: why is this private and unused?  if ever needed, note that reference and resourceId are no longer equivalent.
     private long getReference() {
-        return resourceInstance.getReference();
+        return resourceInstance.getCoordinates().resourceId;
     }
     
     // implement Comparable interface
     @Override
     public int compareTo(ResourceInfo ori) 
     {
-        long delta = resourceInstance.getReference() - ori.resourceInstance.getReference(); 
+        long delta = resourceInstance.getCoordinates().resourceId - ori.resourceInstance.getCoordinates().resourceId; 
         
         if(delta < 0)
             return -1;
@@ -44,6 +45,13 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
    
     // public methods
     
+    // FIXME: Chad added this constructor to see if anyone was creating an object from this class.
+    //  it appears this class is not currently used.
+    // if this class is ever used, note that reference and resourceId are no longer equivalent.
+    public ResourceInfo()
+    {
+        
+    }
     /**
      * Constructor
      * @param resourceInstance

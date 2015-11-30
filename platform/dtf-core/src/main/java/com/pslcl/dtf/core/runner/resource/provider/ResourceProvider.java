@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
-import com.pslcl.dtf.core.runner.config.status.ResourceStatus;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
@@ -34,16 +33,10 @@ import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
  */
 public interface ResourceProvider
 {
-
     /**
      * Acquire a resource.
-     * 
      * The resource must be released once it is no longer needed.
-     *
-     * @param resource
-     *            A resource with attributes.
-     * @param statusCallback
-     *            callback for {@link ResourceStatus} change notification.
+     * @param resource a resource with attributes.
      * @return Resource object which represents the Resource Instance.
      * @throws ResourceNotReservedException if unable to bind the resource.
      */
@@ -55,32 +48,11 @@ public interface ResourceProvider
      * 
      * The resources must be released once they are no longer needed.
      *
-     * @param resources
-     *            A list of resources with attributes.
-     * @param statusCallback
-     *            callback for {@link ResourceStatus} change notification.
+     * @param resources a list of resources.
      * @return A list of ResourceInstance objects which each represent a Resource Instance.
-     * @throws BindResourceFailedExcpetion if unable to bind all of the listed resources.
+     * @throws ResourceNotReservedException if unable to bind all of the listed resources.
      */
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException;
-
-    /**
-     * Release a bound resource instance. Any bound resources must be released.
-     * 
-     * @param resource
-     *            The resource instance to release.
-     * @param isReusable
-     *            Whether or not the Resource can be reused.
-     */
-    public void release(ResourceInstance resource, boolean isReusable);
-
-    /**
-     * Release a reserved resource. If a resource is bound, the reservation is automatically released.
-     * 
-     * @param resource
-     *            The reserved resource to release.
-     */
-    public void releaseReservedResource(ReservedResource resource);
 
     /**
      * Check whether the specified resource is available.
@@ -89,9 +61,7 @@ public interface ResourceProvider
      *            A resource with attributes.
      * 
      * @return True if the specified resource is available. False otherwise.
-     * 
-     * @throws ResourceNotFoundException
-     *             Thrown if the resourceHash is not known by the resource provider.
+     * @throws ResourceNotFoundException if the given resource can not be provided by this implementation.
      */
     public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException;
 
@@ -125,33 +95,12 @@ public interface ResourceProvider
      * <li>unavailableResources - all <code>ResourceDescription</code> from resources that could not be reserved at this time.</li>
      * <li>invalidResources - all <code>ResourceDescription</code> from resources that appear to belong to me, but will fail bind with given information.</li>
      * </ul>
-     * @param resources A list of resources with attributes. Must not be null, maybe empty.
-     * @param resources The requested resources.
-     * @param timeoutSecond The time period, in seconds, to reserve the resources.
+     * @param resources A list of resources. Must not be null, maybe empty.
+     * @param timeoutSeconds The time period, in seconds, to reserve the resources.
      * @return The {@link ResourceQueryResult} listing the resources which were able to be reserved.
      */
     public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
 
-    //	/**
-    //	 * Get a list of resource code names supported by the Resource Provider. These code names identify supported
-    //	 * resource types.
-    //	 * 
-    //	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
-    //	 * @return A list of code name strings, each representing one resource.
-    //	 */
-    //	public List<String> getNames();
-    //
-    //	/**
-    //	 * Get the map of attributes supported by the resource provider, for the given resource code name.
-    //	 * 
-    //	 * @param name The name for the attributes.
-    //	 * @note Intent is that this information is not required by users, and is offered for possible optimization.
-    //	 * @return The map of attributes.
-    //	 */
-    //	public Map<String, String> getAttributes(String name);
-
-    
-    
     /**
      * Get the name of the provider.
      * @return The name.
@@ -164,8 +113,6 @@ public interface ResourceProvider
      */
     public List<String> getAttributes();
 
-
-    
     /**
      * Daemon init pipe.
      * @param config the current configuration.
@@ -177,14 +124,14 @@ public interface ResourceProvider
      * Daemon destroy pipe.
      */
     public void destroy();
-    
+
     /** The name of a Machine type Provider */
     public static final String MachineName = "machine";
     /** The name of a Person type Provider */
     public static final String PersonName = "person";
     /** The name of a Network type Provider */
     public static final String NetworkName = "network";
-    
+
     /**
      * Helper to obtain a Provider type name.
      * @param provider the provider to report type name of.  Must not be null.
@@ -192,11 +139,11 @@ public interface ResourceProvider
      */
     public static String getTypeName(ResourceProvider provider)
     {
-        if(provider instanceof MachineProvider)
+        if (provider instanceof MachineProvider)
             return MachineName;
-        if(provider instanceof PersonProvider)
+        if (provider instanceof PersonProvider)
             return PersonName;
-        if(provider instanceof NetworkProvider)
+        if (provider instanceof NetworkProvider)
             return NetworkName;
         return null;
     }

@@ -26,60 +26,11 @@ import com.amazonaws.Protocol;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.retry.RetryPolicy;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.resource.aws.attr.ClientNames;
 
+@SuppressWarnings("javadoc")
 public class AwsClientConfiguration
 {
-    public static final String AwsClientConfiKey = "com.pslcl.qa.aws.client-config";
-    public static final String EndpointKey = "pslcl.qa.runner.resource.aws.endpoint";
-    public static final String GroupIdKey = "pslcl.qa.platform.resource.aws.group-id";
-
-    public static final String ConnectionTimeoutKey = "com.amazonaws.client.connection-timeout";
-    public static final String MaxConnectionsKey = "com.amazonaws.client.max-connections";
-    public static final String MaxErrorRetryKey = "com.amazonaws.client.max-error-retry";
-    public static final String RetryPolicyKey = "com.amazonaws.client.retry-policy";
-    public static final String LocalAddressKey = "com.amazonaws.client.local-address";
-    public static final String ProtocolKey = "com.amazonaws.client.protocol";
-    public static final String ProxyDomainKey = "com.amazonaws.client.proxy-domain";
-    public static final String ProxyHostKey = "com.amazonaws.client.proxy-host";
-    public static final String ProxyPasswordKey = "com.amazonaws.client.proxy-password";
-    public static final String ProxyPortKey = "com.amazonaws.client.proxy-port";
-    public static final String ProxyUserNameKey = "com.amazonaws.client.proxy-user-name";
-    public static final String ProxyWorkstationKey = "com.amazonaws.client.proxy-workstation";
-    public static final String ProxyPreemptiveAuthKey = "com.amazonaws.client.preemptive-proxy-auth";
-    public static final String SocketTimeoutKey = "com.amazonaws.client.socket-timeout";
-    public static final String UserAgentKey = "com.amazonaws.client.user-agent";
-    public static final String UseReaperKey = "com.amazonaws.client.use-reaper";
-    public static final String UseGzipKey = "com.amazonaws.client.use-gzip";
-    public static final String ReceiveBuffSizeHintKey = "com.amazonaws.client.socket-receive-buff-size-hint";
-    public static final String SendBuffSizeHintKey = "com.amazonaws.client.socket-send-buff-size-hint";
-    public static final String SignerOverrideKey = "com.amazonaws.client.signer-override";
-    public static final String ConnectionTtlKey = "com.amazonaws.client.connection-ttl";
-
-    
-    public static final String GroupIdDefault = "AwsTestResource";
-    public static final String EndpointDefault = "ec2.us-west-2.amazonaws.com";
-    public static final String ConnectionTimeoutDefault = "50000";
-    public static final String MaxConnectionsDefault = "50";
-    public static final String MaxErrorRetryDefault = "-1";
-    public static final String RetryPolicyDefault = null;
-    public static final String LocalAddressDefault = null;
-    public static final String ProtocolDefault = "https";
-    public static final String ProxyDomainDefault = null;
-    public static final String ProxyHostDefault = null;
-    public static final String ProxyPasswordDefault = null;
-    public static final String ProxyPortDefault = "-1";
-    public static final String ProxyUserNameDefault = null;
-    public static final String ProxyWorkstationDefault = null;
-    public static final String ProxyPreemptiveAuthDefault = "false";
-    public static final String SocketTimeoutDefault = "50000";
-    public static final String UserAgentDefault = "aws-sdk-java";
-    public static final String UseReaperDefault = "true";
-    public static final String UseGzipDefault = "false";
-    public static final String ReceiveBuffSizeHintDefault = "0";
-    public static final String SendBuffSizeHintDefault = "0";
-    public static final String SignerOverrideDefault = null;
-    public static final String ConnectionTtlDefault = "-1";
-
     private AwsClientConfiguration()
     {
     }
@@ -92,106 +43,106 @@ public class AwsClientConfiguration
      */
     public static AwsClientConfig getClientConfiguration(RunnerConfig config) throws Exception
     {
-        AwsClientConfig awsClientConfig = (AwsClientConfig) config.properties.get(AwsClientConfiKey);
+        AwsClientConfig awsClientConfig = (AwsClientConfig) config.properties.get(ClientNames.ConfiKey);
         if (awsClientConfig != null)
             return awsClientConfig;
 
         config.initsb.ttl("AWS Client Configuration:");
         config.initsb.level.incrementAndGet();
 
-        String value = config.properties.getProperty(EndpointKey, EndpointDefault);
-        config.initsb.ttl(EndpointKey, " = ", value);
+        String value = config.properties.getProperty(ClientNames.EndpointKey, ClientNames.EndpointDefault);
+        config.initsb.ttl(ClientNames.EndpointKey, " = ", value);
         String endpoint = value;
         
-        value = config.properties.getProperty(GroupIdKey, GroupIdDefault);
-        config.initsb.ttl(GroupIdKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.GroupIdKey, ClientNames.GroupIdDefault);
+        config.initsb.ttl(ClientNames.GroupIdKey, " = ", value);
         String groupId = value;
         
         
-        value = config.properties.getProperty(ConnectionTimeoutKey, ConnectionTimeoutDefault);
-        config.initsb.ttl(ConnectionTimeoutKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ConnectionTimeoutKey, ClientNames.ConnectionTimeoutDefault);
+        config.initsb.ttl(ClientNames.ConnectionTimeoutKey, " = ", value);
         int connectionTimeout = Integer.parseInt(value);
         
-        value = config.properties.getProperty(SocketTimeoutKey, SocketTimeoutDefault);
-        config.initsb.ttl(SocketTimeoutKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.SocketTimeoutKey, ClientNames.SocketTimeoutDefault);
+        config.initsb.ttl(ClientNames.SocketTimeoutKey, " = ", value);
         int socketTimeout = Integer.parseInt(value);
 
-        value = config.properties.getProperty(MaxConnectionsKey, MaxConnectionsDefault);
-        config.initsb.ttl(MaxConnectionsKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.MaxConnectionsKey, ClientNames.MaxConnectionsDefault);
+        config.initsb.ttl(ClientNames.MaxConnectionsKey, " = ", value);
         int maxConnections = Integer.parseInt(value);
 
-        value = config.properties.getProperty(MaxErrorRetryKey, MaxErrorRetryDefault);
-        config.initsb.ttl(MaxErrorRetryKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.MaxErrorRetryKey, ClientNames.MaxErrorRetryDefault);
+        config.initsb.ttl(ClientNames.MaxErrorRetryKey, " = ", value);
         int maxErrorRetry = Integer.parseInt(value);
 
-        value = config.properties.getProperty(RetryPolicyKey, RetryPolicyDefault);
-        config.initsb.ttl(RetryPolicyKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.RetryPolicyKey, ClientNames.RetryPolicyDefault);
+        config.initsb.ttl(ClientNames.RetryPolicyKey, " = ", value);
         String retryPolicy = value;
 
-        value = config.properties.getProperty(UseReaperKey, UseReaperDefault);
-        config.initsb.ttl(UseReaperKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.UseReaperKey, ClientNames.UseReaperDefault);
+        config.initsb.ttl(ClientNames.UseReaperKey, " = ", value);
         boolean useReaper = Boolean.parseBoolean(value);
 
-        value = config.properties.getProperty(UseGzipKey, UseGzipDefault);
-        config.initsb.ttl(UseGzipKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.UseGzipKey, ClientNames.UseGzipDefault);
+        config.initsb.ttl(ClientNames.UseGzipKey, " = ", value);
         boolean useGzip = Boolean.parseBoolean(value);
 
-        value = config.properties.getProperty(LocalAddressKey, LocalAddressDefault);
-        config.initsb.ttl(LocalAddressKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.LocalAddressKey, ClientNames.LocalAddressDefault);
+        config.initsb.ttl(ClientNames.LocalAddressKey, " = ", value);
         String localAddress = value;
 
-        value = config.properties.getProperty(ProtocolKey, ProtocolDefault);
-        config.initsb.ttl(ProtocolKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ProtocolKey, ClientNames.ProtocolDefault);
+        config.initsb.ttl(ClientNames.ProtocolKey, " = ", value);
         String protocol = value;
         
-        value = config.properties.getProperty(UserAgentKey, UserAgentDefault);
-        config.initsb.ttl(UserAgentKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.UserAgentKey, ClientNames.UserAgentDefault);
+        config.initsb.ttl(ClientNames.UserAgentKey, " = ", value);
         String userAgent = value;
 
-        value = config.properties.getProperty(ReceiveBuffSizeHintKey, ReceiveBuffSizeHintDefault);
-        config.initsb.ttl(ReceiveBuffSizeHintKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ReceiveBuffSizeHintKey, ClientNames.ReceiveBuffSizeHintDefault);
+        config.initsb.ttl(ClientNames.ReceiveBuffSizeHintKey, " = ", value);
         int receiveBuffSizeHint = Integer.parseInt(value);
 
-        value = config.properties.getProperty(SendBuffSizeHintKey, SendBuffSizeHintDefault);
-        config.initsb.ttl(SendBuffSizeHintKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.SendBuffSizeHintKey, ClientNames.SendBuffSizeHintDefault);
+        config.initsb.ttl(ClientNames.SendBuffSizeHintKey, " = ", value);
         int sendBuffSizeHint = Integer.parseInt(value);
 
-        value = config.properties.getProperty(SignerOverrideKey, SignerOverrideDefault);
-        config.initsb.ttl(SignerOverrideKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.SignerOverrideKey, ClientNames.SignerOverrideDefault);
+        config.initsb.ttl(ClientNames.SignerOverrideKey, " = ", value);
         String signerOverride = value;
 
-        value = config.properties.getProperty(ConnectionTtlKey, ConnectionTtlDefault);
-        config.initsb.ttl(ConnectionTtlKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ConnectionTtlKey, ClientNames.ConnectionTtlDefault);
+        config.initsb.ttl(ClientNames.ConnectionTtlKey, " = ", value);
         long connectionTtl = Long.parseLong(value);
         
         config.initsb.ttl("AWS Client Proxy Configuration:");
         config.initsb.level.incrementAndGet();
-        value = config.properties.getProperty(ProxyDomainKey, ProxyDomainDefault);
-        config.initsb.ttl(ProxyDomainKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ProxyDomainKey, ClientNames.ProxyDomainDefault);
+        config.initsb.ttl(ClientNames.ProxyDomainKey, " = ", value);
         String proxyDomain = value;
 
-        value = config.properties.getProperty(ProxyHostKey, ProxyHostDefault);
-        config.initsb.ttl(ProxyHostKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ProxyHostKey, ClientNames.ProxyHostDefault);
+        config.initsb.ttl(ClientNames.ProxyHostKey, " = ", value);
         String proxyHost = value;
 
-        value = config.properties.getProperty(ProxyPasswordKey, ProxyPasswordDefault);
-        config.initsb.ttl(ProxyPasswordKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ProxyPasswordKey, ClientNames.ProxyPasswordDefault);
+        config.initsb.ttl(ClientNames.ProxyPasswordKey, " = ", value);
         String proxyPassword = value;
 
-        value = config.properties.getProperty(ProxyPortKey, ProxyPortDefault);
-        config.initsb.ttl(ProxyPortKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ProxyPortKey, ClientNames.ProxyPortDefault);
+        config.initsb.ttl(ClientNames.ProxyPortKey, " = ", value);
         int proxyPort = Integer.parseInt(value);
 
-        value = config.properties.getProperty(ProxyUserNameKey, ProxyUserNameDefault);
-        config.initsb.ttl(ProxyUserNameKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ProxyUserNameKey, ClientNames.ProxyUserNameDefault);
+        config.initsb.ttl(ClientNames.ProxyUserNameKey, " = ", value);
         String proxyUserName = value;
 
-        value = config.properties.getProperty(ProxyWorkstationKey, ProxyWorkstationDefault);
-        config.initsb.ttl(ProxyWorkstationKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ProxyWorkstationKey, ClientNames.ProxyWorkstationDefault);
+        config.initsb.ttl(ClientNames.ProxyWorkstationKey, " = ", value);
         String proxyWorkstation = value;
 
-        value = config.properties.getProperty(ProxyPreemptiveAuthKey, ProxyPreemptiveAuthDefault);
-        config.initsb.ttl(ProxyPreemptiveAuthKey, " = ", value);
+        value = config.properties.getProperty(ClientNames.ProxyPreemptiveAuthKey, ClientNames.ProxyPreemptiveAuthDefault);
+        config.initsb.ttl(ClientNames.ProxyPreemptiveAuthKey, " = ", value);
         boolean proxyPreemptiveAuth = Boolean.parseBoolean(value);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
@@ -232,7 +183,7 @@ public class AwsClientConfiguration
         }
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain(); // finds available aws creds
         awsClientConfig = new AwsClientConfig(clientConfig, providerChain, endpoint, groupId);
-        config.properties.put(AwsClientConfiKey, awsClientConfig);
+        config.properties.put(ClientNames.ConfiKey, awsClientConfig);
         return awsClientConfig;
     }
 
