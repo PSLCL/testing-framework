@@ -15,9 +15,8 @@
  */
 package com.pslcl.dtf.core.runner.resource.instance;
 
-import java.util.Map;
-
-import com.pslcl.dtf.core.artifact.ArtifactNotFoundException;
+import java.io.InputStream;
+import java.util.concurrent.Future;
 
 /**
  * Represents a Person Resource instance.
@@ -25,18 +24,24 @@ import com.pslcl.dtf.core.artifact.ArtifactNotFoundException;
 public interface PersonInstance extends ResourceInstance {
 
 	/**
-	 * Ask a person to follow a set of instructions. Included artifacts will be sent to the person as an archive named
-	 * attachments.tar.gz.
+	 * Ask a person to follow a set of instructions. Include an archive file of relevant artifacts. 
 	 * 
 	 * This method is equivalent to a template Inspect command.
-	 *
+	 * 
+	 * @note The name of the archive file to send to the person is nominally attachments.tar.gz.
+	 * @note This call blocks until the instructions and archive file are deemed to have been sent to the person.
+	 * 
 	 * @param instructions
 	 *            An HTML-formatted list of instructions to be sent to the person.
-	 * @param artifacts
-	 *            A map of artifact filenames(key) and hashes(value).
-	 *   
-	 * @throws ArtifactNotFoundException if one of the listed artifacts is unknown.
+	 * 
+	 * @param fileContent
+	 *            Byte content of artifacts to be placed in the archive file to include.
+	 *            
+	 * @param fileName
+	 *            Name of the archive file to include.
+     *
+	 * @return A Future<Void> which returns once the message has been sent to the person. The Future will throw an exception if the message cannot be sent. 
 	 */
-	void inspect(String instructions, Map<String, String> artifacts) throws ArtifactNotFoundException;
+	Future<Void> inspect(String instructions, InputStream fileContent, String fileName);
 
 }

@@ -10,7 +10,7 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
  * 
  * 
  */
-class NestedTemplateTask implements Callable<InstancedTemplate> {
+class NestedTemplateTask implements Callable<ReferencedNestedTemplate> {
 	int nestedStepReference;
 	RunEntryCore reCore;
 	DBTemplate nestedDBTemplate;
@@ -27,9 +27,12 @@ class NestedTemplateTask implements Callable<InstancedTemplate> {
 	 * 
 	 */
 	@Override
-	public InstancedTemplate call() {
+	public ReferencedNestedTemplate call() throws Exception {
 		InstancedTemplate iT = runnerMachine.getTemplateProvider().getInstancedTemplate(nestedStepReference, reCore, nestedDBTemplate, runnerMachine);
-		return iT;
+		ReferencedNestedTemplate rnt = new ReferencedNestedTemplate(this.nestedStepReference, iT);
+		
+		
+		return rnt;
 	}
 	
 }

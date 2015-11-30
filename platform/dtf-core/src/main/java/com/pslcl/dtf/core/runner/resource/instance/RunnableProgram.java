@@ -15,15 +15,24 @@
  */
 package com.pslcl.dtf.core.runner.resource.instance;
 
-public interface StartProgram
+import java.util.concurrent.Future;
+
+/**
+ * 
+ * 
+ *
+ */
+public interface RunnableProgram
 {
     /**
-     * Stop the program and return the result. The end result of a Start program does not affect the final result of the
-     * test.
+	 * Stop the program command on a machine and return a Future with the {@link Future<Integer>} result of the corresponding stop command, or the exit code of
+	 * the stop script, being set once the stop script has completed.
+     * @return TODO
      * 
-     * @return The result of the start program.
+     * @return a Future with the {@link Future<Integer>} result of the corresponding stop command, or the exit code of
+	 * the stop script, being set once the stop script has completed.
      */
-    public void kill();
+    public Future<Integer> kill();
 
     /**
      * Determine the running state of the program.
@@ -31,5 +40,16 @@ public interface StartProgram
      * @return {@code True} if the program is running. {@code False} otherwise.
      */
     public boolean isRunning();
+    
+    /**
+     * Return a program run result, if available.
+     * 
+     * @note Null return indicates that the program run result was not available.
+     * @note Zero return indicates that the program completed with a successful result. 
+     * @note Non-zero return indicates that the program completed with a failed result.
+     * 
+     * @return The program run result, or null.
+     */
+    public Integer getRunResult();
 
 }
