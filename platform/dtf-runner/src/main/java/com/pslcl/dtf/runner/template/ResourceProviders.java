@@ -18,6 +18,7 @@ package com.pslcl.dtf.runner.template;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescImpl;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
-import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
@@ -38,7 +39,7 @@ import com.pslcl.dtf.core.util.StrH.StringPair;
 /**
  * Contains ResourceProvider instantiated objects and supplies access to them 
  */
-public class ResourceProviders implements ResourceProvider
+public class ResourceProviders
 {
 
     public static final String ManagerClassKey = "pslcl.dtf.runner.template.resource-manager-class"; 
@@ -65,7 +66,6 @@ public class ResourceProviders implements ResourceProvider
         return new ArrayList<ResourceProvider>(resourceProviders);
     }
     
-    @Override
     public void init(RunnerConfig config) throws Exception
     {
         config.initsb.level.incrementAndGet();
@@ -101,7 +101,6 @@ public class ResourceProviders implements ResourceProvider
         }
     }
     
-    @Override
     public void destroy() 
     {
         try
@@ -118,8 +117,7 @@ public class ResourceProviders implements ResourceProvider
     }
     
 
-    @Override
-    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) {
+    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) throws Exception {
         
         // This class has a list of all types of ResourceProvider (like AWSMachineProvider).
 
@@ -152,80 +150,22 @@ public class ResourceProviders implements ResourceProvider
             }
 
             // asynch behavior
-            ResourceQueryResult localRqr = rp.reserveIfAvailable(reserveResourceRequests, timeoutSeconds);
+            // chad modified this so it would build, final implementation may or may not want to block here
+            Future<ResourceQueryResult> future = rp.reserveIfAvailable(reserveResourceRequests, timeoutSeconds);
+            ResourceQueryResult localRqr = future.get();
             retRqr.merge(localRqr); // merge localRqr into retRqr
         }
         return retRqr;
     }
 
-    @Override
-    public Future<? extends ResourceInstance> bind(ReservedResource reservedResource) throws ResourceNotReservedException {
-        // Note: Current implementation assumes only one instance is running of dtf-runner; so a resource reserved by a provider automatically matches this dtf-runner
-        System.out.println("ResourceProviders.bind(ReservedResource) called with resourceName/resourceAttributes: " + reservedResource.getName() + " / " + reservedResource.getAttributes());
-
-        Future<? extends ResourceInstance> retRI = null;
-        try {
-            // note that this bind call must fill the return ResourceInstance with not only something like an implementation of MachineInstance or a PersonInstance, but it must fill reference, which comes from param reservedResource
-            retRI = reservedResource.getResourceProvider().bind(reservedResource);
-        } catch (ResourceNotReservedException e) {
-        	System.out.println("ResourceProviders.bind(ReservedResource) receives exception from its specific resource .bind() call " + e);
-        	throw e;
-        }
-        return retRI;
-    }
-
-    @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> reservedResources) {
-        // Note: Current implementation assumes only one instance is running of dtf-runner; so a resource reserved by a provider automatically matches this dtf-runner
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> reservedResources) throws ResourceNotReservedException 
+    {
         List<Future<? extends ResourceInstance>> retRiList = new ArrayList<>();
-        for(int i=0; i<reservedResources.size(); i++) {
-            try {
-                retRiList.add(this.bind(reservedResources.get(i)));
-            } catch (ResourceNotReservedException e) {
-                retRiList.add(null);
-                System.out.println("ResourceProviders.bind(List<ReservedResource>) stores one null entry in returned list");
-            }
+        for(int i=0; i < reservedResources.size(); i++) 
+        {
+            ReservedResource reservedResource = reservedResources.get(i);
+            retRiList.add(reservedResource.getResourceProvider().bind(reservedResource));
         }
         return retRiList;
     }  
-
-    @Override
-    public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-//TODO: AWS implementation does not know what to do with these, chad commented them out of th interface for now    
-//    @Override
-//    public Map<String, String> getAttributes(String hash) {
-//        // ResourceProviders does not supply hashes, attributes or descriptions.
-//        return null;
-//    }
-//
-//    @Override
-//    public List<String> getNames() {
-//        // TODO Auto-generated method stub
-//        return null;
-//    }
-
-    @Override
-    public String getName()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public List<String> getAttributes()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    
 }

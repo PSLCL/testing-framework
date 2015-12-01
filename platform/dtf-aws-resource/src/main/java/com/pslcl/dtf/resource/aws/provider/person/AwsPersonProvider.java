@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.resource.aws.provider;
+package com.pslcl.dtf.resource.aws.provider.person;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +30,7 @@ import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
+import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 
 @SuppressWarnings("javadoc")
 public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
@@ -66,7 +67,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
 
     }
 
-    @Override
     public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
     {
         // TODO Auto-generated method stub
@@ -74,24 +74,16 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     }
 
     @Override
-    public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources)
+    public Future<ResourceQueryResult> queryResourceAvailability(List<ResourceDescription> resources)
     {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<ResourceQueryResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
-        // temporary, to allow progress: return empty rqr
-        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResource>(), new ArrayList<ResourceDescription>(), new ArrayList<ResourceDescription>(), new ArrayList<ResourceDescription>());
-        if (resources.size() > 0)
-        {
-            // temporary, to allow progress: return an artificially unavailable resource
-            ResourceDescription artificialUnavailableResource = resources.get(0);
-            retRqr.getUnavailableResources().add(artificialUnavailableResource);
-        }
-        return retRqr;
+        return null;
     }
 
     @Override

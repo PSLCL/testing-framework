@@ -12,7 +12,6 @@ import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
-import com.pslcl.dtf.core.runner.resource.exception.FatalServerException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
 public class BindHandler {
@@ -33,8 +32,9 @@ public class BindHandler {
 	/**
 	 * 
 	 * @param reserveResourceRequests
+	 * @throws Exception 
 	 */
-	public void reserveAndInitiateBind(List<ResourceDescription> reserveResourceRequests) {
+	public void reserveAndInitiateBind(List<ResourceDescription> reserveResourceRequests) throws Exception{
         // reserve the resource specified by each ResourceDescription, with 360 second timeout for each reservation		
         ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
         
@@ -99,44 +99,45 @@ public class BindHandler {
 		Exception exception = null;
         List<ResourceInstance> retList = new ArrayList<>();
         boolean allBindsSucceeded = true;
+
         for (Future<? extends ResourceInstance> future : this.futuresOfResourceInstances) {
-        	if (future != null) { // null: bind failed early so move along; do not add to retList
+            if (future != null) { // null: bind failed early so move along; do not add to retList
                 try {
-					ResourceInstance resourceInstance = future.get(); // blocks until asynch answer comes, or exception, at which time the target thread has completed and is gone
-					retList.add(resourceInstance);
-					
-		        	// retrieve this resource's step reference, then use it to establish a lookup to resourceInstance, in hash map referenceToResourceInstance, held in iT
-		        	int stepReference = iT.getStepReference(resourceInstance.getCoordinates());
-		        	iT.markResourceInstance(stepReference, resourceInstance);
-				} catch (InterruptedException ie) {
-	        		allBindsSucceeded = false;
-					exception = ie;
+                    ResourceInstance resourceInstance = future.get(); // blocks until asynch answer comes, or exception, at which time the target thread has completed and is gone
+                    retList.add(resourceInstance);
+                    
+                    // retrieve this resource's step reference, then use it to establish a lookup to resourceInstance, in hash map referenceToResourceInstance, held in iT
+                    int stepReference = iT.getStepReference(resourceInstance.getCoordinates());
+                    iT.markResourceInstance(stepReference, resourceInstance);
+                } catch (InterruptedException ie) {
+                    allBindsSucceeded = false;
+                    exception = ie;
                     LoggerFactory.getLogger(getClass()).warn(BindHandler.class.getSimpleName() + ".waitComplete(), bind failed: ", ie);
-				} catch (ExecutionException ee) {
-	        		allBindsSucceeded = false;
-					exception = ee; // I have seen FatalServerException
+                } catch (ExecutionException ee) {
+                    allBindsSucceeded = false;
+                    exception = ee; // I have seen FatalServerException
                     String msg = ee.getLocalizedMessage();
                     Throwable t = ee.getCause();
                     if(t != null)
                         msg = t.getLocalizedMessage();
                     LoggerFactory.getLogger(getClass()).warn(BindHandler.class.getSimpleName() + ".waitComplete(), bind failed: " + msg, ee);
-				} catch (Exception e) {
-					// can happen with things like null pointer exception
-					exception = e;
-	        		allBindsSucceeded = false;
-				}
-        	} else {
-        		allBindsSucceeded = false;
-        	}
+                } catch (Exception e) {
+                    // can happen with things like null pointer exception
+                    exception = e;
+                    allBindsSucceeded = false;
+                }
+            } else {
+                allBindsSucceeded = false;
+            }
         }
 
         if (!allBindsSucceeded) {
-        	// because of this error, retList is not returned; for expected cleanup, caller can find all the ResourceInstances in iT.mapStepReferenceToResourceInstance
-        	
-        	// temporarily allow code to proceed without an actual resource
-//        	if (exception != null)
-//        		throw new Exception(exception);
-//        	throw new Exception("bind attempt could not create and return a Future");
+            // because of this error, retList is not returned; for expected cleanup, caller can find all the ResourceInstances in iT.mapStepReferenceToResourceInstance
+            
+            // temporarily allow code to proceed without an actual resource
+//          if (exception != null)
+//              throw new Exception(exception);
+//          throw new Exception("bind attempt could not create and return a Future");
         }
         
         return retList;
