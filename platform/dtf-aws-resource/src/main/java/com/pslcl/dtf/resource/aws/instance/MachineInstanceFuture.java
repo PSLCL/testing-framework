@@ -67,8 +67,8 @@ import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 import com.pslcl.dtf.resource.aws.instance.AwsMachineInstance.AwsInstanceState;
-import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider;
-import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider.MachineReservedResource;
+import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
+import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 
 @SuppressWarnings("javadoc")
 public class MachineInstanceFuture implements Callable<MachineInstance>

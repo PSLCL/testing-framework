@@ -12,6 +12,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
+import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
 public class BindHandler {
@@ -32,8 +33,9 @@ public class BindHandler {
 	/**
 	 * 
 	 * @param reserveResourceRequests
+	 * @throws Exception 
 	 */
-	public void reserveAndInitiateBind(List<ResourceDescription> reserveResourceRequests) {
+	public void reserveAndInitiateBind(List<ResourceDescription> reserveResourceRequests) throws Exception {
         // reserve the resource specified by each ResourceDescription, with 360 second timeout for each reservation		
         ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
         
@@ -95,6 +97,7 @@ public class BindHandler {
 		// Gather all the bound resource instances from futuresOfResourceInstances, a list of Futures. This thread yields, in waiting for each of the multiple asynch bind calls to complete.
 		Exception exception = null;
         List<ResourceInstance> retList = new ArrayList<>();
+        Exception theException = null;
         boolean allBindsSucceeded = true;
         for (Future<? extends ResourceInstance> future : this.futuresOfResourceInstances) {
         	if (future != null) { // null: bind failed early so move along; do not add to retList
@@ -119,11 +122,14 @@ public class BindHandler {
                     if(t != null)
                         msg = t.getLocalizedMessage();
                     LoggerFactory.getLogger(getClass()).info(BindHandler.class.getSimpleName() + ".waitComplete(), bind failed: " + msg, ee);
+                    theException = ee;
 				} catch (ExecutionException e) {
+			        theException = (FatalResourceException) e.getCause();
 	        		allBindsSucceeded = false;
 					exception = e;
-                    LoggerFactory.getLogger(getClass()).info("Executor pool shutdown");
-				} finally {
+                    LoggerFactory.getLogger(getClass()).info("future.get application exception");
+				} 
+                finally {
 				}
         	} else {
         		allBindsSucceeded = false;
@@ -134,7 +140,7 @@ public class BindHandler {
         	// because of this error, retList is not returned; for expected cleanup, caller can find all the ResourceInstances in iT.mapStepReferenceToResourceInstance
         	if (exception != null)
         		throw new Exception(exception);
-        	throw new Exception("bind attempt could not create and return a Future");
+        	throw  theException;
         }
         
         return retList;
