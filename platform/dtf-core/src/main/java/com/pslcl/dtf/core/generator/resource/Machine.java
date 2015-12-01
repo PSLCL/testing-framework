@@ -199,21 +199,24 @@ public class Machine extends Resource
     {
         Machine machine;
         String action;
-        Artifact artifact;
+        List<Artifact> requiredArtifacts;
+        String executable;
         String[] params;
         Program program = new Program();
         Template.Parameter[] parameters;
+        List<Action> actionDependencies;
 
-        public ProgramAction(Machine machine, String action, Artifact artifact, String... params)
+        public ProgramAction(Machine machine, String action, List<Artifact> requiredArtifacts, String executable, String... params)
         {
             this.machine = machine;
             this.action = action;
-            this.artifact = artifact;
+            this.requiredArtifacts = requiredArtifacts;
+            this.executable = executable;
             this.params = params;
             parameters = new Template.Parameter[params.length + 3];
             parameters[0] = new Template.ExportParameter(program);
             parameters[1] = new Template.ResourceParameter(machine);
-            parameters[2] = artifact.getContent();
+            parameters[2] = new Template.StringParameter(executable);
             for (int i = 0; i < params.length; i++)
             {
                 // If the parameter is a UUID, then check for deferred parameters.
@@ -231,6 +234,9 @@ public class Machine extends Resource
                 //else
                 parameters[3 + i] = new Template.StringParameter(params[i]);
             }
+
+            actionDependencies = new ArrayList<Action>();
+            //TODO add deploy actions.
         }
 
         @Override
@@ -251,7 +257,7 @@ public class Machine extends Resource
             StringBuilder sb = new StringBuilder();
             sb.append(action.substring(0, 1).toUpperCase() + action.substring(1));
             sb.append(" the program <tt>");
-            sb.append(artifact.getName());
+            sb.append(executable);
             sb.append("</tt>");
 
             if (params.length > 1)
@@ -293,16 +299,15 @@ public class Machine extends Resource
 
 		@Override
 		public List<Action> getActionDependencies() throws Exception {
-			// TODO Auto-generated method stub
-			return null;
+			return actionDependencies;
 		}
     }
 
-    private Program programAction(String action, Artifact a, String... params) throws Exception
+    private Program programAction(String action, List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
         Program program = new Program();
 
-        generator.add(new ProgramAction(this, action, a, params));
+        generator.add(new ProgramAction(this, action, requiredArtifacts, executable, params));
 
         /*        Template.Parameter[] parameters = new Template.Parameter[ params.length + 3 ];
                 parameters[0] = new Template.ExportParameter( program );
@@ -332,27 +337,27 @@ public class Machine extends Resource
         return program;
     }
 
-    public Program configure(Artifact a, String... params) throws Exception
+    public Program configure(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
-        Program p = programAction("configure", a, params);
+        Program p = programAction("configure", requiredArtifacts, executable, params);
         //TODO: Dirty?
         return p;
     }
 
-    public Program start(Artifact a, String... params) throws Exception
+    public Program start(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
-        Program p = programAction("start", a, params);
+        Program p = programAction("start", requiredArtifacts, executable, params);
         return p;
     }
 
-    public Program run(Artifact a, String... params) throws Exception
+    public Program run(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
-        return programAction("run", a, params);
+        return programAction("run", requiredArtifacts, executable, params);
     }
 
-    public Program run_forever(Artifact a, String... params) throws Exception
+    public Program run_forever(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
-        return programAction("run-forever", a, params);
+        return programAction("run-forever", requiredArtifacts, executable, params);
     }
 
     @Override
