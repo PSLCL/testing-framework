@@ -178,31 +178,97 @@ public class Machine extends Resource
         }
     }
 
-    public Cable attach(Network n)
+    /**
+     * Connect the machine to a {@link Network} Resource.
+     * 
+     * @param network The network to connect to.
+     * @return A {@link Cable} which serves as a logical connection between the machine and the network.
+     * @throws Any error.
+     */
+    public Cable connect(Network network) throws Exception
     {
-        // Verify that the machine and network are bound.
         if (!isBound())
         {
-            System.err.println("Cannot attach an unbound machine.");
+            System.err.println("Cannot connect an unbound machine.");
             return null;
         }
 
-        if (!n.isBound())
+        if (!network.isBound())
         {
-            System.err.println("Cannot bind a machine to an unbound network.");
+            System.err.println("Cannot connect a machine to an unbound network.");
             return null;
         }
 
-        Cable c = new Cable(generator, this, n);
-        //TODO: Build description.
-        //        generator.add( new ConnectAction() ))
-        //                "Attach machine to network.\n",
-        //                "connect",
-        //                new Template.ExportParameter( c ),
-        //                new Template.ResourceParameter( this ),
-        //                new Template.ResourceParameter( n ) );
+        Cable c = new Cable(generator, this, network);
+        generator.add(new ConnectAction(this, network));
 
         return c;
+    }
+    
+    private static class ConnectAction extends TestInstance.Action{
+    	
+    	private Machine machine;
+    	private Network network;
+        Template.Parameter[] parameters;
+    	private List<Action> actionDependencies;
+    	
+    	private ConnectAction(Machine machine, Network network){
+    		this.machine = machine;
+    		this.network = network;
+
+            parameters = new Template.Parameter[2];
+            parameters[0] = new Template.ResourceParameter(machine);
+            parameters[1] = new Template.ResourceParameter(network);
+    		
+    		actionDependencies = new ArrayList<Action>();
+    		actionDependencies.add(machine.getBindAction());
+    		actionDependencies.add(network.getBindAction());
+    	}
+
+		@Override
+		public String getCommand(Template t) throws Exception {
+			StringBuilder sb = new StringBuilder();
+            sb.append("connect");
+
+            for (Template.Parameter P : parameters){
+                sb.append(" ");
+                sb.append(P.getValue(t));
+            }
+
+            return sb.toString();
+		}
+
+		@Override
+		public String getDescription() throws Exception {
+			StringBuilder sb = new StringBuilder();
+            sb.append("Connect the machine <em>");
+            sb.append(machine.name);
+            sb.append("</em> to the network <em>");
+            sb.append(network.name);
+            sb.append("</em>.");
+            return sb.toString();
+		}
+
+		@Override
+		public ArtifactUses getArtifactUses() throws Exception {
+			return null;
+		}
+
+		@Override
+		public Resource getBoundResource() throws Exception {
+			return null;
+		}
+
+		@Override
+		public DescribedTemplate getIncludedTemplate() throws Exception {
+			return null;
+		}
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			return actionDependencies;
+		}
+    	
     }
 
     private class ProgramAction extends TestInstance.Action
@@ -223,8 +289,7 @@ public class Machine extends Resource
             this.requiredArtifacts = requiredArtifacts;
             this.executable = executable;
             this.params = params;
-            parameters = new Template.Parameter[params.length + 3];
-            //parameters[0] = new Template.ExportParameter(program); //Not supported
+            parameters = new Template.Parameter[params.length + 2];
             parameters[0] = new Template.ResourceParameter(machine);
             parameters[1] = new Template.StringParameter(executable);
             for (int i = 0; i < params.length; i++)
