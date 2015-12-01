@@ -16,7 +16,9 @@
 package com.pslcl.dtf.core.generator.resource;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.generator.Generator;
@@ -33,6 +35,8 @@ import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 public class Machine extends Resource
 {
     private static final String codename = "machine";
+    
+    private Map<Artifact, Action> deployActions;
 
     /**
      * Define a new machine associated with the specified generator and with the given name.
@@ -42,6 +46,8 @@ public class Machine extends Resource
     public Machine(Generator generator, String name)
     {
         super(generator, name, codename);
+        
+        deployActions = new HashMap<Artifact, Action>();
     }
 
     /**
@@ -87,6 +93,10 @@ public class Machine extends Resource
             artifacts.add(a);
             actionDependencies = new ArrayList<Action>();
             actionDependencies.add(m.getBindAction());
+            
+            synchronized(m.deployActions){
+            	m.deployActions.put(a, this);
+            }
         }
 
         @Override
@@ -214,9 +224,9 @@ public class Machine extends Resource
             this.executable = executable;
             this.params = params;
             parameters = new Template.Parameter[params.length + 3];
-            parameters[0] = new Template.ExportParameter(program);
-            parameters[1] = new Template.ResourceParameter(machine);
-            parameters[2] = new Template.StringParameter(executable);
+            //parameters[0] = new Template.ExportParameter(program); //Not supported
+            parameters[0] = new Template.ResourceParameter(machine);
+            parameters[1] = new Template.StringParameter(executable);
             for (int i = 0; i < params.length; i++)
             {
                 // If the parameter is a UUID, then check for deferred parameters.
@@ -232,11 +242,19 @@ public class Machine extends Resource
                 //if ( p != null && generator.parameters.containsKey( p ) )
                 //    parameters[3+i] = generator.parameters.get( p );
                 //else
-                parameters[3 + i] = new Template.StringParameter(params[i]);
+                parameters[2 + i] = new Template.StringParameter(params[i]);
             }
-
-            actionDependencies = new ArrayList<Action>();
-            //TODO add deploy actions.
+            this.actionDependencies = new ArrayList<Action>();
+        	for(Artifact artifact: requiredArtifacts){
+        		synchronized (machine.deployActions) {
+					if(machine.deployActions.containsKey(artifact)){
+						actionDependencies.add(machine.deployActions.get(artifact));
+					}
+					else{
+						throw new IllegalStateException("Required artifact " + artifact.getName() + " not deployed to machine.");
+					}
+				}
+        	}
         }
 
         @Override
@@ -245,8 +263,14 @@ public class Machine extends Resource
             StringBuilder sb = new StringBuilder();
             sb.append(action);
 
-            for (Template.Parameter P : parameters)
-                sb.append(P.getValue(t));
+            for (Template.Parameter P : parameters){
+            	String value = P.getValue(t);
+            	if (value.length() > 0)
+                {
+                    sb.append(" ");
+                    sb.append(value);
+                }
+            }
 
             return sb.toString();
         }
@@ -306,7 +330,6 @@ public class Machine extends Resource
     private Program programAction(String action, List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
         Program program = new Program();
-
         generator.add(new ProgramAction(this, action, requiredArtifacts, executable, params));
 
         /*        Template.Parameter[] parameters = new Template.Parameter[ params.length + 3 ];
