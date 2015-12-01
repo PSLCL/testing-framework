@@ -125,6 +125,28 @@ public class TestInstance
                 return artifacts;
             }
         }
+        
+        private int setID = -1;
+        
+        /**
+         * Assign the set ID for this action. Actions which are in the same set may be executed in parallel.
+         * All actions within a set must complete execution before the next set begins. Set IDs are executed
+         * in increasing numeric order, beginning with 0. 
+         * 
+         * @param setID The set ID.
+         */
+        public void assignSetID(int setID){
+        	this.setID = setID;
+        }
+        
+        /**
+         * Get the ID of the set to which this action is assigned.
+         * 
+         * @return The setID or -1 if a set ID has not been assigned.
+         */
+        public int getSetID(){
+        	return setID;
+        }
 
         /**
          * Return the canonical command that will be added to the template.
@@ -226,6 +248,11 @@ public class TestInstance
 		public List<Action> getActionDependencies() throws Exception {
 			//Include actions may not depend on any other actions.
 			return new ArrayList<Action>();
+		}
+
+		@Override
+		public void assignSetID(int setID) {
+			throw new UnsupportedOperationException("Inspect actions do not have a set ID");
 		}
     }
 
