@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.resource.aws.provider.AwsMachineProvider;
-import com.pslcl.dtf.resource.aws.provider.AwsNetworkProvider;
-import com.pslcl.dtf.resource.aws.provider.AwsPersonProvider;
+import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
+import com.pslcl.dtf.resource.aws.provider.network.AwsNetworkProvider;
+import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 
 @SuppressWarnings("javadoc")
 public class AwsResourcesManager implements ResourcesManager
