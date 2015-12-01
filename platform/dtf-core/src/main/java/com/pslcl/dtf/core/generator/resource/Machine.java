@@ -275,10 +275,8 @@ public class Machine extends Resource
     {
         Machine machine;
         String action;
-        List<Artifact> requiredArtifacts;
         String executable;
         String[] params;
-        Program program = new Program();
         Template.Parameter[] parameters;
         List<Action> actionDependencies;
 
@@ -286,7 +284,6 @@ public class Machine extends Resource
         {
             this.machine = machine;
             this.action = action;
-            this.requiredArtifacts = requiredArtifacts;
             this.executable = executable;
             this.params = params;
             parameters = new Template.Parameter[params.length + 2];
@@ -396,57 +393,74 @@ public class Machine extends Resource
     {
         Program program = new Program();
         generator.add(new ProgramAction(this, action, requiredArtifacts, executable, params));
-
-        /*        Template.Parameter[] parameters = new Template.Parameter[ params.length + 3 ];
-                parameters[0] = new Template.ExportParameter( program );
-                parameters[1] = new Template.ResourceParameter( this );
-                parameters[2] = a;
-                for ( int i = 0; i < params.length; i++ ) {
-                    // If the parameter is a UUID, then check for deferred parameters.
-                    UUID p = null;
-                    try {
-                        p = UUID.fromString( params[i] );
-                    }
-                    catch ( Exception e ) {
-                        // Ignore.
-                    }
-
-                    if ( p != null && generator.parameters.containsKey( p ) )
-                        parameters[3+i] = generator.parameters.get( p );
-                    else
-                        parameters[3+i] = new Template.StringParameter( params[i] );
-
-                    description += "<tt>" + params[i] + "</tt>";
-                }
-
-                generator.testResource = generator.testResource.add( description, action, parameters );
-                generator.testResource.close();
-        */
         return program;
     }
 
+    /**
+     * The program configure command requests that a program be run that modifies the machine in such a way that it cannot be rolled back and reused.
+     * 
+     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param executable A string containing the name of an executable program.
+     * @param params Any string parameters that should be passed as arguments to the executable program.
+     * @return A program.
+     * @throws Exception Any error.
+     */
     public Program configure(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
         Program p = programAction("configure", requiredArtifacts, executable, params);
         //TODO: Dirty?
         return p;
     }
-
+    
+    /**
+     * The program start command requests that a program be run that should stay running for the duration of the Template Instance. 
+     * It cannot modify the Machine.
+     * 
+     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param executable A string containing the name of an executable program.
+     * @param params Any string parameters that should be passed as arguments to the executable program.
+     * @return A program.
+     * @throws Exception Any error.
+     */
     public Program start(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
         Program p = programAction("start", requiredArtifacts, executable, params);
         return p;
     }
 
+    /**
+     * The program run command requests that a program be run that should complete on its own. The run command completes the test run, with the 
+     * program result determining the test result. This cannot modify the machine. If a test run contains multiple run or run-forever commands, 
+     * the test run will fail if any of the programs fail.
+     * 
+     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param executable A string containing the name of an executable program.
+     * @param params Any string parameters that should be passed as arguments to the executable program.
+     * @return A program.
+     * @throws Exception Any error.
+     */
     public Program run(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
         return programAction("run", requiredArtifacts, executable, params);
     }
 
-    public Program run_forever(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
-    {
-        return programAction("run-forever", requiredArtifacts, executable, params);
-    }
+    //TODO: Not currently supported.
+//    /**
+//     * The program run-forever command requests that a program be run that will not complete until told to stop. The run-forever command completes
+//     * the test when it completes, with the program result determining the test result. This cannot modify the Machine. If a test run contains multiple 
+//     * run or run-forever commands, the test run will fail if any of the programs fail.
+//     * 
+//     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+//     * @param executable A string containing the name of an executable program.
+//     * @param params Any string parameters that should be passed as arguments to the executable program.
+//     * @return A program.
+//     * @throws Exception Any error.
+//     */
+//    public Program run_forever(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
+//    {
+//    	
+//        return programAction("run-forever", requiredArtifacts, executable, params);
+//    }
 
     @Override
     public String getDescription()
