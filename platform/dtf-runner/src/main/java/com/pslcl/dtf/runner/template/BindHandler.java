@@ -12,6 +12,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
+import com.pslcl.dtf.core.runner.resource.exception.FatalServerException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
 public class BindHandler {
@@ -60,9 +61,7 @@ public class BindHandler {
 
         // Note: As an initial working step, this block is coded to a safe algorithm:
         //       We expect full reserved success and resultant full bind success, and otherwise we back out and release whatever reservations and binds had succeeded along the way.
-        if (
-        	false && // TEMP: bypass actual bind for a while, until bind works better; allows follow on steps parsing to be exercised
-       		reservedResources.size() == reserveResourceRequests.size()) {
+        if (reservedResources.size() == reserveResourceRequests.size()) {
             // Start multiple asynch binds. Each bind is performed by one specific resource provider, the same one that reserved the resource in the first place. 
 			this.futuresOfResourceInstances = resourceProviders.bind(reservedResources);
 			//  Each list element of futuresOfResourceInstances:
@@ -88,6 +87,10 @@ public class BindHandler {
 	public List<ResourceInstance> waitComplete() throws Exception {
 		// At this moment, this.futuresOfResourceInstances is filled. It's Future's each give us a bound ResourceInstance. Our API is to return a list of each of these extracted ResourceInstance's.
 		//     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
+		
+		// if we are called, this.futuresOfResourceInstances should have one or more entries
+		if (this.futuresOfResourceInstances.isEmpty())
+			throw new Exception("BindHandler.waitComplete() called with empty ResourceInstance futures list");
 
         // Note: As an initial working step, this block is coded to a safe algorithm:
         //       We expect full bind success, and otherwise we back out and release whatever reservations and binds had succeeded along the way.
@@ -99,31 +102,28 @@ public class BindHandler {
         for (Future<? extends ResourceInstance> future : this.futuresOfResourceInstances) {
         	if (future != null) { // null: bind failed early so move along; do not add to retList
                 try {
-                	
-//                	// temp kluge just to make a failing bind look like it succeeds- this avoids the future; this requires bringing dtf-aws-resource into dtf-runner's dependencies; temporary
-//                	AwsMachineProvider awsMP = new AwsMachineProvider(null);
-//                	MachineReservedResource reservedResource = awsMP.new MachineReservedResource(null, null, null);
-//                	ResourceInstance resourceInstance = new AwsMachineInstance(reservedResource);
-                	
-					ResourceInstance resourceInstance = future.get(); // blocks until asynch answer comes, or exception, or timeout
+					ResourceInstance resourceInstance = future.get(); // blocks until asynch answer comes, or exception, at which time the target thread has completed and is gone
 					retList.add(resourceInstance);
 					
 		        	// retrieve this resource's step reference, then use it to establish a lookup to resourceInstance, in hash map referenceToResourceInstance, held in iT
 		        	int stepReference = iT.getStepReference(resourceInstance.getCoordinates());
 		        	iT.markResourceInstance(stepReference, resourceInstance);
-				} catch (InterruptedException ee) {
+				} catch (InterruptedException ie) {
 	        		allBindsSucceeded = false;
-					exception = ee;
-                    Throwable t = ee.getCause();
+					exception = ie;
+                    LoggerFactory.getLogger(getClass()).warn(BindHandler.class.getSimpleName() + ".waitComplete(), bind failed: ", ie);
+				} catch (ExecutionException ee) {
+	        		allBindsSucceeded = false;
+					exception = ee; // I have seen FatalServerException
                     String msg = ee.getLocalizedMessage();
+                    Throwable t = ee.getCause();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    LoggerFactory.getLogger(getClass()).info(BindHandler.class.getSimpleName() + ".waitComplete(), bind failed: " + msg, ee);
-				} catch (ExecutionException e) {
-	        		allBindsSucceeded = false;
+                    LoggerFactory.getLogger(getClass()).warn(BindHandler.class.getSimpleName() + ".waitComplete(), bind failed: " + msg, ee);
+				} catch (Exception e) {
+					// can happen with things like null pointer exception
 					exception = e;
-                    LoggerFactory.getLogger(getClass()).info("Executor pool shutdown");
-				} finally {
+	        		allBindsSucceeded = false;
 				}
         	} else {
         		allBindsSucceeded = false;
@@ -132,9 +132,11 @@ public class BindHandler {
 
         if (!allBindsSucceeded) {
         	// because of this error, retList is not returned; for expected cleanup, caller can find all the ResourceInstances in iT.mapStepReferenceToResourceInstance
-        	if (exception != null)
-        		throw new Exception(exception);
-        	throw new Exception("bind attempt could not create and return a Future");
+        	
+        	// temporarily allow code to proceed without an actual resource
+//        	if (exception != null)
+//        		throw new Exception(exception);
+//        	throw new Exception("bind attempt could not create and return a Future");
         }
         
         return retList;
@@ -150,15 +152,6 @@ public class BindHandler {
 //        	throw new Exception(exception);
 //        }
 //        
-//        for (ResourceInstance resourceInstance: retList) {
-//        	//iT.markResourceInstance(0, null);
-//        	
-//        	// retrieve this resource's step reference, then use it to establish a lookup to resourceInstance, in hash map referenceToResourceInstance, held in iT
-//        	int stepReference = iT.getStepReference(resourceInstance.getCoordinates());
-//        	iT.markResourceInstance(stepReference, resourceInstance);
-//        }
-//        
-//        return retList;
 	}
 	
 }
