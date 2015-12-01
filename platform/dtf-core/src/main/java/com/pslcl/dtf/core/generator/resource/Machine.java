@@ -24,6 +24,7 @@ import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 import com.pslcl.dtf.core.generator.template.Program;
 import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.generator.template.TestInstance;
+import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 
 /**
  * This class represents a machine, which is a resource that can accept artifacts and
@@ -75,6 +76,7 @@ public class Machine extends Resource
         private Template.ResourceParameter me;
         private Template template;
         private List<Artifact> artifacts;
+        private List<Action> actionDependencies;
 
         private Deploy(Machine m, Artifact a)
         {
@@ -83,6 +85,8 @@ public class Machine extends Resource
             me = new Template.ResourceParameter(m);
             artifacts = new ArrayList<Artifact>();
             artifacts.add(a);
+            actionDependencies = new ArrayList<Action>();
+            actionDependencies.add(m.getBindAction());
         }
 
         @Override
@@ -128,6 +132,11 @@ public class Machine extends Resource
         {
             return null;
         }
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			 return actionDependencies;
+		}
     }
 
     /**
@@ -138,6 +147,9 @@ public class Machine extends Resource
      */
     public void deploy(Artifact... artifacts) throws Exception
     {
+    	if(!isBound()){
+    		throw new IllegalStateException("Cannot deploy to unbound machine.");
+    	}
         for (Artifact a : artifacts)
         {
             if (a == null)
@@ -278,6 +290,12 @@ public class Machine extends Resource
         {
             return null;
         }
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			// TODO Auto-generated method stub
+			return null;
+		}
     }
 
     private Program programAction(String action, Artifact a, String... params) throws Exception

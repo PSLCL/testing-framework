@@ -167,6 +167,15 @@ public class TestInstance
          * @throws Exception Any error.
          */
         public abstract DescribedTemplate getIncludedTemplate() throws Exception;
+        
+        /**
+         * Returns a list of actions that must be completed before this action may be
+         * executed. For example, a deploy may require that a machine is bound.
+         * 
+         * @return A list of dependent actions. Returns an empty list if there are no dependencies.
+         * @throws Exception Any error.
+         */
+        public abstract List<Action> getActionDependencies() throws Exception;
     }
 
     @SuppressWarnings("unused")
@@ -212,6 +221,12 @@ public class TestInstance
         {
             return include;
         }
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			//Include actions may not depend on any other actions.
+			return new ArrayList<Action>();
+		}
     }
 
     /**

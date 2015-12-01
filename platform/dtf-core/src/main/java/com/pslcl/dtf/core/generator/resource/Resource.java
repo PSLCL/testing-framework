@@ -15,6 +15,8 @@
  */
 package com.pslcl.dtf.core.generator.resource;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,6 +25,7 @@ import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.generator.template.Template.AttributeParameter;
 import com.pslcl.dtf.core.generator.template.TestInstance;
+import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 
 /**
  * This class represents a resource. Resources can represent any shared object, and are identified
@@ -93,6 +96,11 @@ public abstract class Resource
             return null;
         }
 
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			return new ArrayList<Action>();
+		}
+
     }
 
     public final Generator generator;
@@ -100,7 +108,7 @@ public abstract class Resource
     public final String name;
     public final UUID instance;
     //TODO: not thread safe
-    BindAction bound;
+    private BindAction bound;
     private Map<String, String> attributeMap;
 
     /**
@@ -153,6 +161,15 @@ public abstract class Resource
     public boolean isBound()
     {
         return bound != null;
+    }
+    
+    /**
+     * Return the BindAction for this resource.
+     * 
+     * @return The BindAction for this resource. null if not bound.
+     */
+    public Action getBindAction(){
+    	return bound;
     }
 
     /**
