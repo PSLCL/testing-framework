@@ -291,22 +291,11 @@ public class Machine extends Resource
             parameters[1] = new Template.StringParameter(executable);
             for (int i = 0; i < params.length; i++)
             {
-                // If the parameter is a UUID, then check for deferred parameters.
-                // TODO: Repair or remove.
-                //UUID p = null;
-                //try {
-                //    p = UUID.fromString( params[i] );
-                //}
-                //catch ( Exception e ) {
-                // Ignore.
-                //}
-
-                //if ( p != null && generator.parameters.containsKey( p ) )
-                //    parameters[3+i] = generator.parameters.get( p );
-                //else
                 parameters[2 + i] = new Template.StringParameter(params[i]);
             }
-            this.actionDependencies = new ArrayList<Action>();
+            actionDependencies = new ArrayList<Action>();
+            
+            actionDependencies.add(machine.getBindAction());
         	for(Artifact artifact: requiredArtifacts){
         		synchronized (machine.deployActions) {
 					if(machine.deployActions.containsKey(artifact)){
@@ -408,7 +397,6 @@ public class Machine extends Resource
     public Program configure(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
         Program p = programAction("configure", requiredArtifacts, executable, params);
-        //TODO: Dirty?
         return p;
     }
     
