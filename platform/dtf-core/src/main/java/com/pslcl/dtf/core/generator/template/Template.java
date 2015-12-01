@@ -243,8 +243,7 @@ public class Template implements Comparable<Template>
     /**
      * Build the string representation of the template. This format is canonical, and
      * must be strictly followed. The first section contains all dependencies, which are sorted
-     * textually. Next come the actions, which are sorted into two groups and the first group
-     * then sorted by resource hash. The remaining commands are left in order.
+     * textually. Next come the actions, which are sorted textually, beginning with the set ID.
      */
     private void buildStrings()
     {
