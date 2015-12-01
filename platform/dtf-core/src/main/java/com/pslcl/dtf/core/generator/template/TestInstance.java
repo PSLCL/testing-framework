@@ -59,35 +59,15 @@ public class TestInstance
             @Override
             public int compare(Action o1, Action o2)
             {
-                // Resources sort into first group, then sort by toString.
-                // Remaining actions sort into the second group, but are equal (meaning no reordering done)
-                int o1group, o2group;
+                int o1SetID = o1.getSetID();
+                int o2SetID = o2.getSetID();
 
-                // Assign a group to each action
                 try
                 {
-                    if (o1.getIncludedTemplate() != null)
-                        o1group = 0;
-                    else if (o1.getBoundResource() != null)
-                        o1group = 1;
-                    else
-                        o1group = 2;
-
-                    if (o2.getIncludedTemplate() != null)
-                        o2group = 0;
-                    else if (o2.getBoundResource() != null)
-                        o2group = 1;
-                    else
-                        o2group = 2;
-
-                    if (o1group < o2group)
+                    if (o1SetID < o2SetID)
                         return -1;
-                    else if (o1group > o2group)
+                    else if (o1SetID > o2SetID)
                         return +1;
-
-                    // The groups are equal. Groups 0 and 1 sort by command. Group 2 never sorts.
-                    if (o1group == 2)
-                        return 0;
 
                     return o1.getCommand(null).compareTo(o2.getCommand(null));
                 } catch (Exception e)
