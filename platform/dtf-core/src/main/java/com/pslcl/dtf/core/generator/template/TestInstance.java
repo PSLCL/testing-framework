@@ -56,6 +56,16 @@ public class TestInstance
     {
         static class ActionSorter implements Comparator<Action>
         {
+        	private Template template;
+        	
+        	public ActionSorter(){
+        		this.template = null;
+        	}
+        	
+        	public ActionSorter(Template template){
+        		this.template = template;
+        	}
+        	
             @Override
             public int compare(Action o1, Action o2)
             {
@@ -69,7 +79,7 @@ public class TestInstance
                     else if (o1SetID > o2SetID)
                         return +1;
 
-                    return o1.getCommand(null).compareTo(o2.getCommand(null));
+                    return o1.getCommand(template).compareTo(o2.getCommand(template));
                 } catch (Exception e)
                 {
                     return 0;
