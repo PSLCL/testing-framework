@@ -102,7 +102,7 @@ public class Machine extends Resource
         @Override
         public String getCommand(Template t) throws Exception
         {
-            String retStr = "deploy " + t.getReference(this.m) + " ";
+            String retStr = getSetID() + " deploy " + t.getReference(this.m) + " ";
             String destName = a.getName();
             retStr += destName;
             retStr += (" " + a.getContent().getValue(template));
@@ -228,6 +228,7 @@ public class Machine extends Resource
 		@Override
 		public String getCommand(Template t) throws Exception {
 			StringBuilder sb = new StringBuilder();
+			sb.append(getSetID() + " ");
             sb.append("connect");
 
             for (Template.Parameter P : parameters){
@@ -312,6 +313,8 @@ public class Machine extends Resource
         public String getCommand(Template t) throws Exception
         {
             StringBuilder sb = new StringBuilder();
+            sb.append(getSetID());
+            sb.append(" ");
             sb.append(action);
 
             for (Template.Parameter P : parameters){

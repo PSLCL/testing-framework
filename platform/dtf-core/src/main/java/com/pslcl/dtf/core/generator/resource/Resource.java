@@ -53,7 +53,7 @@ public abstract class Resource
         @Override
         public String getCommand(Template t) throws Exception
         {
-            return String.format("bind %s %s", r.getCodename().toString(), a.toString());
+            return String.format("%d bind %s %s", getSetID(), r.getCodename().toString(), a.toString());
         }
 
         @Override

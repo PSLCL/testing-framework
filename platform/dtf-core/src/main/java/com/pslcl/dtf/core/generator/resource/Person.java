@@ -67,7 +67,8 @@ public class Person extends Resource
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("inspect");
+            sb.append(getSetID());
+            sb.append(" inspect");
             for (Parameter p : params)
             {
                 String v = p.getValue(t);
