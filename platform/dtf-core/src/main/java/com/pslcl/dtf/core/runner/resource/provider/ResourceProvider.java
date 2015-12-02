@@ -22,7 +22,6 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
-import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
@@ -54,16 +53,6 @@ public interface ResourceProvider
      */
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException;
 
-    /**
-     * Check whether the specified resource is available.
-     * 
-     * @param resource
-     *            A resource with attributes.
-     * 
-     * @return True if the specified resource is available. False otherwise.
-     * @throws ResourceNotFoundException if the given resource can not be provided by this implementation.
-     */
-    public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException;
 
     /**
      * Query the Resource Provider for the availability of the specified resources. Resources are not bound or reserved,
@@ -81,7 +70,7 @@ public interface ResourceProvider
      * @return A {@link ResourceQueryResult} containing information about the availability of resource on this resource
      *         provider.
      */
-    public ResourceQueryResult queryResourceAvailability(List<ResourceDescription> resources);
+    public Future<ResourceQueryResult> queryResourceAvailability(List<ResourceDescription> resources);
 
     /**
      * Reserve the specified resources if available. Resources will be reserved for timeoutSeconds if not greater than
@@ -99,7 +88,7 @@ public interface ResourceProvider
      * @param timeoutSeconds The time period, in seconds, to reserve the resources.
      * @return The {@link ResourceQueryResult} listing the resources which were able to be reserved.
      */
-    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
+    public Future<ResourceQueryResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
 
     /**
      * Get the name of the provider.
