@@ -291,8 +291,9 @@ public class Generator
 
     /**
      * Declare that the test currently being defined is complete.
+     * @throws Exception Any error completing the test.
      */
-    public void completeTest()
+    public void completeTest() throws Exception
     {
         if (activeTestInstance == null)
         {

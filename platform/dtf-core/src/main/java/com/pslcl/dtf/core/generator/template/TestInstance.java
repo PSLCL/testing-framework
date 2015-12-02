@@ -375,8 +375,9 @@ public class TestInstance
     /**
      * Close the definition of a test instance. This causes the instance to reject
      * any further actions, and must be called prior to any synchronization efforts.
+     * @throws Exception Any Error creating the template.
      */
-    public void close()
+    public void close() throws Exception
     {
         /*
          * We have a set of actions that were added in order. We need to create a set of templates that
@@ -387,6 +388,8 @@ public class TestInstance
 
         // Divide the set of actions into a set of related templates.
         //TODO: Implement breaking actions into templates.
+    	
+    	assignSetIDs();
 
         // Sort each set of actions (only one set for now)
         Collections.sort(actions, new Action.ActionSorter());
@@ -401,6 +404,35 @@ public class TestInstance
         Template template = new Template(core, actions, dependencies);
 
         dtemplate = new DescribedTemplate(template, actions, dependencies);
+    }
+    
+    private void assignSetIDs() throws Exception{
+    	List<Action> unassignedActions = new ArrayList<Action>();
+    	List<Action> assignedActions = new ArrayList<Action>();
+    	unassignedActions.addAll(actions);
+    	
+    	int setID = 0;
+    	while(unassignedActions.size() > 0){
+    		List<Action> currentSet = new ArrayList<Action>();
+    		for(Action action: unassignedActions){
+    			if(action instanceof TestInstance.IncludeAction){
+    				currentSet.add(action);
+    			}
+    			else if(action.getActionDependencies().size() == 0){
+    				action.assignSetID(setID);
+    				currentSet.add(action);
+    			} else if(assignedActions.containsAll(action.getActionDependencies())){
+    				action.assignSetID(setID);
+    				currentSet.add(action);
+    			}
+    		}
+    		unassignedActions.removeAll(currentSet);
+    		assignedActions.addAll(currentSet);
+    		if(currentSet.isEmpty()){
+    			throw new Exception("Failed to find action dependencies and assigning set ID for action: " + unassignedActions.get(0).getDescription());
+    		}
+    		setID++;
+    	}
     }
 
     public DescribedTemplate getTemplate()
