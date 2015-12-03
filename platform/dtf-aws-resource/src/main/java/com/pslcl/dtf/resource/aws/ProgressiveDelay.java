@@ -36,6 +36,7 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalTimeoutException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
+import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
 
 @SuppressWarnings("javadoc")
 public class ProgressiveDelay
@@ -103,7 +104,7 @@ public class ProgressiveDelay
     
     private void handleStatusTracker(StatusTracker.Status status)
     {
-        pdelayData.statusTracker.setStatus(pdelayData.coord.templateId, status);
+        pdelayData.statusTracker.setStatus(MachineInstanceFuture.StatusPrefixStr+pdelayData.coord.resourceId, status);
         pdelayData.statusTracker.fireResourceStatusChanged(
                         pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Error));
         pdelayData.statusTracker.removeStatus(pdelayData.coord.templateId);
@@ -193,7 +194,7 @@ public class ProgressiveDelay
         public final ResourcesManager manager; 
         public final ResourceProvider provider; 
         public final StatusTracker statusTracker;
-        public final ResourceCoordinates coord;
+        public volatile ResourceCoordinates coord;
         public final ResourceStatusEvent resourceStatusEvent;
 
         //@formatter:off
@@ -208,7 +209,7 @@ public class ProgressiveDelay
             this.provider = provider;
             this.statusTracker = statusTracker;
             coord = coordinates;
-            resourceStatusEvent = new ResourceStatusEvent(coord.templateId, StatusTracker.Status.Warn, coord);
+            resourceStatusEvent = new ResourceStatusEvent(MachineInstanceFuture.StatusPrefixStr+coord.resourceId, StatusTracker.Status.Warn, coord);
         }
         
         public ResourceStatusEvent getResourceStatus(StatusTracker.Status status)

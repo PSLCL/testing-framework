@@ -41,7 +41,7 @@ public class AwsMachineInstance implements MachineInstance
     private String description;
     private int timeoutSeconds;
     private final ResourceCoordinates coordinates;
-    private final Instance ec2Instance;
+    public final Instance ec2Instance;
 
     public AwsMachineInstance(MachineReservedResource reservedResource)
     {

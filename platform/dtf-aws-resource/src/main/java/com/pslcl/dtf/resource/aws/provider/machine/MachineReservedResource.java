@@ -46,13 +46,11 @@ public class MachineReservedResource implements Runnable
 
     private ScheduledFuture<?> timerFuture;
     private Future<MachineInstance> instanceFuture;
-    private final HashMap<Long, MachineReservedResource> reservedMachines;
-    private final InstanceFinder instanceFinder;
+    private final AwsMachineProvider provider;
 
     MachineReservedResource(AwsMachineProvider provider, ResourceDescription resource, ResourceCoordinates newCoord, MachineQueryResult result)
     {
-        reservedMachines = provider.getReservedMachines();
-        instanceFinder = provider.getInstanceFinder();
+        this.provider = provider;
         this.resource = resource;
         instanceType = result.getInstanceType();
         imageId = result.getImageId();
@@ -81,10 +79,11 @@ public class MachineReservedResource implements Runnable
     @Override
     public void run()
     {
-        synchronized (reservedMachines)
+        HashMap<Long, MachineReservedResource> map = provider.getReservedMachines();
+        synchronized (map)
         {
-            reservedMachines.remove(resource.getCoordinates().resourceId);
-            instanceFinder.releaseInstance(instanceType);
+            map.remove(resource.getCoordinates().resourceId);
+            provider.getInstanceFinder().releaseInstance(instanceType);
             LoggerFactory.getLogger(getClass()).info(resource.toString() + " reserve timed out");
         }
     }
