@@ -16,7 +16,9 @@
 package com.pslcl.dtf.core.generator.resource;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.generator.Generator;
@@ -24,6 +26,7 @@ import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 import com.pslcl.dtf.core.generator.template.Program;
 import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.generator.template.TestInstance;
+import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 
 /**
  * This class represents a machine, which is a resource that can accept artifacts and
@@ -32,6 +35,8 @@ import com.pslcl.dtf.core.generator.template.TestInstance;
 public class Machine extends Resource
 {
     private static final String codename = "machine";
+    
+    private Map<Artifact, Action> deployActions;
 
     /**
      * Define a new machine associated with the specified generator and with the given name.
@@ -41,6 +46,8 @@ public class Machine extends Resource
     public Machine(Generator generator, String name)
     {
         super(generator, name, codename);
+        
+        deployActions = new HashMap<Artifact, Action>();
     }
 
     /**
@@ -75,6 +82,7 @@ public class Machine extends Resource
         private Template.ResourceParameter me;
         private Template template;
         private List<Artifact> artifacts;
+        private List<Action> actionDependencies;
 
         private Deploy(Machine m, Artifact a)
         {
@@ -83,12 +91,18 @@ public class Machine extends Resource
             me = new Template.ResourceParameter(m);
             artifacts = new ArrayList<Artifact>();
             artifacts.add(a);
+            actionDependencies = new ArrayList<Action>();
+            actionDependencies.add(m.getBindAction());
+            
+            synchronized(m.deployActions){
+            	m.deployActions.put(a, this);
+            }
         }
 
         @Override
         public String getCommand(Template t) throws Exception
         {
-            String retStr = "deploy " + t.getReference(this.m) + " ";
+            String retStr = getSetID() + " deploy " + t.getReference(this.m) + " ";
             String destName = a.getName();
             retStr += destName;
             retStr += (" " + a.getContent().getValue(template));
@@ -128,6 +142,11 @@ public class Machine extends Resource
         {
             return null;
         }
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			 return actionDependencies;
+		}
     }
 
     /**
@@ -138,6 +157,9 @@ public class Machine extends Resource
      */
     public void deploy(Artifact... artifacts) throws Exception
     {
+    	if(!isBound()){
+    		throw new IllegalStateException("Cannot deploy to unbound machine.");
+    	}
         for (Artifact a : artifacts)
         {
             if (a == null)
@@ -156,79 +178,153 @@ public class Machine extends Resource
         }
     }
 
-    public Cable attach(Network n)
+    /**
+     * Connect the machine to a {@link Network} Resource.
+     * 
+     * @param network The network to connect to.
+     * @return A {@link Cable} which serves as a logical connection between the machine and the network.
+     * @throws Any error.
+     */
+    public Cable connect(Network network) throws Exception
     {
-        // Verify that the machine and network are bound.
         if (!isBound())
         {
-            System.err.println("Cannot attach an unbound machine.");
+            System.err.println("Cannot connect an unbound machine.");
             return null;
         }
 
-        if (!n.isBound())
+        if (!network.isBound())
         {
-            System.err.println("Cannot bind a machine to an unbound network.");
+            System.err.println("Cannot connect a machine to an unbound network.");
             return null;
         }
 
-        Cable c = new Cable(generator, this, n);
-        //TODO: Build description.
-        //        generator.add( new ConnectAction() ))
-        //                "Attach machine to network.\n",
-        //                "connect",
-        //                new Template.ExportParameter( c ),
-        //                new Template.ResourceParameter( this ),
-        //                new Template.ResourceParameter( n ) );
+        Cable c = new Cable(generator, this, network);
+        generator.add(new ConnectAction(this, network));
 
         return c;
+    }
+    
+    private static class ConnectAction extends TestInstance.Action{
+    	
+    	private Machine machine;
+    	private Network network;
+        Template.Parameter[] parameters;
+    	private List<Action> actionDependencies;
+    	
+    	private ConnectAction(Machine machine, Network network){
+    		this.machine = machine;
+    		this.network = network;
+
+            parameters = new Template.Parameter[2];
+            parameters[0] = new Template.ResourceParameter(machine);
+            parameters[1] = new Template.ResourceParameter(network);
+    		
+    		actionDependencies = new ArrayList<Action>();
+    		actionDependencies.add(machine.getBindAction());
+    		actionDependencies.add(network.getBindAction());
+    	}
+
+		@Override
+		public String getCommand(Template t) throws Exception {
+			StringBuilder sb = new StringBuilder();
+			sb.append(getSetID() + " ");
+            sb.append("connect");
+
+            for (Template.Parameter P : parameters){
+                sb.append(" ");
+                sb.append(P.getValue(t));
+            }
+
+            return sb.toString();
+		}
+
+		@Override
+		public String getDescription() throws Exception {
+			StringBuilder sb = new StringBuilder();
+            sb.append("Connect the machine <em>");
+            sb.append(machine.name);
+            sb.append("</em> to the network <em>");
+            sb.append(network.name);
+            sb.append("</em>.");
+            return sb.toString();
+		}
+
+		@Override
+		public ArtifactUses getArtifactUses() throws Exception {
+			return null;
+		}
+
+		@Override
+		public Resource getBoundResource() throws Exception {
+			return null;
+		}
+
+		@Override
+		public DescribedTemplate getIncludedTemplate() throws Exception {
+			return null;
+		}
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			return actionDependencies;
+		}
+    	
     }
 
     private class ProgramAction extends TestInstance.Action
     {
         Machine machine;
         String action;
-        Artifact artifact;
+        String executable;
         String[] params;
-        Program program = new Program();
         Template.Parameter[] parameters;
+        List<Action> actionDependencies;
 
-        public ProgramAction(Machine machine, String action, Artifact artifact, String... params)
+        public ProgramAction(Machine machine, String action, List<Artifact> requiredArtifacts, String executable, String... params)
         {
             this.machine = machine;
             this.action = action;
-            this.artifact = artifact;
+            this.executable = executable;
             this.params = params;
-            parameters = new Template.Parameter[params.length + 3];
-            parameters[0] = new Template.ExportParameter(program);
-            parameters[1] = new Template.ResourceParameter(machine);
-            parameters[2] = artifact.getContent();
+            parameters = new Template.Parameter[params.length + 2];
+            parameters[0] = new Template.ResourceParameter(machine);
+            parameters[1] = new Template.StringParameter(executable);
             for (int i = 0; i < params.length; i++)
             {
-                // If the parameter is a UUID, then check for deferred parameters.
-                // TODO: Repair or remove.
-                //UUID p = null;
-                //try {
-                //    p = UUID.fromString( params[i] );
-                //}
-                //catch ( Exception e ) {
-                // Ignore.
-                //}
-
-                //if ( p != null && generator.parameters.containsKey( p ) )
-                //    parameters[3+i] = generator.parameters.get( p );
-                //else
-                parameters[3 + i] = new Template.StringParameter(params[i]);
+                parameters[2 + i] = new Template.StringParameter(params[i]);
             }
+            actionDependencies = new ArrayList<Action>();
+            
+            actionDependencies.add(machine.getBindAction());
+        	for(Artifact artifact: requiredArtifacts){
+        		synchronized (machine.deployActions) {
+					if(machine.deployActions.containsKey(artifact)){
+						actionDependencies.add(machine.deployActions.get(artifact));
+					}
+					else{
+						throw new IllegalStateException("Required artifact " + artifact.getName() + " not deployed to machine.");
+					}
+				}
+        	}
         }
 
         @Override
         public String getCommand(Template t) throws Exception
         {
             StringBuilder sb = new StringBuilder();
+            sb.append(getSetID());
+            sb.append(" ");
             sb.append(action);
 
-            for (Template.Parameter P : parameters)
-                sb.append(P.getValue(t));
+            for (Template.Parameter P : parameters){
+            	String value = P.getValue(t);
+            	if (value.length() > 0)
+                {
+                    sb.append(" ");
+                    sb.append(value);
+                }
+            }
 
             return sb.toString();
         }
@@ -239,7 +335,7 @@ public class Machine extends Resource
             StringBuilder sb = new StringBuilder();
             sb.append(action.substring(0, 1).toUpperCase() + action.substring(1));
             sb.append(" the program <tt>");
-            sb.append(artifact.getName());
+            sb.append(executable);
             sb.append("</tt>");
 
             if (params.length > 1)
@@ -278,64 +374,84 @@ public class Machine extends Resource
         {
             return null;
         }
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			return actionDependencies;
+		}
     }
 
-    private Program programAction(String action, Artifact a, String... params) throws Exception
+    private Program programAction(String action, List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
         Program program = new Program();
-
-        generator.add(new ProgramAction(this, action, a, params));
-
-        /*        Template.Parameter[] parameters = new Template.Parameter[ params.length + 3 ];
-                parameters[0] = new Template.ExportParameter( program );
-                parameters[1] = new Template.ResourceParameter( this );
-                parameters[2] = a;
-                for ( int i = 0; i < params.length; i++ ) {
-                    // If the parameter is a UUID, then check for deferred parameters.
-                    UUID p = null;
-                    try {
-                        p = UUID.fromString( params[i] );
-                    }
-                    catch ( Exception e ) {
-                        // Ignore.
-                    }
-
-                    if ( p != null && generator.parameters.containsKey( p ) )
-                        parameters[3+i] = generator.parameters.get( p );
-                    else
-                        parameters[3+i] = new Template.StringParameter( params[i] );
-
-                    description += "<tt>" + params[i] + "</tt>";
-                }
-
-                generator.testResource = generator.testResource.add( description, action, parameters );
-                generator.testResource.close();
-        */
+        generator.add(new ProgramAction(this, action, requiredArtifacts, executable, params));
         return program;
     }
 
-    public Program configure(Artifact a, String... params) throws Exception
+    /**
+     * The program configure command requests that a program be run that modifies the machine in such a way that it cannot be rolled back and reused.
+     * 
+     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param executable A string containing the name of an executable program.
+     * @param params Any string parameters that should be passed as arguments to the executable program.
+     * @return A program.
+     * @throws Exception Any error.
+     */
+    public Program configure(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
-        Program p = programAction("configure", a, params);
-        //TODO: Dirty?
+        Program p = programAction("configure", requiredArtifacts, executable, params);
+        return p;
+    }
+    
+    /**
+     * The program start command requests that a program be run that should stay running for the duration of the Template Instance. 
+     * It cannot modify the Machine.
+     * 
+     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param executable A string containing the name of an executable program.
+     * @param params Any string parameters that should be passed as arguments to the executable program.
+     * @return A program.
+     * @throws Exception Any error.
+     */
+    public Program start(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
+    {
+        Program p = programAction("start", requiredArtifacts, executable, params);
         return p;
     }
 
-    public Program start(Artifact a, String... params) throws Exception
+    /**
+     * The program run command requests that a program be run that should complete on its own. The run command completes the test run, with the 
+     * program result determining the test result. This cannot modify the machine. If a test run contains multiple run or run-forever commands, 
+     * the test run will fail if any of the programs fail.
+     * 
+     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param executable A string containing the name of an executable program.
+     * @param params Any string parameters that should be passed as arguments to the executable program.
+     * @return A program.
+     * @throws Exception Any error.
+     */
+    public Program run(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
     {
-        Program p = programAction("start", a, params);
-        return p;
+        return programAction("run", requiredArtifacts, executable, params);
     }
 
-    public Program run(Artifact a, String... params) throws Exception
-    {
-        return programAction("run", a, params);
-    }
-
-    public Program run_forever(Artifact a, String... params) throws Exception
-    {
-        return programAction("run-forever", a, params);
-    }
+    //TODO: Not currently supported.
+//    /**
+//     * The program run-forever command requests that a program be run that will not complete until told to stop. The run-forever command completes
+//     * the test when it completes, with the program result determining the test result. This cannot modify the Machine. If a test run contains multiple 
+//     * run or run-forever commands, the test run will fail if any of the programs fail.
+//     * 
+//     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+//     * @param executable A string containing the name of an executable program.
+//     * @param params Any string parameters that should be passed as arguments to the executable program.
+//     * @return A program.
+//     * @throws Exception Any error.
+//     */
+//    public Program run_forever(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
+//    {
+//    	
+//        return programAction("run-forever", requiredArtifacts, executable, params);
+//    }
 
     @Override
     public String getDescription()

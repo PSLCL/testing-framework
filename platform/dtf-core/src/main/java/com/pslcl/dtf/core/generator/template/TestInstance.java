@@ -56,40 +56,30 @@ public class TestInstance
     {
         static class ActionSorter implements Comparator<Action>
         {
+        	private Template template;
+        	
+        	public ActionSorter(){
+        		this.template = null;
+        	}
+        	
+        	public ActionSorter(Template template){
+        		this.template = template;
+        	}
+        	
             @Override
             public int compare(Action o1, Action o2)
             {
-                // Resources sort into first group, then sort by toString.
-                // Remaining actions sort into the second group, but are equal (meaning no reordering done)
-                int o1group, o2group;
+                int o1SetID = o1.getSetID();
+                int o2SetID = o2.getSetID();
 
-                // Assign a group to each action
                 try
                 {
-                    if (o1.getIncludedTemplate() != null)
-                        o1group = 0;
-                    else if (o1.getBoundResource() != null)
-                        o1group = 1;
-                    else
-                        o1group = 2;
-
-                    if (o2.getIncludedTemplate() != null)
-                        o2group = 0;
-                    else if (o2.getBoundResource() != null)
-                        o2group = 1;
-                    else
-                        o2group = 2;
-
-                    if (o1group < o2group)
+                    if (o1SetID < o2SetID)
                         return -1;
-                    else if (o1group > o2group)
+                    else if (o1SetID > o2SetID)
                         return +1;
 
-                    // The groups are equal. Groups 0 and 1 sort by command. Group 2 never sorts.
-                    if (o1group == 2)
-                        return 0;
-
-                    return o1.getCommand(null).compareTo(o2.getCommand(null));
+                    return o1.getCommand(template).compareTo(o2.getCommand(template));
                 } catch (Exception e)
                 {
                     return 0;
@@ -124,6 +114,28 @@ public class TestInstance
             {
                 return artifacts;
             }
+        }
+        
+        private int setID = -1;
+        
+        /**
+         * Assign the set ID for this action. Actions which are in the same set may be executed in parallel.
+         * All actions within a set must complete execution before the next set begins. Set IDs are executed
+         * in increasing numeric order, beginning with 0. 
+         * 
+         * @param setID The set ID.
+         */
+        public void assignSetID(int setID){
+        	this.setID = setID;
+        }
+        
+        /**
+         * Get the ID of the set to which this action is assigned.
+         * 
+         * @return The setID or -1 if a set ID has not been assigned.
+         */
+        public int getSetID(){
+        	return setID;
         }
 
         /**
@@ -167,6 +179,15 @@ public class TestInstance
          * @throws Exception Any error.
          */
         public abstract DescribedTemplate getIncludedTemplate() throws Exception;
+        
+        /**
+         * Returns a list of actions that must be completed before this action may be
+         * executed. For example, a deploy may require that a machine is bound.
+         * 
+         * @return A list of dependent actions. Returns an empty list if there are no dependencies.
+         * @throws Exception Any error.
+         */
+        public abstract List<Action> getActionDependencies() throws Exception;
     }
 
     @SuppressWarnings("unused")
@@ -212,6 +233,17 @@ public class TestInstance
         {
             return include;
         }
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			//Include actions may not depend on any other actions.
+			return new ArrayList<Action>();
+		}
+
+		@Override
+		public void assignSetID(int setID) {
+			throw new UnsupportedOperationException("Inspect actions do not have a set ID");
+		}
     }
 
     /**
@@ -353,8 +385,9 @@ public class TestInstance
     /**
      * Close the definition of a test instance. This causes the instance to reject
      * any further actions, and must be called prior to any synchronization efforts.
+     * @throws Exception Any Error creating the template.
      */
-    public void close()
+    public void close() throws Exception
     {
         /*
          * We have a set of actions that were added in order. We need to create a set of templates that
@@ -365,6 +398,8 @@ public class TestInstance
 
         // Divide the set of actions into a set of related templates.
         //TODO: Implement breaking actions into templates.
+    	
+    	assignSetIDs();
 
         // Sort each set of actions (only one set for now)
         Collections.sort(actions, new Action.ActionSorter());
@@ -379,6 +414,35 @@ public class TestInstance
         Template template = new Template(core, actions, dependencies);
 
         dtemplate = new DescribedTemplate(template, actions, dependencies);
+    }
+    
+    private void assignSetIDs() throws Exception{
+    	List<Action> unassignedActions = new ArrayList<Action>();
+    	List<Action> assignedActions = new ArrayList<Action>();
+    	unassignedActions.addAll(actions);
+    	
+    	int setID = 0;
+    	while(unassignedActions.size() > 0){
+    		List<Action> currentSet = new ArrayList<Action>();
+    		for(Action action: unassignedActions){
+    			if(action instanceof TestInstance.IncludeAction){
+    				currentSet.add(action);
+    			}
+    			else if(action.getActionDependencies().size() == 0){
+    				action.assignSetID(setID);
+    				currentSet.add(action);
+    			} else if(assignedActions.containsAll(action.getActionDependencies())){
+    				action.assignSetID(setID);
+    				currentSet.add(action);
+    			}
+    		}
+    		unassignedActions.removeAll(currentSet);
+    		assignedActions.addAll(currentSet);
+    		if(currentSet.isEmpty()){
+    			throw new Exception("Failed to find action dependencies and assigning set ID for action: " + unassignedActions.get(0).getDescription());
+    		}
+    		setID++;
+    	}
     }
 
     public DescribedTemplate getTemplate()

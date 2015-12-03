@@ -243,8 +243,7 @@ public class Template implements Comparable<Template>
     /**
      * Build the string representation of the template. This format is canonical, and
      * must be strictly followed. The first section contains all dependencies, which are sorted
-     * textually. Next come the actions, which are sorted into two groups and the first group
-     * then sorted by resource hash. The remaining commands are left in order.
+     * textually. Next come the actions, which are sorted textually, beginning with the set ID.
      */
     private void buildStrings()
     {
@@ -258,15 +257,23 @@ public class Template implements Comparable<Template>
                 standardString.append("\n");
             }
 
-            int ref = dependencies.size();
-            for (Action A : actions)
+            int offset = dependencies.size();
+            int currentSetID = 0;
+            for (int i = 0; i < actions.size(); i++)
             {
-                standardString.append(A.getCommand(this));
+            	Action action = actions.get(i);
+                standardString.append(action.getCommand(this));
                 standardString.append("\n");
 
-                Resource R = A.getBoundResource();
-                if (R != null)
-                    references.put(R.instance, Integer.toString(ref++));
+                Resource resource = action.getBoundResource();
+                if (resource != null)
+                    references.put(resource.instance, Integer.toString(offset + i));
+                
+                //Sort again if we are about to move to next set. This allows resource references assigned in the current set to be used in the sort.
+                //This should only change the order of actions that we have not yet gotten to.
+            	if(i < actions.size() - 1 && actions.get(i + 1).getSetID() > currentSetID){
+            		Collections.sort(actions, new TestInstance.Action.ActionSorter(this));
+            	}
             }
 
             std_string = standardString.toString();

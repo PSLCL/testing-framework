@@ -15,7 +15,9 @@
  */
 package com.pslcl.dtf.core.generator.resource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Content;
@@ -25,6 +27,7 @@ import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.generator.template.Template.Parameter;
 import com.pslcl.dtf.core.generator.template.Template.StringParameter;
 import com.pslcl.dtf.core.generator.template.TestInstance;
+import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 
 /**
  * This class represents a person, which is a resource that can perform manual inspections.
@@ -64,7 +67,8 @@ public class Person extends Resource
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("inspect");
+            sb.append(getSetID());
+            sb.append(" inspect");
             for (Parameter p : params)
             {
                 String v = p.getValue(t);
@@ -130,6 +134,11 @@ public class Person extends Resource
         {
             return null;
         }
+
+		@Override
+		public List<Action> getActionDependencies() throws Exception {
+			return new ArrayList<Action>();
+		}
 
     }
 
