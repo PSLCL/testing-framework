@@ -15,6 +15,8 @@
  */
 package com.pslcl.dtf.resource.aws.attr;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import com.amazonaws.services.ec2.model.ImageAttributeName;
@@ -210,4 +212,35 @@ public class ProviderNames
     public static final String LocationYearDefault = null;
     public static final String LocationMonthDefault = null;
     public static final String LocationDotDefault = null;
+    
+    public static List<String> getKeys()
+    {
+       List<String> keys = new ArrayList<String>();
+       keys.add(InstanceTypeKey);
+       keys.add(ImageArchitectureKey);
+       keys.add(ImageHypervisorKey);
+       keys.add(ImageImageIdKey);
+       keys.add(ImageImageTypeKey);
+       keys.add(ImageIsPublicKey);
+       keys.add(ImageNameKey);
+       keys.add(ImageOwnerKey);
+       keys.add(ImagePlatformKey);
+       keys.add(ImageRootDevTypeKey);
+       keys.add(ImageStateKey);
+       keys.add(BlockingDeviceVolumeSizeKey);
+       keys.add(BlockingDeviceVolumeTypeKey);
+       keys.add(BlockingDeviceDeleteOnTerminationKey);
+       keys.add(LocationYearKey);
+       keys.add(LocationMonthKey);
+       keys.add(LocationDotKey);
+       keys.add(LocationFeatureKey);
+       return keys;
+    }
+    
+    public static List<String> getAllMachineProviderKeys()
+    {
+        List<String> keys = InstanceNames.getKeys();
+        keys.addAll(getKeys());
+        return keys;
+    }
 }

@@ -25,19 +25,29 @@ public interface ResourceDescription
 {
     /**
      * Get the name of the resource.
-     * @return The name.
+     * @return The name.  Must never be null;
      */
     public String getName();
 
     /**
      * Get the set of attributes for the resource.
-     * @return A map of strings representing the set of attributes for the resource.
+     * <p>The implementor is responsible for the thread safety of this map and
+     * should typically clone its master map for the return value.
+     * @return A map of strings representing the set of attributes for the resource.  Must never be null, maybe empty.
      */
     public Map<String, String> getAttributes();
 
     /**
+     * Add an attribute to the resources attributes in a thread safe manner.
+     * <p>Provider implementations will populate the master with defaults that it fills in. 
+     * @param key of the value being added.  Must not be null.
+     * @param value being added. May be null;
+     */
+    public void addAttribute(String key, String value);
+
+    /**
      * get the unique coordinates for a given resource object.
-     * @return the coordinates of the resource.
+     * @return the coordinates of the resource.  Must never be null;
      */
     public ResourceCoordinates getCoordinates();
 
