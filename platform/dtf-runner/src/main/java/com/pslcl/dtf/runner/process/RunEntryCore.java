@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.pslcl.dtf.runner.template.InstancedTemplate;
-import com.pslcl.dtf.runner.template.TemplateProvider;
 
 /**
  * RunEntryCore is used to instantiate templates.

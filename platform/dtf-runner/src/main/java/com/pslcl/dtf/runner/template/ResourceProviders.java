@@ -17,6 +17,7 @@ package com.pslcl.dtf.runner.template;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescImpl;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
@@ -116,42 +118,61 @@ public class ResourceProviders
         }
     }
     
-
+    /**
+     * 
+     * @param reserveResourceRequests
+     * @param timeoutSeconds
+     * @return
+     * @throws Exception
+     */
     public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) throws Exception {
-        
-        // This class has a list of all types of ResourceProvider (like AWSMachineProvider).
-
-    	// Identify each ResourceProvider (like AWSMachineProvider) that understands specific requirements of individual elements of param ResourceDescription and can reserve the corresponding resource.
-        // Current solution- ask each ResourceProvider, in turn. TODO: Perhaps optimize by asking each ResourceProvider directly, taking advantage of knowledge of each resource provider's hash and attributes.
-
-        // start retRqr with empty lists; afterward merge reservation results into retRqr
+    	// First, make a copy rrr of reserveResourceRequests. We can therefore modify the contents of rrr and it will not modify the contents of reserveResourceRequests.
+    	//      (This is needed even though Java is stated to be pass by value:
+    	//		 It is only the value of the object pointer that is passed by value - modifications to objects, that are passed, are still reflected back to the caller.
+    	//       It is as if Java passes objects by reference, but that statement is not considered accurate in Java. In this area, Java is different from several other languages, at a fundamental level.)
+    	List<ResourceDescription> rrr = new ArrayList<>();
+    	for (ResourceDescription rd: reserveResourceRequests)
+    		rrr.add(rd);
+    	
+        // start retRqr with empty lists; afterward merge individual reservation results into retRqr
         ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResource>(),
                                                              new ArrayList<ResourceDescription>(),
                                                              new ArrayList<ResourceDescription>(),
                                                              new ArrayList<ResourceDescription>());
 
-        // Until a reservation is made: Invite every known ResourceProvider to reserve each resource in param reserveResourceRequests, as it can and as it will.
+        // Until a reservation is made: Invite every known ResourceProvider, to reserve each resource in rrr (holds contents of param reserveResourceRequests).
+        //    Current solution- ask each ResourceProvider, in turn. TODO: Perhaps optimize by asking each ResourceProvider directly, taking advantage of knowledge of each resource provider's hash and attributes.
+        //    To accomplish this work, this.resourceProviders holds a list of all types of ResourceProvider (like AWSMachineProvider).
         for (ResourceProvider rp : resourceProviders) {
-            // but 1st, to avoid multiple reservations: for any past success in filling any of the several rrwa S in retRqr, strip list reserveResourceRequests of that entry
+            // but 1st, to avoid multiple reservations: for any past success in filling any of the several rrwa S in retRqr, strip list rrr of that entry
             for (ReservedResource rr : retRqr.getReservedResources()) {
-                for (ResourceDescription rd : reserveResourceRequests) {
-                    ResourceDescImpl rdi = ResourceDescImpl.class.cast(rd);
-                    if (rdi.equals(rr)) {
-                        reserveResourceRequests.remove(rd);
-                        break; // done with this rd; as we leave the for loop, we also avoid the trouble caused by altering reserveResourceRequests 
+                for (ResourceDescription rd : rrr) {
+                	// rr is a ReservedResource class object (of the ResourceDescription interface), as filled by rp.reserveIfAvailable() down below
+                	// each element of rrr is thought to be a ResourceDescriptionImpl (of the ResourceDescription interface) 
+                	//     so rd is thought to be a ResourceDescriptionImpl class object (of the ResourceDescription interface) - we will check this now
+                	// Check equality of rd to rr (for utility, create temporary rr_rdi from rr)
+                	ResourceDescImpl rr_rdi = new ResourceDescImpl(rr.getName(), rr.getCoordinates(),  rr.getAttributes());
+                    if (rr_rdi.equals(rd)) {
+                        rrr.remove(rd);
+                        break; // done with this rd; as we leave the for loop, we also avoid the trouble caused by altering rrr 
                     }
                 }                
             }
-            if (reserveResourceRequests.isEmpty()) {
-                // The act of finding reserveResourceRequests to be empty means all requested resources are reserved.
+            if (rrr.isEmpty()) {
+                // The act of finding rrr to be empty means all requested resources are reserved.
                 //     retRqr reflects that case: it holds all original reservation requests.
                 //     We do not not need to check further- not for this rp and not for any remaining rp that has not been checked yet.
                 break;
             }
 
-            // asynch behavior
-            // chad modified this so it would build, final implementation may or may not want to block here
-            Future<ResourceQueryResult> future = rp.reserveIfAvailable(reserveResourceRequests, timeoutSeconds);
+            // note: asynch behavior has been intended all along, but only now is it possible
+            // rp.reserveIfAvailable() was formerly synchronous and blocking
+            
+            // TODO: Now that rp.reserveIfAvailable() is asynch (returns a future), arrange this code and the calling code to split up things so that each needed rp is brought into asynch use, in its turn 
+            //		 And after that, recognize that the corresponding binds (which are already asynch), must follow on.
+            
+            // Until that TODO is implemented, this will have to do: it blocks to get all the reserves in hand at the same time
+            Future<ResourceQueryResult> future = rp.reserveIfAvailable(rrr, timeoutSeconds);
             ResourceQueryResult localRqr = future.get();
             retRqr.merge(localRqr); // merge localRqr into retRqr
         }
@@ -160,6 +181,8 @@ public class ResourceProviders
 
     public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> reservedResources) throws ResourceNotReservedException 
     {
+        // Note: Current implementation assumes only one instance of dtf-runner is running;
+    	//       for each resource in reservedResources, we know it was reserved by a resource provider known to dtf-runner.
         List<Future<? extends ResourceInstance>> retRiList = new ArrayList<>();
         for(int i=0; i < reservedResources.size(); i++) 
         {

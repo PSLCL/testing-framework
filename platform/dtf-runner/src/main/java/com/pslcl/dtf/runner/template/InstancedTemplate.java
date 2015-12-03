@@ -241,7 +241,12 @@ public class InstancedTemplate {
 							//           To retrieve a bind step's reference number, call iT.getReference(resourceDescription.getCoordinates())
 	
 							bindHandler = new BindHandler(this);
-							bindHandler.reserveAndInitiateBind(reserveResourceRequests);
+							try {
+								bindHandler.reserveAndInitiateBind(reserveResourceRequests);
+							} catch (Exception e) {
+								// TODO: perhaps some cleanup, perhaps logging
+								throw e;
+							}
 							int consumedStepReferences = reserveResourceRequests.size(); // this is the number of step lines processed, regardless of the outcome of actual reserve and bind activity
 							setStepCount += consumedStepReferences;
 							currentStepReference += consumedStepReferences;
@@ -352,7 +357,7 @@ public class InstancedTemplate {
 	                List<ResourceInstance> localBoundResourceInstances = bindHandler.waitComplete(); // success is that no exception is thrown by .waitComplete() or the asynch bind process(es) behind it
 	            	boundResourceInstances.addAll(localBoundResourceInstances); // the purpose of holding this accumulated list is for use at template instance teardown
 	            	
-	            	// temp, get past failed bind
+	            	// temporarily, get past failed bind
 //					if (localBoundResourceInstances.size() != reserveResourceRequests.size()) // check success further
 //	            		throw new Exception("InstancedTemplate.runSteps() bind handling has incomplete bound list");
 				} catch (Exception e) {

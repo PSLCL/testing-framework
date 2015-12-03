@@ -35,7 +35,8 @@ public class BindHandler {
 	 * @throws Exception 
 	 */
 	public void reserveAndInitiateBind(List<ResourceDescription> reserveResourceRequests) throws Exception{
-        // reserve the resource specified by each ResourceDescription, with 360 second timeout for each reservation		
+		// note: each element of reserveReseourceRequests is a ResourceDescriptionImpl
+		// reserve the resource specified by each ResourceDescription, with 360 second timeout for each reservation		
         ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
         
         // analyze the success/failure of each reserved resource, one resource for each bind step

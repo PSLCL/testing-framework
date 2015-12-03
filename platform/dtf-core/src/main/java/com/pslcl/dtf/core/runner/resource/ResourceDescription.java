@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * A ResourceQuery is a resource hash and a map of attributes.
+ * A ResourceDescription is a set of correlated coordinates  and a map of attributes.
  */
 public interface ResourceDescription
 {

@@ -25,6 +25,7 @@ import javax.management.ObjectName;
 
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonInitException;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.Runner;
@@ -49,6 +50,11 @@ public class RunnerService implements Runner, RunnerServiceMBean
     public static final String QueueStoreDaoClassDefault = "com.pslcl.dtf.resource.aws.Sqs";
     public static final String QueueStoreDaoEnableDefault = "true";
 
+    
+    // instance declarations 
+    
+    private final Logger log;
+    private final String simpleName;
     private volatile MessageQueue mq;
     private volatile RunnerConfig config;
 
@@ -57,6 +63,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
     public volatile ActionStore actionStore; // holds state of each template; TODO: actionStore is instantiated here, but not yet otherwise used 
     public volatile ProcessTracker processTracker;
 
+    
     // public class methods
 
     /**
@@ -66,6 +73,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
     {
         // Setup what we can, prior to knowing configuration
         // Most setup should be done in the init method.
+        log = LoggerFactory.getLogger(getClass());
+        simpleName = getClass().getSimpleName();
         Thread.setDefaultUncaughtExceptionHandler(this);
     }
 
@@ -80,6 +89,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
     {
         return config;
     }
+    
     
     // Daemon interface implementations
 
@@ -123,7 +133,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config.initsb.level.decrementAndGet();
         } catch (Exception e)
         {
-            LoggerFactory.getLogger(getClass()).error(config.initsb.sb.toString(), e);
+            log.error(simpleName + config.initsb.sb.toString(), e);
             throw new DaemonInitException(getClass().getSimpleName() + " failed:", e);
         }
         // process RunnerService config
@@ -143,23 +153,23 @@ public class RunnerService implements Runner, RunnerServiceMBean
                     mq.initQueueStoreGet();
                 } else
                 {
-                    LoggerFactory.getLogger(getClass()).warn("RunnerService.start exits- QueueStore message queue not available.");
+                    log.warn("RunnerService.start exits- QueueStore message queue not available.");
                     throw new Exception("QueueStore not available");
                 }
             }
             config.initsb.indentedOk();
         } catch (Exception e)
         {
-            LoggerFactory.getLogger(getClass()).error(config.initsb.sb.toString(), e);
+            log.error(config.initsb.sb.toString(), e);
             throw e;
         }
-        LoggerFactory.getLogger(getClass()).debug(config.initsb.sb.toString());
+        log.debug(config.initsb.sb.toString());
     }
 
     @Override
     public void stop() throws Exception
     {
-        LoggerFactory.getLogger(getClass()).debug("Stopping RunnerService.");
+        log.debug("Stopping RunnerService.");
         if (runnerMachine != null)
             runnerMachine.destroy();
         // Destroy the Status Tracker
@@ -174,9 +184,10 @@ public class RunnerService implements Runner, RunnerServiceMBean
     public void destroy()
     {
         // jsvc calls this to destroy resources created in init()
-        LoggerFactory.getLogger(getClass()).info("Destroying RunnerService.");
+        log.info("Destroying RunnerService.");
     }
 
+    
     // RunnerServiceMBean interface implementations
 
     @Override
@@ -200,6 +211,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
         }
     }
 
+    
     // UncaughtExceptionHandler interface implementation
 
     /**
@@ -209,12 +221,15 @@ public class RunnerService implements Runner, RunnerServiceMBean
     public void uncaughtException(Thread thread, Throwable ex)
     {
         String msg = "FATAL ERROR: Uncaught exception in thread " + thread;
-        LoggerFactory.getLogger(getClass()).error(msg, ex);
-        LoggerFactory.getLogger(getClass()).debug("The FATAL ERROR message (at error log level) is issued by the handler RunnerService.uncaughtException()");
+        log.error(msg, ex);
+        log.debug("The FATAL ERROR message (at error log level) is issued by the handler RunnerService.uncaughtException()");
         // Since the state is unknown at this point, we may not be able to perform a graceful exit.
         System.exit(1); // forces termination of all threads in the JVM
     }
 
+    
+    //
+    
     /**
      * 
      * @param strRunEntryNumber String representation of the run entry number, or reNum (pk_run of this entry in table run).
@@ -227,7 +242,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
         {
             // the ordinary method
             long reNum = Long.parseLong(strRunEntryNumber);
-            LoggerFactory.getLogger(getClass()).debug("RunnerService.submitQueueStoreNumber() finds reNum " + reNum);
+            log.debug("RunnerService.submitQueueStoreNumber() finds reNum " + reNum);
             try
             {
                 if (ProcessTracker.resultStored(reNum))
