@@ -17,6 +17,8 @@ package com.pslcl.dtf.resource.aws.provider.machine;
 
 import java.util.concurrent.Callable;
 
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.services.ec2.model.DeleteSubnetRequest;
 import com.amazonaws.services.ec2.model.DeleteVpcRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
@@ -52,10 +54,12 @@ public class ReleaseFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
+        LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + instance.getCoordinates().toString());
         terminateEc2Instance();
         deleteSubnet();
         deleteVpc();
         provider.getConfig().statusTracker.removeStatus(MachineInstanceFuture.StatusPrefixStr+instance.getCoordinates().resourceId);
+        LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
         return null;
     }
     

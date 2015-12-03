@@ -61,9 +61,21 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public Map<String, String> getAttributes()
     {
-        return new HashMap<String, String>(attributes);
+        synchronized (attributes)
+        {
+            return new HashMap<String, String>(attributes);
+        }
     }
 
+    @Override
+    public void addAttribute(String key, String value)
+    {
+        synchronized (attributes)
+        {
+            attributes.put(key, value);
+        }
+    }
+    
     @Override
     public ResourceProvider getResourceProvider()
     {

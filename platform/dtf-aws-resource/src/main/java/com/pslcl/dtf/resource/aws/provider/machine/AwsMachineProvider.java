@@ -42,6 +42,7 @@ import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
+import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.instance.AwsMachineInstance;
 import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
@@ -116,6 +117,15 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
     public void setRunId(String templateId, long runId)
     {
+        synchronized(reservedMachines)
+        {
+            for(Entry<Long, MachineReservedResource> entry : reservedMachines.entrySet())
+            {
+                ResourceCoordinates coord = entry.getValue().resource.getCoordinates();
+                if(coord.templateId.equals(templateId))
+                    coord.setRunId(runId);
+            }
+        }
     }
 
     public void forceCleanup()
@@ -233,10 +243,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         }
     }
 
-    public void releaseReservedResource(ReservedResource resource)
-    {
-    }
-
     public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
     {
         return internalIsAvailable(resource, new MachineQueryResult());
@@ -288,95 +294,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         return config.blockingExecutor.submit(new ReserveIfAvailableFuture(this, resources, timeoutSeconds));
     }
 
-    public void release(ResourceInstance resource, boolean isReusable)
-    {
-    }
-
-    //    private class MachineQueryResult
-    //    {
-    //        private InstanceType instanceType;
-    //        private String imageId; 
-    //        
-    //        public MachineQueryResult()
-    //        {
-    //        }
-    //        
-    //        private synchronized void setInstanceType(InstanceType type)
-    //        {
-    //            instanceType = type;
-    //        }
-    //        
-    //        private synchronized InstanceType getInstanceType()
-    //        {
-    //            return instanceType;
-    //        }
-    //        
-    //        private synchronized void setImageId(String imageId)
-    //        {
-    //            this.imageId = imageId;
-    //        }
-    //        
-    //        private synchronized String getImageId()
-    //        {
-    //            return imageId;
-    //        }
-    //    }
-    //    
-    //    public class MachineReservedResource implements Runnable
-    //    {
-    //        public final ResourceDescription resource;
-    //        public final InstanceType instanceType;
-    //        public final String imageId;
-    //        public volatile GroupIdentifier groupIdentifier;
-    //        public volatile String groupId;
-    //        public volatile Vpc vpc;
-    //        public volatile Subnet subnet;
-    //        public volatile String net;
-    //        public volatile Instance ec2Instance;
-    //        public volatile long runId;
-    //        
-    //        private ScheduledFuture<?> timerFuture;
-    //        private Future<MachineInstance> instanceFuture;
-    //
-    //        private MachineReservedResource(ResourceDescription resource, ResourceCoordinates newCoord, MachineQueryResult result)
-    //        {
-    //            this.resource = resource;
-    //            instanceType = result.instanceType;
-    //            imageId = result.imageId;
-    //        }
-    //
-    //        public synchronized void setTimerFuture(ScheduledFuture<?> future)
-    //        {
-    //            timerFuture = future;
-    //        }
-    //        
-    //        public synchronized ScheduledFuture<?> getTimerFuture()
-    //        {
-    //            return timerFuture;
-    //        }
-    //        
-    //        public synchronized void setInstanceFuture(Future<MachineInstance> future)
-    //        {
-    //            instanceFuture = future;
-    //        }
-    //        
-    //        public synchronized Future<MachineInstance> getInstanceFuture()
-    //        {
-    //            return instanceFuture;
-    //        }
-    //
-    //        @Override
-    //        public void run()
-    //        {
-    //            synchronized(reservedMachines)
-    //            {
-    //                reservedMachines.remove(resource.getCoordinates().resourceId);
-    //                instanceFinder.releaseInstance(instanceType);
-    //                log.info(resource.toString() + " reserve timed out");
-    //            }
-    //        }
-    //    }
-
     @Override
     public String getName()
     {
@@ -386,7 +303,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public List<String> getAttributes()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return ProviderNames.getAllMachineProviderKeys();
     }
 }

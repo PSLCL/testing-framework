@@ -18,7 +18,6 @@ package com.pslcl.dtf.resource.aws.provider.machine;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -239,37 +238,36 @@ public class ImageFinder
     
     private ImageFilterData getFilters(ResourceDescription resource)
     {
-        Map<String, String> attrs = resource.getAttributes();
         List<Filter> imageFilters = new ArrayList<Filter>();
         List<String> locationFilters = new ArrayList<String>();
         String locationYear = null;
         String locationMonth = null;
         String locationDot = null;
         
-        if(addImageFilter(ProviderNames.ImageImageIdKey, ProviderNames.ImageImageIdFilter, attrs, imageFilters))
+        if(addImageFilter(ProviderNames.ImageImageIdKey, ProviderNames.ImageImageIdFilter, resource, imageFilters))
             return new ImageFilterData(imageFilters, locationFilters, locationYear, locationMonth, locationDot);
         
-        if(addImageFilter(ProviderNames.ImageNameKey, ProviderNames.ImageNameFilter, attrs, imageFilters))
+        if(addImageFilter(ProviderNames.ImageNameKey, ProviderNames.ImageNameFilter, resource, imageFilters))
             return new ImageFilterData(imageFilters, locationFilters, locationYear, locationMonth, locationDot);
         
-        addImageFilter(ProviderNames.ImageArchitectureKey, ProviderNames.ImageArchitectureFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.ImageHypervisorKey, ProviderNames.ImageHypervisorFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.ImageImageTypeKey, ProviderNames.ImageImageTypeFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.ImageIsPublicKey, ProviderNames.ImageIsPublicFilter, attrs, imageFilters);
-//        addImageFilter(AwsNames.ImageNameKey, AwsNames.ImageNameFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.ImageOwnerKey, ProviderNames.ImageOwnerFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.ImagePlatformKey, ProviderNames.ImagePlatformFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.ImageRootDevTypeKey, ProviderNames.ImageRootDevTypeFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.ImageStateKey, ProviderNames.ImageStateFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.BlockingDeviceDeleteOnTerminationKey, ProviderNames.BlockingDeviceDeleteOnTerminationFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.BlockingDeviceVolumeTypeKey, ProviderNames.BlockingDeviceVolumeTypeFilter, attrs, imageFilters);
-        addImageFilter(ProviderNames.BlockingDeviceVolumeSizeKey, ProviderNames.BlockingDeviceVolumeSizeFilter, attrs, imageFilters);
+        addImageFilter(ProviderNames.ImageArchitectureKey, ProviderNames.ImageArchitectureFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.ImageHypervisorKey, ProviderNames.ImageHypervisorFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.ImageImageTypeKey, ProviderNames.ImageImageTypeFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.ImageIsPublicKey, ProviderNames.ImageIsPublicFilter, resource, imageFilters);
+//        addImageFilter(AwsNames.ImageNameKey, AwsNames.ImageNameFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.ImageOwnerKey, ProviderNames.ImageOwnerFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.ImagePlatformKey, ProviderNames.ImagePlatformFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.ImageRootDevTypeKey, ProviderNames.ImageRootDevTypeFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.ImageStateKey, ProviderNames.ImageStateFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.BlockingDeviceDeleteOnTerminationKey, ProviderNames.BlockingDeviceDeleteOnTerminationFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.BlockingDeviceVolumeTypeKey, ProviderNames.BlockingDeviceVolumeTypeFilter, resource, imageFilters);
+        addImageFilter(ProviderNames.BlockingDeviceVolumeSizeKey, ProviderNames.BlockingDeviceVolumeSizeFilter, resource, imageFilters);
         
         locationYear = config.properties.getProperty(ProviderNames.LocationYearKey, defaultLocationYear);
         locationMonth = config.properties.getProperty(ProviderNames.LocationMonthKey, defaultLocationMonth);
         locationDot = config.properties.getProperty(ProviderNames.LocationDotKey, defaultLocationDot);
         
-        List<Entry<String, String>> flist = PropertiesFile.getPropertiesForBaseKey(ProviderNames.LocationFeatureKey, attrs);
+        List<Entry<String, String>> flist = PropertiesFile.getPropertiesForBaseKey(ProviderNames.LocationFeatureKey, resource.getAttributes());
         for(Entry<String,String> entry : flist)
             locationFilters.add(entry.getValue());
         if(flist.size() == 0)
@@ -277,14 +275,18 @@ public class ImageFinder
         return new ImageFilterData(imageFilters, locationFilters, locationYear, locationMonth, locationDot);
     }
     
-    private boolean addImageFilter(String key, String filterName, Map<String, String> attrs, List<Filter> imageFilters)
+    private boolean addImageFilter(String key, String filterName, ResourceDescription resource, List<Filter> imageFilters)
     {
         // use the resource.attrs if given, otherwise inject defaults
-        String value = attrs.get(key);
+        String value = resource.getAttributes().get(key);
         if(value == null)
+        {
             value = defaultImageFilters.getProperty(key);
-        if(value == null)
-            return false;
+            if(value != null)
+                resource.addAttribute(key, value);
+            else
+                return false;
+        }
         List<String> args = new ArrayList<String>();
         args.add(value);
         Filter filter = new Filter(filterName, args);
