@@ -61,7 +61,10 @@ public class InstanceFinder
         Map<String, String> attrs = resource.getAttributes();
         String type = attrs.get(ProviderNames.InstanceTypeKey);
         if(type == null)
+        {
             type = instanceType;
+            resource.addAttribute(ProviderNames.InstanceTypeKey, type);
+        }
         InstanceType itype = null;
         for(int i=0; i < ProviderNames.instanceTypes.length; i++)
         {

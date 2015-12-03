@@ -16,6 +16,7 @@
 package com.pslcl.dtf.core.runner.resource;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
@@ -49,7 +50,19 @@ public class ReservedResource implements ResourceDescription
     @Override
     public Map<String, String> getAttributes()
     {
-        return attributes;
+        synchronized (attributes)
+        {
+            return new HashMap<String, String>(attributes);
+        }
+    }
+    
+    @Override
+    public void addAttribute(String key, String value)
+    {
+        synchronized (attributes)
+        {
+            attributes.put(key, value);
+        }
     }
 
     @Override

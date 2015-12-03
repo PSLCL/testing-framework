@@ -17,7 +17,6 @@ package com.pslcl.dtf.resource.aws.instance;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
@@ -56,11 +55,11 @@ import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.ec2.model.Vpc;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.util.PropertiesFile;
-import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
@@ -77,14 +76,15 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     public static final String TagRunIdKey = "runId";
     public static final String TagTemplateIdKey = "templateId";
     public static final String TagResourceIdKey = "resourceId";
-    
+
     public static final String Ec2MidStr = "ec2";
     public static final String SgMidStr = "sg";
     public static final String SubnetMidStr = "subnet";
     public static final String NetMidStr = "eni";
     public static final String VpcMidStr = "vpc";
     public static final String KeyPairMidStr = "key";
-    public static final String TstIdMidStr = "norunid";   // temporary value set, you know the templateProvider has not called ResourcesManager.setRunId()
+    public static final String TstIdMidStr = "norunid"; // temporary value set, you know the templateProvider has not called ResourcesManager.setRunId()
+    public static final String StatusPrefixStr = "resource-";
 
     public final MachineReservedResource reservedResource;
     private final AmazonEC2Client ec2Client;
@@ -96,18 +96,18 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     private volatile String vpcTenancy;
     private volatile int vpcMaxDelay;
     private volatile int vpcMaxRetries;
-    
+
     private volatile String sgGroupName;
     private volatile String sgGroupId;
     private volatile int sgMaxDelay;
     private volatile int sgMaxRetries;
-    
+
     private volatile String iamArn;
     private volatile String iamName;
     private volatile String keyName;
     private volatile int ec2MaxDelay;
     private volatile int ec2MaxRetries;
-    
+
     private final List<IpPermission> permissions;
 
     public MachineInstanceFuture(MachineReservedResource reservedResource, AmazonEC2Client ec2Client, ProgressiveDelayData pdelayData)
@@ -116,7 +116,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         this.reservedResource = reservedResource;
         this.ec2Client = ec2Client;
         this.pdelayData = pdelayData;
-//        pdelayData.coord.runId = pdelayData.getHumanName(TstIdMidStr, null);
+        //        pdelayData.coord.runId = pdelayData.getHumanName(TstIdMidStr, null);
         permissions = new ArrayList<IpPermission>();
     }
 
@@ -126,23 +126,24 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         try
         {
             init();
-//            reservedResource.groupIdentifier = createSecurityGroup();
+            //            reservedResource.groupIdentifier = createSecurityGroup();
             reservedResource.vpc = createVpc();
             reservedResource.subnet = createSubnet(reservedResource.vpc.getVpcId());
-//            reservedResource.net = createNetworkInterface(reservedResource.subnet.getSubnetId(), reservedResource.groupId.getGroupId());
+            //            reservedResource.net = createNetworkInterface(reservedResource.subnet.getSubnetId(), reservedResource.groupId.getGroupId());
             reservedResource.ec2Instance = createInstance(reservedResource.groupId, reservedResource.subnet.getSubnetId());
-//            reservedResource.ec2Instance = createInstance("test", reservedResource.net);
-            MachineInstance retMachineInstance = new AwsMachineInstance(reservedResource);
+            //            reservedResource.ec2Instance = createInstance("test", reservedResource.net);
+            AwsMachineInstance retMachineInstance = new AwsMachineInstance(reservedResource);
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
-    //      createKeyPair("dtf-uniqueName-keypair");
-    //      String netId = createNetworkInterface(subnet.getSubnetId(), groupId.getGroupId());
-    //        listSecurityGroups();
-            ((AwsMachineProvider)pdelayData.provider).addBoundInstance(pdelayData.coord.templateId, retMachineInstance);
+            //      createKeyPair("dtf-uniqueName-keypair");
+            //      String netId = createNetworkInterface(subnet.getSubnetId(), groupId.getGroupId());
+            //        listSecurityGroups();
+            ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, retMachineInstance);
             return retMachineInstance;
-        }catch(FatalResourceException e)
+        } catch (FatalResourceException e)
         {
+            //TODO: as you figure out forceCleanup and optimization of normal releaseFuture cleanup, need to to do possible cleanup on these exceptions
             throw e;
-        }catch(Throwable t)
+        } catch (Throwable t)
         {
             log.error(getClass().getSimpleName() + " call method threw a non-FatalResourceException", t);
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), t);
@@ -152,10 +153,10 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     private Instance createInstance(String sgGroupId, String subnetId) throws FatalResourceException
     {
         //http://stackoverflow.com/questions/22365470/launching-instance-vpc-security-groups-may-not-be-used-for-a-non-vpc-launch
-        
-        if(keyName == null)
+
+        if (keyName == null)
             keyName = createKeyPair();
-        
+
         //@formatter:off
         Placement placement = new Placement().withAvailabilityZone(availabilityZone);
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
@@ -318,7 +319,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             .withDescription(pdelayData.getFullName(SgMidStr, " resourceId: " + pdelayData.coord.resourceId));
 //            .withVpcId(vpc.getVpcId());
         //@formatter:on
-        
+
         GroupIdentifier groupId = null;
         pdelayData.maxDelay = sgMaxDelay;
         pdelayData.maxRetries = sgMaxRetries;
@@ -334,18 +335,17 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             } catch (Exception e)
             {
                 FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
+                if (fre instanceof FatalException)
                     throw fre;
             }
-        }while(true);
+        } while (true);
         groupId = new GroupIdentifier().withGroupId(sgResult.getGroupId()).withGroupName(pdelayData.getFullName(SgMidStr, null));
-        
+
         getSecureGroup(groupId.getGroupId());
-        
+
         createNameTag(pdelayData.getHumanName(SgMidStr, null), groupId.getGroupId());
 
-        AuthorizeSecurityGroupIngressRequest ingressRequest = 
-                        new AuthorizeSecurityGroupIngressRequest().withIpPermissions(permissions).withGroupId(groupId.getGroupId());
+        AuthorizeSecurityGroupIngressRequest ingressRequest = new AuthorizeSecurityGroupIngressRequest().withIpPermissions(permissions).withGroupId(groupId.getGroupId());
 
         pdelay.reset();
         msg = pdelayData.getHumanName(SgMidStr, "authorizeSecurityGroupIngress" + groupId.getGroupId());
@@ -358,18 +358,16 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             } catch (Exception e)
             {
                 FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
+                if (fre instanceof FatalException)
                     throw fre;
             }
-        }while(true);
+        } while (true);
         return groupId;
     }
-    
-    
+
     private void setSgPermissions(String groupId) throws FatalResourceException
     {
-        AuthorizeSecurityGroupIngressRequest ingressRequest = 
-                        new AuthorizeSecurityGroupIngressRequest().withIpPermissions(permissions).withGroupId(groupId);
+        AuthorizeSecurityGroupIngressRequest ingressRequest = new AuthorizeSecurityGroupIngressRequest().withIpPermissions(permissions).withGroupId(groupId);
 
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
         String msg = pdelayData.getHumanName(SgMidStr, "authorizeSecurityGroupIngress" + groupId);
@@ -382,12 +380,12 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             } catch (Exception e)
             {
                 FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
+                if (fre instanceof FatalException)
                     throw fre;
             }
-        }while(true);
+        } while (true);
     }
-    
+
     private SecurityGroup getSecureGroup(String groupId) throws FatalResourceException
     {
         DescribeSecurityGroupsRequest dsgRequest = new DescribeSecurityGroupsRequest().withGroupIds(groupId);
@@ -407,16 +405,16 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                         break;
                     }
                 }
-                if(rvalue != null)
+                if (rvalue != null)
                     break;
                 pdelay.retry(msg);
             } catch (Exception e)
             {
                 FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
+                if (fre instanceof FatalException)
                     throw fre;
             }
-        }while(true);
+        } while (true);
         return rvalue;
     }
 
@@ -424,14 +422,18 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     {
         String name = pdelayData.getFullName(KeyPairMidStr, null);
         DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest().withKeyNames(name);
-        DescribeKeyPairsResult keyPairsResult = ec2Client.describeKeyPairs(dkpr);
-        KeyPairInfo grabAKeyPair = null;
-        for (KeyPairInfo pair : keyPairsResult.getKeyPairs())
+        try
         {
-            name.equals(pair.getKeyName());
-            return name;
+            DescribeKeyPairsResult keyPairsResult = ec2Client.describeKeyPairs(dkpr);
+            KeyPairInfo grabAKeyPair = null;
+            for (KeyPairInfo pair : keyPairsResult.getKeyPairs())
+            {
+                name.equals(pair.getKeyName());
+                return name;
+            }
+        } catch (Exception e)
+        {
         }
-
         CreateKeyPairRequest ckpr = new CreateKeyPairRequest().withKeyName(name);
         CreateKeyPairResult keypairResult = ec2Client.createKeyPair(ckpr);
         KeyPair keypair = keypairResult.getKeyPair();
@@ -488,19 +490,19 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             } catch (Exception e)
             {
                 FatalResourceException fre = pdelay.handleException(name + " createTags", e);
-                if(fre instanceof FatalException)
+                if (fre instanceof FatalException)
                     throw fre;
             }
-        }while(true);
+        } while (true);
     }
 
-    private void addPermissions(Map<String, String> map, TabToLevel format) throws Exception
+    private void addPermissions(ResourceDescription resource, TabToLevel format) throws Exception
     {
         String[] protocols = null;
         String[] ipRanges = null;
         String[] ports = null;
 
-        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermProtocolKey, map);
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermProtocolKey, resource.getAttributes());
         int size = list.size();
         if (size == 0)
         {
@@ -530,7 +532,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             protocols[i] = entry.getValue();
         }
 
-        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermIpRangeKey, map);
+        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermIpRangeKey, resource.getAttributes());
         if (list.size() != size)
             throw new Exception("Permissions, number of IpRanges does not match number of Protocols, exp: " + size + " rec: " + list.size());
         for (int i = 0; i < size; i++)
@@ -539,7 +541,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             ipRanges[i] = entry.getValue();
         }
 
-        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermPortKey, map);
+        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermPortKey, resource.getAttributes());
         if (list.size() != size)
             throw new Exception("Permissions, number of ports does not match number of Protocols, exp: " + size + " rec: " + list.size());
         for (int i = 0; i < size; i++)
@@ -575,61 +577,58 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             format.ttl("\nEc2 Instance:");
             format.level.incrementAndGet();
             format.ttl(pdelayData.coord.toString(format));
-            Map<String, String> map = reservedResource.resource.getAttributes();
-            
+
             format.ttl("Vpc:");
             format.level.incrementAndGet();
-            vpcCidr = StrH.getAttribute(map, InstanceNames.VpcCidrKey, InstanceNames.VpcCidrDefault);
-            format.ttl(InstanceNames.VpcCidrKey, " = ", vpcCidr);
-            vpcTenancy = StrH.getAttribute(map, InstanceNames.VpcTenancyKey, InstanceNames.VpcTenancyDefault);
-            format.ttl(InstanceNames.VpcTenancyKey, " = ", vpcTenancy);
-            vpcMaxDelay = StrH.getIntAttribute(map, InstanceNames.VpcMaxDelayKey, InstanceNames.VpcMaxDelayDefault);
-            format.ttl(InstanceNames.VpcMaxDelayKey, " = ", vpcMaxDelay);
-            vpcMaxRetries = StrH.getIntAttribute(map, InstanceNames.VpcMaxRetriesKey, InstanceNames.VpcMaxRetriesDefault);
-            format.ttl(InstanceNames.VpcMaxRetriesKey, " = ", vpcMaxRetries);
+            vpcCidr = getAttribute(InstanceNames.VpcCidrKey, InstanceNames.VpcCidrDefault, reservedResource.resource, format);
+            vpcTenancy = getAttribute(InstanceNames.VpcTenancyKey, InstanceNames.VpcTenancyDefault, reservedResource.resource, format);
+            vpcMaxDelay = Integer.parseInt(getAttribute(InstanceNames.VpcMaxDelayKey, InstanceNames.VpcMaxDelayDefault, reservedResource.resource, format));
+            vpcMaxRetries = Integer.parseInt(getAttribute(InstanceNames.VpcMaxRetriesKey, InstanceNames.VpcMaxRetriesDefault, reservedResource.resource, format));
             format.level.decrementAndGet();
 
             format.ttl("SecurityGroup:");
             format.level.incrementAndGet();
-            sgGroupName = StrH.getAttribute(map, InstanceNames.SgNameKey, InstanceNames.SgNameDefault);
-            format.ttl(InstanceNames.SgNameKey, " = ", sgGroupName);
-            sgGroupId = StrH.getAttribute(map, InstanceNames.SgIdKey, InstanceNames.SgIdDefault);
-            format.ttl(InstanceNames.SgIdKey, " = ", sgGroupId);
-            sgMaxDelay = StrH.getIntAttribute(map, InstanceNames.SgMaxDelayKey, InstanceNames.SgMaxDelayDefault);
-            format.ttl(InstanceNames.SgMaxDelayKey, " = ", sgMaxDelay);
-            sgMaxRetries = StrH.getIntAttribute(map, InstanceNames.SgMaxRetriesKey, InstanceNames.SgMaxRetriesDefault);
-            format.ttl(InstanceNames.SgMaxRetriesKey, " = ", sgMaxRetries);
+            sgGroupName = getAttribute(InstanceNames.SgNameKey, InstanceNames.SgNameDefault, reservedResource.resource, format);
+            sgGroupId = getAttribute(InstanceNames.SgIdKey, InstanceNames.SgIdDefault, reservedResource.resource, format);
+            sgMaxDelay = Integer.parseInt(getAttribute(InstanceNames.SgMaxDelayKey, InstanceNames.SgMaxDelayDefault, reservedResource.resource, format));
+            sgMaxRetries = Integer.parseInt(getAttribute(InstanceNames.SgMaxRetriesKey, InstanceNames.SgMaxRetriesDefault, reservedResource.resource, format));
             format.level.decrementAndGet();
 
             format.ttl("Permissions:");
             format.level.incrementAndGet();
-            addPermissions(map, format);
+            addPermissions(reservedResource.resource, format);
             format.level.decrementAndGet();
 
             format.ttl("ec2 instance:");
             format.level.incrementAndGet();
-            availabilityZone = StrH.getAttribute(map, InstanceNames.AvailabilityZoneKey, InstanceNames.AvailabilityZoneDefault);
-            format.ttl(InstanceNames.AvailabilityZoneKey, " = ", availabilityZone);
-            ec2MaxDelay = StrH.getIntAttribute(map, InstanceNames.Ec2MaxDelayKey, InstanceNames.Ec2MaxDelayDefault);
-            format.ttl(InstanceNames.Ec2MaxDelayKey, " = ", ec2MaxDelay);
-            ec2MaxRetries = StrH.getIntAttribute(map, InstanceNames.Ec2MaxRetriesKey, InstanceNames.Ec2MaxRetriesDefault);
-            format.ttl(InstanceNames.Ec2MaxRetriesKey, " = ", ec2MaxRetries);
-            iamArn = StrH.getAttribute(map, InstanceNames.Ec2IamArnKey, null);
-            format.ttl(InstanceNames.Ec2IamArnKey, " = ", iamArn);
-            iamName = StrH.getAttribute(map, InstanceNames.Ec2IamNameKey, null);
-            format.ttl(InstanceNames.Ec2IamNameKey, " = ", iamName);
-            keyName = StrH.getAttribute(map, InstanceNames.Ec2KeyPairNameKey, null);
-            format.ttl(InstanceNames.Ec2KeyPairNameKey, " = ", iamName);
+            availabilityZone = getAttribute(InstanceNames.AvailabilityZoneKey, InstanceNames.AvailabilityZoneDefault, reservedResource.resource, format);
+            ec2MaxDelay = Integer.parseInt(getAttribute(InstanceNames.Ec2MaxDelayKey, InstanceNames.Ec2MaxDelayDefault, reservedResource.resource, format));
+            ec2MaxRetries = Integer.parseInt(getAttribute(InstanceNames.Ec2MaxRetriesKey, InstanceNames.Ec2MaxRetriesDefault, reservedResource.resource, format));
+            iamArn = getAttribute(InstanceNames.Ec2IamArnKey, null, reservedResource.resource, format);
+            iamName = getAttribute(InstanceNames.Ec2IamNameKey, null, reservedResource.resource, format);
+            keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, null, reservedResource.resource, format);
             format.level.decrementAndGet();
-            
+
             format.ttl("Test names:");
             format.level.incrementAndGet();
-            pdelayData.preFixMostName = StrH.getAttribute(map, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
-            format.ttl(ClientNames.TestShortNameKey, " = ", pdelayData.preFixMostName);
+            pdelayData.preFixMostName = getAttribute(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault, reservedResource.resource, format);
             log.debug(format.sb.toString());
         } catch (Exception e)
         {
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "init"), e);
         }
+    }
+    
+    private String getAttribute(String key, String defaultValue, ResourceDescription resource, TabToLevel format)
+    {
+        String value = resource.getAttributes().get(key);
+        if(value == null)
+        {
+            value = defaultValue;
+            resource.addAttribute(key, value);
+            format.ttl(key, " = ", value, " (default injected)");
+        }else
+            format.ttl(key, " = ", value);
+        return value;
     }
 }

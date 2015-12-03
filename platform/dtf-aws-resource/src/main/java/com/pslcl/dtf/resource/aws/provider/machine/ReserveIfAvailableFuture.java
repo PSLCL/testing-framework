@@ -67,7 +67,7 @@ public class ReserveIfAvailableFuture implements Callable<ResourceQueryResult>
                         MachineReservedResource rresource = new MachineReservedResource(provider, avail, requested.getCoordinates(), queryResult);
                         ScheduledFuture<?> future = provider.getConfig().scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                         rresource.setTimerFuture(future);
-                        provider.getReservedMachines().put(requested.getCoordinates().resourceId, rresource);
+                        provider.addReservedMachine(requested.getCoordinates().resourceId, rresource);
                     }
                 }
             }

@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.resource.aws.attr;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @SuppressWarnings("javadoc")
 public class InstanceNames
 {
@@ -24,9 +27,6 @@ public class InstanceNames
     public static final String InstanceKeyBase = ClientNames.AwsKeyBase + ".ec2instance";
     public static final String AvailabilityZoneKey = InstanceKeyBase + ".avail-zone";
     public static final String AvailabilityZoneDefault = "us-west-2a";
-    
-
-
     
     /* ****************************************************************************
      * AWS Machine Provider bind declarations
@@ -117,4 +117,26 @@ public class InstanceNames
     
     public static final String Ec2MaxDelayDefault = longMaxDelay;
     public static final String Ec2MaxRetriesDefault = longMaxRetries;
+    
+    public static List<String> getKeys()
+    {
+       List<String> keys = new ArrayList<String>();
+       keys.add(VpcCidrKey);
+       keys.add(VpcTenancyKey);
+       keys.add(VpcMaxDelayKey);       
+       keys.add(VpcMaxRetriesKey);  
+       keys.add(SgNameKey);
+       keys.add(SgIdKey);
+       keys.add(SgMaxDelayKey);       
+       keys.add(SgMaxRetriesKey);   
+       keys.add(PermProtocolKey);
+       keys.add(PermIpRangeKey);
+       keys.add(PermPortKey);
+       keys.add(Ec2MaxDelayKey);
+       keys.add(Ec2MaxRetriesKey);
+       keys.add(Ec2IamArnKey);
+       keys.add(Ec2IamNameKey);
+       keys.add(Ec2KeyPairNameKey);
+       return keys;
+    }
 }
