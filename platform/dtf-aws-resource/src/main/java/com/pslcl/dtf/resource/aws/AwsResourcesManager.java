@@ -29,8 +29,6 @@ import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.core.util.StrH;
-import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
@@ -155,6 +153,21 @@ public class AwsResourcesManager implements ResourcesManager
         return new ArrayList<ResourceProvider>(resourceProviders);
     }
 
+    public AwsMachineProvider getMachineProvider()
+    {
+        return machineProvider;
+    }
+    
+    public AwsNetworkProvider getNetworkProvider()
+    {
+        return networkProvider;
+    }
+    
+    public AwsPersonProvider getPersonProvider()
+    {
+        return personProvider;
+    }
+    
     @Override
     public void init(RunnerConfig config) throws Exception
     {

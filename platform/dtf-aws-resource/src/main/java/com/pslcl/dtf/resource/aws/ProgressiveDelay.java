@@ -213,7 +213,12 @@ public class ProgressiveDelay
             return resourceStatusEvent.getNewInstance(resourceStatusEvent, status);
         }
         
-        public String getFullName(String midString, String post)
+        public String getFullResourceIdName(String midString, String post)
+        {
+            return preFixMostName + "-" + midString + "-" + coord.resourceId + (post == null ? "" : " " + post);
+        }
+        
+        public String getFullTemplateIdName(String midString, String post)
         {
             return preFixMostName + "-" + midString + "-" + coord.templateId + (post == null ? "" : " " + post);
         }

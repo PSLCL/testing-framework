@@ -384,7 +384,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 
     private String createKeyPair()
     {
-        String name = pdelayData.getFullName(KeyPairMidStr, null);
+        String name = pdelayData.getFullTemplateIdName(KeyPairMidStr, null);
         DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest().withKeyNames(name);
         try
         {

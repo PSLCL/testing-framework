@@ -173,7 +173,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(
                             manager, this, config.statusTracker, coordinates);
             pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
-            String name = pdelayData.getFullName(MachineInstanceFuture.KeyPairMidStr, null);
+            String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
             DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
             String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + name);

@@ -23,20 +23,23 @@ import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.InstanceType;
 import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
+import com.pslcl.dtf.core.runner.config.status.ResourceStatusEvent;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
+import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
-import com.pslcl.dtf.resource.aws.provider.machine.MachineQueryResult;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.resource.aws.AwsResourcesManager;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 
 @SuppressWarnings("javadoc")
 public class NetworkReservedResource implements Runnable
 {
     public final ResourceDescription resource;
-    
     public volatile GroupIdentifier groupIdentifier;
     public volatile String groupId;
     public volatile Vpc vpc;
@@ -47,12 +50,14 @@ public class NetworkReservedResource implements Runnable
 
     private ScheduledFuture<?> timerFuture;
     private Future<NetworkInstance> instanceFuture;
-    private final AwsNetworkProvider provider;
+    private final ProgressiveDelayData pdelayData; 
 
-    NetworkReservedResource(AwsNetworkProvider provider, ResourceDescription resource, ResourceCoordinates newCoord, NetworkQueryResult result)
+    NetworkReservedResource(ProgressiveDelayData pdelayData, ResourceDescription resource, GroupIdentifier groupId)
     {
-        this.provider = provider;
+        this.pdelayData = pdelayData;
         this.resource = resource;
+        this.groupIdentifier = groupId;
+        ResourceCoordinates newCoord = pdelayData.coord;
         resource.getCoordinates().setManager(newCoord.getManager());
         resource.getCoordinates().setProvider(newCoord.getProvider());
         resource.getCoordinates().setRunId(newCoord.getRunId());
@@ -81,7 +86,18 @@ public class NetworkReservedResource implements Runnable
     @Override
     public void run()
     {
-        provider.getSubnetManager().releaseSubnet(resource.getCoordinates().resourceId);
+        HashMap<Long, NetworkReservedResource> map = ((AwsNetworkProvider)pdelayData.provider).getReservedNetworks();
+        synchronized (map)
+        {
+            map.remove(resource.getCoordinates().resourceId);
+            try
+            {
+                pdelayData.manager.subnetManager.releaseSecurityGroup(pdelayData);
+            } catch (FatalResourceException e)
+            {
+                LoggerFactory.getLogger(getClass()).warn("failed to cleanup securityGroup: " + groupIdentifier.getGroupId());
+            }
+        }
         LoggerFactory.getLogger(getClass()).info(resource.toString() + " reserve timed out");
     }
 }

@@ -44,7 +44,7 @@ public class SubnetConfigData
     public volatile int subnetSize;
     public volatile String subnetVpcId;
 
-    private final List<IpPermission> permissions;
+    public final List<IpPermission> permissions;
     public volatile String sgGroupName;
     public volatile String sgGroupId;
     public volatile int sgMaxDelay;
@@ -59,6 +59,8 @@ public class SubnetConfigData
 
     public static SubnetConfigData init(ResourceDescription resource, TabToLevel format, SubnetConfigData defaultData) throws Exception
     {
+        if(format == null)
+            format = new TabToLevel();
         SubnetConfigData data = new SubnetConfigData();
         format.ttl(SubnetConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
