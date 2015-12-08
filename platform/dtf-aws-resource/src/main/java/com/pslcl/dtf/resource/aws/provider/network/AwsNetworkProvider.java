@@ -28,7 +28,7 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
@@ -250,37 +250,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     }
 
     @Override
-    public Future<ResourceQueryResult> queryResourceAvailability(List<ResourceDescription> resources)
-    {
-        return config.blockingExecutor.submit(new NetworkAvailabilityFuture(this, resources));
-    }
-
-    ResourceQueryResult internalQueryResourceAvailability(List<ResourceDescription> resources, NetworkQueryResult result)
-    {
-        List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
-        List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
-        List<ResourceDescription> unavailableResources = new ArrayList<ResourceDescription>();
-        List<ResourceDescription> invalidResources = new ArrayList<ResourceDescription>();
-        ResourceQueryResult resourceQueryResult = new ResourceQueryResult(reservedResources, availableResources, unavailableResources, invalidResources);
-        for (ResourceDescription resource : resources)
-        {
-            try
-            {
-                if (internalIsAvailable(resource, result))
-                    availableResources.add(resource);
-                else
-                    unavailableResources.add(resource);
-            } catch (Exception e)
-            {
-                invalidResources.add(resource);
-                log.debug(getClass().getSimpleName() + ".queryResourceAvailable failed: " + resource.toString(), e);
-            }
-        }
-        return resourceQueryResult;
-    }
-
-    @Override
-    public Future<ResourceQueryResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
         return config.blockingExecutor.submit(new NetworkReserveFuture(this, resources, timeoutSeconds));
     }

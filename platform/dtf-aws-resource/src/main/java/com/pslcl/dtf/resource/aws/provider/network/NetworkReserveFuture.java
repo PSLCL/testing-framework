@@ -23,10 +23,10 @@ import java.util.concurrent.TimeUnit;
 
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
 
 @SuppressWarnings("javadoc")
-public class NetworkReserveFuture implements Callable<ResourceQueryResult>
+public class NetworkReserveFuture implements Callable<ResourceReserveResult>
 {
     private final AwsNetworkProvider provider;
     private final  List<ResourceDescription> resources;
@@ -40,37 +40,37 @@ public class NetworkReserveFuture implements Callable<ResourceQueryResult>
     }
 
     @Override
-    public ResourceQueryResult call() throws Exception
+    public ResourceReserveResult call() throws Exception
     {
-            NetworkQueryResult queryResult = new NetworkQueryResult();
-            ResourceQueryResult resouceQueryResult = provider.internalQueryResourceAvailability(resources, queryResult);
-
-            List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
-            List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
-            //@formatter:off
-            ResourceQueryResult result = new ResourceQueryResult(
-                                                reservedResources, 
-                                                availableResources, 
-                                                resouceQueryResult.getUnavailableResources(), 
-                                                resouceQueryResult.getInvalidResources());
-            //@formatter:on
-
-            for (ResourceDescription requested : resources)
-            {
-                for (ResourceDescription avail : resouceQueryResult.getAvailableResources())
-                {
-                    if (avail.getName().equals(requested.getName()))
-                    {
-                        requested.getCoordinates().setManager(provider.getManager());
-                        requested.getCoordinates().setProvider(provider);
-                        reservedResources.add(new ReservedResource(requested.getCoordinates(), avail.getAttributes(), timeoutSeconds));
-                        NetworkReservedResource rresource = new NetworkReservedResource(provider, avail, requested.getCoordinates(), queryResult);
-                        ScheduledFuture<?> future = provider.getConfig().scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
-                        rresource.setTimerFuture(future);
-                        provider.addReservedNetwork(requested.getCoordinates().resourceId, rresource);
-                    }
-                }
-            }
-            return result;
+        return null;
+//            NetworkQueryResult queryResult = new NetworkQueryResult();
+//            ResourceReserveResult resouceQueryResult = provider.internalQueryResourceAvailability(resources, queryResult);
+//
+//            List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
+//            List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
+//            //@formatter:off
+//            ResourceReserveResult result = new ResourceReserveResult(
+//                                                reservedResources, 
+//                                                resouceQueryResult.getUnavailableResources(), 
+//                                                resouceQueryResult.getInvalidResources());
+//            //@formatter:on
+//
+//            for (ResourceDescription requested : resources)
+//            {
+//                for (ResourceDescription avail : resouceQueryResult.getAvailableResources())
+//                {
+//                    if (avail.getName().equals(requested.getName()))
+//                    {
+//                        requested.getCoordinates().setManager(provider.getManager());
+//                        requested.getCoordinates().setProvider(provider);
+//                        reservedResources.add(new ReservedResource(requested.getCoordinates(), avail.getAttributes(), timeoutSeconds));
+//                        NetworkReservedResource rresource = new NetworkReservedResource(provider, avail, requested.getCoordinates(), queryResult);
+//                        ScheduledFuture<?> future = provider.getConfig().scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
+//                        rresource.setTimerFuture(future);
+//                        provider.addReservedNetwork(requested.getCoordinates().resourceId, rresource);
+//                    }
+//                }
+//            }
+//            return result;
     }
 }

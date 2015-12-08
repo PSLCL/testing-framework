@@ -19,18 +19,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings("javadoc")
-public class ResourceQueryResult
+public class ResourceReserveResult
 {
     // all lists guarded by reservedResources
     private final List<ReservedResource> reservedResources;
-    private final List<ResourceDescription> availableResources;
     private final List<ResourceDescription> unavailableResources;
     private final List<ResourceDescription> invalidResources;
 
-    public ResourceQueryResult(List<ReservedResource> reservedResources, List<ResourceDescription> availableResources, List<ResourceDescription> unavailableResources, List<ResourceDescription> invalidResources)
+    public ResourceReserveResult(List<ReservedResource> reservedResources, List<ResourceDescription> unavailableResources, List<ResourceDescription> invalidResources)
     {
         this.reservedResources = reservedResources;
-        this.availableResources = availableResources;
         this.unavailableResources = unavailableResources;
         this.invalidResources = invalidResources;
     }
@@ -59,30 +57,6 @@ public class ResourceQueryResult
         }
     }
     
-    /**
-     * Get the list of available resources. These resources are not bound and may become unavailable after this object is created.
-     * 
-     * @return A list of resources available at the time this object was created.
-     */
-    public List<ResourceDescription> getAvailableResources()
-    {
-        synchronized (reservedResources)
-        {
-            return new ArrayList<ResourceDescription>(availableResources);
-        }
-    }
-
-    /**
-     * Add an available resource to the list of available resources.
-     *  
-     * @param rwa The available resource to add.
-     */
-    public void availabledResources_add(ResourceDescription rwa) {
-        synchronized (reservedResources) {
-            this.availableResources.add(rwa);
-        }
-    }
-
     /**
      * Get the list of unavailable resources. These resources may become available after this object is created.
      * 
@@ -138,7 +112,7 @@ public class ResourceQueryResult
      * @note Once the reservation is made (a reservedResource entry is placed into the reserved list), it will not be removed
      * @param localRqr Caller is responsible to ensure that localRqr does not contain a ReservedResource entry that is already stored in the reservedResources entry of this object.
      */
-    public void merge(ResourceQueryResult localRqr)
+    public void merge(ResourceReserveResult localRqr)
     {
         // localRqr is composed of 1 result for every original resource request; keep in mind that each such result fills only one of the RQR's four lists.
 
@@ -151,18 +125,11 @@ public class ResourceQueryResult
                 // record the successful reservation found in localRqr 
                 this.reservedResources.add(rrwa);
                 // remove the corresponding entry in the 3 "fail" lists that we may hold from previous calls
-                this.availableResources.remove(rrwa);
                 this.unavailableResources.remove(rrwa);
                 this.invalidResources.remove(rrwa);
                 // caller now sees only the reserved entry
             }
 
-            // Record whatever "fails" are found in localRqr
-            for (ResourceDescription rwa : localRqr.getAvailableResources())
-            {
-                // this rwa is not found in incoming reservedResources, unavailableResources or invalidResources
-                this.availableResources.add(rwa); // might add to an entry from a previous call
-            }
             for (ResourceDescription rwa : localRqr.getUnavailableResources())
             {
                 // this rwa is not found in incoming reservedResources, availableResources or invalidResources
@@ -182,7 +149,6 @@ public class ResourceQueryResult
         StringBuilder sb = new StringBuilder("{reserved: ")
             .append(reservedResources == null ? "{null}" : reservedResources.toString())
             .append(",available: ")
-            .append(availableResources == null ? "{null}" : availableResources.toString())
             .append(",unaivilable: ")
             .append(unavailableResources == null ? "{null}" : unavailableResources.toString())
             .append(",invalid: ")

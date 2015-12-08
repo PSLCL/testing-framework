@@ -27,7 +27,7 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescImpl;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
@@ -117,7 +117,7 @@ public class ResourceProviders
     }
     
 
-    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) throws Exception {
+    public ResourceReserveResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) throws Exception {
         
         // This class has a list of all types of ResourceProvider (like AWSMachineProvider).
 
@@ -125,8 +125,7 @@ public class ResourceProviders
         // Current solution- ask each ResourceProvider, in turn. TODO: Perhaps optimize by asking each ResourceProvider directly, taking advantage of knowledge of each resource provider's hash and attributes.
 
         // start retRqr with empty lists; afterward merge reservation results into retRqr
-        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResource>(),
-                                                             new ArrayList<ResourceDescription>(),
+        ResourceReserveResult retRqr = new ResourceReserveResult(new ArrayList<ReservedResource>(),
                                                              new ArrayList<ResourceDescription>(),
                                                              new ArrayList<ResourceDescription>());
 
@@ -151,8 +150,8 @@ public class ResourceProviders
 
             // asynch behavior
             // chad modified this so it would build, final implementation may or may not want to block here
-            Future<ResourceQueryResult> future = rp.reserveIfAvailable(reserveResourceRequests, timeoutSeconds);
-            ResourceQueryResult localRqr = future.get();
+            Future<ResourceReserveResult> future = rp.reserveIfAvailable(reserveResourceRequests, timeoutSeconds);
+            ResourceReserveResult localRqr = future.get();
             retRqr.merge(localRqr); // merge localRqr into retRqr
         }
         return retRqr;

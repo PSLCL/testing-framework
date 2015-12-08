@@ -21,7 +21,7 @@ import java.util.concurrent.Future;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
@@ -42,24 +42,6 @@ public interface ResourceProvider
     public Future<? extends ResourceInstance> bind(ReservedResource resource) throws ResourceNotReservedException;
 
     /**
-     * Query the Resource Provider for the availability of the specified resources. Resources are not bound or reserved,
-     * and availability may change after this method returns.
-     * 
-     * <p>This method may move individual <code>ResourceDescription</code> from the input resources into any of
-     * the three of four lists in the returned <code>ResourceQueryResult</code>.
-     * <ul>
-     * <li>reservedResources - will always return an empty list</li>
-     * <li>availableResources - all <code>ResourceDescription</code> from resources that could be reserved at this time.</li>
-     * <li>unavailableResources - all <code>ResourceDescription</code> from resources that could not be reserved at this time.</li>
-     * <li>invalidResources - all <code>ResourceDescription</code> from resources that appear to belong to me, but will fail bind with given information.</li>
-     * </ul>
-     * @param resources A list of resources with attributes. Must not be null, maybe empty.
-     * @return A {@link ResourceQueryResult} containing information about the availability of resource on this resource
-     *         provider.
-     */
-    public Future<ResourceQueryResult> queryResourceAvailability(List<ResourceDescription> resources);
-
-    /**
      * Reserve the specified resources if available. Resources will be reserved for timeoutSeconds if not greater than
      * the maximum timeout allowed by the resource provider.
      * 
@@ -73,9 +55,9 @@ public interface ResourceProvider
      * </ul>
      * @param resources A list of resources. Must not be null, maybe empty.
      * @param timeoutSeconds The time period, in seconds, to reserve the resources.
-     * @return The {@link ResourceQueryResult} listing the resources which were able to be reserved.
+     * @return The {@link ResourceReserveResult} listing the resources which were able to be reserved.
      */
-    public Future<ResourceQueryResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
+    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
 
     /**
      * Get the name of the provider.

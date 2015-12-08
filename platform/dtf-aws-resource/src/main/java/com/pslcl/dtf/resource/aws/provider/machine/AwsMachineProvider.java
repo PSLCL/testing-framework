@@ -29,7 +29,7 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
@@ -151,7 +151,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 for (Long key : releaseList)
                 {
                     AwsMachineInstance instance = boundInstances.remove(key);
-                    MachineReservedResource reservedResource = reservedMachines.remove(key);
+                    reservedMachines.remove(key);
                     ProgressiveDelayData pdelayData = new ProgressiveDelayData(manager, this, config.statusTracker, instance.getCoordinates());
                     futures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance, null, /*reservedResource.vpc.getVpcId() reservedResource.subnet.getSubnetId()*/ null, pdelayData)));
                 }
@@ -261,37 +261,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public Future<ResourceQueryResult> queryResourceAvailability(List<ResourceDescription> resources)
-    {
-        return config.blockingExecutor.submit(new MachineAvailabilityFuture(this, resources));
-    }
-
-    ResourceQueryResult internalQueryResourceAvailability(List<ResourceDescription> resources, MachineQueryResult result)
-    {
-        List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
-        List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
-        List<ResourceDescription> unavailableResources = new ArrayList<ResourceDescription>();
-        List<ResourceDescription> invalidResources = new ArrayList<ResourceDescription>();
-        ResourceQueryResult resourceQueryResult = new ResourceQueryResult(reservedResources, availableResources, unavailableResources, invalidResources);
-        for (ResourceDescription resource : resources)
-        {
-            try
-            {
-                if (internalIsAvailable(resource, result))
-                    availableResources.add(resource);
-                else
-                    unavailableResources.add(resource);
-            } catch (Exception e)
-            {
-                invalidResources.add(resource);
-                log.debug(getClass().getSimpleName() + ".queryResourceAvailable failed: " + resource.toString(), e);
-            }
-        }
-        return resourceQueryResult;
-    }
-
-    @Override
-    public Future<ResourceQueryResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
         return config.blockingExecutor.submit(new MachineReserveFuture(this, resources, timeoutSeconds));
     }
