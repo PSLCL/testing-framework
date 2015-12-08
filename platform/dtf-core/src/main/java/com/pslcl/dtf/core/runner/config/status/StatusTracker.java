@@ -140,7 +140,12 @@ public interface StatusTracker
         /**
          * Typically reflects a serious abnormality occurred of which a human should be notified.
          */
-        Alert;
+        Alert,
+        
+        /**
+         * The subsystem is down and the status name is being removed.
+         */
+        Down;
         
         /**
          * Return the <code>Status</code> based on the given ordinal value.
@@ -160,6 +165,8 @@ public interface StatusTracker
                     return Error;
                 case 3:
                     return Alert;
+                case 4:
+                    return Down;
                 default:
                     throw new IllegalArgumentException("ordinal " + ordinal + " does not map to a known Status");
             }

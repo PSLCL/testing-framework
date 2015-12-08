@@ -35,7 +35,6 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
-import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
@@ -43,8 +42,9 @@ import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
-import com.pslcl.dtf.resource.aws.instance.AwsMachineInstance;
-import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
+import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance;
+import com.pslcl.dtf.resource.aws.instance.machine.MachineConfigData;
+import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 
 /**
@@ -59,6 +59,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
     private final AwsResourcesManager manager;
+    public volatile MachineConfigData defaultMachineConfigData;
 
     public AwsMachineProvider(AwsResourcesManager controller)
     {
@@ -152,7 +153,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     AwsMachineInstance instance = boundInstances.remove(key);
                     MachineReservedResource reservedResource = reservedMachines.remove(key);
                     ProgressiveDelayData pdelayData = new ProgressiveDelayData(manager, this, config.statusTracker, instance.getCoordinates());
-                    futures.add(config.blockingExecutor.submit(new ReleaseFuture(this, instance, reservedResource.vpc.getVpcId(), reservedResource.subnet.getSubnetId(), pdelayData)));
+                    futures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance, null, /*reservedResource.vpc.getVpcId() reservedResource.subnet.getSubnetId()*/ null, pdelayData)));
                 }
             }
         }
@@ -203,6 +204,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         super.init(config);
         instanceFinder.init(config);
         imageFinder.init(config);
+        config.initsb.indentedOk();
+        defaultMachineConfigData = MachineConfigData.init(config);
+        config.initsb.level.decrementAndGet();
     }
 
     @Override
@@ -231,16 +235,14 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException
+    public List<Future<MachineInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException
     {
+        List<Future<MachineInstance>> list = new ArrayList<Future<MachineInstance>>();
         for (ReservedResource resource : resources)
         {
-            bind(resource);
+            list.add(bind(resource));
         }
-        synchronized (reservedMachines)
-        {
-            return null;
-        }
+        return list;
     }
 
     public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
@@ -261,7 +263,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public Future<ResourceQueryResult> queryResourceAvailability(List<ResourceDescription> resources)
     {
-        return config.blockingExecutor.submit(new QueryResourceAvailabilityFuture(this, resources));
+        return config.blockingExecutor.submit(new MachineAvailabilityFuture(this, resources));
     }
 
     ResourceQueryResult internalQueryResourceAvailability(List<ResourceDescription> resources, MachineQueryResult result)
@@ -291,7 +293,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public Future<ResourceQueryResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
-        return config.blockingExecutor.submit(new ReserveIfAvailableFuture(this, resources, timeoutSeconds));
+        return config.blockingExecutor.submit(new MachineReserveFuture(this, resources, timeoutSeconds));
     }
 
     @Override

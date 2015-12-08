@@ -26,7 +26,6 @@ import com.amazonaws.AmazonServiceException;
 import com.pslcl.dtf.core.runner.config.status.ResourceStatusEvent;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
-import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.FatalClientException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalInterruptedException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
@@ -36,7 +35,7 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalTimeoutException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
-import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
+import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 
 @SuppressWarnings("javadoc")
 public class ProgressiveDelay
@@ -104,10 +103,7 @@ public class ProgressiveDelay
     
     private void handleStatusTracker(StatusTracker.Status status)
     {
-        pdelayData.statusTracker.setStatus(MachineInstanceFuture.StatusPrefixStr+pdelayData.coord.resourceId, status);
-        pdelayData.statusTracker.fireResourceStatusChanged(
-                        pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Error));
-        pdelayData.statusTracker.removeStatus(pdelayData.coord.templateId);
+        AwsResourcesManager.handleStatusTracker(pdelayData, status);
     }
     
     public FatalResourceException handleException(String message, Throwable t)
@@ -191,7 +187,7 @@ public class ProgressiveDelay
         public volatile String preFixMostName;
         public volatile int maxDelay;
         public volatile int maxRetries; 
-        public final ResourcesManager manager; 
+        public final AwsResourcesManager manager; 
         public final ResourceProvider provider; 
         public final StatusTracker statusTracker;
         public volatile ResourceCoordinates coord;
@@ -199,7 +195,7 @@ public class ProgressiveDelay
 
         //@formatter:off
         public ProgressiveDelayData(
-                        ResourcesManager manager,
+                        AwsResourcesManager manager,
                         ResourceProvider provider, 
                         StatusTracker statusTracker,
                         ResourceCoordinates coordinates)

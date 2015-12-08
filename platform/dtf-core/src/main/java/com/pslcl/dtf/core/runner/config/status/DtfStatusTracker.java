@@ -189,5 +189,7 @@ public class DtfStatusTracker implements StatusTracker, StatusTrackerMXBean
                 listener.resourceStatusChanged(status);
             }
         }
+        if(status.status == Status.Down)
+            removeStatus(status.statusName);
     }
 }

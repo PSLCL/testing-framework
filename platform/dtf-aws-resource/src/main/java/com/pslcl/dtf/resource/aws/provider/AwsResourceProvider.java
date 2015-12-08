@@ -20,8 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
-import com.pslcl.dtf.resource.aws.AwsClientConfiguration;
-import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 
 @SuppressWarnings("javadoc")
 public abstract class AwsResourceProvider
@@ -34,17 +32,18 @@ public abstract class AwsResourceProvider
     {
         log = LoggerFactory.getLogger(getClass());
     }
+
+    public void setEc2Client(AmazonEC2Client ec2Client)
+    {
+        this.ec2Client = ec2Client;
+    }
     
     protected void init(RunnerConfig config) throws Exception
     {
-        this.config = config;
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
-        AwsClientConfig cconfig = AwsClientConfiguration.getClientConfiguration(config);
-        ec2Client = new AmazonEC2Client(cconfig.clientConfig);
-        ec2Client.setEndpoint(cconfig.endpoint);
-        config.initsb.indentedOk();
-        
-        config.initsb.level.decrementAndGet();
+        config.initsb.level.incrementAndGet();
+        this.config = config;
+        this.ec2Client = ec2Client;
     }
     
     protected void destroy()
@@ -52,17 +51,4 @@ public abstract class AwsResourceProvider
         ec2Client.shutdown();
     }
 }
-//        DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain();
-//        ec2Client.
-//        
-//        
-//        ConnectionFactory connectionFactory =  EC2ConnectionFactory.builder()
-//                        .withClientConfiguration(awsClientConfig.clientConfig)
-//                        .withAWSCredentialsProvider(awsClientConfig.providerChain)
-//                        .withRegion(Region.getRegion(Regions.US_WEST_2)) // REVIEW: hard coding
-//                        .build();
-//                connection = connectionFactory.createConnection();
-//                
-//                // check for queue; fill sqsClient member for future use
-//                sqsClient = connection.getWrappedAmazonSQSClient();
 

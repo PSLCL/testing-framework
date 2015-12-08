@@ -38,7 +38,7 @@ public class ResourceStatusEvent extends StatusEvent
     {
         return new ResourceStatusEvent(
                         resourceStatus.statusName,
-                        resourceStatus.status,
+                        status,
                         resourceStatus.coordinate);
     }
     

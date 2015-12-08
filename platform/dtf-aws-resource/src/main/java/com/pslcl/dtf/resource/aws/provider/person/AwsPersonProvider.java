@@ -15,7 +15,6 @@
  */
 package com.pslcl.dtf.resource.aws.provider.person;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -55,7 +54,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     
     
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
+    public List<Future<PersonInstance>> bind(List<ReservedResource> resources)
     {
         // TODO Auto-generated method stub
         return null;

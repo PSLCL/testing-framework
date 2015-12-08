@@ -42,19 +42,6 @@ public interface ResourceProvider
     public Future<? extends ResourceInstance> bind(ReservedResource resource) throws ResourceNotReservedException;
 
     /**
-     * Acquire a list of resources. Resources will be bound and a list containing the resulting
-     * ResourceInstance objects will be returned.
-     * 
-     * The resources must be released once they are no longer needed.
-     *
-     * @param resources a list of resources.
-     * @return A list of ResourceInstance objects which each represent a Resource Instance.
-     * @throws ResourceNotReservedException if unable to bind all of the listed resources.
-     */
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException;
-
-
-    /**
      * Query the Resource Provider for the availability of the specified resources. Resources are not bound or reserved,
      * and availability may change after this method returns.
      * 

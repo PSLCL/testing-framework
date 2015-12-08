@@ -15,10 +15,28 @@
  */
 package com.pslcl.dtf.core.runner.resource.provider;
 
+import java.util.List;
+import java.util.concurrent.Future;
+
+import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
+import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
+
 
 /**
  * A Resource provider which allows reserving and binding of Person resource types.
  */
 public interface PersonProvider extends ResourceProvider
 {
+    /**
+     * Acquire a list of resources. Resources will be bound and a list containing the resulting
+     * ResourceInstance objects will be returned.
+     * 
+     * The resources must be released once they are no longer needed.
+     *
+     * @param resources a list of resources.
+     * @return A list of ResourceInstance objects which each represent a Resource Instance.
+     * @throws ResourceNotReservedException if unable to bind all of the listed resources.
+     */
+    public List<Future<PersonInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException;
 }

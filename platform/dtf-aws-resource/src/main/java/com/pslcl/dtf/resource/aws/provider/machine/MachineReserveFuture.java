@@ -26,13 +26,13 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 
 @SuppressWarnings("javadoc")
-public class ReserveIfAvailableFuture implements Callable<ResourceQueryResult>
+public class MachineReserveFuture implements Callable<ResourceQueryResult>
 {
     private final AwsMachineProvider provider;
     private final  List<ResourceDescription> resources;
     private final int timeoutSeconds;
     
-    public ReserveIfAvailableFuture(AwsMachineProvider provider, List<ResourceDescription> resources, int timeoutSeconds)
+    public MachineReserveFuture(AwsMachineProvider provider, List<ResourceDescription> resources, int timeoutSeconds)
     {
         this.provider = provider;
         this.resources = resources;

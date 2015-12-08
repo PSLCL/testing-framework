@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.resource.aws.provider.machine;
+package com.pslcl.dtf.resource.aws.provider.network;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,13 +27,13 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
 
 @SuppressWarnings("javadoc")
-public class QueryResourceAvailabilityFuture implements Callable<ResourceQueryResult>
+public class NetworkAvailabilityFuture implements Callable<ResourceQueryResult>
 {
     private final Logger log;
-    private final AwsMachineProvider provider;
+    private final AwsNetworkProvider provider;
     private final List<ResourceDescription> resources;
     
-    public QueryResourceAvailabilityFuture(AwsMachineProvider provider, List<ResourceDescription> resources)
+    public NetworkAvailabilityFuture(AwsNetworkProvider provider, List<ResourceDescription> resources)
     {
         this.provider = provider;
         this.resources = resources;
@@ -43,7 +43,7 @@ public class QueryResourceAvailabilityFuture implements Callable<ResourceQueryRe
     @Override
     public ResourceQueryResult call() throws Exception
     {
-        MachineQueryResult result = new MachineQueryResult();
+        NetworkQueryResult result = new NetworkQueryResult();
         List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
         List<ResourceDescription> availableResources = new ArrayList<ResourceDescription>();
         List<ResourceDescription> unavailableResources = new ArrayList<ResourceDescription>();
