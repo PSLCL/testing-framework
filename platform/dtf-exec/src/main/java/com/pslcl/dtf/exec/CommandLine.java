@@ -1236,7 +1236,12 @@ public class CommandLine
                     }
 
                     test_sequence += 1;
-                    generator.completeTest();
+                    try {
+						generator.completeTest();
+					} catch (Exception e) {
+						System.err.println("ERROR: Unable to complete test, " + e.getMessage());
+						e.printStackTrace();
+					}
                 }
 
                 generator.close();
