@@ -20,9 +20,21 @@ import java.util.List;
 
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.model.CreateTagsRequest;
+import com.amazonaws.services.ec2.model.Tag;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
+import com.pslcl.dtf.core.runner.resource.exception.FatalException;
+import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.util.StrH;
+import com.pslcl.dtf.core.util.TabToLevel;
+import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
+import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.network.AwsNetworkProvider;
 import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
@@ -31,9 +43,11 @@ import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 public class AwsResourcesManager implements ResourcesManager
 {
     private final List<ResourceProvider> resourceProviders;
-    private final AwsMachineProvider machineProvider;
-    private final AwsNetworkProvider networkProvider;
-    private final AwsPersonProvider personProvider;
+    public final AwsMachineProvider machineProvider;
+    public final AwsNetworkProvider networkProvider;
+    public final AwsPersonProvider personProvider;
+    public volatile SubnetManager subnetManager;
+    public volatile AmazonEC2Client ec2Client;
 
     public AwsResourcesManager()
     {
@@ -44,6 +58,95 @@ public class AwsResourcesManager implements ResourcesManager
         resourceProviders.add(machineProvider);
         resourceProviders.add(networkProvider);
         resourceProviders.add(personProvider);
+    }
+
+    private volatile int maxDelay;
+    private volatile int maxRetries;
+    
+    public void setTagtimeout(int maxDelay, int maxRetries)
+    {
+        this.maxDelay = maxDelay;
+        this.maxRetries = maxRetries;
+    }
+
+
+    public static String getTagValue(List<Tag> tags, String key)
+    {
+        for(Tag tag : tags)
+        {
+            if(tag.getKey().equals(key))
+                return tag.getValue();
+        }
+        return null;
+    }
+    
+    public static boolean isDtfObject(List<Tag> tags)
+    {
+        boolean[] expected = new boolean[4];
+        for(Tag tag : tags)
+        {
+            if(tag.getKey().equals(TagNameKey))
+                expected[0] = true;
+            else if(tag.getKey().equals(TagTemplateIdKey))
+                expected[1] = true;
+            else if(tag.getKey().equals(TagResourceIdKey))
+                expected[2] = true;
+            else if(tag.getKey().equals(TagRunIdKey))
+                expected[3] = true;
+        }
+        boolean dtfResource = true;
+        for(int i=0; i < expected.length; i++)
+        {
+            if(!expected[i])
+            {
+                dtfResource = false;
+                break;
+            }
+        }
+        return dtfResource;
+    }
+    
+    public static void handleStatusTracker(ProgressiveDelayData pdelayData, StatusTracker.Status status)
+    {
+        pdelayData.statusTracker.setStatus(MachineInstanceFuture.StatusPrefixStr+pdelayData.coord.resourceId, status);
+        pdelayData.statusTracker.fireResourceStatusChanged(
+                        pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, status));
+        pdelayData.statusTracker.removeStatus(pdelayData.coord.templateId);
+    }
+    
+    
+    public static final String TagNameKey = "Name";
+    public static final String TagRunIdKey = "runId";
+    public static final String TagTemplateIdKey = "templateId";
+    public static final String TagResourceIdKey = "resourceId";
+    
+    public void createNameTag(ProgressiveDelayData pdelayData, String name, String resourceId) throws FatalResourceException
+    {
+        pdelayData.maxDelay = maxDelay;
+        pdelayData.maxRetries = maxRetries;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        //@formatter:off
+        CreateTagsRequest ctr = new 
+                        CreateTagsRequest().withTags(
+                                        new Tag(TagNameKey, name),
+                                        new Tag(TagRunIdKey, Long.toHexString(pdelayData.coord.getRunId())),
+                                        new Tag(TagTemplateIdKey, pdelayData.coord.templateId),
+                                        new Tag(TagResourceIdKey, Long.toHexString(pdelayData.coord.resourceId)))
+                                        .withResources(resourceId);
+        //@formatter:on
+        do
+        {
+            try
+            {
+                ec2Client.createTags(ctr);
+                break;
+            } catch (Exception e)
+            {
+                FatalResourceException fre = pdelay.handleException(name + " createTags", e);
+                if (fre instanceof FatalException)
+                    throw fre;
+            }
+        } while (true);
     }
 
     @Override
@@ -59,19 +162,20 @@ public class AwsResourcesManager implements ResourcesManager
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
         
-        config.initsb.ttl(AwsMachineProvider.class.getSimpleName(), " Initialization");
-        config.initsb.level.incrementAndGet();
+        AwsClientConfig cconfig = AwsClientConfiguration.getClientConfiguration(config);
+        ec2Client = new AmazonEC2Client(cconfig.clientConfig);
+        ec2Client.setEndpoint(cconfig.endpoint);
+        config.initsb.ttl("obtained ec2Client");
+        subnetManager = new SubnetManager(this);
+        subnetManager.init(config);
+        
         machineProvider.init(config);
-        config.initsb.level.decrementAndGet();
-
-        config.initsb.ttl(AwsPersonProvider.class.getSimpleName(), " Initialization");
-        config.initsb.level.incrementAndGet();
+        machineProvider.setEc2Client(ec2Client);
         personProvider.init(config);
-        config.initsb.level.decrementAndGet();
-
-        config.initsb.ttl(AwsNetworkProvider.class.getSimpleName(), " Initialization");
-        config.initsb.level.incrementAndGet();
+        personProvider.setEc2Client(ec2Client);
         networkProvider.init(config);
+        networkProvider.setEc2Client(ec2Client);
+        
         config.initsb.level.decrementAndGet();
     }
 

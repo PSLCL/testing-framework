@@ -25,16 +25,17 @@ import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.instance.AwsMachineInstance;
-import com.pslcl.dtf.resource.aws.instance.AwsMachineInstance.AwsInstanceState;
-import com.pslcl.dtf.resource.aws.instance.MachineInstanceFuture;
+import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance;
+import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
+import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanceState;
 
 @SuppressWarnings("javadoc")
-public class ReleaseFuture implements Callable<Void>
+public class ReleaseMachineFuture implements Callable<Void>
 {
     private final AwsMachineProvider provider;
     private final AwsMachineInstance instance;
@@ -42,7 +43,7 @@ public class ReleaseFuture implements Callable<Void>
     private final String subnetId;
     private final ProgressiveDelayData pdelayData;
 
-    public ReleaseFuture(AwsMachineProvider provider, AwsMachineInstance instance, String vpcId, String subnetId, ProgressiveDelayData pdelayData)
+    public ReleaseMachineFuture(AwsMachineProvider provider, AwsMachineInstance instance, String vpcId, String subnetId, ProgressiveDelayData pdelayData)
     {
         this.vpcId = vpcId;
         this.subnetId = subnetId;
@@ -58,7 +59,8 @@ public class ReleaseFuture implements Callable<Void>
         terminateEc2Instance();
         deleteSubnet();
         deleteVpc();
-        provider.getConfig().statusTracker.removeStatus(MachineInstanceFuture.StatusPrefixStr+instance.getCoordinates().resourceId);
+        
+        provider.getConfig().statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
         LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
         return null;
     }
@@ -105,6 +107,8 @@ public class ReleaseFuture implements Callable<Void>
     
     private void deleteVpc() throws FatalResourceException
     {
+        if(vpcId == null)
+            return;
         DeleteVpcRequest drequest = new DeleteVpcRequest().withVpcId(vpcId);
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
         String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + vpcId);
@@ -125,6 +129,8 @@ public class ReleaseFuture implements Callable<Void>
     
     private void deleteSubnet() throws FatalResourceException
     {
+        if(subnetId == null)
+            return;
         DeleteSubnetRequest request = new DeleteSubnetRequest().withSubnetId(subnetId);
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
         String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteSubnet:" + subnetId);

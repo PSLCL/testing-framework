@@ -15,87 +15,246 @@
  */
 package com.pslcl.dtf.resource.aws.provider.network;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.Future;
 
+import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
+import com.pslcl.dtf.core.runner.resource.exception.FatalException;
+import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
-import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.attr.ClientNames;
+import com.pslcl.dtf.resource.aws.attr.ProviderNames;
+import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
+import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
+import com.pslcl.dtf.resource.aws.instance.network.NetworkInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
+import com.pslcl.dtf.resource.aws.provider.SubnetConfigData;
+import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 
 @SuppressWarnings("javadoc")
 public class AwsNetworkProvider extends AwsResourceProvider implements NetworkProvider
 {
-    private final AwsResourcesManager controller;
-
-    public AwsNetworkProvider(AwsResourcesManager controller)
+    private final HashMap<Long, AwsNetworkInstance> boundNetworks; // key is resourceId
+    private final HashMap<Long, NetworkReservedResource> reservedNetworks; // key is resourceId
+    private final AwsResourcesManager manager;
+    public volatile SubnetConfigData defaultSubnetConfigData;
+    
+    public AwsNetworkProvider(AwsResourcesManager manager)
     {
-        this.controller = controller;
+        this.manager = manager;
+        reservedNetworks = new HashMap<Long, NetworkReservedResource>();
+        boundNetworks = new HashMap<Long, AwsNetworkInstance>();
+    }
+
+    RunnerConfig getConfig()
+    {
+        return config;
+    }
+
+    AmazonEC2Client getEc2Client()
+    {
+        return ec2Client;
+    }
+
+    public SubnetManager getSubnetManager()
+    {
+        return manager.subnetManager;
+    }
+    
+    public AwsResourcesManager getManager()
+    {
+        return manager;
+    }
+
+    HashMap<Long, AwsNetworkInstance> getBoundNetworks()
+    {
+        return boundNetworks;
+    }
+
+    HashMap<Long, NetworkReservedResource> getReservedNetworks()
+    {
+        return reservedNetworks;
+    }
+
+    public void addBoundNetwork(long resourceId, AwsNetworkInstance instance)
+    {
+        synchronized (boundNetworks)
+        {
+            boundNetworks.put(resourceId, instance);
+        }
+    }
+
+    public void addReservedNetwork(long resourceId, NetworkReservedResource reservedResource)
+    {
+        synchronized (reservedNetworks)
+        {
+            reservedNetworks.put(resourceId, reservedResource);
+        }
+    }
+
+    public void setRunId(String templateId, long runId)
+    {
+        synchronized(reservedNetworks)
+        {
+            for(Entry<Long, NetworkReservedResource> entry : reservedNetworks.entrySet())
+            {
+                ResourceCoordinates coord = entry.getValue().resource.getCoordinates();
+                if(coord.templateId.equals(templateId))
+                    coord.setRunId(runId);
+            }
+        }
+    }
+
+    public void forceCleanup()
+    {
+    }
+
+    public void release(String templateId, boolean isReusable)
+    {
+        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        ResourceCoordinates coordinates = null;
+        synchronized (boundNetworks)
+        {
+            synchronized (reservedNetworks)
+            {
+                List<Long> releaseList = new ArrayList<Long>();
+                for (Entry<Long, AwsNetworkInstance> entry : boundNetworks.entrySet())
+                {
+                    coordinates = entry.getValue().getCoordinates();
+                    if (coordinates.templateId.equals(templateId))
+                        releaseList.add(entry.getKey());
+                }
+                for (Long key : releaseList)
+                {
+                    AwsNetworkInstance instance = boundNetworks.remove(key);
+                    NetworkReservedResource reservedResource = reservedNetworks.remove(key);
+                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(manager, this, config.statusTracker, instance.getCoordinates());
+                    futures.add(config.blockingExecutor.submit(new ReleaseNetworkFuture(this, instance, reservedResource.vpc.getVpcId(), reservedResource.subnet.getSubnetId(), pdelayData)));
+                }
+            }
+        }
+        // make sure they are all complete before deleting the key-pair
+        for (Future<Void> future : futures)
+        {
+            try
+            {
+                future.get();
+            } catch (Exception e)
+            {
+            }
+        }
+
+        if (coordinates != null)
+        {
+            ProgressiveDelayData pdelayData = new ProgressiveDelayData(
+                            manager, this, config.statusTracker, coordinates);
+            pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+            String name = pdelayData.getFullName(MachineInstanceFuture.KeyPairMidStr, null);
+            DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
+            ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+            String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + name);
+            do
+            {
+                try
+                {
+                    ec2Client.deleteKeyPair(request);
+                    break;
+                } catch (Exception e)
+                {
+                    FatalResourceException fre = pdelay.handleException(msg, e);
+                    if (fre instanceof FatalException)
+                        break;
+                }
+            } while (true);
+        }
+    }
+
+    public void releaseReservedResource(String templateId)
+    {
+        release(templateId, false);
     }
 
     @Override
     public void init(RunnerConfig config) throws Exception
     {
         super.init(config);
+        defaultSubnetConfigData = SubnetConfigData.init(config);
     }
 
     @Override
     public void destroy()
     {
-    }
-    
-    @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public void releaseReservedResource(ReservedResource resource)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public Future<ResourceQueryResult> queryResourceAvailability(List<ResourceDescription> resources)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Future<ResourceQueryResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
-    {
-        return null;
+        super.destroy();
     }
 
     @Override
     public Future<NetworkInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
-        // TODO Auto-generated method stub
-        return null;
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(manager, this, config.statusTracker, resource.getCoordinates());
+        config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Warn));
+
+        synchronized (reservedNetworks)
+        {
+            NetworkReservedResource reservedResource = reservedNetworks.get(resource.getCoordinates().resourceId);
+            if (reservedResource == null)
+                throw new ResourceNotReservedException(resource.getName() + "(" + resource.getCoordinates().resourceId + ") is not reserved");
+            reservedResource.getTimerFuture().cancel(true);
+            Future<NetworkInstance> future = config.blockingExecutor.submit(new NetworkInstanceFuture(reservedResource, ec2Client, pdelayData));
+            reservedResource.setInstanceFuture(future);
+            //            reservedResource.timerFuture.cancel(true);
+            return future;
+        }
     }
 
-    public void release(ResourceInstance resource, boolean isReusable)
+    @Override
+    public List<Future<NetworkInstance>> bind(List<ReservedResource> resources) throws ResourceNotReservedException
     {
-        // TODO Auto-generated method stub
-
+        List<Future<NetworkInstance>> list = new ArrayList<Future<NetworkInstance>>();
+        for (ReservedResource resource : resources)
+        {
+            list.add(bind(resource));
+        }
+        return list;
     }
+
+    public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
+    {
+        return internalIsAvailable(resource, new NetworkQueryResult());
+    }
+
+    boolean internalIsAvailable(ResourceDescription resource, NetworkQueryResult result) throws ResourceNotFoundException
+    {
+//        InstanceType instanceType = instanceFinder.findInstance(resource);
+//        if (!instanceFinder.checkLimits(instanceType))
+//            return false;
+//        result.setInstanceType(instanceType);
+//        result.setImageId(imageFinder.findImage(ec2Client, resource));
+        return true;
+    }
+
+    @Override
+    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    {
+        return config.blockingExecutor.submit(new NetworkReserveFuture(this, resources, timeoutSeconds));
+    }
+
     @Override
     public String getName()
     {
@@ -105,7 +264,6 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     @Override
     public List<String> getAttributes()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return ProviderNames.getAllNetworkProviderKeys();
     }
 }

@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.resource.aws.provider.machine;
+package com.pslcl.dtf.resource.aws.provider.network;
 
 import java.util.HashMap;
 import java.util.concurrent.Future;
@@ -29,13 +29,14 @@ import com.amazonaws.services.ec2.model.Vpc;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
+import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
+import com.pslcl.dtf.resource.aws.provider.machine.MachineQueryResult;
 
 @SuppressWarnings("javadoc")
-public class MachineReservedResource implements Runnable
+public class NetworkReservedResource implements Runnable
 {
     public final ResourceDescription resource;
-    public final InstanceType instanceType;
-    public final String imageId;
+    
     public volatile GroupIdentifier groupIdentifier;
     public volatile String groupId;
     public volatile Vpc vpc;
@@ -45,18 +46,16 @@ public class MachineReservedResource implements Runnable
     public volatile long runId;
 
     private ScheduledFuture<?> timerFuture;
-    private Future<MachineInstance> instanceFuture;
-    private final AwsMachineProvider provider;
+    private Future<NetworkInstance> instanceFuture;
+    private final AwsNetworkProvider provider;
 
-    MachineReservedResource(AwsMachineProvider provider, ResourceDescription resource, ResourceCoordinates newCoord, MachineQueryResult result)
+    NetworkReservedResource(AwsNetworkProvider provider, ResourceDescription resource, ResourceCoordinates newCoord, NetworkQueryResult result)
     {
         this.provider = provider;
         this.resource = resource;
         resource.getCoordinates().setManager(newCoord.getManager());
         resource.getCoordinates().setProvider(newCoord.getProvider());
         resource.getCoordinates().setRunId(newCoord.getRunId());
-        instanceType = result.getInstanceType();
-        imageId = result.getImageId();
     }
 
     synchronized void setTimerFuture(ScheduledFuture<?> future)
@@ -69,12 +68,12 @@ public class MachineReservedResource implements Runnable
         return timerFuture;
     }
 
-    synchronized void setInstanceFuture(Future<MachineInstance> future)
+    synchronized void setInstanceFuture(Future<NetworkInstance> future)
     {
         instanceFuture = future;
     }
 
-    synchronized Future<MachineInstance> getInstanceFuture()
+    synchronized Future<NetworkInstance> getInstanceFuture()
     {
         return instanceFuture;
     }
@@ -82,12 +81,7 @@ public class MachineReservedResource implements Runnable
     @Override
     public void run()
     {
-        HashMap<Long, MachineReservedResource> map = provider.getReservedMachines();
-        synchronized (map)
-        {
-            map.remove(resource.getCoordinates().resourceId);
-            provider.getInstanceFinder().releaseInstance(instanceType);
-            LoggerFactory.getLogger(getClass()).info(resource.toString() + " reserve timed out");
-        }
+        provider.getSubnetManager().releaseSubnet(resource.getCoordinates().resourceId);
+        LoggerFactory.getLogger(getClass()).info(resource.toString() + " reserve timed out");
     }
 }

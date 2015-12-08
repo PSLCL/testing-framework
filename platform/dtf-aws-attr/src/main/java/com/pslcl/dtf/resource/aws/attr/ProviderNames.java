@@ -213,7 +213,7 @@ public class ProviderNames
     public static final String LocationMonthDefault = null;
     public static final String LocationDotDefault = null;
     
-    public static List<String> getKeys()
+    public static List<String> getMachineKeys()
     {
        List<String> keys = new ArrayList<String>();
        keys.add(InstanceTypeKey);
@@ -234,13 +234,40 @@ public class ProviderNames
        keys.add(LocationMonthKey);
        keys.add(LocationDotKey);
        keys.add(LocationFeatureKey);
+       keys.add(ClientNames.TestShortNameKey);
        return keys;
     }
     
     public static List<String> getAllMachineProviderKeys()
     {
         List<String> keys = InstanceNames.getKeys();
-        keys.addAll(getKeys());
+        keys.addAll(getMachineKeys());
+        return keys;
+    }
+    
+    public static List<String> getAllNetworkProviderKeys()
+    {
+        List<String> keys = new ArrayList<String>();
+        keys.add(InstanceNames.AvailabilityZoneKey);
+        keys.add(InstanceNames.VpcNameKey);
+        keys.add(InstanceNames.VpcCidrKey);
+        keys.add(InstanceNames.VpcTenancyKey);
+        keys.add(InstanceNames.VpcMaxDelayKey);
+        keys.add(InstanceNames.VpcMaxRetriesKey);
+        keys.add(InstanceNames.SubnetCidrKey);
+        keys.add(InstanceNames.SubnetNameKey);
+        keys.add(InstanceNames.SubnetSizeKey);
+        keys.add(InstanceNames.AvailabilityZoneKey);
+        
+        keys.add(InstanceNames.SgNameKey);
+        keys.add(InstanceNames.SgIdKey);
+        keys.add(InstanceNames.SgMaxDelayKey);       
+        keys.add(InstanceNames.SgMaxRetriesKey);   
+        
+        keys.add(InstanceNames.PermProtocolKey);    // these are base#
+        keys.add(InstanceNames.PermIpRangeKey);
+        keys.add(InstanceNames.PermPortKey);
+        keys.add(ClientNames.TestShortNameKey);
         return keys;
     }
 }

@@ -15,14 +15,13 @@
  */
 package com.pslcl.dtf.resource.aws.provider.person;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
@@ -55,7 +54,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     
     
     @Override
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> resources)
+    public List<Future<PersonInstance>> bind(List<ReservedResource> resources)
     {
         // TODO Auto-generated method stub
         return null;
@@ -74,14 +73,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     }
 
     @Override
-    public Future<ResourceQueryResult> queryResourceAvailability(List<ResourceDescription> resources)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Future<ResourceQueryResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
         return null;
     }

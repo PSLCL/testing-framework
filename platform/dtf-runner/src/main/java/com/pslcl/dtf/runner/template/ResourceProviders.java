@@ -30,7 +30,7 @@ import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescImpl;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
@@ -130,7 +130,7 @@ public class ResourceProviders
      * @return
      * @throws Exception
      */
-    public ResourceQueryResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) throws Exception {
+    public ResourceReserveResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) throws Exception {
     	// First, make a copy rrr of reserveResourceRequests. We can therefore modify the contents of rrr and it will not modify the contents of reserveResourceRequests.
     	//      (This is needed even though Java is defined as being pass by value. In this area of language definition, Java is different from several other languages, at a fundamental level.
     	//		 It is only the value of the object pointer that is passed by value - modifications to the actual passed objects are still reflected back to the caller.
@@ -140,10 +140,9 @@ public class ResourceProviders
     		rrr.add(rd);
     	
         // start retRqr with empty lists; afterward merge individual reservation results into retRqr
-        ResourceQueryResult retRqr = new ResourceQueryResult(new ArrayList<ReservedResource>(),
-                                                             new ArrayList<ResourceDescription>(),
-                                                             new ArrayList<ResourceDescription>(),
-                                                             new ArrayList<ResourceDescription>());
+        ResourceReserveResult retRqr = new ResourceReserveResult(new ArrayList<ReservedResource>(),
+                                                                 new ArrayList<ResourceDescription>(),
+                                                                 new ArrayList<ResourceDescription>());
 
         // Until a reservation is made: Invite every known ResourceProvider, to reserve each resource in rrr (holds contents of param reserveResourceRequests).
         //    Current solution- ask each ResourceProvider, in turn. TODO: Perhaps optimize by asking each ResourceProvider directly, taking advantage of knowledge of each resource provider's hash and attributes.
@@ -178,16 +177,14 @@ public class ResourceProviders
             //		 And after that, recognize that the corresponding binds (which are already asynch), must follow on.
             
             // Until that TODO is implemented, this will have to do: it blocks to get all the reserves in hand at the same time
-            Future<ResourceQueryResult> future = rp.reserveIfAvailable(rrr, timeoutSeconds);
-            
+            Future<ResourceReserveResult> future = rp.reserveIfAvailable(rrr, timeoutSeconds);
+
             // When a person resource is requested to be reserved (in rrr), I have seen AWSMachineProvider *wrongly* return a reserved entry (visible in Eclipse as future.outcome.reserved).
             // We would like to detect this in code, and put out a helpful log message, but this is not possible, right here.
             //    We don't have a code way to query that future (not in api of Future).
             //    Further, we cannot learn anything from rrr, because rrr can hold multiple entries of machine, person, and network,
             //        and we can't know which rrr entries are being handled by rp and which are not being handled by rp.
-            
-            
-            ResourceQueryResult localRqr = future.get();
+            ResourceReserveResult localRqr = future.get();
             // Everything in localRqr was filled by rp.
             // So check every ReservedResource entry of localRqr to see that their individual "name"s match the "name"'s of their individual ResourceProviders, and match the "name" of rp
             String rpName = rp.getName();

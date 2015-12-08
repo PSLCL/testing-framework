@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceQueryResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
@@ -42,7 +42,7 @@ public class BindHandler {
 	public void reserveAndInitiateBind(List<ResourceDescription> reserveResourceRequests) throws Exception{
 		// note: each element of reserveReseourceRequests is a ResourceDescriptionImpl
 		// reserve the resource specified by each ResourceDescription, with 360 second timeout for each reservation		
-        ResourceQueryResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
+        ResourceReserveResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
         
         // analyze the success/failure of each reserved resource, one resource for each bind step
     	// rqr.getAvailableResources() can be called, but it is irrelevant to our .reserveIfAvailable() call

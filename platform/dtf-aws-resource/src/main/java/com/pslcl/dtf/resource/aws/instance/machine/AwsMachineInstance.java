@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.resource.aws.instance;
+package com.pslcl.dtf.resource.aws.instance.machine;
 
 import java.util.HashMap;
 import java.util.Map;

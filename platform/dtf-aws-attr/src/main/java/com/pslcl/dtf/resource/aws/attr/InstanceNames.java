@@ -66,16 +66,33 @@ public class InstanceNames
     ******************************************************************************/    
     public static final String VpcKeyBase = InstanceKeyBase + ".vpc";
     
+    public static final String VpcNameKey = VpcKeyBase + ".name";
     public static final String VpcCidrKey = VpcKeyBase + ".cidr";
     public static final String VpcTenancyKey = VpcKeyBase + ".tenancy";
     public static final String VpcMaxDelayKey = VpcKeyBase + ".max-delay";       
     public static final String VpcMaxRetriesKey = VpcKeyBase + ".max-retries";  
 
-    public static final String VpcCidrDefault = "10.0.0.0/24";
+    public static final String VpcCidrDefault = "10.0.0.0/16";
+    public static final String VpcNameAwsDefault = "aws-vpc-default";   
+    public static final String VpcNameDefault = null;   // installation/site default
     public static final String VpcTenancyDefault = "default";
     public static final String VpcMaxDelayDefault = shortMaxDelay; 
     public static final String VpcMaxRetriesDefault = shortMaxRetries;
 
+    /* ****************************************************************************
+     * Subnet declarations
+    ******************************************************************************/    
+    public static final String SubnetKeyBase = InstanceKeyBase + ".subnet";
+    public static final String SubnetSizeKey = SubnetKeyBase + ".size";
+    public static final String SubnetNameKey = SubnetKeyBase + ".name";
+    public static final String SubnetCidrKey = SubnetKeyBase + ".cidr";
+    public static final String SubnetVpcIdKey = SubnetKeyBase + ".vpc-name";
+
+    public static final String SubnetCidrDefault = "10.0.0.0/28";
+    public static final String SubnetNameDefault = ClientNames.TestShortNameDefault + "-" + SubnetCidrDefault;
+    public static final String SubnetSizeDefault = "16";  // nibble /28 cidr
+    public static final String SubnetVpcNameDefault = VpcNameDefault;
+    
     /* ****************************************************************************
      * Security Group declarations
     ******************************************************************************/    
@@ -137,6 +154,7 @@ public class InstanceNames
        keys.add(Ec2IamArnKey);
        keys.add(Ec2IamNameKey);
        keys.add(Ec2KeyPairNameKey);
+       keys.add(ClientNames.TestShortNameKey);
        return keys;
     }
 }
