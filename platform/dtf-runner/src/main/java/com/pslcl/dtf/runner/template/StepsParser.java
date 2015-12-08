@@ -104,18 +104,20 @@ public class StepsParser {
      * @return empty String when \n is at offset
      * @return a real step when first \n found after offset
      */
-    String getNextStep() {
-        // 2 rules: every step is terminated by \n; any step can be empty (i.e. its first character can be \n)
+    String getNextStep() throws Exception {
+        // 2 rules: every step is terminated by \n; no step can be empty (i.e. its first character cannot be \n)
         // parse one step
         String retStep = null;
         if (this.offset>=0 && steps!=null) {
             int termOffset = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
-            if (termOffset >= 0) {
+            if (termOffset > 0) {
                 retStep = steps.substring(this.offset, termOffset); // trailing \n not included
                 log.debug(simpleName + "returns stepReference " + stepReference + ", for " + ((this.offset==termOffset) ? "EMPTY " : "") + "step: " + retStep);
                 ++this.stepReference;
                 if (++termOffset >= steps.length())
                     termOffset = -1; // all bytes of steps have been consumed; termOffset now points to a byte that is after steps
+            } else {
+            	throw new Exception("empty step encountered, terminated with newline");
             }
             this.offset = termOffset;
         }
@@ -131,28 +133,30 @@ public class StepsParser {
      * @return empty List<String> when the first step does not match param stepType
      * @return In-order List<String> when at least the first step matches param stepType  
      */
-    List<String> getNextSteps(String stepTag) {
+    List<String> getNextSteps(String stepTag) throws Exception {
         List<String> retList = new ArrayList<String>(); // empty list; // capacity grows as elements are added; null elements are permitted
         if (steps == null) {
+        	// supposedly not possible because table template requires column step to be filled
             log.debug(simpleName + "getNextSteps() finds null steps member variable");
-        } else {
+        } else if (this.offset >= 0) {
             // process any one step with this rule: stepTag is the first characters leading up and including the first space char
-            if (this.offset >= 0) 
-            {
-            	int offsetNewLine = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
-            	if (offsetNewLine >= 0) {
-	                for (int i=0;
-	                	          this.offset!=-1; // -1: getNextStep(), below, exhausted this.steps buffer
-	                		                       i++) {
-	                    if (!steps.substring(this.offset, this.offset+stepTag.length()).equals(stepTag))
-	                        break;
-	                    String strStep = getNextStep(); // adjusts this.offset
-	                    retList.add(i, strStep); // i: 0 ... n
-	                }
-            	} else {
-                    log.debug(simpleName + "getNextSteps(): possible step has no trailing newline: " + steps.substring(this.offset));
-            	}
-            }
+        	int offsetNewLine = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
+        	if (offsetNewLine >= 0) {
+                for (int i=0;
+                	          this.offset!=-1; // -1: getNextStep(), below, exhausted this.steps buffer
+                		                       i++) {
+                	if (this.offset == offsetNewLine)
+                		throw new Exception("step is empty before newline");
+                    if (!steps.substring(this.offset, this.offset+stepTag.length()).equals(stepTag))
+                        break;
+                    String strStep = getNextStep(); // adjusts this.offset
+                    retList.add(i, strStep); // i: 0 ... n
+                    offsetNewLine = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
+                }
+        	} else {
+                log.debug(simpleName + "getNextSteps(): possible step has no trailing newline: " + steps.substring(this.offset));
+                throw new Exception("step has no trailing newline");
+        	}
         }
         return retList;
     }

@@ -199,7 +199,8 @@ public class InstancedTemplate {
         try {
 			nth.instanceNestedTemplates(reCore); // blocking call
 		} catch (Exception e) {
-			return; // TODO: inform caller of failure
+			log.debug(simpleName + "runSteps() exception in processing a nested template, msg: " + e);
+			throw e;
 		}
         int currentStepReference = this.mapStepReferenceToNestedTemplate.size();
 

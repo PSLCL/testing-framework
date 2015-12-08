@@ -42,19 +42,18 @@ public class BindHandler {
 	public void reserveAndInitiateBind(List<ResourceDescription> reserveResourceRequests) throws Exception{
 		// note: each element of reserveReseourceRequests is a ResourceDescriptionImpl
 		// reserve the resource specified by each ResourceDescription, with 360 second timeout for each reservation		
-        ResourceReserveResult rqr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
+        ResourceReserveResult rrr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
         
         // analyze the success/failure of each reserved resource, one resource for each bind step
-    	// rqr.getAvailableResources() can be called, but it is irrelevant to our .reserveIfAvailable() call
-        List<ResourceDescription> invalidResources = rqr.getInvalidResources(); // list is not in order
+        List<ResourceDescription> invalidResources = rrr.getInvalidResources(); // list is not in order
         if (invalidResources!=null && !invalidResources.isEmpty()) {
             log.warn(simpleName + "reserveAdInitiateBind() finds " + invalidResources.size() + " reports of invalid resource reserve requests");
         }
-        List<ResourceDescription> unavailableResources = rqr.getUnavailableResources(); // list is not in order
+        List<ResourceDescription> unavailableResources = rrr.getUnavailableResources(); // list is not in order
         if (unavailableResources!=null && !unavailableResources.isEmpty()) {
             log.warn(simpleName + "reserveAdInitiateBind() finds " + unavailableResources.size() + " reports of unavailable resources for the given reserve requests");
         }
-        List<ReservedResource> reservedResources = rqr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
+        List<ReservedResource> reservedResources = rrr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
         if (reservedResources!=null) {
             log.debug(simpleName + "reserveAdInitiateBind() finds " + reservedResources.size() + " successful ReservedResource requests" + (reservedResources.size() <= 0 ? "" : "; they are now reserved"));
         }
