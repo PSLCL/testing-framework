@@ -103,7 +103,7 @@ public class TemplateProvider implements ResourceStatusListener {
         if (iT != null) {
             // we will now use iT
             availableInstancedTemplates.remove(dbTemplate.hash);
-            // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the instantiated template, they get it, and now it is not available to another user  
+            // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the instantiated template, they get it, and now it is not available to another user.  
             iT.runSteps(); // resets internal StepsParser object and uses it to run steps
         } else {
         	iT = InstancedTemplate.createInstancedTemplate(reCore, dbTemplate, runnerMachine); // sets internal StepsParser object and uses it to run steps
@@ -111,7 +111,6 @@ public class TemplateProvider implements ResourceStatusListener {
         return iT;
     }
     
-//                @Override
     public void resourceStatusChanged(ResourceStatusEvent status)
     {
 //        int templateStepNumber = StepsParser.resourceToLineMap.get(status.coordinate);  

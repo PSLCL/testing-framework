@@ -31,8 +31,9 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.Runner;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueue;
-import com.pslcl.dtf.runner.process.ActionStore;
+import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.ProcessTracker;
+import com.pslcl.dtf.runner.process.RunEntryCore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
 
 /**
@@ -60,7 +61,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
 
     /** the process classes */
     public volatile RunnerMachine runnerMachine;
-    public volatile ActionStore actionStore; // holds state of each template; TODO: actionStore is instantiated here, but not yet otherwise used 
+    public volatile RunEntryStateStore runEntryStateStore; // holds RunEntryState of each reNum
     public volatile ProcessTracker processTracker;
 
     
@@ -73,8 +74,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
     {
         // Setup what we can, prior to knowing configuration
         // Most setup should be done in the init method.
-        log = LoggerFactory.getLogger(getClass());
-        simpleName = getClass().getSimpleName();
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
         Thread.setDefaultUncaughtExceptionHandler(this);
     }
 
@@ -106,7 +107,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config.init();
 
             runnerMachine = new RunnerMachine();
-            actionStore = new ActionStore(); // TODO: any order required?
+            runEntryStateStore = new RunEntryStateStore();
             processTracker = new ProcessTracker(this);
 
             config.initsb.ttl("Initialize JMX: ");
@@ -144,7 +145,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
     {
         try
         {
-            config.initsb.ttl(getClass().getSimpleName() + " start");
+        	config.initsb.ttl(getClass().getSimpleName() + " start");
             if(mq != null) // can be configured to disable the queue, see init
             {
                 if (mq.queueStoreExists())
@@ -153,17 +154,17 @@ public class RunnerService implements Runner, RunnerServiceMBean
                     mq.initQueueStoreGet();
                 } else
                 {
-                    log.warn("RunnerService.start exits- QueueStore message queue not available.");
+                    log.warn(simpleName + "start exits- QueueStore message queue not available.");
                     throw new Exception("QueueStore not available");
                 }
             }
             config.initsb.indentedOk();
         } catch (Exception e)
         {
-            log.error(config.initsb.sb.toString(), e);
+            log.error(simpleName + config.initsb.sb.toString(), e);
             throw e;
         }
-        log.debug(config.initsb.sb.toString());
+        log.debug(simpleName + config.initsb.sb.toString());
     }
 
     @Override
@@ -242,29 +243,25 @@ public class RunnerService implements Runner, RunnerServiceMBean
         {
             // the ordinary method
             long reNum = Long.parseLong(strRunEntryNumber);
-            log.debug("RunnerService.submitQueueStoreNumber() finds reNum " + reNum);
+            log.debug(simpleName + "submitQueueStoreNumber() finds reNum " + reNum);
             try
             {
-                if (ProcessTracker.resultStored(reNum))
-                {
+                if (ProcessTracker.isResultStored(reNum)) {
                     ackRunEntry(message);
-                    System.out.println("RunnerService.submitQueueStoreNumber() finds reNum " + reNum + ", result already stored. Acking this reNum now.");
-                } else if (processTracker.inProcess(reNum))
-                {
-                    System.out.println("RunnerService.submitInstanceNumber_Store() finds reNum " + reNum + ", work already processing");
-                } else
-                {
+                    log.debug(simpleName + "submitQueueStoreNumber() finds reNum " + reNum + ", result already stored. Acking this reNum now.");
+                } else if (processTracker.isRunning(reNum)) {
+                    log.debug(simpleName + "submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
+                } else {
+                    log.debug(simpleName + "submitQueueStoreNumber() finds reNum " + reNum + ", submitted for processing. ");
                     // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.
                     runnerMachine.initiateProcessing(reNum, message);
                 }
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 // do nothing; reNum remains in InstanceStore, we will see it again
-                System.out.println("RunnerService.submitInstanceNumber_Store() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
+                log.error(simpleName + "submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
                 throw e;
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             throw e; // recipient must ack the message
         }
     }

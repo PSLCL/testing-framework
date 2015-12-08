@@ -20,13 +20,9 @@ import java.util.concurrent.TimeoutException;
 import com.pslcl.dtf.runner.RunnerService;
 
 public class ProcessTracker {
-    
-    private RunnerService runnerService = null;
-    
-    public ProcessTracker(RunnerService runnerService) {
-        this.runnerService = runnerService;
-    }
-    
+
+	// static
+	
     /**
      * 
      * @note This is a static method, because there is only one database.
@@ -35,8 +31,23 @@ public class ProcessTracker {
      * @return
      * @throws Exception
      */
-    public static boolean resultStored(long dtNum) throws TimeoutException, Exception {
-        return false; // TODO
+    static public boolean isResultStored(long reNum) throws TimeoutException, Exception {
+    	boolean retBoolean = false;
+
+    	if (true) { // false: temporarily disable this code; by so doing, we allow local testing to proceed, even if a result is already stored
+    		Boolean result = RunEntryCore.getResult(reNum);
+    		retBoolean = (result!=null && result.booleanValue()==true);
+    	}
+        return retBoolean;
+    }
+
+	
+    // instance declarations
+    
+	private RunnerService runnerService = null;
+    
+    public ProcessTracker(RunnerService runnerService) {
+        this.runnerService = runnerService;
     }
     
     /**
@@ -46,13 +57,19 @@ public class ProcessTracker {
      * @return
      * @throws Exception
      */
-    public boolean inProcess(long dtNum) throws TimeoutException, Exception {
-        // TODO: Expand this, perhaps. Shown is the basic truth: if result is not stored, then it is inProcess.
-        //       But this simple truth ignores the case where progress is hopelessly blocked.
-        //       So make a decision:
-        //           Is there anything that can be added here that could fix up a blocked test instance, by replacing it with a new test instance?
-        //           If not, the this single line of code is appropriate.
-        return runnerService.actionStore.get(dtNum) != null;
+    public boolean isRunning(long reNum) throws TimeoutException, Exception {
+    	// return true if reNum if found in runEntryState storage
+    	boolean retIsRunning = runnerService.runEntryStateStore.get(reNum) != null;
+    	return retIsRunning;
+
+    	// TODO: There is a case to consider, where a hopelessly blocked test run is detected.
+    	//           Can it be detected? If so, this code could be injected, above:
+        //    	if (retInProcess) {
+        //    		if (hopelesslyBlocked) {
+        //    			destroyTestRun(reNum);
+        //    			retInProcess = false; // this can allow the test run to begin again
+        //    		}
+        //    	}
     }
 
 }

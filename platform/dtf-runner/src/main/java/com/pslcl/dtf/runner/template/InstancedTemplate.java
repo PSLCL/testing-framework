@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
@@ -50,6 +51,8 @@ public class InstancedTemplate {
     	return iT;
     }
 	
+    private final Logger log;
+    private final String simpleName;
 	private RunEntryCore reCore;   // holds runID of our top-level template (might be us or we might be nested down from it)
 	private DBTemplate dbTemplate; // holds templateID as a hash
 	private RunnerMachine runnerMachine;
@@ -69,6 +72,8 @@ public class InstancedTemplate {
     private List<ResourceInfo> orderedResourceInfos = null;
     
     InstancedTemplate(RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
     	this.reCore = reCore;
     	this.dbTemplate = dbTemplate;
     	this.runnerMachine = runnerMachine;
@@ -226,9 +231,10 @@ public class InstancedTemplate {
             // algorithm for each setID: initiate step processing in sequence, as supplied, while also allowing parallel processing; order of step completion is uncertain
             for (int setStepCount=0; setStepCount<stepsOfSet.size(); setStepCount++) {
             	// from the first step of a possible group of same-command steps, get its command and act on it
+            	String commandString = null;
             	SetStep firstLikeStep = new SetStep(stepsOfSet.get(setStepCount));
             	try {
-					String commandString = firstLikeStep.getCommand();
+					commandString = firstLikeStep.getCommand();
 					switch(commandString) {
 					case "bind":
 						if (bindHandler == null) {
@@ -338,15 +344,14 @@ public class InstancedTemplate {
 						}
 						break;
 					default:
-						// TODO: log message; note: include here must be rejected
-					    LoggerFactory.getLogger(getClass()).debug(InstancedTemplate.class.getSimpleName() + " unhandled step command: " + commandString);
+					    log.debug(simpleName + "unhandled step command: " + commandString + (commandString.equals("include") ? ": must precede all other commands" : ""));
 						break;
 					}
             	} catch (ArrayIndexOutOfBoundsException ae) {
-				    LoggerFactory.getLogger(getClass()).debug(InstancedTemplate.class.getSimpleName() + " malformed step");
+				    log.error(simpleName + "malformed step");
 				    throw ae;
 				} catch (Exception e) {
-				    LoggerFactory.getLogger(getClass()).debug(InstancedTemplate.class.getSimpleName() + " executing step fails");
+				    log.debug(simpleName + "runSteps(): " + commandString + " executing step fails; exception msg: " + e);
 					throw e;
 				}
             } // end for() same setID command initiating

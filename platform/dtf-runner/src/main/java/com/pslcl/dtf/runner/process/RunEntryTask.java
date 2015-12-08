@@ -15,12 +15,22 @@
  */
 package com.pslcl.dtf.runner.process;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RunEntryTask implements Runnable {
-    private RunnerMachine runnerMachine;
+
+	// instance declarations 
+
+	private RunnerMachine runnerMachine;
     private RunEntryCore reCore;
     private long reNum;
     private String runInstanceThreadName;
+    private final Logger log;
+    private final String simpleName;
+        
+    
+    // public class methods
 
     /**
      * Constructor: From a given run entry number, initiate execution of its test run.
@@ -32,6 +42,8 @@ public class RunEntryTask implements Runnable {
      * @param testInstanceNumber identifies test instance to execute
      */
     public RunEntryTask(RunnerMachine runnerMachine, long reNum) throws Exception {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
         this.runnerMachine = runnerMachine;
         this.reNum = reNum;
         this.runInstanceThreadName = new String("runEntry " + reNum);
@@ -40,7 +52,7 @@ public class RunEntryTask implements Runnable {
         try {
             runnerMachine.getConfig().blockingExecutor.execute(this); // schedules call to this.run(); this is the full execution of the specified test run
         } catch (Exception e) {
-            System.out.println("RunEntryTask constructor failed for reNum " + reNum + ", with Exception " + e);
+            log.error(simpleName + "constructor failed for reNum " + reNum + ", with Exception " + e);
             throw e;
         }
     }
@@ -53,15 +65,15 @@ public class RunEntryTask implements Runnable {
     @Override
     public void run() {
         // this thread blocks while waiting for the test run to return a test result and otherwise complete itself (if needed, block could be for days at a time)
-        System.out.println( "RunEntryTask.run() opens reNum " + reNum);
+        log.debug(simpleName + "run() opens reNum " + reNum);
         
         while(true) {
-            RunEntryState reState = runnerMachine.getService().actionStore.get(reNum);
+            RunEntryState reState = runnerMachine.getService().runEntryStateStore.get(reNum);
             Action action = reState.getAction();
             Action nextAction;
 			try {
 				nextAction = action.act(reState, reCore, runnerMachine.getService());
-	            System.out.println("RunEntryTask.run() ran Action " + action.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
+                log.debug(simpleName + "run() ran Action " + action.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
 	            if (nextAction == Action.DISCARDED)
 	                break; // close thread
 			} catch (Exception e1) {
@@ -76,8 +88,8 @@ public class RunEntryTask implements Runnable {
                 e.printStackTrace();
             }
         }
-        
-        System.out.println( "RunEntryTask.run() closes reNum " + reNum);
+ 
+        log.debug(simpleName + "run() closes reNum " + reNum);
     }
     
 }

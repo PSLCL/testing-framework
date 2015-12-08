@@ -5,10 +5,12 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class DeployHandler {
 	private InstancedTemplate iT;
@@ -16,6 +18,8 @@ public class DeployHandler {
     private List<DeployInfo> futuresOfDeploys;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private final Logger log;
+    private final String simpleName;
 
 	/**
 	 * Constructor: Identify consecutive deploy steps in a set of steps
@@ -23,6 +27,8 @@ public class DeployHandler {
 	 * @param setSteps
 	 */
 	public DeployHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
 		this.futuresOfDeploys = new ArrayList<DeployInfo>();
@@ -48,8 +54,8 @@ public class DeployHandler {
             	String deployStep = setSteps.get(i);
             	SetStep parsedSetStep = new SetStep(deployStep); // setID deploy 0-based-machine-ref artifact-name artifactHash
                                                                  // 7 deploy 0 lib%2Fslf4j-api-1.7.6.jar A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
-            	System.out.println("DeployHandler.computeDeployRequests() finds deploy in stepSet " + parsedSetStep.getSetID() + ": " + deployStep);
-            	
+                log.warn(simpleName + "computeDeployRequests() finds deploy in stepSet " + parsedSetStep.getSetID() + ": " + deployStep);
+                
             	ResourceInstance resourceInstance = null;
             	String strArtifactName = null;
             	String strArtifactHash = null;
@@ -58,14 +64,22 @@ public class DeployHandler {
 	            	int machineRef = Integer.valueOf(strMachineReference).intValue();
 	            	resourceInstance = iT.getResourceInstance(machineRef);
 	            	if (resourceInstance != null) {
+	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
+	            		//       Now that we know it is used for deploy, check resourceInstance for required type: machine
+	            		// riRP: resourceInstanceResourceProvider, which has self-knowledge of resource-provider type
+	            		ResourceProvider riRP = resourceInstance.getResourceProvider();
+	            		String resourceType = ResourceProvider.getTypeName(riRP);
+	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
+	            			throw new Exception("DeployHandler processing asked to deploy to non 'machine' resource");
+	            		
 	            		strArtifactName = parsedSetStep.getParameter(1);
 	            		strArtifactHash = parsedSetStep.getParameter(2);
 	                	retList.add(new DeployInfo(resourceInstance, strArtifactName, strArtifactHash));
 	            	} else {
-	            		throw new Exception("DeployHandler.computeDeployRequests() finds non-bound machine at reference " + strMachineReference);
+	            		throw new Exception("DeployHandler.computeDeployRequests() finds null bound ResourceInstance at reference " + strMachineReference);
 	            	}
 				} catch (IndexOutOfBoundsException e) {
-                    LoggerFactory.getLogger(getClass()).debug(DeployHandler.class.getSimpleName() + " deploy step does not specify machine reference, artifact name, or artifact hash");
+                    log.warn(simpleName + "deploy step does not specify machine reference, artifact name, or artifact hash");
 					throw e;
 				}
             }
@@ -127,10 +141,10 @@ public class DeployHandler {
                     String msg = ee.getLocalizedMessage();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    LoggerFactory.getLogger(getClass()).info(DeployHandler.class.getSimpleName() + ".waitComplete(), deploy failed: " + msg, ee);
+                    log.warn(simpleName + "waitComplete(), deploy failed: " + msg, ee);
                 	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
 				} catch (ExecutionException e) {
-                    LoggerFactory.getLogger(getClass()).info("Executor pool shutdown");
+                    log.warn(simpleName + "Executor pool shutdown"); // TODO: new message
                 	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
 				}
             } else {

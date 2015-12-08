@@ -1,18 +1,18 @@
 package com.pslcl.dtf.runner.template;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class ConnectHandler {
 	private InstancedTemplate iT;
@@ -20,6 +20,8 @@ public class ConnectHandler {
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
     private List<Future<? extends CableInstance>> futuresOfConnects;
+    private final Logger log;
+    private final String simpleName;
 //    private Map<Future<? extends CableInstance>, MachineInstance> mapFuturesToMachineInstance;
 //    private Map<Future<? extends CableInstance>, NetworkInstance> mapFuturesToNetworkInstance;
     
@@ -29,6 +31,8 @@ public class ConnectHandler {
 	 * @param setSteps
 	 */
 	public ConnectHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
 //		this.mapFuturesToMachineInstance = new HashMap<Future<? extends CableInstance>, MachineInstance>();
@@ -50,26 +54,45 @@ public class ConnectHandler {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
             	String connectStep = setSteps.get(i);
             	SetStep parsedSetStep = new SetStep(connectStep); // setID connect 0-based-machine-ref 0-based-network-reference
-                                                                  // 9 connect 0 1 
-            	System.out.println("ConnectHandler.computeConnectRequests() finds connect in stepSet " + parsedSetStep.getSetID() + ": " + connectStep);
-            	
+                                                                  // 9 connect 0 1
+            	log.debug(simpleName + "computeConnectRequests() finds connect in stepSet " + parsedSetStep.getSetID() + ": " + connectStep);
             	ResourceInstance machineInstance = null;
             	ResourceInstance networkInstance = null;
         		try {
 					String strMachineReference = parsedSetStep.getParameter(0);
 					int machineReference = Integer.valueOf(strMachineReference).intValue();
 					machineInstance = iT.getResourceInstance(machineReference);
-					if (machineInstance == null)
-	            		throw new Exception("ConnectHandler.computeConnectRequests() finds non-bound machine at reference " + strMachineReference);
+					if (machineInstance != null) {
+	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
+	            		//       Now that we know it is used for the first parameter of connect, check resourceInstance for required type: machine
+	            		// riRP: resourceInstanceResourceProvider, which has self-knowledge of resource-provider type
+	            		ResourceProvider riRP = machineInstance.getResourceProvider();
+	            		String resourceType = ResourceProvider.getTypeName(riRP);
+	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
+	            			throw new Exception("ConnectHandler processing asked to connect a non 'machine' resource");	
+					} else {
+	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound ResourceInstance at reference " + strMachineReference);
+					}
+					
 					String strNetworkReference = parsedSetStep.getParameter(1);
 					int networkReference = Integer.valueOf(strNetworkReference).intValue();
 					networkInstance = iT.getResourceInstance(networkReference);
-					if (networkInstance == null)
-	            		throw new Exception("ConnectHandler.computeConnectRequests() finds non-bound network at reference " + strNetworkReference);
+					if (networkInstance != null) {
+	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
+	            		//       Now that we know it is used for the second parameter of connect, check resourceInstance for required type: network
+	            		// riRP: resourceInstanceResourceProvider, which has self-knowledge of resource-provider type
+	            		ResourceProvider riRP = machineInstance.getResourceProvider();
+	            		String resourceType = ResourceProvider.getTypeName(riRP);
+	            		if (resourceType==null || resourceType!=ResourceProvider.NetworkName)
+	            			throw new Exception("ConnectHandler processing asked to connect a machine to a non 'network' resource");	
+					} else {
+	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound ResourceInstance at reference " + strNetworkReference);
+					}
 					retList.add(new ConnectInfo(machineInstance, networkInstance));
 				} catch (Exception e) {
-                    LoggerFactory.getLogger(getClass()).debug(ConnectHandler.class.getSimpleName() + " connect step does not specify machine reference or network reference");
-					throw e;				}
+                    log.debug(simpleName + " connect step does not specify machine reference or network reference");
+					throw e;
+				}
             }
 		}
 		return retList;		
@@ -135,11 +158,11 @@ public class ConnectHandler {
                     String msg = ee.getLocalizedMessage();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    LoggerFactory.getLogger(getClass()).info(ConnectHandler.class.getSimpleName() + ".waitComplete(), connect failed: " + msg, ee);
+                	log.warn(simpleName + "waitComplete(), connect failed: " + msg, ee);
                     ConnectInfo.markAllConnectedSuccess(false);
 				} catch (ExecutionException e) {
 					exception = e;
-                    LoggerFactory.getLogger(getClass()).info("Executor pool shutdown");
+                	log.warn(simpleName + "waitComplete() Executor pool shutdown"); // TODO: need new msg
                     ConnectInfo.markAllConnectedSuccess(false);
 				}
         	} else {

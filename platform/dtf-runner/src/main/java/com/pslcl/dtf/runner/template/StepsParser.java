@@ -18,6 +18,7 @@ package com.pslcl.dtf.runner.template;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StepsParser {
@@ -69,6 +70,8 @@ public class StepsParser {
     private String steps;
     private int offset;
     private int stepReference;
+    private final Logger log;
+    private final String simpleName;
     
     
     // instance methods
@@ -78,6 +81,8 @@ public class StepsParser {
      * @param steps
      */
     StepsParser(String steps) {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
         this.steps = steps;
         offset = 0;
         stepReference = 0;
@@ -107,7 +112,7 @@ public class StepsParser {
             int termOffset = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
             if (termOffset >= 0) {
                 retStep = steps.substring(this.offset, termOffset); // trailing \n not included
-                System.out.println("StepsParser.getNextStep() returns stepReference " + stepReference + ", for " + ((this.offset==termOffset) ? "EMPTY " : "") + "step: " + retStep);
+                log.debug(simpleName + "returns stepReference " + stepReference + ", for " + ((this.offset==termOffset) ? "EMPTY " : "") + "step: " + retStep);
                 ++this.stepReference;
                 if (++termOffset >= steps.length())
                     termOffset = -1; // all bytes of steps have been consumed; termOffset now points to a byte that is after steps
@@ -129,7 +134,7 @@ public class StepsParser {
     List<String> getNextSteps(String stepTag) {
         List<String> retList = new ArrayList<String>(); // empty list; // capacity grows as elements are added; null elements are permitted
         if (steps == null) {
-            System.out.println("StepsParser.getNextSteps() finds null steps member variable"); // This has been seen before, fix it
+            log.debug(simpleName + "getNextSteps() finds null steps member variable");
         } else {
             // process any one step with this rule: stepTag is the first characters leading up and including the first space char
             if (this.offset >= 0) 
@@ -145,7 +150,7 @@ public class StepsParser {
 	                    retList.add(i, strStep); // i: 0 ... n
 	                }
             	} else {
-                    LoggerFactory.getLogger(getClass()).debug(StepsParser.class.getSimpleName() + " possible step has no trailing newline: " + steps.substring(this.offset));
+                    log.debug(simpleName + "getNextSteps(): possible step has no trailing newline: " + steps.substring(this.offset));
             	}
             }
         }

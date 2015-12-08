@@ -21,7 +21,9 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.runner.template.InstancedTemplate;
 
@@ -31,14 +33,135 @@ import com.pslcl.dtf.runner.template.InstancedTemplate;
  */
 public class RunEntryCore {
 
-    // class members
+    // static declarations
 
     /** The common connection to the database. */
-    private static AtomicInteger connectCount = new AtomicInteger(0); // ref counting
-    private static Connection connect = null;
-    private static boolean read_only = true;
+	static private Integer connectCount = 0; // ref count; also used as the synchronization object
+    static private Connection connect = null; // not used for testing, only for as actual connect object
+    static private boolean read_only = true;
+    
+    /**
+     * Open the database connection if it is not already open. Environment variables are used
+     * to determine the DB host, user, and password. The DTF_TEST_DB_HOST variable is required.
+     * DTF_TEST_DB_USER and DTF_TEST_DB_PASSWORD are optional, and if not specified then a guest
+     * account with no password is used. This sets the 'read_only' flag, which disables all
+     * database modifications.
+     */
+    static public void openDatabase() throws Exception {
+    	synchronized (connectCount) {
+//    		if (connectCount.intValue() < 0) {
+//    			// REVIEW: deal with badness
+//    		}
+    		if (connectCount.intValue() == 0) {
+                try {
+                    // Setup the connection with the DB
+                    String host = System.getenv("DTF_TEST_DB_HOST");
+                    String user = System.getenv("DTF_TEST_DB_USER");
+                    String password = System.getenv("DTF_TEST_DB_PASSWORD");
+                    read_only = true;
+                    if (user != null && password != null) {
+                        read_only = false;
+                    }
+                    if ( user == null || password == null ) {
+                        user = "guest";
+                        password = "";
+                    }
+                    // com.mysql.jdbc.Driver required, at run time only, for .getConnection()
+                    connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
+                } catch ( Exception e ) {
+                    LoggerFactory.getLogger("RunEntryCore").error("openDatabase() could not open database connection, " + e);
+                    throw e;
+                }
+    		}
+            ++connectCount;
+    	} // end synchronized()
+    }
 
-    /* instance members */
+    /**
+     * Close the database connection if it is open.
+     */
+    static public void closeDatabase() throws Exception {
+    	synchronized (connectCount) {
+            --connectCount;
+//    		if (connectCount.intValue() < 0) {
+//    			// REVIEW: deal with badness
+//    		}
+    		if (connectCount.intValue() == 0) {
+                try {
+                    connect.close();
+                } catch ( Exception e ) {
+                    LoggerFactory.getLogger("RunEntryCore").error("closeDatabase() could not close database connection, " + e);
+                    throw e;
+                }
+    		}
+    	} // end synchronized()
+    }
+
+    static private void safeClose( ResultSet r ) {
+        try {
+            if ( r != null )
+                r.close();
+        }
+        catch ( Exception e ) {
+            // Ignore
+        }
+    }
+
+    static private void safeClose( Statement s ) {
+        try {
+            if ( s != null )
+                s.close();
+        }
+        catch ( Exception e ) {
+            // Ignore
+        }
+    }
+    
+    /**
+     * 
+     * @param reNum
+     * @return
+     */
+    static public Boolean getResult(long reNum) throws Exception {
+    	Boolean retBoolean = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+       		RunEntryCore.openDatabase();
+            statement = connect.createStatement();
+            String strRENum = String.valueOf(reNum);
+
+            // These table run entries are filled: pk_run, fk_template, start_time, and maybe owner.
+            // topDBTemplate.reNum was filled in constructor; now fill all other entries of topDBTemplate
+            //     acquire run table information for entry reNum
+            //     acquire the matching template table information
+            resultSet = statement.executeQuery( "SELECT pk_run, result " +
+                                                "FROM run " +
+                                                "WHERE pk_run = " + strRENum );
+            if ( resultSet.next() ) {
+                retBoolean = resultSet.getBoolean("result");
+                if (resultSet.next())
+                    throw new Exception("resultSet wrongly has more than one entry");
+            } else {
+                throw new Exception("template data not present");
+            }
+        } catch(Exception e) {
+            LoggerFactory.getLogger("RunEntryCore").error("getResult() exception for reNum " + reNum + ": "+ e);
+            throw e;
+        } finally {
+            safeClose( resultSet ); resultSet = null;
+            safeClose( statement ); statement = null;
+       		RunEntryCore.closeDatabase(); // ref counting can keep it open until the very end
+        }
+   		
+    	return retBoolean;
+    }
+
+    
+    // class instance members
+    
+    private final Logger log;
+    private final String simpleName;
     private Long reNum;
     private DBTemplate topDBTemplate = null; // describes the top-level template only, i.e. the template that is matched to the run table entry known as reNum
 
@@ -50,14 +173,10 @@ public class RunEntryCore {
      */
     private void loadRunEntryData() throws Exception {
         // meant to be called once only; if more than once becomes useful, might work but review
-        if (connect == null) {
-            System.out.println("<internal> RunEntryCore.loadRunEntryData() finds no database connection and exits");
-            return;
-        }
-
         Statement statement = null;
         ResultSet resultSet = null;
         try {
+        	RunEntryCore.openDatabase();
             statement = connect.createStatement();
 
             if (reNum != null) {
@@ -82,7 +201,7 @@ public class RunEntryCore {
                     topDBTemplate.end_time = resultSet.getDate("end_time");
                     topDBTemplate.result = (resultSet.getObject("result") != null) ? resultSet.getBoolean("result") : null;
                     topDBTemplate.owner = resultSet.getString("owner");
-                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads data from run-template matched records for reNum " + this.reNum + ", pk_template " + topDBTemplate.pk_template);
+                    log.debug(simpleName + "<internal> loadRunEntryData() loads data from run-template matched records for reNum " + this.reNum + ", pk_template " + topDBTemplate.pk_template);
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
                 } else {
@@ -107,7 +226,7 @@ public class RunEntryCore {
                     topDBTemplate.end_time = null;
                     topDBTemplate.result = null;
                     topDBTemplate.owner = "dtf-runner";
-                    System.out.println("      <internal> RunEntryCore.loadRunEntryData() loads template data only for test run with no table run entry, for pk_template " + topDBTemplate.pk_template);
+                    log.debug(simpleName + "<internal> loadRunEntryData() loads template data only for test run with no table run entry, for pk_template " + topDBTemplate.pk_template);
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
                 } else {
@@ -115,18 +234,19 @@ public class RunEntryCore {
                 }
             }
         } catch(Exception e) {
-            System.out.println("RunEntryCore.loadRunEntryData() exception for reNum " + this.reNum + ": "+ e);
+            log.error(simpleName + "loadRunEntryData() exception for reNum " + this.reNum + ": "+ e);
             throw e;
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
+       		RunEntryCore.closeDatabase(); // ref counting can keep it open until the very end
         }
     }
 
     /**
      *
      */
-    private void storeReadyRunEntryData() {
+    private void storeReadyRunEntryData() throws Exception {
         // assume template.steps and template.hash are not null, but check template.enabled
         if (topDBTemplate.enabled == false)
             throw new IllegalArgumentException("topDBTemplate.enabled is false");
@@ -139,121 +259,62 @@ public class RunEntryCore {
     /**
      *
      */
-    private void storeResultRunEntryData() {
+    private void storeResultRunEntryData() throws Exception {
         // Calling this with null for topDBTemplate.result makes no sense. It may be an error. TODO: check that and log it, and maybe reject it entirely.
         topDBTemplate.end_time = new Date(); // now
         writeRunEntryData();
     }
 
     /**
+     * @note: if reNum.result field has a value (is not null), this does not overwrite anything
      * @note: does not overwrite run.pk_run, run.fk_template, run.start_time; dtf-runner does not own these
      * @note: dtf-runner also do not own table template, and does not write it
+     *
      */
-    private void writeRunEntryData() {
-        Statement statement = null;
-        try {
-            statement = connect.createStatement();
-            String strRENum = String.valueOf(topDBTemplate.reNum);
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-            String readyTime = "null";
-            if (topDBTemplate.ready_time != null)
-                readyTime = "'" + sdf.format(topDBTemplate.ready_time) + "'";
-            String endTime = "null";
-            if (topDBTemplate.end_time != null)
-                endTime = "'" + sdf.format(topDBTemplate.end_time) + "'";
-            String owner = "null";
-            if (topDBTemplate.owner != null)
-                owner = "'" + topDBTemplate.owner + "'";
-            Boolean result = null;
-            if (topDBTemplate.result != null)
-                result = topDBTemplate.result;
-            byte [] artifacts = null;
-            if (topDBTemplate.artifacts != null)
-                artifacts = topDBTemplate.artifacts;
-
-            String str = "UPDATE run " +
-                         "SET ready_time = " + readyTime + ", " +
-                               "end_time = " + endTime   + ", " +
-                                  "owner = " + owner + ", " +
-                                 "result = " + result + ", " +
-                              "artifacts = " + artifacts + " " +
-                         "WHERE pk_run = " + strRENum;
-
-            statement.executeUpdate( str ); // returns the matching row count: 1 for pk_run row exists, or 0
-        } catch(Exception e) {
-            System.out.println("RunEntryCore.writeRunEntryData() exception for reNum " + topDBTemplate.reNum + ": "+ e);
-        } finally {
-            safeClose( statement ); statement = null;
-        }
-    }
-
-    /**
-     * Open the database connection if it is not already open. Environment variables are used
-     * to determine the DB host, user, and password. The DTF_TEST_DB_HOST variable is required.
-     * DTF_TEST_DB_USER and DTF_TEST_DB_PASSWORD are optional, and if not specified then a guest
-     * account with no password is used. This sets the 'read_only' flag, which disables all
-     * database modifications.
-     */
-    private void openDatabase() {
-        if ( connect == null ) {
-            try {
-                // Setup the connection with the DB
-                String host = System.getenv("DTF_TEST_DB_HOST");
-                String user = System.getenv("DTF_TEST_DB_USER");
-                String password = System.getenv("DTF_TEST_DB_PASSWORD");
-                read_only = true;
-                if (user != null && password != null) {
-                    read_only = false;
-                }
-                if ( user == null || password == null ) {
-                    user = "guest";
-                    password = "";
-                }
-                // com.mysql.jdbc.Driver required at run time only for .getConnection()
-                connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
-            } catch ( Exception e ) {
-                System.err.println( "ERROR: RunEntryCore.openDatabase() could not open database connection, " + e.getMessage() );
-            }
-        }
-        connectCount.incrementAndGet();
-    }
-
-    /**
-     * Close the database connection if it is open.
-     */
-    private void closeDatabase() {
-        if (connectCount.decrementAndGet() <= 0) {
-            try {
-                if ( connect != null ) {
-                    connect.close();
-                }
-            } catch ( Exception e ) {
-                System.err.println( "ERROR: Could not close database connection, " + e.getMessage() );
-            } finally {
-                connect = null;
-            }
-        }
-    }
-
-    private void safeClose( ResultSet r ) {
-        try {
-            if ( r != null )
-                r.close();
-        }
-        catch ( Exception e ) {
-            // Ignore
-        }
-    }
-
-    private void safeClose( Statement s ) {
-        try {
-            if ( s != null )
-                s.close();
-        }
-        catch ( Exception e ) {
-            // Ignore
-        }
+    private void writeRunEntryData() throws Exception {
+    	Boolean previousStoredResult = RunEntryCore.getResult(reNum); 
+    	if (previousStoredResult == null) { // this check is a fail-safe
+	        Statement statement = null;
+	        try {
+	        	RunEntryCore.openDatabase();
+	            statement = connect.createStatement();
+	            String strRENum = String.valueOf(topDBTemplate.reNum);
+	            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	
+	            String readyTime = "null";
+	            if (topDBTemplate.ready_time != null)
+	                readyTime = "'" + sdf.format(topDBTemplate.ready_time) + "'";
+	            String endTime = "null";
+	            if (topDBTemplate.end_time != null)
+	                endTime = "'" + sdf.format(topDBTemplate.end_time) + "'";
+	            String owner = "null";
+	            if (topDBTemplate.owner != null)
+	                owner = "'" + topDBTemplate.owner + "'";
+	            Boolean result = null;
+	            if (topDBTemplate.result != null)
+	                result = topDBTemplate.result;
+	            byte [] artifacts = null;
+	            if (topDBTemplate.artifacts != null)
+	                artifacts = topDBTemplate.artifacts;
+	
+	            String str = "UPDATE run " +
+	                         "SET ready_time = " + readyTime + ", " +
+	                               "end_time = " + endTime   + ", " +
+	                                  "owner = " + owner + ", " +
+	                                 "result = " + result + ", " +
+	                              "artifacts = " + artifacts + " " +
+	                         "WHERE pk_run = " + strRENum;
+	
+	            statement.executeUpdate( str ); // returns the matching row count: 1 for pk_run row exists, or 0
+	        } catch(Exception e) {
+	            log.error(simpleName + "writeRunEntryData() exception for reNum " + topDBTemplate.reNum + ": "+ e);
+	        } finally {
+	            safeClose( statement ); statement = null;
+	       		RunEntryCore.closeDatabase(); // ref counting can keep it open until the very end
+	        }
+    	} else {
+    		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
+    	}
     }
 
 
@@ -265,27 +326,25 @@ public class RunEntryCore {
      * @throws Exception 
      */
     public RunEntryCore( Long reNum ) throws Exception {
+    	this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
         this.reNum = reNum;
-        openDatabase();
-        if (connect != null) {
-            topDBTemplate = new DBTemplate(this.reNum);
-            try {
-            	// fill all fields of topDBTemplate from the existing existing database entries
-				loadRunEntryData(); // throws Exception for no database entry for this.reNum
-				storeReadyRunEntryData(); // can throw IllegalArgumentException for template.enabled false, and SQL write related exceptions
-			} catch (Exception e) {
-				throw e;
-			}
-        } else {
-            throw new Exception("database connection down");
-        }
+        topDBTemplate = new DBTemplate(this.reNum);
+        try {
+          	// fill all fields of topDBTemplate from the existing existing database entries
+			loadRunEntryData(); // throws Exception for no database entry for this.reNum
+			storeReadyRunEntryData(); // can throw IllegalArgumentException for template.enabled false, and SQL write related exceptions
+		} catch (Exception e) {
+			throw e;
+		}
     }
 
     /**
      * Close the RunEntryCore object, releasing any resources.
      */
-    public void close() {
-        closeDatabase();
+    public void close() throws Exception {
+    	// handled now by refcounting, by actual methods that actually use the database
+//        closeDatabase();
     }
 
     public boolean isReadOnly() {
@@ -315,9 +374,6 @@ public class RunEntryCore {
         // We might have access to the database but the goal is to minimize use of it in this method call- everything is found in structure this.topDBTemplate.
 
         // On arriving here our reNum (aka pk_run) exists in table run.
-        //     DECISION: We could check (here or before) to prove that pk_run of table run has null for its result field.
-        //               But we instead require that this be checked in whatever process placed reNum into the message queue.
-        //               A human can manually place an reNum, without double checking, and we will make a test run out of it.
         //     We expect that no other thread will be filling our result field of table run.
         //
         //     A "top level" test run is the one selected by a QA group process, for the purpose of storing its returned test result in table run.
@@ -328,7 +384,7 @@ public class RunEntryCore {
         //     There is the issue of properly associating test instances with test runs:
         //         For any top level test run, we expect that at least one entry of table test_instance is associated with it.
         //         Any one test instance is associated with only one test run.
-        //         At the completion of a top level test run, if there is no test instance association, it means that other test runs supplanted ours.
+        //         At the completion of a top level test run, if there is no test instance association, it means that other test runs supplanted our original test instance association.
         //             This situation may be legal, but it may not be intended, and should be investigated to prove that it is legal.
         //     We understand that the pseudo test runs of nested templates will return a result that may or may not be stored in table run.
         //         Regardless of that, these pseudo test runs may often, or even usually, not be connected to any test instance.
@@ -337,16 +393,20 @@ public class RunEntryCore {
 
         this.topDBTemplate.result = new Boolean(false);
         InstancedTemplate iT;
+        boolean result;
         try {
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
-            this.topDBTemplate.result = new Boolean(true);
-            runnerMachine.getTemplateProvider().releaseTemplate(iT); // this is the only releaseTemplate() call; if iT is not held for reuse, this call releases its nested templates.
+            this.topDBTemplate.result = new Boolean(true); // no exception means success
+            runnerMachine.getTemplateProvider().releaseTemplate(iT); // this is the only releaseTemplate() call for a top level template for a top level template; this call then releases those nested templates that are not held for reuse
         } catch (Exception e) {
             // TODO: remember that .getInstancedTemplate() must clean up
             throw e;
+        } finally {
+            result = this.topDBTemplate.result.booleanValue();
+            log.debug(simpleName + "testRun() stores to database this result: " + result);
+        	storeResultRunEntryData();
         }
-        storeResultRunEntryData();
-        return this.topDBTemplate.result.booleanValue();
+        return result; // true
     }
 
         // unneeded- our real approach involves an api to come to us soon

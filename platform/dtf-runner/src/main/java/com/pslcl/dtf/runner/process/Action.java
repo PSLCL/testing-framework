@@ -43,7 +43,7 @@ public enum Action implements Actions {
             if (retAction == INITIALIZE) {
                 try {
 					// put new reState object to ActionStore as kvp reNum/reState
-					runnerService.runnerMachine.engageNewRunEntry(reNum, reState);
+					runnerService.runnerMachine.engageRunEntry(reNum, reState);
 					reState.setAction(ANALYZE);
 				} catch (Exception e) {
 					System.out.println("Action.INITIALIZE() sees exception message " + e);
@@ -63,8 +63,6 @@ public enum Action implements Actions {
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
             
-            // DECISION: We could check and prove that pk_run=reNum of table run has null for its result field. But we instead require that this be handled in whatever process placed reNum into the message queue. A human could manually place an reNum, and we will make a test run out of it.
-            
             // TODO. Determine a priority
             // int priority = determineAndStorePriority(reNum, reState);
             // TODO: assess other things, feed this run entry to the prioritizer. The prioritizer could be a new state between ANAYZE and DO.
@@ -79,14 +77,13 @@ public enum Action implements Actions {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
-            // this is a new run entry: before returning, initiate a test run, process it to completion, gather result if available, and store the result
-            boolean result = false;
             try {
-                result = reCore.testRun(new Long(reNum), runnerService.runnerMachine);
+                // initiate a test run, then block until the test run completes, its result is gathered, and its result is stored
+                boolean result = reCore.testRun(new Long(reNum), runnerService.runnerMachine);
             } catch (Exception e) {
-                System.out.println("Action.DO() see testRun() exception: " + e);
+                System.out.println("Action.DO() sees testRun() exception: " + e);
             }
-            
+            // exception or not, we remove reNum from active consideration- its test result is stored (unless the exception is from the database storage call)
             reState.setAction(REMOVE);
             return reState.getAction();
         }
@@ -97,17 +94,20 @@ public enum Action implements Actions {
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
             System.out.println("Action.REMOVE() removes reNum " + reNum);
-            runnerService.actionStore.remove(reNum);
+            if (true) // false: temporarily, allow runEntry to remain, so next message queue pull will be bypassed
+            	runnerService.getRunnerMachine().disengageRunEntry(reNum);
             reState.setAction(DISCARDED);
             return reState.getAction();
         }
     },
 
-    // if called, remove tState from actionStore; try to code in a way that "DISCARDED" is never called
+    // if called, remove reState from actionStore; try to code in a way that "DISCARDED" is never called
     DISCARDED {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
-            long reNum = reState.getRunEntryNumber();runnerService.actionStore.remove(reNum);
+            long reNum = reState.getRunEntryNumber();
+            if (true) // false: temporarily, allow runEntry to remain, so next message queue pull will be bypassed
+            	runnerService.getRunnerMachine().disengageRunEntry(reNum);
             return reState.getAction();
         }
     };

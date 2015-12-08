@@ -1,7 +1,6 @@
 package com.pslcl.dtf.runner.template;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,10 +8,12 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class InspectHandler {
 	private InstancedTemplate iT;
@@ -20,6 +21,8 @@ public class InspectHandler {
     private List<Future<? extends Void>> futuresOfInspects;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private final Logger log;
+    private final String simpleName;
 
 	/**
 	 * Constructor: Identify consecutive inspect steps in a set of steps
@@ -27,6 +30,8 @@ public class InspectHandler {
 	 * @param setSteps
 	 */
 	public InspectHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
 		this.futuresOfInspects = new ArrayList<Future<? extends Void>>();
@@ -47,8 +52,8 @@ public class InspectHandler {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
             	String inspectStep = setSteps.get(i);
             	SetStep parsedSetStep = new SetStep(inspectStep); // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
-                                                                  // 8 inspect 0 A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C 
-            	System.out.println("InspectHandler.computeInspectRequests() finds inspect in stepSet " + parsedSetStep.getSetID() + ": " + inspectStep);
+                                                                  // 8 inspect 0 A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
+            	log.debug(simpleName + "computeInspectRequests() finds inspect in stepSet " + parsedSetStep.getSetID() + ": " + inspectStep);
             	int parsedSetStepParameterCount = parsedSetStep.getParameterCount();
             	if (parsedSetStepParameterCount < 4) // after setID and command, must have 0-based-person-ref, instructionsHash, and at least 1 of this couple "strArtifactName strArtifactHash"
               		throw new IllegalArgumentException("inspect step does not specify person reference, artifact name, or artifact hash");
@@ -65,15 +70,22 @@ public class InspectHandler {
 					resourceInstance = iT.getResourceInstance(personReference);
 					if (resourceInstance != null)
 					{
+	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
+	            		//       Now that we know it is used for inspect, check resourceInstance for required type: person
+	            		// riRP: resourceInstanceResourceProvider, which has self-knowledge of resource-provider type
+	            		ResourceProvider riRP = resourceInstance.getResourceProvider();
+	            		String resourceType = ResourceProvider.getTypeName(riRP);
+	            		if (resourceType==null || resourceType!=ResourceProvider.PersonName)
+	            			throw new Exception("InspectHandler processing asked to deploy to non 'person' resource");
 						strInstructionsHash = parsedSetStep.getParameter(1);
 						for (int j=2; j<parsedSetStepParameterCount; j+=2)
 							artifacts.put(parsedSetStep.getParameter(j), parsedSetStep.getParameter(j+1));
 		            	retList.add(new InspectInfo(resourceInstance, strInstructionsHash, artifacts));
 					} else {
-	            		throw new Exception("InspectHandler.computeInspectRequests() finds non-bound person at reference " + strPersonReference);
+	            		throw new Exception("InspectHandler.computeInspectRequests() finds null bound ResourceInstance at reference " + strPersonReference);
 					}
 				} catch (Exception e) {
-                    LoggerFactory.getLogger(getClass()).debug(InspectHandler.class.getSimpleName() + " inspect step does not specify person reference, instruction hash, artifact name, or artifact hash");
+                    log.debug(simpleName + "inspect step does not specify person reference, instruction hash, artifact name, or artifact hash");
 					throw e;
 				}
             }
@@ -134,10 +146,10 @@ public class InspectHandler {
                     String msg = ee.getLocalizedMessage();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    LoggerFactory.getLogger(getClass()).info(InspectHandler.class.getSimpleName() + ".waitComplete(), inspect failed: " + msg, ee);
+                    log.debug(simpleName + "waitComplete(), inspect failed: " + msg, ee);
                     allInspects = false;
 				} catch (ExecutionException e) {
-                    LoggerFactory.getLogger(getClass()).info("Executor pool shutdown");
+                    log.info(simpleName + "Executor pool shutdown"); // TODO: need new msg
                     allInspects = false;
 				}
         	} else {

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
@@ -18,12 +19,16 @@ public class BindHandler {
 	private InstancedTemplate iT;
 	private ResourceProviders resourceProviders;
     private List<Future<? extends ResourceInstance>> futuresOfResourceInstances;
+    private final Logger log;
+    private final String simpleName;
 
-	/**
+    /**
 	 * 
 	 * @param iT
 	 */
 	public BindHandler(InstancedTemplate iT) {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.resourceProviders = this.iT.getResourceProviders();
 		this.futuresOfResourceInstances = new ArrayList<Future<? extends ResourceInstance>>();
@@ -43,15 +48,15 @@ public class BindHandler {
     	// rqr.getAvailableResources() can be called, but it is irrelevant to our .reserveIfAvailable() call
         List<ResourceDescription> invalidResources = rqr.getInvalidResources(); // list is not in order
         if (invalidResources!=null && !invalidResources.isEmpty()) {
-            System.out.println("ResourceReserveHandler.reserve() finds " + invalidResources.size() + " reports of invalid resource reserve requests");
+            log.warn(simpleName + "reserveAdInitiateBind() finds " + invalidResources.size() + " reports of invalid resource reserve requests");
         }
         List<ResourceDescription> unavailableResources = rqr.getUnavailableResources(); // list is not in order
         if (unavailableResources!=null && !unavailableResources.isEmpty()) {
-            System.out.println("ResourceReserveHandler.reserve() finds " + unavailableResources.size() + " reports of unavailable resources for the given reserve requests");
+            log.warn(simpleName + "reserveAdInitiateBind() finds " + unavailableResources.size() + " reports of unavailable resources for the given reserve requests");
         }
         List<ReservedResource> reservedResources = rqr.getReservedResources(); // list is not in order, but each element of returned list has its stepReference stored
         if (reservedResources!=null) {
-            System.out.println("ResourceReserveHandler.reserve() finds " + reservedResources.size() + " successful ReservedResource requests" + (reservedResources.size() <= 0 ? "" : "; they are now reserved"));
+            log.debug(simpleName + "reserveAdInitiateBind() finds " + reservedResources.size() + " successful ReservedResource requests" + (reservedResources.size() <= 0 ? "" : "; they are now reserved"));
         }
         
         // Note: The ultimate rule of this work: an entry in the reservedResource list means that the resource is reserved,
@@ -113,7 +118,7 @@ public class BindHandler {
                 } catch (InterruptedException ie) {
                     allBindsSucceeded = false;
                     exception = ie;
-                    LoggerFactory.getLogger(getClass()).warn(BindHandler.class.getSimpleName() + ".waitComplete(), bind failed: ", ie);
+                    log.warn(simpleName + "waitComplete(), bind failed: ", ie);
                 } catch (ExecutionException ee) {
                     allBindsSucceeded = false;
                     exception = ee; // I have seen FatalServerException
@@ -121,7 +126,7 @@ public class BindHandler {
                     Throwable t = ee.getCause();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    LoggerFactory.getLogger(getClass()).warn(BindHandler.class.getSimpleName() + ".waitComplete(), bind failed: " + msg, ee);
+                    log.warn(simpleName + "waitComplete(), bind failed: " + msg, ee);
                 } catch (Exception e) {
                     // can happen with things like null pointer exception
                     exception = e;
@@ -134,14 +139,18 @@ public class BindHandler {
 
         if (!allBindsSucceeded) {
             // because of this error, retList is not returned; for expected cleanup, caller can find all the ResourceInstances in iT.mapStepReferenceToResourceInstance
-            
-            // temporarily allow code to proceed without an actual resource
-//          if (exception != null)
-//              throw new Exception(exception);
-//          throw new Exception("bind attempt could not create and return a Future");
+
+        if (true) { // false; temporarily allow code to proceed without an actual resource
+                if (exception != null)
+                    throw new Exception(exception);
+                throw new Exception("bind attempt could not create and return a Future");
+        	}    
         }
         
         return retList;
+        // We return a list of ResourceInstance's, from which we could determine resource type for each element.
+        // But at this point, we don't know what each list element will be used for, and so we cannot check that it has the right type.
+        // We check this later, when each ResourceInstance is used as the object of an action- deploy, inspect, etc.
         
 //        boolean allBound = (retList.size() == this.futuresOfResourceInstances.size()); // this catches the case of future==null
 //        if (!allBound) {

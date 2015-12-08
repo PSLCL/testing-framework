@@ -17,7 +17,7 @@ package com.pslcl.dtf.runner.process;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ActionStore {
+public class RunEntryStateStore {
    
     /**
      *  Used for pure storage, order of element access is determined by other means.
@@ -26,7 +26,7 @@ public class ActionStore {
      */
     ConcurrentHashMap<Long, RunEntryState> map; 
     
-    public ActionStore() {
+    public RunEntryStateStore() {
         map = new ConcurrentHashMap<>();
     }
     
@@ -37,8 +37,8 @@ public class ActionStore {
      * @param iState
      * @return Previously stored InstanceState when put overwrites it, null otherwise. 
      */
-    RunEntryState put(long iNum, RunEntryState iState) {
-        return map.put(Long.valueOf(iNum), iState);
+    RunEntryState put(long reNum, RunEntryState iState) {
+        return map.put(Long.valueOf(reNum), iState);
     }
     
     /**
@@ -46,18 +46,12 @@ public class ActionStore {
      * @param iNum
      * @return
      */
-    RunEntryState get(long iNum) {
-        return map.get(Long.valueOf(iNum));
-    }
-    
-    /**
-     * 
-     * @note for iNum not found, nothing happens
-     * @param iNum
-     * @return The removed InstanceState
-     */
-    RunEntryState remove(long iNum) {
-        return map.remove(Long.valueOf(iNum));
+    RunEntryState get(long reNum) {
+        return map.get(Long.valueOf(reNum));
     }
 
+    RunEntryState remove(long reNum) {
+    	return map.remove(Long.valueOf(reNum));
+    }
+    
 }

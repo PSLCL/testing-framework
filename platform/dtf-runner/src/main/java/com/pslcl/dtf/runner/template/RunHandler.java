@@ -5,11 +5,13 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class RunHandler {
 	private InstancedTemplate iT;
@@ -17,6 +19,8 @@ public class RunHandler {
     private List<RunState> futuresOfRunState = null;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private final Logger log;
+    private final String simpleName;
 	
 	/**
 	 * Constructor: Identify consecutive run steps in a set of steps
@@ -24,6 +28,8 @@ public class RunHandler {
 	 * @param setSteps
 	 */
 	public RunHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+		this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
 		
@@ -44,7 +50,7 @@ public class RunHandler {
                 String runStep = setSteps.get(i);
             	SetStep parsedSetStep = new SetStep(runStep); // setID run 0-based-machine-ref program-name [param param ...]
                                                               // 11 start 0 executableName -providerMode -verbose
-            	System.out.println("RunHandler.computeRunRequests() finds run in stepSet " + parsedSetStep.getSetID() + ": " + runStep);
+                log.debug(simpleName + "computeRunRequests() finds run in stepSet " + parsedSetStep.getSetID() + ": " + runStep);
             	
             	ResourceInstance resourceInstance = null;
             	String strProgramName = null;
@@ -53,16 +59,23 @@ public class RunHandler {
 					String strMachineReference = parsedSetStep.getParameter(0);
 					int machineReference = Integer.valueOf(strMachineReference).intValue();
 					resourceInstance = iT.getResourceInstance(machineReference);
-					if (resourceInstance == null) {
+					if (resourceInstance != null) {
+	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
+	            		//       Now that we know it is used for run, check resourceInstance for required type: machine
+	            		// riRP: resourceInstanceResourceProvider, which has self-knowledge of resource-provider type
+	            		ResourceProvider riRP = resourceInstance.getResourceProvider();
+	            		String resourceType = ResourceProvider.getTypeName(riRP);
+	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
+	            			throw new Exception("RunHandler processing asked to run a program on a non 'machine' resource");							
 	            		strProgramName = parsedSetStep.getParameter(1);
 	            		for (int j=0; j<(parsedSetStep.getParameterCount()-2); j++)
 	            			parameters.add(parsedSetStep.getParameter(i));
 	                	retList.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
 					} else {
-	            		throw new Exception("RunHandler.computeRunRequests() finds non-bound machine at reference " + strMachineReference);
+	            		throw new Exception("RunHandler.computeRunRequests() finds null ResourceInstance at reference " + strMachineReference);
 					}
     			} catch (IndexOutOfBoundsException e) {
-                    LoggerFactory.getLogger(getClass()).debug(RunHandler.class.getSimpleName() + " run step does not specify machine reference or program name");
+                    log.debug(simpleName + "run step does not specify machine reference or program name");
 					throw e;
 				}
             }
@@ -119,11 +132,11 @@ public class RunHandler {
                     String msg = ee.getLocalizedMessage();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    LoggerFactory.getLogger(getClass()).info(RunHandler.class.getSimpleName() + ".waitComplete(), run errored out: " + msg, ee);
+                    log.warn(simpleName + "waitComplete(), run errored out: " + msg, ee);
 				} catch (ExecutionException e) {
 					RunState.setAllProgramsRan(false);
 					exception = e;
-                    LoggerFactory.getLogger(getClass()).info("Executor pool shutdown");
+                    log.warn(simpleName + "waitComplete Executor pool shutdown"); // TODO: new msg
 				}
         	} else {
 				RunState.setAllProgramsRan(false);
