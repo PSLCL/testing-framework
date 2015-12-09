@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
 
-import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
@@ -58,36 +57,20 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     private final HashMap<Long, MachineReservedResource> reservedMachines; // key is resourceId
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
-    private final AwsResourcesManager manager;
     public volatile MachineConfigData defaultMachineConfigData;
 
-    public AwsMachineProvider(AwsResourcesManager controller)
+    public AwsMachineProvider(AwsResourcesManager manager)
     {
-        this.manager = controller;
+        super(manager);
         reservedMachines = new HashMap<Long, MachineReservedResource>();
         boundInstances = new HashMap<Long, AwsMachineInstance>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
     }
 
-    RunnerConfig getConfig()
-    {
-        return config;
-    }
-
-    AmazonEC2Client getEc2Client()
-    {
-        return ec2Client;
-    }
-
     InstanceFinder getInstanceFinder()
     {
         return instanceFinder;
-    }
-
-    public AwsResourcesManager getManager()
-    {
-        return manager;
     }
 
     HashMap<Long, AwsMachineInstance> getBoundInstances()
@@ -152,7 +135,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 {
                     AwsMachineInstance instance = boundInstances.remove(key);
                     reservedMachines.remove(key);
-                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(manager, this, config.statusTracker, instance.getCoordinates());
+                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, instance.getCoordinates());
                     futures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance, null, /*reservedResource.vpc.getVpcId() reservedResource.subnet.getSubnetId()*/ null, pdelayData)));
                 }
             }
@@ -170,10 +153,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
         if (coordinates != null)
         {
-            ProgressiveDelayData pdelayData = new ProgressiveDelayData(
-                            manager, this, config.statusTracker, coordinates);
+            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, coordinates);
             pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
-            String name = pdelayData.getFullName(MachineInstanceFuture.KeyPairMidStr, null);
+            String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
             DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
             String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + name);
@@ -181,7 +163,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 try
                 {
-                    ec2Client.deleteKeyPair(request);
+                    manager.ec2Client.deleteKeyPair(request);
                     break;
                 } catch (Exception e)
                 {
@@ -218,7 +200,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public Future<MachineInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(manager, this, config.statusTracker, resource.getCoordinates());
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
         config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Warn));
 
         synchronized (reservedMachines)
@@ -227,7 +209,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             if (reservedResource == null)
                 throw new ResourceNotReservedException(resource.getName() + "(" + resource.getCoordinates().resourceId + ") is not reserved");
             reservedResource.getTimerFuture().cancel(true);
-            Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource, ec2Client, pdelayData));
+            Future<MachineInstance> future = config.blockingExecutor.submit(new MachineInstanceFuture(reservedResource, pdelayData));
             reservedResource.setInstanceFuture(future);
             //            reservedResource.timerFuture.cancel(true);
             return future;
@@ -256,7 +238,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         if (!instanceFinder.checkLimits(instanceType))
             return false;
         result.setInstanceType(instanceType);
-        result.setImageId(imageFinder.findImage(ec2Client, resource));
+        result.setImageId(imageFinder.findImage(manager.ec2Client, resource));
         return true;
     }
 

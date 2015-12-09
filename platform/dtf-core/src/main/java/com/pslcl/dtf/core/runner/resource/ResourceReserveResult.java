@@ -149,7 +149,7 @@ public class ResourceReserveResult
         StringBuilder sb = new StringBuilder("{reserved: ")
             .append(reservedResources == null ? "{null}" : reservedResources.toString())
             .append(",available: ")
-            .append(",unaivilable: ")
+            .append(",unavailable: ")
             .append(unavailableResources == null ? "{null}" : unavailableResources.toString())
             .append(",invalid: ")
             .append(invalidResources == null ? "{null}" : invalidResources.toString());

@@ -13,28 +13,30 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.resource.aws.instance.network;
+package com.pslcl.dtf.resource.aws.instance.person;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
+import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.resource.aws.provider.network.NetworkReservedResource;
+import com.pslcl.dtf.resource.aws.provider.person.PersonReservedResource;
 
 @SuppressWarnings("javadoc")
-public class AwsNetworkInstance implements NetworkInstance
+public class AwsPersonInstance implements PersonInstance
 {
-    public final NetworkReservedResource reservedResource;
+    public final PersonReservedResource reservedResource;
     public final ResourceDescription resource;
     public final RunnerConfig runnerConfig;
     public final GroupIdentifier groupIdentifier;
 
-    public AwsNetworkInstance(NetworkReservedResource reservedResource, GroupIdentifier groupIdentifier, RunnerConfig runnerConfig)
+    public AwsPersonInstance(PersonReservedResource reservedResource, GroupIdentifier groupIdentifier, RunnerConfig runnerConfig)
     {
         this.reservedResource = reservedResource;
         resource = reservedResource.resource;
@@ -78,5 +80,12 @@ public class AwsNetworkInstance implements NetworkInstance
     public ResourceCoordinates getCoordinates()
     {
         return resource.getCoordinates();
+    }
+
+    @Override
+    public Future<Void> inspect(String instructions, InputStream fileContent, String fileName)
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

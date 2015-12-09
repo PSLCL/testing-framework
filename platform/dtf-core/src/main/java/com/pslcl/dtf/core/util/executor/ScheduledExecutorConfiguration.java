@@ -25,7 +25,7 @@ public class ScheduledExecutorConfiguration
     public static final String ThreadNamePrefixKey = "pslcl.service.util.scheduled-executor.thread-name";
     public static final String StatusNameKey = "pslcl.service.util.scheduled-executor.status-name";
 
-    public static final String CorePoolSizeDefault = "2";
+    public static final String CorePoolSizeDefault = "6";
     public static final String ThreadNamePrefixDefault = "PslclScheduledExecutor";
     public static final String StatusNameDefault = "PslclScheduledExecutor";
 

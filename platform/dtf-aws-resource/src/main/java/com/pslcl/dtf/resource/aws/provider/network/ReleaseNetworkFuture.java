@@ -19,19 +19,8 @@ import java.util.concurrent.Callable;
 
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.ec2.model.DeleteSubnetRequest;
-import com.amazonaws.services.ec2.model.DeleteVpcRequest;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
-import com.pslcl.dtf.core.runner.resource.exception.FatalException;
-import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
-import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanceState;
-import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 
 @SuppressWarnings("javadoc")
@@ -39,7 +28,9 @@ public class ReleaseNetworkFuture implements Callable<Void>
 {
     private final AwsNetworkProvider provider;
     private final AwsNetworkInstance instance;
+    @SuppressWarnings("unused")
     private final String vpcId;
+    @SuppressWarnings("unused")
     private final String subnetId;
     private final ProgressiveDelayData pdelayData;
 
@@ -56,92 +47,9 @@ public class ReleaseNetworkFuture implements Callable<Void>
     public Void call() throws Exception
     {
         LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + instance.getCoordinates().toString());
-        terminateEc2Instance();
-        deleteSubnet();
-        deleteVpc();
-        
+        pdelayData.provider.manager.subnetManager.releaseSecurityGroup(pdelayData);
         provider.getConfig().statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
         LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
         return null;
-    }
-    
-    private void terminateEc2Instance() throws FatalResourceException
-    {
-        String instanceId = instance.ec2Instance.getInstanceId();
-        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-        String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "terminateInstances:" + instanceId);
-        do
-        {
-            try
-            {
-                TerminateInstancesRequest trequest = new TerminateInstancesRequest().withInstanceIds(instanceId);
-                provider.getEc2Client().terminateInstances(trequest);
-                break;
-            } catch (Exception e)
-            {
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
-                    throw fre;
-            }
-        }while(true);
-        DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(instance.ec2Instance.getInstanceId());
-        pdelay.reset();
-        msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "describeInstances: " + instanceId);
-        do
-        {
-            try
-            {
-                DescribeInstancesResult diResult = provider.getEc2Client().describeInstances(diRequest);
-                Instance inst = diResult.getReservations().get(0).getInstances().get(0);
-                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Terminated)
-                    break;
-                pdelay.retry(pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "describeInstances: " + instanceId));
-            } catch (Exception e)
-            {
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
-                    throw fre;
-            }
-        }while(true);
-    }
-    
-    private void deleteVpc() throws FatalResourceException
-    {
-        DeleteVpcRequest drequest = new DeleteVpcRequest().withVpcId(vpcId);
-        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-        String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + vpcId);
-        do
-        {
-            try
-            {
-                provider.getEc2Client().deleteVpc(drequest);
-                break;
-            } catch (Exception e)
-            {
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
-                    throw fre;
-            }
-        }while(true);
-    }
-    
-    private void deleteSubnet() throws FatalResourceException
-    {
-        DeleteSubnetRequest request = new DeleteSubnetRequest().withSubnetId(subnetId);
-        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-        String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteSubnet:" + subnetId);
-        do
-        {
-            try
-            {
-                provider.getEc2Client().deleteSubnet(request);
-                break;
-            } catch (Exception e)
-            {
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
-                    throw fre;
-            }
-        }while(true);
     }
 }

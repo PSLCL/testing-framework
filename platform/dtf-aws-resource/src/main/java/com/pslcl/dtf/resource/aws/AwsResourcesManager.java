@@ -23,17 +23,15 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.CreateTagsRequest;
 import com.amazonaws.services.ec2.model.Tag;
+import com.amazonaws.services.sns.AmazonSNSClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.core.util.StrH;
-import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.network.AwsNetworkProvider;
@@ -42,12 +40,15 @@ import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 @SuppressWarnings("javadoc")
 public class AwsResourcesManager implements ResourcesManager
 {
+    public static final String StatusPrefixStr = "resource-";
+    
     private final List<ResourceProvider> resourceProviders;
     public final AwsMachineProvider machineProvider;
     public final AwsNetworkProvider networkProvider;
     public final AwsPersonProvider personProvider;
     public volatile SubnetManager subnetManager;
     public volatile AmazonEC2Client ec2Client;
+    public volatile AmazonSNSClient snsClient;
 
     public AwsResourcesManager()
     {
@@ -108,7 +109,7 @@ public class AwsResourcesManager implements ResourcesManager
     
     public static void handleStatusTracker(ProgressiveDelayData pdelayData, StatusTracker.Status status)
     {
-        pdelayData.statusTracker.setStatus(MachineInstanceFuture.StatusPrefixStr+pdelayData.coord.resourceId, status);
+        pdelayData.statusTracker.setStatus(StatusPrefixStr+pdelayData.coord.resourceId, status);
         pdelayData.statusTracker.fireResourceStatusChanged(
                         pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, status));
         pdelayData.statusTracker.removeStatus(pdelayData.coord.templateId);
@@ -155,6 +156,21 @@ public class AwsResourcesManager implements ResourcesManager
         return new ArrayList<ResourceProvider>(resourceProviders);
     }
 
+    public AwsMachineProvider getMachineProvider()
+    {
+        return machineProvider;
+    }
+    
+    public AwsNetworkProvider getNetworkProvider()
+    {
+        return networkProvider;
+    }
+    
+    public AwsPersonProvider getPersonProvider()
+    {
+        return personProvider;
+    }
+    
     @Override
     public void init(RunnerConfig config) throws Exception
     {
@@ -166,15 +182,17 @@ public class AwsResourcesManager implements ResourcesManager
         ec2Client = new AmazonEC2Client(cconfig.clientConfig);
         ec2Client.setEndpoint(cconfig.endpoint);
         config.initsb.ttl("obtained ec2Client");
+        
+        snsClient = new AmazonSNSClient(cconfig.clientConfig);
+        snsClient.setEndpoint(cconfig.endpoint);
+        config.initsb.ttl("obtained snsClient");
+        
         subnetManager = new SubnetManager(this);
         subnetManager.init(config);
         
         machineProvider.init(config);
-        machineProvider.setEc2Client(ec2Client);
         personProvider.init(config);
-        personProvider.setEc2Client(ec2Client);
         networkProvider.init(config);
-        networkProvider.setEc2Client(ec2Client);
         
         config.initsb.level.decrementAndGet();
     }
@@ -188,6 +206,8 @@ public class AwsResourcesManager implements ResourcesManager
             for (int i = 0; i < size; i++)
                 resourceProviders.get(i).destroy();
             resourceProviders.clear();
+            ec2Client.shutdown();
+            snsClient.shutdown();
         } catch (Exception e)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".destroy failed", e);

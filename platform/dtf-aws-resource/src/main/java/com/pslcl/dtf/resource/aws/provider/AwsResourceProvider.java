@@ -18,37 +18,31 @@ package com.pslcl.dtf.resource.aws.provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 
 @SuppressWarnings("javadoc")
 public abstract class AwsResourceProvider
 {
     protected final Logger log;
-    protected volatile RunnerConfig config;
-    protected volatile AmazonEC2Client ec2Client;
+    public final AwsResourcesManager manager;
+    public volatile RunnerConfig config;
     
-    protected AwsResourceProvider()
+    protected AwsResourceProvider(AwsResourcesManager manager)
     {
         log = LoggerFactory.getLogger(getClass());
+        this.manager = manager;
     }
 
-    public void setEc2Client(AmazonEC2Client ec2Client)
-    {
-        this.ec2Client = ec2Client;
-    }
-    
     protected void init(RunnerConfig config) throws Exception
     {
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
         this.config = config;
-        this.ec2Client = ec2Client;
     }
     
     protected void destroy()
     {
-        ec2Client.shutdown();
     }
 }
 

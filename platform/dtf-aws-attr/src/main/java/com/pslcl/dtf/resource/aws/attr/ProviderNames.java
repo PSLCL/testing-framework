@@ -213,6 +213,17 @@ public class ProviderNames
     public static final String LocationMonthDefault = null;
     public static final String LocationDotDefault = null;
     
+    /* ****************************************************************************
+     * PersonProvider declarations    
+    ******************************************************************************/
+    public static final String PersonKeyBase = ClientNames.AwsKeyBase + ".sns";
+    
+    public static final String PersonTopicKey = PersonKeyBase + ".topic";
+    public static final String PersonTopicDefault = ClientNames.TestShortNameDefault + "-inspect";
+    
+    /* ****************************************************************************
+     * Various helper key lists    
+    ******************************************************************************/
     public static List<String> getMachineKeys()
     {
        List<String> keys = new ArrayList<String>();
@@ -268,6 +279,12 @@ public class ProviderNames
         keys.add(InstanceNames.PermIpRangeKey);
         keys.add(InstanceNames.PermPortKey);
         keys.add(ClientNames.TestShortNameKey);
+        return keys;
+    }
+    public static List<String> getAllPersonProviderKeys()
+    {
+        List<String> keys = new ArrayList<String>();
+        keys.add(PersonTopicKey);
         return keys;
     }
 }

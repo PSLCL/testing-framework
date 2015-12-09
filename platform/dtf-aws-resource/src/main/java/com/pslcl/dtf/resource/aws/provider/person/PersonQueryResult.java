@@ -15,25 +15,33 @@
  */
 package com.pslcl.dtf.resource.aws.provider.person;
 
-import java.util.concurrent.Callable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
-
 @SuppressWarnings("javadoc")
-public class ReserveIfAvailableFuture implements Callable<MachineInstance>
+public class PersonQueryResult
 {
-    private final Logger log;
-    public ReserveIfAvailableFuture()
+    private String vpcId;
+    private String subnetId;
+
+    PersonQueryResult()
     {
-        log = LoggerFactory.getLogger(getClass());
     }
 
-    @Override
-    public MachineInstance call() throws Exception
+    synchronized void setVpcId(String vpcId)
     {
-        return null;
+        this.vpcId = vpcId;
+    }
+
+    synchronized String getVpcId()
+    {
+        return vpcId;
+    }
+
+    synchronized void setSubnetId(String subnetId)
+    {
+        this.subnetId = subnetId;
+    }
+
+    synchronized String getSubnetId()
+    {
+        return subnetId;
     }
 }

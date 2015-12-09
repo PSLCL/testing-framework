@@ -36,7 +36,10 @@ public class StrH
                 firstDone = true;
             else
                 sb.append(",");
-            sb.append("{" + entry.getKey().toString() + "," + entry.getValue().toString() + "}");
+            String value = (String)entry.getValue(); 
+            if(value == null)
+                value = "null";
+            sb.append("{" + entry.getKey().toString() + "," + value + "}");
         }
         sb.append("]}");
       return sb.toString();  
