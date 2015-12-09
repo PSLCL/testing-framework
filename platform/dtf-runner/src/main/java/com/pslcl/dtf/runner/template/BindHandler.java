@@ -60,8 +60,8 @@ public class BindHandler {
         
         // Note: The ultimate rule of this work: an entry in the reservedResource list means that the resource is reserved,
         //           independent of what the other ResourceProviders may have placed in the alternate lists.
-        //       Background: For any one resource provider, coding is intended that any reservedResource has no entries in the other three lists.
-        //                   However, rqr may be filled with entries from multiple resource providers, each answering their status of reserved, unavailable, or invalid.
+        //       Background: For any one resource provider, coding is intended that any reservedResource has no entries in the other two lists.
+        //                   However, rrr may be filled with entries from multiple resource providers, each answering their status of reserved, unavailable, or invalid.
         //                   The number of reservedResources (i.e. reservedResources.size()) is our primary interest.
 
         // Note: As an initial working step, this block is coded to a safe algorithm:

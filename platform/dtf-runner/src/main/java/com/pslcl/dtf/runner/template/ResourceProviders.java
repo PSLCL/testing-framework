@@ -147,7 +147,7 @@ public class ResourceProviders
         // Until a reservation is made: Invite every known ResourceProvider, to reserve each resource in rrReq (holds contents of param reserveResourceRequests).
         //    Current solution- ask each ResourceProvider, in turn. TODO: Perhaps optimize by asking each ResourceProvider directly, taking advantage of knowledge of each resource provider's hash and attributes.
         //    To accomplish this work, this.resourceProviders holds a list of all types of ResourceProvider (like AWSMachineProvider).
-        for (ResourceProvider rp : resourceProviders) {
+        for (ResourceProvider rp : this.resourceProviders) {
             // but 1st, to avoid multiple reservations: for any past success in filling any of the several rr'S in retRrr, strip list rrReq of that entry
             for (ReservedResource rr : retRrr.getReservedResources()) {
                 for (ResourceDescription rd : rrReq) {

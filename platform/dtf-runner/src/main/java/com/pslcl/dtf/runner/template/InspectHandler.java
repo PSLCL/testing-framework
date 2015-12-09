@@ -109,14 +109,16 @@ public class InspectHandler {
 				throw new Exception("Specified inspect target is not a PersonInstance");
 			PersonInstance pi = PersonInstance.class.cast(resourceInstance);
 			String instructions = new String("instructions"); // TODO: use inspectInfos.getInstructionsHash(), and asynchronously go get the instructions file and fill this local variable
+
+			String archiveFilename = new String("attachments.tar.gz");
 			
 			String strContent = "content"; // TODO: use inspectInfos.getArtifacts(), and asynchronously go get the several files and fill this local variable, or directly fill variable arrayContent
 			byte [] arrayContent = strContent.getBytes();
-			ByteArrayInputStream bais = new ByteArrayInputStream(arrayContent);
+			ByteArrayInputStream bais = new ByteArrayInputStream(arrayContent); // we own bais
+			Future<? extends Void> future = pi.inspect(instructions, bais, archiveFilename);
+			// TODO: close this Stream when the Future<Void> comes back; will have to track stream bais against each future 
 
-			String archiveFilename = new String("attachments.tar.gz");
-
-			futuresOfInspects.add(pi.inspect(instructions, bais, archiveFilename));			
+			futuresOfInspects.add(future);
 		}
 		// Each list element of futuresOfInspects:
 		//     can be a null (inspect failed while in the act of creating a Future), or
