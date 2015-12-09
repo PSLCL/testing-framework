@@ -146,7 +146,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
             {
                 try
                 {
-                    ec2Client.deleteKeyPair(request);
+                    manager.ec2Client.deleteKeyPair(request);
                     break;
                 } catch (Exception e)
                 {

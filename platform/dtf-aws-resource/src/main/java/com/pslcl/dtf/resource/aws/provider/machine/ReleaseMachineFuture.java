@@ -75,7 +75,7 @@ public class ReleaseMachineFuture implements Callable<Void>
             try
             {
                 TerminateInstancesRequest trequest = new TerminateInstancesRequest().withInstanceIds(instanceId);
-                provider.ec2Client.terminateInstances(trequest);
+                provider.manager.ec2Client.terminateInstances(trequest);
                 break;
             } catch (Exception e)
             {
@@ -91,7 +91,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
-                DescribeInstancesResult diResult = provider.ec2Client.describeInstances(diRequest);
+                DescribeInstancesResult diResult = provider.manager.ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
                 if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Terminated)
                     break;
@@ -116,7 +116,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
-                provider.ec2Client.deleteVpc(drequest);
+                provider.manager.ec2Client.deleteVpc(drequest);
                 break;
             } catch (Exception e)
             {
@@ -138,7 +138,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
-                provider.ec2Client.deleteSubnet(request);
+                provider.manager.ec2Client.deleteSubnet(request);
                 break;
             } catch (Exception e)
             {

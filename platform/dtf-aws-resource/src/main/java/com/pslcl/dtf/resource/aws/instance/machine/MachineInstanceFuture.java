@@ -62,7 +62,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     {
         this.reservedResource = reservedResource;
         this.pdelayData = pdelayData;
-        ec2Client = pdelayData.provider.ec2Client;
+        ec2Client = pdelayData.provider.manager.ec2Client;
     }
 
     @Override

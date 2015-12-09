@@ -66,6 +66,7 @@ public class SubnetManager
     private final AwsResourcesManager manager;
     public volatile SubnetConfigData defaultSubnetConfigData;
     private volatile Vpc defaultVpc;
+    @SuppressWarnings("unused")
     private volatile Subnet defaultSubnet;
 
     public SubnetManager(AwsResourcesManager manager)
@@ -87,7 +88,7 @@ public class SubnetManager
         }   
     }
     
-    public void releaseSecurityGroup(ProgressiveDelayData pdelayData) throws FatalResourceException
+    public void releaseSecurityGroup(ProgressiveDelayData pdelayData)
     {
         GroupIdentifier groupId = null;
         synchronized (sgMap)

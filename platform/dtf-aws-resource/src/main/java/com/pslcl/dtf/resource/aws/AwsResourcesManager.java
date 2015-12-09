@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.CreateTagsRequest;
 import com.amazonaws.services.ec2.model.Tag;
+import com.amazonaws.services.sns.AmazonSNSClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
@@ -47,6 +48,7 @@ public class AwsResourcesManager implements ResourcesManager
     public final AwsPersonProvider personProvider;
     public volatile SubnetManager subnetManager;
     public volatile AmazonEC2Client ec2Client;
+    public volatile AmazonSNSClient snsClient;
 
     public AwsResourcesManager()
     {
@@ -180,15 +182,17 @@ public class AwsResourcesManager implements ResourcesManager
         ec2Client = new AmazonEC2Client(cconfig.clientConfig);
         ec2Client.setEndpoint(cconfig.endpoint);
         config.initsb.ttl("obtained ec2Client");
+        
+        snsClient = new AmazonSNSClient(cconfig.clientConfig);
+        snsClient.setEndpoint(cconfig.endpoint);
+        config.initsb.ttl("obtained snsClient");
+        
         subnetManager = new SubnetManager(this);
         subnetManager.init(config);
         
         machineProvider.init(config);
-        machineProvider.setEc2Client(ec2Client);
         personProvider.init(config);
-        personProvider.setEc2Client(ec2Client);
         networkProvider.init(config);
-        networkProvider.setEc2Client(ec2Client);
         
         config.initsb.level.decrementAndGet();
     }
@@ -202,6 +206,8 @@ public class AwsResourcesManager implements ResourcesManager
             for (int i = 0; i < size; i++)
                 resourceProviders.get(i).destroy();
             resourceProviders.clear();
+            ec2Client.shutdown();
+            snsClient.shutdown();
         } catch (Exception e)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".destroy failed", e);

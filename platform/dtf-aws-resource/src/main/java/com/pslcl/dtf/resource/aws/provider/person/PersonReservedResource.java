@@ -13,7 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.resource.aws.provider.network;
+package com.pslcl.dtf.resource.aws.provider.person;
 
 import java.util.HashMap;
 import java.util.concurrent.Future;
@@ -26,12 +26,12 @@ import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
+import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.provider.SubnetConfigData;
 
 @SuppressWarnings("javadoc")
-public class NetworkReservedResource implements Runnable
+public class PersonReservedResource implements Runnable
 {
     public final ResourceDescription resource;
     public final GroupIdentifier groupIdentifier;
@@ -42,9 +42,9 @@ public class NetworkReservedResource implements Runnable
     public volatile Subnet subnet;  // at least this one needs filled in
 
     private ScheduledFuture<?> timerFuture;
-    private Future<NetworkInstance> instanceFuture;
+    private Future<PersonInstance> instanceFuture;
 
-    NetworkReservedResource(ProgressiveDelayData pdelayData, ResourceDescription resource, GroupIdentifier groupId)
+    PersonReservedResource(ProgressiveDelayData pdelayData, ResourceDescription resource, GroupIdentifier groupId)
     {
         this.pdelayData = pdelayData;
         this.resource = resource;
@@ -65,12 +65,12 @@ public class NetworkReservedResource implements Runnable
         return timerFuture;
     }
 
-    synchronized void setInstanceFuture(Future<NetworkInstance> future)
+    synchronized void setInstanceFuture(Future<PersonInstance> future)
     {
         instanceFuture = future;
     }
 
-    synchronized Future<NetworkInstance> getInstanceFuture()
+    synchronized Future<PersonInstance> getInstanceFuture()
     {
         return instanceFuture;
     }
@@ -78,7 +78,7 @@ public class NetworkReservedResource implements Runnable
     @Override
     public void run()
     {
-        HashMap<Long, NetworkReservedResource> map = ((AwsNetworkProvider)pdelayData.provider).getReservedNetworks();
+        HashMap<Long, PersonReservedResource> map = ((AwsPersonProvider)pdelayData.provider).getReservedPeople();
         synchronized (map)
         {
             map.remove(resource.getCoordinates().resourceId);

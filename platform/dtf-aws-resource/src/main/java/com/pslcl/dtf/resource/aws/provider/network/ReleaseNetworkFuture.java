@@ -28,7 +28,9 @@ public class ReleaseNetworkFuture implements Callable<Void>
 {
     private final AwsNetworkProvider provider;
     private final AwsNetworkInstance instance;
+    @SuppressWarnings("unused")
     private final String vpcId;
+    @SuppressWarnings("unused")
     private final String subnetId;
     private final ProgressiveDelayData pdelayData;
 
@@ -45,7 +47,7 @@ public class ReleaseNetworkFuture implements Callable<Void>
     public Void call() throws Exception
     {
         LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + instance.getCoordinates().toString());
-        
+        pdelayData.provider.manager.subnetManager.releaseSecurityGroup(pdelayData);
         provider.getConfig().statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
         LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
         return null;

@@ -163,7 +163,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 try
                 {
-                    ec2Client.deleteKeyPair(request);
+                    manager.ec2Client.deleteKeyPair(request);
                     break;
                 } catch (Exception e)
                 {
@@ -238,7 +238,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         if (!instanceFinder.checkLimits(instanceType))
             return false;
         result.setInstanceType(instanceType);
-        result.setImageId(imageFinder.findImage(ec2Client, resource));
+        result.setImageId(imageFinder.findImage(manager.ec2Client, resource));
         return true;
     }
 

@@ -20,8 +20,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.InstanceNetworkInterface;
-import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
 import com.amazonaws.services.ec2.model.ModifyNetworkInterfaceAttributeRequest;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
@@ -47,7 +45,7 @@ public class ConnectFuture implements Callable<CableInstance>
         this.machineInstance = machineInstance;
         this.networkInstance = networkInstance;
         this.pdelayData = pdelayData;
-        ec2Client = pdelayData.provider.ec2Client;
+        ec2Client = pdelayData.provider.manager.ec2Client;
     }
 
     @Override
