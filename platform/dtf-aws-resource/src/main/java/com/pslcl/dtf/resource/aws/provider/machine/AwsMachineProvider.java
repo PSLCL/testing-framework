@@ -243,7 +243,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<ResourceReserveResult> reserve(List<ResourceDescription> resources, int timeoutSeconds)
     {
         return config.blockingExecutor.submit(new MachineReserveFuture(this, resources, timeoutSeconds));
     }

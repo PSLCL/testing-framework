@@ -252,7 +252,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     }
 
     @Override
-    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<ResourceReserveResult> reserve(List<ResourceDescription> resources, int timeoutSeconds)
     {
         return config.blockingExecutor.submit(new NetworkReserveFuture(this, resources, timeoutSeconds));
     }

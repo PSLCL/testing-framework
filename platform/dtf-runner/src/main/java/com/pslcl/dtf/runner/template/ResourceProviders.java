@@ -130,7 +130,7 @@ public class ResourceProviders
      * @return
      * @throws Exception
      */
-    public ResourceReserveResult reserveIfAvailable(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) throws Exception {
+    public ResourceReserveResult reserve(List<ResourceDescription> reserveResourceRequests, int timeoutSeconds) throws Exception {
     	// First, make a copy rrReq of reserveResourceRequests. We can therefore modify the contents of rrReq and it will not modify the contents of reserveResourceRequests.
     	//      (This is needed even though Java is defined as being pass by value. In this area of language definition, Java is different from several other languages, at a fundamental level.
     	//		 It is only the value of the object pointer that is passed by value - modifications to the actual passed objects are still reflected back to the caller.
@@ -177,7 +177,7 @@ public class ResourceProviders
             //		 And after that, recognize that the corresponding binds (which are already asynch), must follow on.
             
             // Until that TODO is implemented, this will have to do: it blocks to get all the reserves in hand at the same time
-            Future<ResourceReserveResult> future = rp.reserveIfAvailable(rrReq, timeoutSeconds);
+            Future<ResourceReserveResult> future = rp.reserve(rrReq, timeoutSeconds);
 
             // When a person resource is requested to be reserved (in rrReq), I have seen AWSMachineProvider *wrongly* return a reserved entry (visible in Eclipse as future.outcome.reserved).
             // We would like to detect this in code, and put out a helpful log message, but this is not possible, right here.

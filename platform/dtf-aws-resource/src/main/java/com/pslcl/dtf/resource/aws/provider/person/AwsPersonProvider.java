@@ -244,7 +244,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     }
 
     @Override
-    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<ResourceReserveResult> reserve(List<ResourceDescription> resources, int timeoutSeconds)
     {
 //        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
 //        config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Warn));

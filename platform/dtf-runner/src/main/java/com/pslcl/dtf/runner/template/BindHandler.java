@@ -42,7 +42,7 @@ public class BindHandler {
 	public void reserveAndInitiateBind(List<ResourceDescription> reserveResourceRequests) throws Exception{
 		// note: each element of reserveReseourceRequests is a ResourceDescriptionImpl
 		// reserve the resource specified by each ResourceDescription, with 360 second timeout for each reservation		
-        ResourceReserveResult rrr = resourceProviders.reserveIfAvailable(reserveResourceRequests, 360);
+        ResourceReserveResult rrr = resourceProviders.reserve(reserveResourceRequests, 360);
         
         // analyze the success/failure of each reserved resource, one resource for each bind step
         List<ResourceDescription> invalidResources = rrr.getInvalidResources(); // list is not in order

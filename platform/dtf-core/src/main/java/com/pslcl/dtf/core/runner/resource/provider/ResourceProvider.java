@@ -57,7 +57,7 @@ public interface ResourceProvider
      * @param timeoutSeconds The time period, in seconds, to reserve the resources.
      * @return The {@link ResourceReserveResult} listing the resources which were able to be reserved.
      */
-    public Future<ResourceReserveResult> reserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds);
+    public Future<ResourceReserveResult> reserve(List<ResourceDescription> resources, int timeoutSeconds);
 
     /**
      * Get the name of the provider.
