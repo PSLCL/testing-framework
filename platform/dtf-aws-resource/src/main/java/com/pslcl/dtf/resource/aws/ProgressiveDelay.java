@@ -32,10 +32,9 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalServerException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalServerTimeoutException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalTimeoutException;
-import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
-import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
+import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 
 @SuppressWarnings("javadoc")
 public class ProgressiveDelay
@@ -187,25 +186,22 @@ public class ProgressiveDelay
         public volatile String preFixMostName;
         public volatile int maxDelay;
         public volatile int maxRetries; 
-        public final AwsResourcesManager manager; 
-        public final ResourceProvider provider; 
+        public final AwsResourceProvider provider; 
         public final StatusTracker statusTracker;
         public volatile ResourceCoordinates coord;
         public final ResourceStatusEvent resourceStatusEvent;
 
         //@formatter:off
         public ProgressiveDelayData(
-                        AwsResourcesManager manager,
-                        ResourceProvider provider, 
+                        AwsResourceProvider provider, 
                         StatusTracker statusTracker,
                         ResourceCoordinates coordinates)
         //@formatter:off
         {
-            this.manager = manager;
             this.provider = provider;
             this.statusTracker = statusTracker;
             coord = coordinates;
-            resourceStatusEvent = new ResourceStatusEvent(MachineInstanceFuture.StatusPrefixStr+coord.resourceId, StatusTracker.Status.Warn, coord);
+            resourceStatusEvent = new ResourceStatusEvent(AwsResourcesManager.StatusPrefixStr+coord.resourceId, StatusTracker.Status.Warn, coord);
         }
         
         public ResourceStatusEvent getResourceStatus(StatusTracker.Status status)

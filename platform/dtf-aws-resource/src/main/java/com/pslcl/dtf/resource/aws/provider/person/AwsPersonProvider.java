@@ -34,11 +34,9 @@ import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 @SuppressWarnings("javadoc")
 public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
-    private final AwsResourcesManager controller;
-
-    public AwsPersonProvider(AwsResourcesManager controller)
+    public AwsPersonProvider(AwsResourcesManager manager)
     {
-        this.controller = controller;
+        super(manager);
     }
 
     @Override

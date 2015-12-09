@@ -22,35 +22,28 @@ import java.util.concurrent.ScheduledFuture;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.GroupIdentifier;
-import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
-import com.pslcl.dtf.core.runner.config.status.ResourceStatusEvent;
-import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
-import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
+import com.pslcl.dtf.resource.aws.provider.SubnetConfigData;
 
 @SuppressWarnings("javadoc")
 public class NetworkReservedResource implements Runnable
 {
     public final ResourceDescription resource;
-    public volatile GroupIdentifier groupIdentifier;
-    public volatile String groupId;
+    public final GroupIdentifier groupIdentifier;
+    private final ProgressiveDelayData pdelayData;
+    
+    public volatile SubnetConfigData subnetConfig;
     public volatile Vpc vpc;
-    public volatile Subnet subnet;
-    public volatile String net;
-    public volatile Instance ec2Instance;
-    public volatile long runId;
+    public volatile Subnet subnet;  // at least this one needs filled in
 
     private ScheduledFuture<?> timerFuture;
     private Future<NetworkInstance> instanceFuture;
-    private final ProgressiveDelayData pdelayData; 
 
     NetworkReservedResource(ProgressiveDelayData pdelayData, ResourceDescription resource, GroupIdentifier groupId)
     {
@@ -92,7 +85,7 @@ public class NetworkReservedResource implements Runnable
             map.remove(resource.getCoordinates().resourceId);
             try
             {
-                pdelayData.manager.subnetManager.releaseSecurityGroup(pdelayData);
+                pdelayData.provider.manager.subnetManager.releaseSecurityGroup(pdelayData);
             } catch (FatalResourceException e)
             {
                 LoggerFactory.getLogger(getClass()).warn("failed to cleanup securityGroup: " + groupIdentifier.getGroupId());

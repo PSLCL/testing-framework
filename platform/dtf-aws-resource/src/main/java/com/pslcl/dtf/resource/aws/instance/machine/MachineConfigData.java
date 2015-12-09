@@ -57,7 +57,7 @@ public class MachineConfigData
         data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, null, resource, format);
         format.level.decrementAndGet();
 
-        data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.manager.subnetManager.defaultSubnetConfigData);
+        data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
         
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();

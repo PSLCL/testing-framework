@@ -19,80 +19,77 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.services.ec2.model.Instance;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.exception.IncompatibleResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 
 @SuppressWarnings("javadoc")
 public class AwsMachineInstance implements MachineInstance
 {
-    private final Logger log;
-    private final String name;
-    private final Map<String, String> attributes;
-    private String description;
-    private int timeoutSeconds;
-    private final ResourceCoordinates coordinates;
+    private final MachineReservedResource reservedResource;
+    public final ResourceDescription resource;
     public final Instance ec2Instance;
 
     public AwsMachineInstance(MachineReservedResource reservedResource)
     {
-        log = LoggerFactory.getLogger(getClass());
-        name = reservedResource.resource.getName();
-        attributes = reservedResource.resource.getAttributes();
-        coordinates = reservedResource.resource.getCoordinates();
+        this.reservedResource = reservedResource;
+        this.resource = reservedResource.resource; 
         ec2Instance = reservedResource.ec2Instance;
     }
 
     @Override
     public String getName()
     {
-        return name;
+        return resource.getName();
     }
 
     @Override
     public Map<String, String> getAttributes()
     {
-        synchronized (attributes)
+        Map<String, String> map = resource.getAttributes();
+        synchronized (map)
         {
-            return new HashMap<String, String>(attributes);
+            return new HashMap<String, String>(map);
         }
     }
 
     @Override
     public void addAttribute(String key, String value)
     {
-        synchronized (attributes)
+        Map<String, String> map = resource.getAttributes();
+        synchronized (map)
         {
-            attributes.put(key, value);
+            map.put(key, value);
         }
     }
     
     @Override
     public ResourceProvider getResourceProvider()
     {
-        return coordinates.getProvider();
+        return resource.getCoordinates().getProvider();
     }
 
     @Override
     public ResourceCoordinates getCoordinates()
     {
-        return coordinates;
+        return resource.getCoordinates();
     }
-
 
     @Override
     public Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException
     {
-        return null;
+        AwsNetworkInstance instance = (AwsNetworkInstance) network;
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.provider.config.statusTracker, resource.getCoordinates());
+        return  instance.runnerConfig.blockingExecutor.submit(new ConnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
 
     @Override
@@ -217,7 +214,14 @@ public class AwsMachineInstance implements MachineInstance
 
     public enum AwsInstanceState
     {
-        Pending("pending"), Running("running"), ShuttingDown("shutting-down"), Terminated("terminated"), Stopping("stopping"), Stopped("stopped");
+        //@formatter:off
+        Pending("pending"), 
+        Running("running"), 
+        ShuttingDown("shutting-down"), 
+        Terminated("terminated"), 
+        Stopping("stopping"), 
+        Stopped("stopped");
+        //@formatter:on
 
         public static AwsInstanceState getState(String awsState) throws Exception
         {

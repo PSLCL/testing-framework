@@ -207,10 +207,20 @@ public class SubnetManager
     @SuppressWarnings("null")
     public GroupIdentifier getSecurityGroup(ProgressiveDelayData pdelayData, List<IpPermission> permissions, SubnetConfigData config) throws FatalResourceException
     {
+        String vpcId = null;
+        synchronized (vpcMap)
+        {
+            if(config.vpcName == null)
+                vpcId = defaultVpc.getVpcId();
+            else
+                vpcId = vpcMap.get(config.vpcName).getVpcId();
+        }
+        
         //@formatter:off
         CreateSecurityGroupRequest request = new CreateSecurityGroupRequest()
             .withGroupName(pdelayData.getFullResourceIdName(SgMidStr, null))
-            .withDescription(pdelayData.getFullTemplateIdName(SgMidStr, " templateId: " + pdelayData.coord.templateId));
+            .withDescription(pdelayData.getFullTemplateIdName(SgMidStr, " templateId: " + pdelayData.coord.templateId))
+            .withVpcId(vpcId);
         //@formatter:on
 
         GroupIdentifier groupId = null;
@@ -309,7 +319,7 @@ public class SubnetManager
                 throw new FatalServerException(pdelayData.coord, "can not determine default vpc");
             }
             defaultVpc = vpcs.get(0);
-            pdelayData.manager.createNameTag(pdelayData, InstanceNames.VpcNameAwsDefault, defaultVpc.getVpcId());
+            pdelayData.provider.manager.createNameTag(pdelayData, InstanceNames.VpcNameAwsDefault, defaultVpc.getVpcId());
         }
     }
 
@@ -385,6 +395,7 @@ public class SubnetManager
             {
                 if (AwsResourcesManager.isDtfObject(sg.getTags()))
                 {
+                    releaseSecurityGroup(pdelayData, sg.getGroupId());
                 }else
                     availableSgs.decrementAndGet();
             }
@@ -392,7 +403,7 @@ public class SubnetManager
     }
     
     
-    private void releaseSecurityGroup(ProgressiveDelayData pdelayData, String groupId) throws FatalResourceException
+    private void releaseSecurityGroup(ProgressiveDelayData pdelayData, String groupId)
     {
         DeleteSecurityGroupRequest dsgr = new DeleteSecurityGroupRequest().withGroupId(groupId);
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
@@ -407,7 +418,10 @@ public class SubnetManager
             {
                 FatalResourceException fre = pdelay.handleException(msg, e);
                 if (fre instanceof FatalException)
-                    throw fre;
+                {
+                    break;  // best try
+//                    throw fre;
+                }
             }
         } while (true);
     }

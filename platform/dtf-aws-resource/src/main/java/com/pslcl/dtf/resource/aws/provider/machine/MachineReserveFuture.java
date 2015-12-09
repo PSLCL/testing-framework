@@ -55,11 +55,11 @@ public class MachineReserveFuture implements Callable<ResourceReserveResult>
             {
                 if (provider.internalIsAvailable(resource, result))
                 {
-                    resource.getCoordinates().setManager(provider.getManager());
+                    resource.getCoordinates().setManager(provider.manager);
                     resource.getCoordinates().setProvider(provider);
                     reservedResources.add(new ReservedResource(resource.getCoordinates(), resource.getAttributes(), timeoutSeconds));
                     MachineReservedResource rresource = new MachineReservedResource(provider, resource, resource.getCoordinates(), result);
-                    ScheduledFuture<?> future = provider.getConfig().scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
+                    ScheduledFuture<?> future = provider.config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
                     provider.addReservedMachine(resource.getCoordinates().resourceId, rresource);
                 }

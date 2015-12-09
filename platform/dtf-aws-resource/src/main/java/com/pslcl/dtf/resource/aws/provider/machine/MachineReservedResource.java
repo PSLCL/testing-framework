@@ -46,7 +46,7 @@ public class MachineReservedResource implements Runnable
 
     private ScheduledFuture<?> timerFuture;
     private Future<MachineInstance> instanceFuture;
-    private final AwsMachineProvider provider;
+    public final AwsMachineProvider provider;
 
     MachineReservedResource(AwsMachineProvider provider, ResourceDescription resource, ResourceCoordinates newCoord, MachineQueryResult result)
     {

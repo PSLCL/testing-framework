@@ -60,7 +60,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         deleteSubnet();
         deleteVpc();
         
-        provider.getConfig().statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
+        provider.config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
         LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
         return null;
     }
@@ -75,7 +75,7 @@ public class ReleaseMachineFuture implements Callable<Void>
             try
             {
                 TerminateInstancesRequest trequest = new TerminateInstancesRequest().withInstanceIds(instanceId);
-                provider.getEc2Client().terminateInstances(trequest);
+                provider.ec2Client.terminateInstances(trequest);
                 break;
             } catch (Exception e)
             {
@@ -91,7 +91,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
-                DescribeInstancesResult diResult = provider.getEc2Client().describeInstances(diRequest);
+                DescribeInstancesResult diResult = provider.ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
                 if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Terminated)
                     break;
@@ -116,7 +116,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
-                provider.getEc2Client().deleteVpc(drequest);
+                provider.ec2Client.deleteVpc(drequest);
                 break;
             } catch (Exception e)
             {
@@ -138,7 +138,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
-                provider.getEc2Client().deleteSubnet(request);
+                provider.ec2Client.deleteSubnet(request);
                 break;
             } catch (Exception e)
             {

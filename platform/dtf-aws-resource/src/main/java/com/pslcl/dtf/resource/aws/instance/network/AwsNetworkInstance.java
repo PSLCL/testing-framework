@@ -18,11 +18,10 @@ package com.pslcl.dtf.resource.aws.instance.network;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.GroupIdentifier;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
+import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.provider.network.NetworkReservedResource;
@@ -30,56 +29,54 @@ import com.pslcl.dtf.resource.aws.provider.network.NetworkReservedResource;
 @SuppressWarnings("javadoc")
 public class AwsNetworkInstance implements NetworkInstance
 {
-    private final Logger log;
-    private final String name;
-    private final Map<String, String> attributes;
-    private String description;
-    private int timeoutSeconds;
-    private final ResourceCoordinates coordinates;
-    public final Instance ec2Instance;
+    public final NetworkReservedResource reservedResource;
+    public final ResourceDescription resource;
+    public final RunnerConfig runnerConfig;
+    public final GroupIdentifier groupIdentifier;
 
-    public AwsNetworkInstance(NetworkReservedResource reservedResource)
+    public AwsNetworkInstance(NetworkReservedResource reservedResource, GroupIdentifier groupIdentifier, RunnerConfig runnerConfig)
     {
-        log = LoggerFactory.getLogger(getClass());
-        name = reservedResource.resource.getName();
-        attributes = reservedResource.resource.getAttributes();
-        coordinates = reservedResource.resource.getCoordinates();
-        ec2Instance = reservedResource.ec2Instance;
+        this.reservedResource = reservedResource;
+        resource = reservedResource.resource;
+        this.groupIdentifier = groupIdentifier;
+        this.runnerConfig = runnerConfig;
     }
 
     @Override
     public String getName()
     {
-        return name;
+        return resource.getName();
     }
 
     @Override
     public Map<String, String> getAttributes()
     {
-        synchronized (attributes)
+        Map<String, String> map = resource.getAttributes();
+        synchronized (map)
         {
-            return new HashMap<String, String>(attributes);
+            return new HashMap<String, String>(map);
         }
     }
 
     @Override
     public void addAttribute(String key, String value)
     {
-        synchronized (attributes)
+        Map<String, String> map = resource.getAttributes();
+        synchronized (map)
         {
-            attributes.put(key, value);
+            map.put(key, value);
         }
     }
     
     @Override
     public ResourceProvider getResourceProvider()
     {
-        return coordinates.getProvider();
+        return resource.getCoordinates().getProvider();
     }
 
     @Override
     public ResourceCoordinates getCoordinates()
     {
-        return coordinates;
+        return resource.getCoordinates();
     }
 }

@@ -31,7 +31,6 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.network.AwsNetworkProvider;
@@ -40,6 +39,8 @@ import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 @SuppressWarnings("javadoc")
 public class AwsResourcesManager implements ResourcesManager
 {
+    public static final String StatusPrefixStr = "resource-";
+    
     private final List<ResourceProvider> resourceProviders;
     public final AwsMachineProvider machineProvider;
     public final AwsNetworkProvider networkProvider;
@@ -106,7 +107,7 @@ public class AwsResourcesManager implements ResourcesManager
     
     public static void handleStatusTracker(ProgressiveDelayData pdelayData, StatusTracker.Status status)
     {
-        pdelayData.statusTracker.setStatus(MachineInstanceFuture.StatusPrefixStr+pdelayData.coord.resourceId, status);
+        pdelayData.statusTracker.setStatus(StatusPrefixStr+pdelayData.coord.resourceId, status);
         pdelayData.statusTracker.fireResourceStatusChanged(
                         pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, status));
         pdelayData.statusTracker.removeStatus(pdelayData.coord.templateId);
