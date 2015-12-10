@@ -21,15 +21,13 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
 
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
@@ -98,6 +96,8 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
 
     public void release(String templateId, boolean isReusable)
     {
+        if(true)
+            return;
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
         synchronized (boundPeople)
@@ -115,7 +115,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
                 {
                     AwsPersonInstance instance = boundPeople.remove(key);
                     PersonReservedResource reservedResource = reservedPeople.remove(key);
-                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, instance.getCoordinates());
+                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
                     futures.add(config.blockingExecutor.submit(new ReleasePersonFuture(this, instance, pdelayData)));
                 }
             }
@@ -133,7 +133,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
 
         if (coordinates != null)
         {
-            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, coordinates);
+            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
             pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
             String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
             DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
@@ -176,7 +176,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     @Override
     public Future<PersonInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, resource.getCoordinates());
         config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Warn));
 
         synchronized (reservedPeople)
@@ -200,56 +200,10 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         return list;
     }
 
-    ResourceReserveResult internalReserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
-    {
-        List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
-        List<ResourceDescription> unavailableResources = new ArrayList<ResourceDescription>();
-        List<ResourceDescription> invalidResources = new ArrayList<ResourceDescription>();
-        ResourceReserveResult result = new ResourceReserveResult(reservedResources, unavailableResources, invalidResources);
-        
-        for (ResourceDescription resource : resources)
-        {
-            try
-            {
-//                SubnetConfigData subnetConfig = SubnetConfigData.init(resource, null, defaultPersonConfigData);
-//                ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
-//                
-//                if (manager.subnetManager.availableSgs.get() > 0)
-//                {
-//                    resource.getCoordinates().setManager(manager);
-//                    resource.getCoordinates().setProvider(this);
-//                    
-//                    pdelayData.maxDelay = subnetConfig.sgMaxDelay;
-//                    pdelayData.maxRetries = subnetConfig.sgMaxRetries;
-//                    pdelayData.preFixMostName = subnetConfig.resoucePrefixName;
-//                    GroupIdentifier groupId = manager.subnetManager.getSecurityGroup(pdelayData, subnetConfig.permissions, subnetConfig);
-//                    PersonReservedResource rresource = new PersonReservedResource(pdelayData, resource, groupId);
-//                    ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
-//                    rresource.setTimerFuture(future);
-//                    reservedResources.add(new ReservedResource(resource.getCoordinates(), resource.getAttributes(), timeoutSeconds));
-//                    synchronized (reservedPeople)
-//                    {
-//                        reservedPeople.put(resource.getCoordinates().resourceId, rresource);
-//                    }
-//                } else
-//                    unavailableResources.add(resource);
-            } catch (Exception e)
-            {
-                log.warn(getClass().getSimpleName() + ".reserve has invalid resources: " + resource.toString());
-                invalidResources.add(resource);
-                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".reserveIfAvailable failed: " + resource.toString(), e);
-            }
-        }
-        return result;
-    }
-
     @Override
-    public Future<ResourceReserveResult> reserve(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<List<ResourceReserveDisposition>> reserve(List<ResourceDescription> resources, int timeoutSeconds)
     {
-//        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
-//        config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Warn));
-//        return config.blockingExecutor.submit(new PersonReserveFuture(this, resources, timeoutSeconds));
-        return null;
+        return config.blockingExecutor.submit(new PersonReserveFuture(this, resources, timeoutSeconds));
     }
 
     @Override

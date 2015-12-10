@@ -88,7 +88,7 @@ public class AwsMachineInstance implements MachineInstance
     public Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException
     {
         AwsNetworkInstance instance = (AwsNetworkInstance) network;
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.provider.config.statusTracker, resource.getCoordinates());
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, resource.getCoordinates());
         return  instance.runnerConfig.blockingExecutor.submit(new ConnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
 

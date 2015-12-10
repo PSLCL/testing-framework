@@ -23,8 +23,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
@@ -32,7 +30,7 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
@@ -118,7 +116,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                 {
                     AwsNetworkInstance instance = boundNetworks.remove(key);
                     NetworkReservedResource reservedResource = reservedNetworks.remove(key);
-                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, instance.getCoordinates());
+                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
                     futures.add(config.blockingExecutor.submit(new ReleaseNetworkFuture(this, instance, reservedResource.vpc.getVpcId(), reservedResource.subnet.getSubnetId(), pdelayData)));
                 }
             }
@@ -136,7 +134,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
 
         if (coordinates != null)
         {
-            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, coordinates);
+            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
             pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
             String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
             DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
@@ -179,7 +177,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     @Override
     public Future<NetworkInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, resource.getCoordinates());
         config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Warn));
 
         synchronized (reservedNetworks)
@@ -203,12 +201,9 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         return list;
     }
 
-    ResourceReserveResult internalReserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
+    List<ResourceReserveDisposition> internalReserveIfAvailable(List<ResourceDescription> resources, int timeoutSeconds)
     {
-        List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
-        List<ResourceDescription> unavailableResources = new ArrayList<ResourceDescription>();
-        List<ResourceDescription> invalidResources = new ArrayList<ResourceDescription>();
-        ResourceReserveResult result = new ResourceReserveResult(reservedResources, unavailableResources, invalidResources);
+        List<ResourceReserveDisposition> list = new ArrayList<ResourceReserveDisposition>(); 
 
         boolean first = true;
         for (ResourceDescription resource : resources)
@@ -216,7 +211,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
             try
             {
                 SubnetConfigData subnetConfig = SubnetConfigData.init(resource, null, defaultSubnetConfigData);
-                ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
+                ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, resource.getCoordinates());
                 if(first)
                 {
                     manager.subnetManager.getVpc(pdelayData, subnetConfig);
@@ -234,25 +229,33 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                     NetworkReservedResource rresource = new NetworkReservedResource(pdelayData, resource, groupId);
                     ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
-                    reservedResources.add(new ReservedResource(resource.getCoordinates(), resource.getAttributes(), timeoutSeconds));
+                    //@formatter:off
+                    list.add(new ResourceReserveDisposition(
+                                    resource, 
+                                    new ReservedResource(
+                                                    resource.getCoordinates(), 
+                                                    resource.getAttributes(), 
+                                                    timeoutSeconds)));                    
+                    //@formatter:on
                     synchronized (reservedNetworks)
                     {
                         reservedNetworks.put(resource.getCoordinates().resourceId, rresource);
                     }
                 } else
-                    unavailableResources.add(resource);
+                    list.add(new ResourceReserveDisposition(resource));
             } catch (Exception e)
             {
                 log.warn(getClass().getSimpleName() + ".reserve has invalid resources: " + resource.toString());
-                invalidResources.add(resource);
-                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".reserveIfAvailable failed: " + resource.toString(), e);
+                ResourceReserveDisposition disposition = new ResourceReserveDisposition(resource);
+                disposition.setInvalidResource();
+                list.add(disposition);
             }
         }
-        return result;
+        return list;
     }
 
     @Override
-    public Future<ResourceReserveResult> reserve(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<List<ResourceReserveDisposition>> reserve(List<ResourceDescription> resources, int timeoutSeconds)
     {
         return config.blockingExecutor.submit(new NetworkReserveFuture(this, resources, timeoutSeconds));
     }

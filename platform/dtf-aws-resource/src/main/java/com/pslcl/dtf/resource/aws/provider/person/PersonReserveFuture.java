@@ -19,100 +19,113 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.services.sns.model.CreateTopicRequest;
+import com.amazonaws.services.sns.model.Topic;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
+import com.pslcl.dtf.core.runner.resource.exception.FatalException;
+import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.instance.person.PersonConfigData;
 
 @SuppressWarnings("javadoc")
-public class PersonReserveFuture implements Callable<ResourceReserveResult>
+public class PersonReserveFuture implements Callable<List<ResourceReserveDisposition>>
 {
+    public static final String SnsMidStr = "sns";
+
+    private final Logger log;
     private final AwsPersonProvider provider;
-    private final  List<ResourceDescription> resources;
+    private final List<ResourceDescription> resources;
     private final int timeoutSeconds;
-    
+
     public PersonReserveFuture(AwsPersonProvider provider, List<ResourceDescription> resources, int timeoutSeconds)
     {
+        log = LoggerFactory.getLogger(getClass());
         this.provider = provider;
         this.resources = resources;
         this.timeoutSeconds = timeoutSeconds;
     }
 
     @Override
-    public ResourceReserveResult call() throws Exception
+    public List<ResourceReserveDisposition> call() throws Exception
     {
-        List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
-        List<ResourceDescription> unavailableResources = new ArrayList<ResourceDescription>();
-        List<ResourceDescription> invalidResources = new ArrayList<ResourceDescription>();
-        ResourceReserveResult result = new ResourceReserveResult(reservedResources, unavailableResources, invalidResources);
-        
+        List<ResourceReserveDisposition> list = new ArrayList<ResourceReserveDisposition>();
+
         for (ResourceDescription resource : resources)
         {
             try
             {
-//                SubnetConfigData subnetConfig = SubnetConfigData.init(resource, null, defaultSubnetConfigData);
-//                ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
-//                PersonConfigData config = PersonConfigData.init(pdelayData, null, ) 
-//                
-//                if (manager.subnetManager.availableSgs.get() > 0)
-//                {
-//                    resource.getCoordinates().setManager(manager);
-//                    resource.getCoordinates().setProvider(this);
-//                    
-//                    pdelayData.maxDelay = subnetConfig.sgMaxDelay;
-//                    pdelayData.maxRetries = subnetConfig.sgMaxRetries;
-//                    pdelayData.preFixMostName = subnetConfig.resoucePrefixName;
-//                    GroupIdentifier groupId = manager.subnetManager.getSecurityGroup(pdelayData, subnetConfig.permissions, subnetConfig);
-//                    PersonReservedResource rresource = new PersonReservedResource(pdelayData, resource, groupId);
-//                    ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
-//                    rresource.setTimerFuture(future);
-//                    reservedResources.add(new ReservedResource(resource.getCoordinates(), resource.getAttributes(), timeoutSeconds));
-//                    synchronized (reservedPeople)
-//                    {
-//                        reservedPeople.put(resource.getCoordinates().resourceId, rresource);
-//                    }
-//                } else
-//                    unavailableResources.add(resource);
+                ProgressiveDelayData pdelayData = new ProgressiveDelayData(provider, resource.getCoordinates());
+                PersonConfigData config = PersonConfigData.init(pdelayData, resource, provider.defaultPersonConfigData);
+                pdelayData.maxDelay = config.snsMaxDelay;
+                pdelayData.maxRetries = config.snsMaxRetries;
+
+                resource.getCoordinates().setManager(pdelayData.provider.manager);
+                resource.getCoordinates().setProvider(pdelayData.provider);
+                checkForTopic(pdelayData, config);
+                //@formatter:off
+                list.add(new ResourceReserveDisposition(
+                                resource, 
+                                new ReservedResource(
+                                                resource.getCoordinates(), 
+                                                resource.getAttributes(), 
+                                                timeoutSeconds)));                    
+                //@formatter:on
             } catch (Exception e)
             {
-//                log.warn(getClass().getSimpleName() + ".reserve has invalid resources: " + resource.toString());
-                invalidResources.add(resource);
-                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".reserveIfAvailable failed: " + resource.toString(), e);
+                log.warn(getClass().getSimpleName() + ".reserve has invalid resources: " + resource.toString());
+                ResourceReserveDisposition disposition = new ResourceReserveDisposition(resource);
+                disposition.setInvalidResource();
+                list.add(disposition);
             }
         }
-        return result;
-//        do
-//        {
-//            try
-//            {
-//                provider.manager.snsClient.listTopics();
-//                break;
-//            } catch (Exception e)
-//            {
-//                FatalResourceException fre = pdelay.handleException(msg, e);
-//                if (fre instanceof FatalException)
-//                    throw fre;
-//            }
-//        } while (true);
-//        return null;
-//        return provider.internalReserveIfAvailable(resources, timeoutSeconds);
+        return null;
     }
-    
-    private void checkForTopic()
+
+    private void checkForTopic(ProgressiveDelayData pdelayData, PersonConfigData config) throws FatalResourceException
     {
-//        do
-//        {
-//            try
-//            {
-//                provider.manager.snsClient.listTopics();
-//                break;
-//            } catch (Exception e)
-//            {
-//                FatalResourceException fre = pdelay.handleException(msg, e);
-//                if (fre instanceof FatalException)
-//                    throw fre;
-//            }
-//        } while (true);
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        String msg = pdelayData.getHumanName(SnsMidStr, "listTopics");
+        do
+        {
+            try
+            {
+                List<Topic> list = provider.manager.snsClient.listTopics().getTopics();
+                for (Topic t : list)
+                {
+                    if (t.getTopicArn().equals(config.topic))
+                        return;
+                }
+                break;
+            } catch (Exception e)
+            {
+                FatalResourceException fre = pdelay.handleException(msg, e);
+                if (fre instanceof FatalException)
+                    throw fre;
+            }
+        } while (true);
+        // if we make it to here, need to create the topic
+
+        pdelay.reset();
+        msg = pdelayData.getHumanName(SnsMidStr, "createTopic");
+        CreateTopicRequest ctr = new CreateTopicRequest().withName(config.topic);
+        do
+        {
+            try
+            {
+                provider.manager.snsClient.createTopic(ctr).getTopicArn();
+                break;
+            } catch (Exception e)
+            {
+                FatalResourceException fre = pdelay.handleException(msg, e);
+                if (fre instanceof FatalException)
+                    throw fre;
+            }
+        } while (true);
     }
 }

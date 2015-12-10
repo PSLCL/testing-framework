@@ -192,14 +192,11 @@ public class ProgressiveDelay
         public final ResourceStatusEvent resourceStatusEvent;
 
         //@formatter:off
-        public ProgressiveDelayData(
-                        AwsResourceProvider provider, 
-                        StatusTracker statusTracker,
-                        ResourceCoordinates coordinates)
+        public ProgressiveDelayData(AwsResourceProvider provider, ResourceCoordinates coordinates)
         //@formatter:off
         {
             this.provider = provider;
-            this.statusTracker = statusTracker;
+            statusTracker = provider.config.statusTracker;
             coord = coordinates;
             resourceStatusEvent = new ResourceStatusEvent(AwsResourcesManager.StatusPrefixStr+coord.resourceId, StatusTracker.Status.Warn, coord);
         }
