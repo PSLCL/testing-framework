@@ -180,6 +180,17 @@ public class BindHandler {
 				    				if (rrd.isInvalidResource())
 				    					throw new Exception("invalid resource request");
 				    				if (!rrd.isUnavailableResource()) {
+				    					// Check that requested resource type is answered. When a person resource is requested to be reserved,
+				    					// I have seen AWSMachineProvider *wrongly* return a reserved entry (visible in Eclipse as future.outcome.reserved).
+				    					String rpName = rrd.getInputResourceDescription().getName();
+				    					String rrName = rrd.getReservedResource().getName();
+				    					String rrRPName = rrd.getReservedResource().getResourceProvider().getName();
+			    		            	if (!rpName.equals(rrName) || !rpName.equals(rrRPName)) {
+			    		            		log.debug(simpleName + "proceed() finds mismatched rpName " + rpName + ", rrName " + rrName + ", rrRPName " + rrRPName);
+			    		            		throw new Exception("reserveIfAvailable() finds mismatched ReservedResource.provider name and ResourceProvider names");
+			    		            	}
+				    					
+			    		            	// record this newly reserved resource
 				    					ResourceDescription inputRD = rrd.getInputResourceDescription();
 				    					ReservedResource rr = new ReservedResource(inputRD.getCoordinates(), inputRD.getAttributes(), 1000*60 * 1); // 1 minute timeout; TODO: this needs to come from ResourceProvider
 					    				this.currentReservedResources.add(rr);
