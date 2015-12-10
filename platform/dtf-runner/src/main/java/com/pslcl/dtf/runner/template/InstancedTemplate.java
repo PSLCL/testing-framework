@@ -217,8 +217,6 @@ public class InstancedTemplate {
             }
             
     		BindHandler bindHandler = null;
-    		BindHandlerA bindHandlerA = null;
-            List<ResourceDescription> reserveResourceRequests = null;
     		DeployHandler deployHandler = null;
     		List<DeployInfo> deployInfos = null;
     		InspectHandler inspectHandler = null; // Inspect purposely has no overall list of InspectInfo
@@ -240,35 +238,14 @@ public class InstancedTemplate {
 					switch(commandString) {
 					case "bind":
 						if (bindHandler == null) {
-							bindHandlerA = new BindHandlerA(this, stepsOfSet, setStepCount);
-							bindHandlerA.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
-							bindHandlerA.proceed();
-							int consumedStepReferencesA = bindHandlerA.getReserveResourceRequestCount(); // the number of step lines processed (won't be 0), regardless of the outcome of actual reserve and bind activity
-							setStepCount += consumedStepReferencesA;
-							currentStepReference += consumedStepReferencesA;
+							bindHandler = new BindHandler(this, stepsOfSet, setStepCount);
+							bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
+							bindHandler.proceed();
 							// bind processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
 
-							if (false) {
-								ReserveHandler reserveHandler = new ReserveHandler(this, stepsOfSet, setStepCount);  // setID bind resourceName attributeKVPs 
-								reserveResourceRequests = reserveHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
-								// Note: Each element of the returned list has had its associated step reference number stored. This number is the line number in a set of template steps, 0 based.  
-								//       This stored number is retrieved in this manner: long referenceNum = iT.getReference(listRD.get(0).getCoordinates());
-								//       Explanation: Each ResourceDescription contains a ResourceCoordinates object. It gives added value for general Resource use.
-								//           It is also used as a key by which to lookup the step reference number (step line number) of its associated bound Resource.
-								//           To retrieve a bind step's reference number, call iT.getReference(resourceDescription.getCoordinates())
-		
-								bindHandler = new BindHandler(this);
-								try {
-									bindHandler.reserveAndInitiateBind(reserveResourceRequests);
-								} catch (Exception e) {
-									// TODO: perhaps some cleanup, perhaps logging
-									throw e;
-								}
-								int consumedStepReferences = reserveResourceRequests.size(); // this is the number of step lines processed, regardless of the outcome of actual reserve and bind activity
-								setStepCount += consumedStepReferences;
-								currentStepReference += consumedStepReferences;
-								// bind(s) are being processed; notification comes to us asynchronously, below, where we receive bind notification after we have initiated the processing of other steps of this step set
-							}
+							int consumedStepReferencesA = bindHandler.getReserveResourceRequestCount(); // the number of step lines processed (won't be 0), regardless of the outcome of actual reserve and bind activity
+							setStepCount += consumedStepReferencesA;
+							currentStepReference += consumedStepReferencesA;
 						} else {
 							// TODO: warn log to report improper ordering of steps within a step set
 						}
@@ -370,27 +347,14 @@ public class InstancedTemplate {
             
             do {
                 // block, in turn, until all steps of this set have concluded their processing
-            	if (bindHandlerA!=null && !bindHandlerA.isDone()) {
-            		bindHandlerA.proceed();
-            		if (bindHandlerA.isDone()) {
-            			List<ResourceInstance> localRI = bindHandlerA.getResourceInstances();
+            	if (bindHandler!=null && !bindHandler.isDone()) {
+            		bindHandler.proceed();
+            		if (bindHandler.isDone()) {
+            			List<ResourceInstance> localRI = bindHandler.getResourceInstances();
             			this.boundResourceInstances.addAll(localRI);
-            			log.debug(simpleName + "bindHandler() completes " + localRI.size() + " binds for one step");
+            			log.debug(simpleName + "bindHandler() completes " + localRI.size() + " bind(s) for one step");
             		}
             	}
-                if (bindHandler != null) {
-    				try {
-    	                List<ResourceInstance> localBoundResourceInstances = bindHandler.waitComplete(); // success is that no exception is thrown by .waitComplete() or the asynch bind process(es) behind it
-    	            	boundResourceInstances.addAll(localBoundResourceInstances); // the purpose of holding this accumulated list is for use at template instance teardown
-    	            	
-    	            	// temporarily, get past failed bind
-//    					if (localBoundResourceInstances.size() != reserveResourceRequests.size()) // check success further
-//    	            		throw new Exception("InstancedTemplate.runSteps() bind handling has incomplete bound list");
-    				} catch (Exception e) {
-    					// one or more bind steps errored out; this template is errored out
-    					throw new Exception("Bind step(s) errored out; ", e); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
-    				}
-                }
                 if (deployHandler!=null && !deployHandler.isDone()) {
     				// we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
                 	boolean allDeploysSucceeded = false;
@@ -483,8 +447,7 @@ public class InstancedTemplate {
                     		throw new Exception("Run step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
                 	}
                 }
-            } while (bindHandler!=null ||
-            		 bindHandlerA!=null  && !bindHandlerA.isDone() ||
+            } while (bindHandler!=null  && !bindHandler.isDone() ||
             		 deployHandler!=null && !deployHandler.isDone());
         }
     }
