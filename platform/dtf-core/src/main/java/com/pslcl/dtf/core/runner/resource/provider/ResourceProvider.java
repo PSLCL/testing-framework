@@ -21,7 +21,7 @@ import java.util.concurrent.Future;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
@@ -55,9 +55,9 @@ public interface ResourceProvider
      * </ul>
      * @param resources A list of resources. Must not be null, maybe empty.
      * @param timeoutSeconds The time period, in seconds, to reserve the resources.
-     * @return The {@link ResourceReserveResult} listing the resources which were able to be reserved.
+     * @return The {@link ResourceReserveDisposition} listing the resources which were able to be reserved.
      */
-    public Future<ResourceReserveResult> reserve(List<ResourceDescription> resources, int timeoutSeconds);
+    public Future<List<ResourceReserveDisposition>> reserve(List<ResourceDescription> resources, int timeoutSeconds);
 
     /**
      * Get the name of the provider.

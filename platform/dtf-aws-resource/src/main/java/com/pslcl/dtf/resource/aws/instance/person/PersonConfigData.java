@@ -28,17 +28,22 @@ import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 public class PersonConfigData
 {
     public volatile String topic;
-    
+    public volatile int snsMaxDelay;
+    public volatile int snsMaxRetries;
+
     private PersonConfigData()
     {
     }
 
-    public static PersonConfigData init(ProgressiveDelayData pdelayData, ResourceDescription resource, TabToLevel format, PersonConfigData defaultData) throws Exception
+    public static PersonConfigData init(ProgressiveDelayData pdelayData, ResourceDescription resource, PersonConfigData defaultData) throws Exception
     {
+        TabToLevel format = new TabToLevel();
         PersonConfigData data = new PersonConfigData();
         format.ttl(PersonConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
         data.topic = getAttribute(ProviderNames.PersonTopicKey, defaultData.topic, resource, format);
+        data.snsMaxDelay = Integer.parseInt(getAttribute(ProviderNames.PersonMaxDelayKey, ""+defaultData.snsMaxDelay, resource, format));
+        data.snsMaxRetries = Integer.parseInt(getAttribute(ProviderNames.PersonTopicKey, ""+defaultData.snsMaxRetries, resource, format));
         format.level.decrementAndGet();
         LoggerFactory.getLogger(PersonConfigData.class).debug(format.sb.toString());
         return data;
@@ -50,6 +55,8 @@ public class PersonConfigData
         config.initsb.ttl(SubnetManager.class.getSimpleName() + " init:");
         config.initsb.level.incrementAndGet();
         data.topic = getAttribute(config, ProviderNames.PersonTopicKey, ProviderNames.PersonTopicDefault);
+        data.snsMaxDelay = Integer.parseInt(getAttribute(config, ProviderNames.PersonMaxDelayKey, ProviderNames.PersonMaxDelayDefault));
+        data.snsMaxRetries = Integer.parseInt(getAttribute(config, ProviderNames.PersonTopicKey, ProviderNames.PersonMaxRetriesDefault));
         config.initsb.level.decrementAndGet();
         return data;
     }

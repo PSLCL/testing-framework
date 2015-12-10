@@ -19,10 +19,10 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 
 @SuppressWarnings("javadoc")
-public class NetworkReserveFuture implements Callable<ResourceReserveResult>
+public class NetworkReserveFuture implements Callable<List<ResourceReserveDisposition>>
 {
     private final AwsNetworkProvider provider;
     private final  List<ResourceDescription> resources;
@@ -36,7 +36,7 @@ public class NetworkReserveFuture implements Callable<ResourceReserveResult>
     }
 
     @Override
-    public ResourceReserveResult call() throws Exception
+    public List<ResourceReserveDisposition> call() throws Exception
     {
         return provider.internalReserveIfAvailable(resources, timeoutSeconds);
     }

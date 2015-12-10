@@ -25,15 +25,15 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 
 @SuppressWarnings("javadoc")
-public class MachineReserveFuture implements Callable<ResourceReserveResult>
+public class MachineReserveFuture implements Callable<List<ResourceReserveDisposition>>
 {
     private final AwsMachineProvider provider;
-    private final  List<ResourceDescription> resources;
+    private final List<ResourceDescription> resources;
     private final int timeoutSeconds;
-    
+
     public MachineReserveFuture(AwsMachineProvider provider, List<ResourceDescription> resources, int timeoutSeconds)
     {
         this.provider = provider;
@@ -42,13 +42,10 @@ public class MachineReserveFuture implements Callable<ResourceReserveResult>
     }
 
     @Override
-    public ResourceReserveResult call() throws Exception
+    public List<ResourceReserveDisposition> call() throws Exception
     {
         MachineQueryResult result = new MachineQueryResult();
-        List<ReservedResource> reservedResources = new ArrayList<ReservedResource>();
-        List<ResourceDescription> unavailableResources = new ArrayList<ResourceDescription>();
-        List<ResourceDescription> invalidResources = new ArrayList<ResourceDescription>();
-        ResourceReserveResult resourceQueryResult = new ResourceReserveResult(reservedResources, unavailableResources, invalidResources);
+        List<ResourceReserveDisposition> list = new ArrayList<ResourceReserveDisposition>();
         for (ResourceDescription resource : resources)
         {
             try
@@ -57,20 +54,28 @@ public class MachineReserveFuture implements Callable<ResourceReserveResult>
                 {
                     resource.getCoordinates().setManager(provider.manager);
                     resource.getCoordinates().setProvider(provider);
-                    reservedResources.add(new ReservedResource(resource.getCoordinates(), resource.getAttributes(), timeoutSeconds));
+                    //@formatter:off
+                    list.add(new ResourceReserveDisposition(
+                                    resource, 
+                                    new ReservedResource(
+                                                    resource.getCoordinates(), 
+                                                    resource.getAttributes(), 
+                                                    timeoutSeconds)));                    
+                    //@formatter:on
                     MachineReservedResource rresource = new MachineReservedResource(provider, resource, resource.getCoordinates(), result);
                     ScheduledFuture<?> future = provider.config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
                     provider.addReservedMachine(resource.getCoordinates().resourceId, rresource);
-                }
-                else
-                    unavailableResources.add(resource);
+                } else
+                    list.add(new ResourceReserveDisposition(resource));
             } catch (Exception e)
             {
-                invalidResources.add(resource);
+                ResourceReserveDisposition disposition = new ResourceReserveDisposition(resource);
+                disposition.setInvalidResource();
+                list.add(disposition);
                 LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".queryResourceAvailable failed: " + resource.toString(), e);
             }
         }
-        return resourceQueryResult;
+        return list;
     }
 }

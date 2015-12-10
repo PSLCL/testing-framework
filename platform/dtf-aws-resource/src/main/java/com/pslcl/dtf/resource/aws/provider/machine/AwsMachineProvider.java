@@ -28,7 +28,7 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceReserveResult;
+import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
@@ -135,7 +135,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 {
                     AwsMachineInstance instance = boundInstances.remove(key);
                     reservedMachines.remove(key);
-                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, instance.getCoordinates());
+                    ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
                     futures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance, null, /*reservedResource.vpc.getVpcId() reservedResource.subnet.getSubnetId()*/ null, pdelayData)));
                 }
             }
@@ -153,7 +153,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
         if (coordinates != null)
         {
-            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, coordinates);
+            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
             pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
             String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
             DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
@@ -200,7 +200,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public Future<MachineInstance> bind(ReservedResource resource) throws ResourceNotReservedException
     {
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, config.statusTracker, resource.getCoordinates());
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, resource.getCoordinates());
         config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Warn));
 
         synchronized (reservedMachines)
@@ -243,7 +243,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     }
 
     @Override
-    public Future<ResourceReserveResult> reserve(List<ResourceDescription> resources, int timeoutSeconds)
+    public Future<List<ResourceReserveDisposition>> reserve(List<ResourceDescription> resources, int timeoutSeconds)
     {
         return config.blockingExecutor.submit(new MachineReserveFuture(this, resources, timeoutSeconds));
     }

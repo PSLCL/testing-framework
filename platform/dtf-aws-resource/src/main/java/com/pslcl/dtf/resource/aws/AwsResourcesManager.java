@@ -230,6 +230,8 @@ public class AwsResourcesManager implements ResourcesManager
     public void release(String templateId, boolean isReusable)
     {
         machineProvider.release(templateId, isReusable);
+        networkProvider.release(templateId, isReusable);
+        personProvider.release(templateId, isReusable);
     }
 
     @Override

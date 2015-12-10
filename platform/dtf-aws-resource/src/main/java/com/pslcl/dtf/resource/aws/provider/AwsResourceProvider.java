@@ -19,10 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 
 @SuppressWarnings("javadoc")
-public abstract class AwsResourceProvider
+public abstract class AwsResourceProvider implements ResourceProvider
 {
     protected final Logger log;
     public final AwsResourcesManager manager;
@@ -34,14 +35,16 @@ public abstract class AwsResourceProvider
         this.manager = manager;
     }
 
-    protected void init(RunnerConfig config) throws Exception
+    @Override
+    public void init(RunnerConfig config) throws Exception
     {
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
         this.config = config;
     }
     
-    protected void destroy()
+    @Override
+    public void destroy()
     {
     }
 }

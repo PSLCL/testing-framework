@@ -219,7 +219,12 @@ public class ProviderNames
     public static final String PersonKeyBase = ClientNames.AwsKeyBase + ".sns";
     
     public static final String PersonTopicKey = PersonKeyBase + ".topic";
+    public static final String PersonMaxDelayKey = PersonKeyBase + ".max-delay";
+    public static final String PersonMaxRetriesKey = PersonKeyBase + ".max-retries";
+    
     public static final String PersonTopicDefault = ClientNames.TestShortNameDefault + "-inspect";
+    public static final String PersonMaxDelayDefault = InstanceNames.shortMaxDelay;      
+    public static final String PersonMaxRetriesDefault = InstanceNames.shortMaxRetries;  // about 1 min timeout
     
     /* ****************************************************************************
      * Various helper key lists    
@@ -285,6 +290,8 @@ public class ProviderNames
     {
         List<String> keys = new ArrayList<String>();
         keys.add(PersonTopicKey);
+        keys.add(PersonMaxDelayKey);
+        keys.add(PersonMaxRetriesKey);
         return keys;
     }
 }
