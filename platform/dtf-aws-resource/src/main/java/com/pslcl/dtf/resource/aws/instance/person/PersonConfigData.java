@@ -21,15 +21,17 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 
 @SuppressWarnings("javadoc")
 public class PersonConfigData
 {
-    public volatile String topic;
+    public volatile String topicArn;
     public volatile int snsMaxDelay;
     public volatile int snsMaxRetries;
+    public volatile String endpoint;
 
     private PersonConfigData()
     {
@@ -41,9 +43,10 @@ public class PersonConfigData
         PersonConfigData data = new PersonConfigData();
         format.ttl(PersonConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
-        data.topic = getAttribute(ProviderNames.PersonTopicKey, defaultData.topic, resource, format);
-        data.snsMaxDelay = Integer.parseInt(getAttribute(ProviderNames.PersonMaxDelayKey, ""+defaultData.snsMaxDelay, resource, format));
-        data.snsMaxRetries = Integer.parseInt(getAttribute(ProviderNames.PersonTopicKey, ""+defaultData.snsMaxRetries, resource, format));
+        data.topicArn = getAttribute(ProviderNames.SnsTopicArnKey, defaultData.topicArn, resource, format);
+        data.endpoint = getAttribute(ClientNames.EndpointKey, defaultData.endpoint, resource, format);
+        data.snsMaxDelay = Integer.parseInt(getAttribute(ProviderNames.SnsMaxDelayKey, ""+defaultData.snsMaxDelay, resource, format));
+        data.snsMaxRetries = Integer.parseInt(getAttribute(ProviderNames.SnsMaxRetriesKey, ""+defaultData.snsMaxRetries, resource, format));
         format.level.decrementAndGet();
         LoggerFactory.getLogger(PersonConfigData.class).debug(format.sb.toString());
         return data;
@@ -54,9 +57,10 @@ public class PersonConfigData
         PersonConfigData data = new PersonConfigData();
         config.initsb.ttl(SubnetManager.class.getSimpleName() + " init:");
         config.initsb.level.incrementAndGet();
-        data.topic = getAttribute(config, ProviderNames.PersonTopicKey, ProviderNames.PersonTopicDefault);
-        data.snsMaxDelay = Integer.parseInt(getAttribute(config, ProviderNames.PersonMaxDelayKey, ProviderNames.PersonMaxDelayDefault));
-        data.snsMaxRetries = Integer.parseInt(getAttribute(config, ProviderNames.PersonTopicKey, ProviderNames.PersonMaxRetriesDefault));
+        data.topicArn = getAttribute(config, ProviderNames.SnsTopicArnKey, ProviderNames.SnsTopicArnDefault);
+        data.endpoint = getAttribute(config, ClientNames.EndpointKey, ClientNames.EndpointDefault);
+        data.snsMaxDelay = Integer.parseInt(getAttribute(config, ProviderNames.SnsMaxDelayKey, ProviderNames.SnsMaxDelayDefault));
+        data.snsMaxRetries = Integer.parseInt(getAttribute(config, ProviderNames.SnsMaxRetriesKey, ProviderNames.SnsMaxRetriesDefault));
         config.initsb.level.decrementAndGet();
         return data;
     }

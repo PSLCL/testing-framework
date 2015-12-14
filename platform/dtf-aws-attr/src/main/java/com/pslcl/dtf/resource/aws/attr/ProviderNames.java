@@ -218,13 +218,13 @@ public class ProviderNames
     ******************************************************************************/
     public static final String PersonKeyBase = ClientNames.AwsKeyBase + ".sns";
     
-    public static final String PersonTopicKey = PersonKeyBase + ".topic";
-    public static final String PersonMaxDelayKey = PersonKeyBase + ".max-delay";
-    public static final String PersonMaxRetriesKey = PersonKeyBase + ".max-retries";
+    public static final String SnsTopicArnKey = PersonKeyBase + ".topic-arn";
+    public static final String SnsMaxDelayKey = PersonKeyBase + ".max-delay";
+    public static final String SnsMaxRetriesKey = PersonKeyBase + ".max-retries";
     
-    public static final String PersonTopicDefault = ClientNames.TestShortNameDefault + "-inspect";
-    public static final String PersonMaxDelayDefault = InstanceNames.shortMaxDelay;      
-    public static final String PersonMaxRetriesDefault = InstanceNames.shortMaxRetries;  // about 1 min timeout
+    public static final String SnsTopicArnDefault = null;   // must be created manually in web console 
+    public static final String SnsMaxDelayDefault = InstanceNames.shortMaxDelay;      
+    public static final String SnsMaxRetriesDefault = InstanceNames.shortMaxRetries;  // about 1 min timeout
     
     /* ****************************************************************************
      * Various helper key lists    
@@ -289,9 +289,9 @@ public class ProviderNames
     public static List<String> getAllPersonProviderKeys()
     {
         List<String> keys = new ArrayList<String>();
-        keys.add(PersonTopicKey);
-        keys.add(PersonMaxDelayKey);
-        keys.add(PersonMaxRetriesKey);
+        keys.add(SnsTopicArnKey);
+        keys.add(SnsMaxDelayKey);
+        keys.add(SnsMaxRetriesKey);
         return keys;
     }
 }

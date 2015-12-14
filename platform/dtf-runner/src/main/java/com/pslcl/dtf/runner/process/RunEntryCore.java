@@ -70,7 +70,7 @@ public class RunEntryCore {
                     connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
                 } catch ( Exception e ) {
                     LoggerFactory.getLogger("RunEntryCore").error("openDatabase() could not open database connection, " + e);
-                    throw e;
+//                    throw e;
                 }
     		}
             ++connectCount;

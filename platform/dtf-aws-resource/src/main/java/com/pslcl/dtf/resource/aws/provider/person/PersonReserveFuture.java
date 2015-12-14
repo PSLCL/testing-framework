@@ -15,6 +15,7 @@
  */
 package com.pslcl.dtf.resource.aws.provider.person;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -22,7 +23,10 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.sns.model.CreateTopicRequest;
+import com.amazonaws.services.simpleemail.model.RawMessage;
+import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
+import com.amazonaws.services.sns.model.ListTopicsResult;
+import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.Topic;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
@@ -95,30 +99,38 @@ public class PersonReserveFuture implements Callable<List<ResourceReserveDisposi
         {
             try
             {
-                List<Topic> list = provider.manager.snsClient.listTopics().getTopics();
-                for (Topic t : list)
+                ByteBuffer bb;
+                RawMessage rm = new RawMessage().withData(bb);
+                SendRawEmailRequest ser = new SendRawEmailRequest().withRawMessage(rawMessage)
+                provider.manager.sesClient.sensetEndpoint(config.endpoint);
+                provider.manager.snsClient.setEndpoint(config.endpoint);
+                
+                
+                //formatter:off
+                PublishRequest pr = new PublishRequest()
+                    .withMessage("the message")
+                    .withSubject("the subject")
+                    .withTopicArn(config.topicArn);
+                //formatter:on
+                provider.manager.snsClient.publish(pr);
+                
+                ListTopicsResult listTopicsResult = provider.manager.snsClient.listTopics();
+                String nextToken = listTopicsResult.getNextToken();
+                List<Topic> topics = listTopicsResult.getTopics();
+
+                // ListTopicResult contains only 100 topics hence use next token to get
+                // next 100 topics.
+                while (nextToken != null)
                 {
-                    if (t.getTopicArn().equals(config.topic))
+                    listTopicsResult = provider.manager.snsClient.listTopics();
+                    nextToken = listTopicsResult.getNextToken();
+                    topics.addAll(listTopicsResult.getTopics());
+                }
+                for (Topic t : topics)
+                {
+                    if (t.getTopicArn().equals(config.topicArn))
                         return;
                 }
-                break;
-            } catch (Exception e)
-            {
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if (fre instanceof FatalException)
-                    throw fre;
-            }
-        } while (true);
-        // if we make it to here, need to create the topic
-
-        pdelay.reset();
-        msg = pdelayData.getHumanName(SnsMidStr, "createTopic");
-        CreateTopicRequest ctr = new CreateTopicRequest().withName(config.topic);
-        do
-        {
-            try
-            {
-                provider.manager.snsClient.createTopic(ctr).getTopicArn();
                 break;
             } catch (Exception e)
             {
