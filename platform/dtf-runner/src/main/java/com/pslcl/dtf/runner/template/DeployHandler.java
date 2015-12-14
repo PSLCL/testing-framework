@@ -18,6 +18,7 @@ public class DeployHandler {
     private List<DeployInfo> futuresOfDeploys;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private boolean done;
     private final Logger log;
     private final String simpleName;
 
@@ -32,6 +33,7 @@ public class DeployHandler {
 		this.iT = iT;
 		this.setSteps = setSteps;
 		this.futuresOfDeploys = new ArrayList<DeployInfo>();
+		this.done = false;
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
 			SetStep setStep = new SetStep(setSteps.get(i));
@@ -41,6 +43,10 @@ public class DeployHandler {
 				this.iBeginSetOffset = iBeginSetOffset;
 			this.iFinalSetOffset = i;
 		}
+	}
+
+	public boolean isDone() {
+		return done;
 	}
 	
 	/**
@@ -123,33 +129,39 @@ public class DeployHandler {
 	 * throws Exception
 	 */
 	public List<DeployInfo> waitComplete() throws Exception {
-		// At this moment, this.futuresOfDeploys is filled. Each of its objects has a future member; each will give us a Void.
-		//     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
+		try {
+			// At this moment, this.futuresOfDeploys is filled. Each of its objects has a future member; each will give us a Void.
+			//     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
 
-        // Note: As an initial plan, this block is coded to a safe algorithm:
-        //       We expect full deploy success, and otherwise we back out and release whatever other activity had been put in place, along the way.
-		
-		// Gather all results from futuresOfDeploys, a list of DeployInfo, each holding a Future. This thread yields, in waiting for each of the multiple asynch deploy calls to complete.
-    	DeployInfo.markAllDeployedSuccess_true(); // this required setup allow negation by any pass through the loop 
-		for (DeployInfo deployInfo: this.futuresOfDeploys) {
-			Future<Void> future = deployInfo.getFuture();
-            if (future != null) {
-                try {
-					future.get(); // blocks until asynch answer comes, or exception, or timeout
-				} catch (InterruptedException ee) {
-                    Throwable t = ee.getCause();
-                    String msg = ee.getLocalizedMessage();
-                    if(t != null)
-                        msg = t.getLocalizedMessage();
-                    log.warn(simpleName + "waitComplete(), deploy failed: " + msg, ee);
-                	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
-				} catch (ExecutionException e) {
-                    log.warn(simpleName + "Executor pool shutdown"); // TODO: new message
-                	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
-				}
-            } else {
-            	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
-            }
+			// Note: As an initial plan, this block is coded to a safe algorithm:
+			//       We expect full deploy success, and otherwise we back out and release whatever other activity had been put in place, along the way.
+			
+			// Gather all results from futuresOfDeploys, a list of DeployInfo, each holding a Future. This thread yields, in waiting for each of the multiple asynch deploy calls to complete.
+			DeployInfo.markAllDeployedSuccess_true(); // this required setup allow negation by any pass through the loop 
+			for (DeployInfo deployInfo: this.futuresOfDeploys) {
+				Future<Void> future = deployInfo.getFuture();
+			    if (future != null) {
+			        try {
+						future.get(); // blocks until asynch answer comes, or exception, or timeout
+					} catch (InterruptedException ee) {
+			            Throwable t = ee.getCause();
+			            String msg = ee.getLocalizedMessage();
+			            if(t != null)
+			                msg = t.getLocalizedMessage();
+			            log.warn(simpleName + "waitComplete(), deploy failed: " + msg, ee);
+			        	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
+					} catch (ExecutionException e) {
+			            log.warn(simpleName + "Executor pool shutdown"); // TODO: new message
+			        	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
+					}
+			    } else {
+			    	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
+			    }
+			}
+		} catch (Exception e) {
+			throw e;
+		} finally {
+			this.done = true;
 		}
         	
         return this.futuresOfDeploys;

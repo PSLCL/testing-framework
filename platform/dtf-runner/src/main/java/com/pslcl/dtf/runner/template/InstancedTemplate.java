@@ -217,7 +217,6 @@ public class InstancedTemplate {
             }
             
     		BindHandler bindHandler = null;
-            List<ResourceDescription> reserveResourceRequests = null;
     		DeployHandler deployHandler = null;
     		List<DeployInfo> deployInfos = null;
     		InspectHandler inspectHandler = null; // Inspect purposely has no overall list of InspectInfo
@@ -239,25 +238,14 @@ public class InstancedTemplate {
 					switch(commandString) {
 					case "bind":
 						if (bindHandler == null) {
-							ReserveHandler reserveHandler = new ReserveHandler(this, stepsOfSet, setStepCount);  // setID bind resourceName attributeKVPs 
-							reserveResourceRequests = reserveHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
-							// Note: Each element of the returned list has had its associated step reference number stored. This number is the line number in a set of template steps, 0 based.  
-							//       This stored number is retrieved in this manner: long referenceNum = iT.getReference(listRD.get(0).getCoordinates());
-							//       Explanation: Each ResourceDescription contains a ResourceCoordinates object. It gives added value for general Resource use.
-							//           It is also used as a key by which to lookup the step reference number (step line number) of its associated bound Resource.
-							//           To retrieve a bind step's reference number, call iT.getReference(resourceDescription.getCoordinates())
-	
-							bindHandler = new BindHandler(this);
-							try {
-								bindHandler.reserveAndInitiateBind(reserveResourceRequests);
-							} catch (Exception e) {
-								// TODO: perhaps some cleanup, perhaps logging
-								throw e;
-							}
-							int consumedStepReferences = reserveResourceRequests.size(); // this is the number of step lines processed, regardless of the outcome of actual reserve and bind activity
-							setStepCount += consumedStepReferences;
-							currentStepReference += consumedStepReferences;
-							// bind(s) are being processed; notification comes to us asynchronously, below, where we receive bind notification after we have initiated the processing of other steps of this step set
+							bindHandler = new BindHandler(this, stepsOfSet, setStepCount);
+							bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
+							bindHandler.proceed();
+							// bind processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
+
+							int consumedStepReferencesA = bindHandler.getReserveResourceRequestCount(); // the number of step lines processed (won't be 0), regardless of the outcome of actual reserve and bind activity
+							setStepCount += consumedStepReferencesA;
+							currentStepReference += consumedStepReferencesA;
 						} else {
 							// TODO: warn log to report improper ordering of steps within a step set
 						}
@@ -357,112 +345,110 @@ public class InstancedTemplate {
 				}
             } // end for() same setID command initiating
             
-            // block, in turn, until all steps of this set have concluded their processing
-            if (bindHandler != null) {
-				try {
-	                List<ResourceInstance> localBoundResourceInstances = bindHandler.waitComplete(); // success is that no exception is thrown by .waitComplete() or the asynch bind process(es) behind it
-	            	boundResourceInstances.addAll(localBoundResourceInstances); // the purpose of holding this accumulated list is for use at template instance teardown
-	            	
-	            	// temporarily, get past failed bind
-//					if (localBoundResourceInstances.size() != reserveResourceRequests.size()) // check success further
-//	            		throw new Exception("InstancedTemplate.runSteps() bind handling has incomplete bound list");
-				} catch (Exception e) {
-					// one or more bind steps errored out; this template is errored out
-					throw new Exception("Bind step(s) errored out; ", e); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
-				}
-            }
-            if (deployHandler != null) {
-				// we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
-            	boolean allDeploysSucceeded = false;
-                try {
-					List<DeployInfo> localDeployInfos = deployHandler.waitComplete();
-					deployedInfos.addAll(localDeployInfos);
-					if (DeployInfo.getAllDeployedSuccess() && localDeployInfos.size()==deployInfos.size()) // check success further
-						allDeploysSucceeded = true;
-					else {
-						// TODO: log and notify
-					}
-				} catch (Exception e) {
-					// e is an unchecked exception; respond by throwing a new exception to cause this template run to error out
-					// TODO: log and notify
-				}
-
-                if (!allDeploysSucceeded) {
-    				// one or more deploy steps errored out; this template is errored out
-    				throw new Exception("InstancedTemplate.runSteps() deploy handling has incomplete successful deployed list, for setID " + setID);
-    				// initiate cleanup/destroy of this template run; deployedInfos holds all information
-                }
-            }
-            if (inspectHandler != null) {
-            	try {
-					inspectHandler.waitComplete();
-				} catch (Exception e) {
-    				// one or more inspect steps errored out; this template is errored out
-    				throw new Exception("InstancedTemplate.runSteps() inspect handling finds failed inspect, for setID " + setID);
-    				// initiate destroy of this template run; we do not cleanup past inspect steps
-				}
-            }
-            if (connectHandler != null) {
-				// we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
-            	boolean allConnectsSucceeded = false;
-				try {
-	            	List<CableInstance> localCableInstances = connectHandler.waitComplete();
-					cableInstances.addAll(localCableInstances);
-					if (ConnectInfo.getAllConnectedSuccess() && localCableInstances.size()!=connectInfos.size())
-						allConnectsSucceeded = true;
-					else {
-						// TODO: log and notify
-					}					
-				} catch (Exception e) {
-					// e is an unchecked exception; respond by throwing a new exception to cause this template run to error out
-					// TODO: log and notify
-				}
-            	
-                if (!allConnectsSucceeded) {
-    				// one or more connect steps errored out; this template is errored out
-    				throw new Exception("InstancedTemplate.runSteps() connect handling has incomplete successful connect list, for setID " + setID);
-    				// initiate cleanup/destroy of this template run; cableInstances holds all information
-                }
-            }
-            if (configureHandler != null) {
-            	// success is that no exception is thrown by .waitComplete() or the asynch configure process(es) behind it
-            	List<ConfigureState> localConfigureStates = configureHandler.waitComplete();
-            	boolean configStepErroredOut= false;
-            	for (ConfigureState cs : localConfigureStates) {
-            		// TODO: Because Configures do not need to be cleaned up, storing MachineInstance is not needed
-            		// this.configuredProgramState.addAll(localConfigureStates);
-
-            		if (cs.getProgramRunResult()==null || cs.getProgramRunResult()!=0)
-            			configStepErroredOut = true;
-            	}
-            	if (configStepErroredOut || ConfigureState.getAllProgramsRan()==false || localConfigureStates.size()!=configureInfos.size())
-            		throw new Exception("Configure step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
-            }
-            if (startHandler != null) {
-            	// success is that no exception is thrown by .waitComplete() or the asynch start process(es) behind it
-            	List<StartState> localStartStates = startHandler.waitComplete();
-        	    this.startProgramStates.addAll(localStartStates);
-            	boolean startStepErroredOut = false;
-            	for (StartState ss : localStartStates) {
-            		if (ss.getRunnableProgram() == null)
-            			startStepErroredOut = true;
-            	}
-            	if (startStepErroredOut || StartState.getAllProgramsRan()==false || localStartStates.size()!=startInfos.size())
-            		throw new Exception("Start step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
-            }
-            if (runHandler != null) {
-            	// success is that no exception is thrown by .waitComplete() or the asynch run process(es) behind it
-            	List<RunState> localRunStates = runHandler.waitComplete();
-            	this.runProgramStates.addAll(localRunStates);
-            	boolean runStepErroredOut = false;
-            	for (RunState rs: localRunStates) {
-            		if (rs.getProgramRunResult()==null || rs.getProgramRunResult()!=0) {
-            			runStepErroredOut = true;
+            do {
+                // block, in turn, until all steps of this set have concluded their processing
+            	if (bindHandler!=null && !bindHandler.isDone()) {
+            		bindHandler.proceed();
+            		if (bindHandler.isDone()) {
+            			List<ResourceInstance> localRI = bindHandler.getResourceInstances();
+            			this.boundResourceInstances.addAll(localRI);
+            			log.debug(simpleName + "bindHandler() completes " + localRI.size() + " bind(s) for one step");
             		}
-                	if (runStepErroredOut || RunState.getAllProgramsRan()==false || localRunStates.size()!=runInfos.size())
-                		throw new Exception("Run step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
             	}
-            }
+                if (deployHandler!=null && !deployHandler.isDone()) {
+    				// we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
+                	boolean allDeploysSucceeded = false;
+                    try {
+    					List<DeployInfo> localDeployInfos = deployHandler.waitComplete();
+    					deployedInfos.addAll(localDeployInfos);
+    					if (DeployInfo.getAllDeployedSuccess() && localDeployInfos.size()==deployInfos.size()) // check success further
+    						allDeploysSucceeded = true;
+    					else {
+    						// TODO: log and notify
+    					}
+    				} catch (Exception e) {
+    					// e is an unchecked exception; respond by throwing a new exception to cause this template run to error out
+    					// TODO: log and notify
+    				}
+
+                    if (!allDeploysSucceeded) {
+        				// one or more deploy steps errored out; this template is errored out
+        				throw new Exception("InstancedTemplate.runSteps() deploy handling has incomplete successful deployed list, for setID " + setID);
+        				// initiate cleanup/destroy of this template run; deployedInfos holds all information
+                    }
+                }
+                if (inspectHandler != null) {
+                	try {
+    					inspectHandler.waitComplete();
+    				} catch (Exception e) {
+        				// one or more inspect steps errored out; this template is errored out
+        				throw new Exception("InstancedTemplate.runSteps() inspect handling finds failed inspect, for setID " + setID);
+        				// initiate destroy of this template run; we do not cleanup past inspect steps
+    				}
+                }
+                if (connectHandler != null) {
+    				// we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
+                	boolean allConnectsSucceeded = false;
+    				try {
+    	            	List<CableInstance> localCableInstances = connectHandler.waitComplete();
+    					cableInstances.addAll(localCableInstances);
+    					if (ConnectInfo.getAllConnectedSuccess() && localCableInstances.size()!=connectInfos.size())
+    						allConnectsSucceeded = true;
+    					else {
+    						// TODO: log and notify
+    					}					
+    				} catch (Exception e) {
+    					// e is an unchecked exception; respond by throwing a new exception to cause this template run to error out
+    					// TODO: log and notify
+    				}
+                	
+                    if (!allConnectsSucceeded) {
+        				// one or more connect steps errored out; this template is errored out
+        				throw new Exception("InstancedTemplate.runSteps() connect handling has incomplete successful connect list, for setID " + setID);
+        				// initiate cleanup/destroy of this template run; cableInstances holds all information
+                    }
+                }
+                if (configureHandler != null) {
+                	// success is that no exception is thrown by .waitComplete() or the asynch configure process(es) behind it
+                	List<ConfigureState> localConfigureStates = configureHandler.waitComplete();
+                	boolean configStepErroredOut= false;
+                	for (ConfigureState cs : localConfigureStates) {
+                		// TODO: Because Configures do not need to be cleaned up, storing MachineInstance is not needed
+                		// this.configuredProgramState.addAll(localConfigureStates);
+
+                		if (cs.getProgramRunResult()==null || cs.getProgramRunResult()!=0)
+                			configStepErroredOut = true;
+                	}
+                	if (configStepErroredOut || ConfigureState.getAllProgramsRan()==false || localConfigureStates.size()!=configureInfos.size())
+                		throw new Exception("Configure step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
+                }
+                if (startHandler != null) {
+                	// success is that no exception is thrown by .waitComplete() or the asynch start process(es) behind it
+                	List<StartState> localStartStates = startHandler.waitComplete();
+            	    this.startProgramStates.addAll(localStartStates);
+                	boolean startStepErroredOut = false;
+                	for (StartState ss : localStartStates) {
+                		if (ss.getRunnableProgram() == null)
+                			startStepErroredOut = true;
+                	}
+                	if (startStepErroredOut || StartState.getAllProgramsRan()==false || localStartStates.size()!=startInfos.size())
+                		throw new Exception("Start step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
+                }
+                if (runHandler != null) {
+                	// success is that no exception is thrown by .waitComplete() or the asynch run process(es) behind it
+                	List<RunState> localRunStates = runHandler.waitComplete();
+                	this.runProgramStates.addAll(localRunStates);
+                	boolean runStepErroredOut = false;
+                	for (RunState rs: localRunStates) {
+                		if (rs.getProgramRunResult()==null || rs.getProgramRunResult()!=0) {
+                			runStepErroredOut = true;
+                		}
+                    	if (runStepErroredOut || RunState.getAllProgramsRan()==false || localRunStates.size()!=runInfos.size())
+                    		throw new Exception("Run step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
+                	}
+                }
+            } while (bindHandler!=null  && !bindHandler.isDone() ||
+            		 deployHandler!=null && !deployHandler.isDone());
         }
     }
 
