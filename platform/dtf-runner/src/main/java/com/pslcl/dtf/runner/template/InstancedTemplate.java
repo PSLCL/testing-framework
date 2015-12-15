@@ -466,10 +466,10 @@ public class InstancedTemplate {
     
     private void informResourceProviders() {
     	if (this.templateCleanupInfo != null) { // null: this template did not successfully reserve a resource
-	    	// Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant runID). 
+	    	// Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant templateID). 
 	    	ResourcesManager rm = this.templateCleanupInfo.getManager();
-	    	long runID = this.templateCleanupInfo.getRunId();
-	    	rm.release(String.valueOf(runID), false);
+	    	String templateID = this.templateCleanupInfo.templateId;
+	    	rm.release(templateID, false);
     	}
     	log.debug(simpleName + "informResourceProviders() " + (this.templateCleanupInfo==null ? "does not inform" : "informs") + " the resource provider system that it no longer needs its reserved or bound resources");
     }
