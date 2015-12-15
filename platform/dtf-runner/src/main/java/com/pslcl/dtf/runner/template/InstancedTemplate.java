@@ -19,12 +19,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
-import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.runner.process.DBTemplate;
@@ -452,4 +453,20 @@ public class InstancedTemplate {
         }
     }
 
+    public void destroy() {
+    	// empty map means that we did not get as far as computing a resource to reserve, so no resource provider knows about this template
+    	if (!this.mapResourceCoordinatesToStepReference.isEmpty()) {
+    		// Get any ResourceCoordinates from the map (the first one is as good as any other one).
+	    	Set<ResourceCoordinates> setResourceCoordinates = this.mapResourceCoordinatesToStepReference.keySet();
+	    	ResourceCoordinates rc = setResourceCoordinates.iterator().next();
+	    	
+	    	
+	    	
+	    	// Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant runID). 
+	    	ResourcesManager rm = rc.getManager();
+	    	long runID = rc.getRunId();
+	    	rm.release(String.valueOf(runID), false);
+	    	log.debug(simpleName + "destroy() takes action");
+    	}
+    }
 }
