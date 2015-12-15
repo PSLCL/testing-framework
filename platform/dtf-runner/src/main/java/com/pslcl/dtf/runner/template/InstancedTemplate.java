@@ -57,6 +57,7 @@ public class InstancedTemplate {
 	private RunEntryCore reCore;   // holds runID of our top-level template (might be us or we might be nested down from it)
 	private DBTemplate dbTemplate; // holds templateID as a hash
 	private RunnerMachine runnerMachine;
+	private ResourceCoordinates templateCleanupInfo;
 	
 	private StepsParser stepsParser;
     private Map<Integer, InstancedTemplate> mapStepReferenceToNestedTemplate;
@@ -78,6 +79,7 @@ public class InstancedTemplate {
     	this.reCore = reCore;
     	this.dbTemplate = dbTemplate;
     	this.runnerMachine = runnerMachine;
+    	this.templateCleanupInfo = null;
         mapStepReferenceToNestedTemplate = new HashMap<Integer, InstancedTemplate>(); 
         mapResourceCoordinatesToStepReference = new HashMap<ResourceCoordinates, Integer>();
         mapStepReferenceToResourceInstance = new HashMap<Integer, ResourceInstance>();
@@ -353,7 +355,7 @@ public class InstancedTemplate {
             		if (bindHandler.isDone()) {
             			List<ResourceInstance> localRI = bindHandler.getResourceInstances();
             			this.boundResourceInstances.addAll(localRI);
-            			log.debug(simpleName + "bindHandler() completes " + localRI.size() + " bind(s) for one step");
+            			log.debug(simpleName + "bindHandler() completes " + localRI.size() + " bind(s) for one setID");
             		}
             	}
                 if (deployHandler!=null && !deployHandler.isDone()) {
@@ -453,20 +455,27 @@ public class InstancedTemplate {
         }
     }
 
-    public void destroy() {
-    	// empty map means that we did not get as far as computing a resource to reserve, so no resource provider knows about this template
-    	if (!this.mapResourceCoordinatesToStepReference.isEmpty()) {
-    		// Get any ResourceCoordinates from the map (the first one is as good as any other one).
-	    	Set<ResourceCoordinates> setResourceCoordinates = this.mapResourceCoordinatesToStepReference.keySet();
-	    	ResourceCoordinates rc = setResourceCoordinates.iterator().next();
-	    	
-	    	
-	    	
-	    	// Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant runID). 
-	    	ResourcesManager rm = rc.getManager();
-	    	long runID = rc.getRunId();
-	    	rm.release(String.valueOf(runID), false);
-	    	log.debug(simpleName + "destroy() takes action");
-    	}
+    void setTemplateCleanupInfo(ResourceCoordinates resourceCoordinates) {
+    	this.templateCleanupInfo = resourceCoordinates;
     }
+    
+    void informResourceProviders(ResourceCoordinates resourceCoordinates) {
+    	if (this.templateCleanupInfo == null)
+    		this.templateCleanupInfo = resourceCoordinates;
+    }
+    
+    private void informResourceProviders() {
+    	if (this.templateCleanupInfo != null) { // null: this template did not successfully reserve a resource
+	    	// Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant runID). 
+	    	ResourcesManager rm = this.templateCleanupInfo.getManager();
+	    	long runID = this.templateCleanupInfo.getRunId();
+	    	rm.release(String.valueOf(runID), false);
+    	}
+    	log.debug(simpleName + "informResourceProviders() " + (this.templateCleanupInfo==null ? "does not inform" : "informs") + " the resource provider system that it no longer needs its reserved or bound resources");
+    }
+    
+    public void destroy() {
+    	this.informResourceProviders();
+    }
+    	
 }

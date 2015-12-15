@@ -64,7 +64,7 @@ public class TemplateProvider implements ResourceStatusListener {
     }
     
     public void releaseTemplate(InstancedTemplate iT) {
-    	
+        iT.destroy();
     }
 
     /**

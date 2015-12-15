@@ -397,7 +397,7 @@ public class RunEntryCore {
         try {
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
             this.topDBTemplate.result = new Boolean(true); // no exception means success
-            runnerMachine.getTemplateProvider().releaseTemplate(iT); // this is the only releaseTemplate() call for a top level template for a top level template; this call then releases those nested templates that are not held for reuse
+            runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
         } catch (Exception e) {
         	if (iT != null)
         		iT.destroy();
