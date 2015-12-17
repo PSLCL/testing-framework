@@ -31,9 +31,8 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.Runner;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueue;
-import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.ProcessTracker;
-import com.pslcl.dtf.runner.process.RunEntryCore;
+import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
 
 /**

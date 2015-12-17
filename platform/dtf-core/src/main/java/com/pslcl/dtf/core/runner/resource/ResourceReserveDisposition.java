@@ -2,6 +2,8 @@ package com.pslcl.dtf.core.runner.resource;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.pslcl.dtf.core.util.TabToLevel;
+
 /**
  * ResourceReserveDisposition identifies the outcome of a resource reserve request.
  * 
@@ -77,5 +79,27 @@ public class ResourceReserveDisposition
     public boolean isUnavailableResource()
     {
         return unavailableResource.get();
+    }
+    
+    @Override
+    public String toString()
+    {
+        TabToLevel format = new TabToLevel();
+        format.ttl("ResourceReserveDisposition:");
+        format.level.incrementAndGet();
+        format.ttl("invalidResource = " + invalidResource.get());
+        format.ttl("unavailableResource = " + unavailableResource.get());
+        format.ttl("Input Resource:");
+        format.level.incrementAndGet();
+        format.ttl(inputResourceDescription.getCoordinates().toString(format));
+        format.level.decrementAndGet();
+        format.ttl("Reserved Resource:");
+        format.level.incrementAndGet();
+        if(reservedResource == null)
+            format.ttl("null");
+        else
+            format.ttl(reservedResource.getCoordinates().toString(format));
+        format.level.decrementAndGet();
+        return format.sb.toString();
     }
 }
