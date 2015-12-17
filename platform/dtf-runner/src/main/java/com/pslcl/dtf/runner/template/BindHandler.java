@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -22,24 +23,32 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
  * Handle Resource Reserve and Resource Bind activities for multiple resources, in parallel.
  */
 public class BindHandler {
+	
+	// class instance members, internal use only  
+	
 	private InstancedTemplate iT;
 	private List<String> setSteps;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
 	private boolean reserveInProgress;
 	private final ResourceProviders resourceProviders;
+	private List<ResourceProvider> listResourceProviders;
 	private int nextIndexResourceProvider;
+    private ResourceProvider currentRP;
 	private Future<List<ResourceReserveDisposition>> currentFutureListOfRRD;
     private List<ReservedResource> currentReservedResources;
     private List<ReservedResource> reservedResources;
     private List<Future<? extends ResourceInstance>> futuresOfResourceInstances;
-    List<ResourceInstance> resourceInstances;
-    private boolean done;
 
 	private final Logger log;
     private final String simpleName;
 
+    
+    // class instance members, accessed externally by getter
+    
+    private List<ResourceInstance> resourceInstances; // internal use only
     private List<ResourceDescription> reserveResourceRequests;
+    private boolean done;
     
 	/**
 	 * Constructor: Identify consecutive bind steps in a set of steps
@@ -55,11 +64,13 @@ public class BindHandler {
 		this.reserveInProgress = true;
 		this.done = false;
 		this.resourceProviders = this.iT.getResourceProviders();
+		this.listResourceProviders = this.resourceProviders.getProviders();
 		this.nextIndexResourceProvider = 0;
+		this.currentRP = null;
 		this.currentFutureListOfRRD = null;
 		this.currentReservedResources = new ArrayList<>();
 		this.reservedResources = new ArrayList<>();
-		//this.mapReservedResources = new HashMap<>();
+		this.futuresOfResourceInstances = null;
 		this.resourceInstances = new ArrayList<>();
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
@@ -124,9 +135,14 @@ public class BindHandler {
 			    			attributeMap.put(attributeElements[j++], attributeElements[j++]);
 			    	}
 			    	
-			        ResourceCoordinates coord = new ResourceCoordinates(templateId, ResourceDescription.resourceIdMaster.incrementAndGet(), runId);
+			    	long resourceid = ResourceDescription.resourceIdMaster.incrementAndGet();
+			    	
+			    	if (false) // true: add randomness, temporarily
+			    		resourceid += (new Random().nextInt() & 0xff);
+			    	
+			        ResourceCoordinates coord = new ResourceCoordinates(templateId, resourceid, runId);
 			        this.iT.markStepReference(coord, bindStepReference);
-			        ResourceDescription rd = new ResourceDescImpl(resourceName, // resourceName comes from the template step, as string "machine", "person" or "network"
+			        ResourceDescription rd = new ResourceDescImpl(resourceName, // resourceName comes from the bind step, as string "machine", "person" or "network"
 			        		                                      coord, attributeMap);
 			        reserveResourceRequests.add(rd);
 					// Note: Each element of the returned this list has had its associated step reference number stored. This number is the line number in a set of template steps, 0 based.  
@@ -143,9 +159,9 @@ public class BindHandler {
     }
     
     /**
-     * Proceed as far as possible, then return. Set done only when binds complete or error out.
+     * Proceed to reserve and then bind resources, as far as possible, then return. Set done only when binds complete or error out.
      * 
-     * @note First, sequentially call independent ResourceProvider's, with yielding, to gather reserved resources from them. Last, make a single call to bind all reserved resources, in parallel.  
+     * @note First, reserve resources by sequentially calling independent ResourceProvider's, with yielding. Last, make a single call to bind all reserved resources, in parallel.  
      * 
      * @throws Exception
      */
@@ -157,40 +173,58 @@ public class BindHandler {
 	    			if (!this.reserveResourceRequests.isEmpty()) {
 	    				if (this.currentFutureListOfRRD == null) {
 		    				// ask next-in-line ResourceProvider to reserve the resources in reserveResourceRequests
-	    					List<ResourceProvider> rps = this.resourceProviders.getProviders();
-		    				if (this.nextIndexResourceProvider >= rps.size()) {
+		    				if (this.nextIndexResourceProvider >= this.listResourceProviders.size()) {
 			    		        // Note: As an initial working step, proceed() is coded to a safe algorithm:
 			    		        //       We expect full reserved success and resultant full bind success, and otherwise we back out and release whatever reservations and binds had succeeded along the way.
-		    					log.debug(simpleName + rps.size() + " resource providers reserved " + this.reservedResources.size() +
+		    					log.debug(simpleName + this.listResourceProviders.size() + " resource providers reserved " + this.reservedResources.size() +
 			                            " resources, but cannot reserve " + this.reserveResourceRequests.size() + " resources");
 		    					throw new Exception("resource providers cannot reserve all resources required by template bind steps");
 		    				}
-		    				ResourceProvider rp = rps.get(this.nextIndexResourceProvider++);
+		    				this.currentRP = this.listResourceProviders.get(this.nextIndexResourceProvider++);
 		    				
 		    				// note: each element of reserveReseourceRequests is a ResourceDescriptionImpl
 		    				// initiate reserving of each resource specified by each ResourceDescription, with 6 minute timeout for each reservation
-		    				this.currentFutureListOfRRD = rp.reserve(this.reserveResourceRequests, 1000*60 * 6);
+		    				this.currentFutureListOfRRD = this.currentRP.reserve(this.reserveResourceRequests, 1000*60 * 6);
 		    				return; // come back later to check this future
 	    				} else {
 	    					try {
-		    					// obtain and process the result list from our resolved future
+		    					// obtain our resolved future and process its result list
 								List<ResourceReserveDisposition> rrds = this.currentFutureListOfRRD.get();
-								this.currentFutureListOfRRD = null;
+								this.currentFutureListOfRRD = null; // for next resource provider to fill
 								for (ResourceReserveDisposition rrd : rrds) {
 				    				if (rrd.isInvalidResource())
 				    					throw new Exception("invalid resource request");
+				    				// for unavailable: other resource providers will have their chance to reserve rrd's internally held inputResourceDescription (a resource reserve request) 
 				    				if (!rrd.isUnavailableResource()) {
-				    					// Check that requested resource type is answered. When a person resource is requested to be reserved,
-				    					// I have seen AWSMachineProvider *wrongly* return a reserved entry (visible in Eclipse as future.outcome.reserved).
-				    					String rpName = rrd.getInputResourceDescription().getName();
-				    					String rrName = rrd.getReservedResource().getName();
-				    					String rrRPName = rrd.getReservedResource().getResourceProvider().getName();
-			    		            	if (!rpName.equals(rrName) || !rpName.equals(rrRPName)) {
-			    		            		log.debug(simpleName + "proceed() finds mismatched rpName " + rpName + ", rrName " + rrName + ", rrRPName " + rrRPName);
-			    		            		throw new Exception("reserveIfAvailable() finds mismatched ReservedResource.provider name and ResourceProvider names");
-			    		            	}
+			    		            	ResourceCoordinates rc = rrd.getInputResourceDescription().getCoordinates();
+			    		            	if (rc==null || rc.getManager()==null || rc.getProvider()==null)
+			    		            		throw new Exception("proceed() finds one reserved resource with no templateCleanup info");
 				    					
-			    		            	// record this newly reserved resource
+				    					// We have a reserved resource in rrd.getReservedResource(). Before using this reserved resource, check that requested resource type was answered by a resource provider of the same type.
+				    					//   For example, I have seen that, when a person resource is requested to be reserved, AWSMachineProvider wrongly returns a reserved entry (visible in Eclipse as future.outcome.reserved).
+				    					// Note: these next four getters return "machine" or "person" or "network"
+				    					String currentRPName = this.currentRP.getName(); // .currentRP here is the same as .currentRP, just above, that filled this.currentFutureListofRRD in call this.currentRP.reserve()
+				    					String rrRDName =   rrd.getInputResourceDescription().getName();
+				    					String rrName =   rrd.getReservedResource().getName();
+				    					String rrRPName = rrd.getReservedResource().getResourceProvider().getName();
+			    		            	if (!currentRPName.equals(rrRDName) || !currentRPName.equals(rrName) || !currentRPName.equals(rrRPName)) {
+			    		            		log.debug(simpleName + "proceed() finds mismatched rpName " + currentRPName + ", rrRDName " + rrRDName + ", rrName " + rrName + ", rrRPName " + rrRPName);
+			    		            		
+			    		            		// Notify iT that it should inform the Resource Provider system that this template is closing. InstancedTemplate iT may have past templateCleanup info, but just in case, supply it with what we have here.
+			    		            		iT.informResourceProviders(rc);
+			    		            		
+			    		            		if (true) { // false: temporarily allow a not-requested resource type to pass through, in order to let deploys and inspects see it and error out		    		            		
+			    		            			throw new Exception("proceed() finds mismatched ReservedResource.provider name and ResourceProvider names");
+			    		            		}
+			    		            	}
+			    		            	
+			    		            	// Successful reserve: set templateCleanup info
+			    		            	// Note: Every successful reserve produces the same templateCleanup info (available in a ResourceCoordinates object).
+			    		            	//       On eventual template destroy, a single call is used to inform the ResourceProvider system that this template no longer needs its reserved and bound resources.
+			    		            	//       This block overwrites past template destroy info, so only the last encountered template destroy info remains visible to InstancedTemplate; it is sufficient to notify the ResourceProvider system.
+			    		            	iT.setTemplateCleanupInfo(rc);
+			    		            	
+			    		            	// record this newly reserved resource to a list of ReservedResource's
 				    					ResourceDescription inputRD = rrd.getInputResourceDescription();
 				    					ReservedResource rr = new ReservedResource(inputRD.getCoordinates(), inputRD.getAttributes(), 1000*60 * 1); // 1 minute timeout; TODO: this needs to come from ResourceProvider
 					    				this.currentReservedResources.add(rr);
@@ -199,7 +233,7 @@ public class BindHandler {
 				    				}									
 								}
 				    			this.reservedResources.addAll(this.currentReservedResources); // accumulating linear list will be submitted to a final bind call
-				    			continue; // initiate more reservations or possibly initiate the follow on binds
+				    			continue; // initiate more reservations or possibly initiate the follow-on parallel binds
 							} catch (Exception e) {
 								log.debug(simpleName + "proceed() fails to reserve with exception " + e);
 								throw e;
@@ -217,15 +251,17 @@ public class BindHandler {
 	    				//      can be a Future, for which future.get():
 	    				//          returns a ResourceInstance on bind success
 	    				//          throws an exception on bind failure
-	    				return; // come back later to check this future
+	    				return; // come back later to check this future, in code just below: this.waitComplete()
 	    			}
-	    		}
+	    		} // end if (reserveInProgress)
 	    		
-				this.resourceInstances = this.waitComplete();
+				this.waitBindsComplete();
 				done = true;
     		} //end while()
 		} catch (Exception e) {
-			done = true; // as a just in case, we set this on exception, even though throwing e is thought to close out the entire test run
+			done = true; // as a just in case, set done on exception, even though throwing e is thought to close out the entire test run
+
+            // We will cleanup our template. The resource providers will then cleanup the resources that this template has successfully requested.
 			throw e;
 		}
     }
@@ -233,7 +269,7 @@ public class BindHandler {
 	/**
 	 * thread blocks
 	 */
-	public List<ResourceInstance> waitComplete() throws Exception {
+	private void waitBindsComplete() throws Exception {
 		// At this moment, this.futuresOfResourceInstances is filled. It's Future's each give us a bound ResourceInstance. Our API is to return a list of each of these extracted ResourceInstance's.
 		//     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
 		
@@ -246,16 +282,18 @@ public class BindHandler {
 		
 		// Gather all the bound resource instances from futuresOfResourceInstances, a list of Futures. This thread yields, in waiting for each of the multiple asynch bind calls to complete.
 		Exception exception = null;
-        List<ResourceInstance> retList = new ArrayList<>();
         boolean allBindsSucceeded = true;
 
         for (Future<? extends ResourceInstance> future : this.futuresOfResourceInstances) {
-            if (future != null) { // null: bind failed early so move along; do not add to retList
+            if (future != null) { // null: bind failed early so move along; do not add to this.resourceInstances
                 try {
                     ResourceInstance resourceInstance = future.get(); // blocks until asynch answer comes, or exception, at which time the target thread has completed and is gone
-                    retList.add(resourceInstance);
+                    this.resourceInstances.add(resourceInstance);
+                    // We could, but don't need to, retrieve a ResourceProvider from this new bound resourceInstance. We don't check anything here, - we don't yet know what this ResourceInstance will be used for (we learn that in a follow-on step).
+
+                    // We do not cleanup individual reserved resources. We do not cleanup individual bound resource instances. So, for this successful bind, we don't need to remove an entry from this.reservedResources 
                     
-                    // retrieve this resource's step reference, then use it to establish a lookup to resourceInstance, in hash map referenceToResourceInstance, held in iT
+                    // retrieve this resource's step reference, then use it to mark resourceInstance, in hash map referenceToResourceInstance, held in iT
                     int stepReference = iT.getStepReference(resourceInstance.getCoordinates());
                     iT.markResourceInstance(stepReference, resourceInstance);
                 } catch (InterruptedException ie) {
@@ -281,19 +319,13 @@ public class BindHandler {
         }
 
         if (!allBindsSucceeded) {
-            // because of this error, retList is not returned; for expected cleanup, caller can find all the ResourceInstances in iT.mapStepReferenceToResourceInstance
-
-        if (true) { // false; temporarily allow code to proceed without an actual resource
+        	if (true) { // false; temporarily allow code to proceed without an actual resource
+                // We will cleanup our template. The resource providers will cleanup the resources that we allocated for this template.
                 if (exception != null)
                     throw new Exception(exception);
                 throw new Exception("bind attempt could not create and return a Future");
         	}    
         }
-        
-        return retList;
-        // We return a list of ResourceInstance's, from which we could determine resource type for each element.
-        // But at this point, we don't know what each list element will be used for, and so we cannot check that it has the right type.
-        // We check this later, when each ResourceInstance is used as the object of an action- deploy, inspect, etc.
 	}
 	
 }

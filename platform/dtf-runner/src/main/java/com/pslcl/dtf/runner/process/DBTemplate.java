@@ -51,7 +51,7 @@ public class DBTemplate {
     {
         if(templateId != null)
             return templateId;
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("0x");
         for(int i=0; i < hash.length; i++)
         {
             String value = Integer.toHexString(hash[i]);
