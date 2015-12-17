@@ -15,24 +15,33 @@
  */
 package com.pslcl.dtf.resource.aws.instance.person;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
+
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 
 @SuppressWarnings("javadoc")
 public class PersonConfigData
 {
-    public volatile String topic;
-    public volatile int snsMaxDelay;
-    public volatile int snsMaxRetries;
+    public volatile String topicArn;
+    public volatile int sesMaxDelay;
+    public volatile int sesMaxRetries;
+    public final List<String> inspectors;
+    public volatile String givenInspector;
 
     private PersonConfigData()
     {
+        inspectors = new ArrayList<String>();
     }
 
     public static PersonConfigData init(ProgressiveDelayData pdelayData, ResourceDescription resource, PersonConfigData defaultData) throws Exception
@@ -41,39 +50,69 @@ public class PersonConfigData
         PersonConfigData data = new PersonConfigData();
         format.ttl(PersonConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
-        data.topic = getAttribute(ProviderNames.PersonTopicKey, defaultData.topic, resource, format);
-        data.snsMaxDelay = Integer.parseInt(getAttribute(ProviderNames.PersonMaxDelayKey, ""+defaultData.snsMaxDelay, resource, format));
-        data.snsMaxRetries = Integer.parseInt(getAttribute(ProviderNames.PersonTopicKey, ""+defaultData.snsMaxRetries, resource, format));
+        data.sesMaxDelay = Integer.parseInt(getAttribute(ProviderNames.SesMaxDelayKey, "" + defaultData.sesMaxDelay, resource, format));
+        data.sesMaxRetries = Integer.parseInt(getAttribute(ProviderNames.SesMaxRetriesKey, "" + defaultData.sesMaxRetries, resource, format));
+        format.ttl(PersonConfigData.class.getSimpleName() + " inspectors:");
+        format.level.incrementAndGet();
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.SesInspectorKey, resource.getAttributes());
+        if (list.size() == 0)
+        {
+            // nothing from the resource, use site defaults
+            int index = 0;
+            for (String inspector : defaultData.inspectors)
+            {
+                String key = ProviderNames.SesInspectorKey + index++;
+                resource.addAttribute(key, inspector);
+                format.ttl(key, " = ", inspector, " (default injected)");
+                data.inspectors.add(inspector);
+            }
+        }else
+        {
+            data.givenInspector = list.get(0).getValue();   // only accepting the first given
+            format.ttl(ProviderNames.SesInspectorKey, " = ", data.givenInspector);
+        }
+        format.level.decrementAndGet();
         format.level.decrementAndGet();
         LoggerFactory.getLogger(PersonConfigData.class).debug(format.sb.toString());
         return data;
     }
-    
+
     public static PersonConfigData init(RunnerConfig config) throws Exception
     {
         PersonConfigData data = new PersonConfigData();
         config.initsb.ttl(SubnetManager.class.getSimpleName() + " init:");
         config.initsb.level.incrementAndGet();
-        data.topic = getAttribute(config, ProviderNames.PersonTopicKey, ProviderNames.PersonTopicDefault);
-        data.snsMaxDelay = Integer.parseInt(getAttribute(config, ProviderNames.PersonMaxDelayKey, ProviderNames.PersonMaxDelayDefault));
-        data.snsMaxRetries = Integer.parseInt(getAttribute(config, ProviderNames.PersonTopicKey, ProviderNames.PersonMaxRetriesDefault));
+        data.sesMaxDelay = Integer.parseInt(getAttribute(config, ProviderNames.SesMaxDelayKey, ProviderNames.SesMaxDelayDefault));
+        data.sesMaxRetries = Integer.parseInt(getAttribute(config, ProviderNames.SesMaxRetriesKey, ProviderNames.SesMaxRetriesDefault));
+
+        config.initsb.ttl(SubnetManager.class.getSimpleName() + " inspectors:");
+        config.initsb.level.incrementAndGet();
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.SesInspectorKey, config.properties);
+        // if there are no site configured inspectors, there is no possible default.
+        for (Entry<String, String> entry : list)
+        {
+            config.initsb.ttl(entry.getKey(), " = ", entry.getValue());
+            data.inspectors.add(entry.getValue());
+        }
+        data.givenInspector = null;
+        config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;
     }
-    
+
     private static String getAttribute(String key, String defaultValue, ResourceDescription resource, TabToLevel format)
     {
         String value = resource.getAttributes().get(key);
-        if(value == null)
+        if (value == null)
         {
             value = defaultValue;
             resource.addAttribute(key, value);
             format.ttl(key, " = ", value, " (default injected)");
-        }else
+        } else
             format.ttl(key, " = ", value);
         return value;
     }
-    
+
     private static String getAttribute(RunnerConfig config, String key, String defaultValue)
     {
         String value = config.properties.getProperty(key, defaultValue);

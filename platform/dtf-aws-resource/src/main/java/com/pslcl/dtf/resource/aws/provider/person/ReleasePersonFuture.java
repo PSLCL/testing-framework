@@ -17,14 +17,20 @@ package com.pslcl.dtf.resource.aws.provider.person;
 
 import java.util.concurrent.Callable;
 
+import org.slf4j.LoggerFactory;
+
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.person.AwsPersonInstance;
 
 @SuppressWarnings("javadoc")
 public class ReleasePersonFuture implements Callable<Void>
 {
+    @SuppressWarnings("unused")
     private final AwsPersonProvider provider;
+    @SuppressWarnings("unused")
     private final AwsPersonInstance instance;
+    @SuppressWarnings("unused")
     private final ProgressiveDelayData pdelayData;
 
     public ReleasePersonFuture(AwsPersonProvider provider, AwsPersonInstance instance, ProgressiveDelayData pdelayData)
@@ -38,7 +44,7 @@ public class ReleasePersonFuture implements Callable<Void>
     public Void call() throws Exception
     {
 //        LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + instance.getCoordinates().toString());
-//        pdelayData.provider.manager.subnetManager.releaseSecurityGroup(pdelayData);
+//        provider.get
 //        provider.getConfig().statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
 //        LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
         return null;

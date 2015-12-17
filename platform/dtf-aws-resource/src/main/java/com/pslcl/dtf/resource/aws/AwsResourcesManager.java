@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.CreateTagsRequest;
 import com.amazonaws.services.ec2.model.Tag;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
@@ -49,7 +50,8 @@ public class AwsResourcesManager implements ResourcesManager
     public volatile SubnetManager subnetManager;
     public volatile AmazonEC2Client ec2Client;
     public volatile AmazonSNSClient snsClient;
-
+    public volatile AmazonSimpleEmailServiceClient sesClient;
+    
     public AwsResourcesManager()
     {
         resourceProviders = new ArrayList<ResourceProvider>();
@@ -130,9 +132,9 @@ public class AwsResourcesManager implements ResourcesManager
         CreateTagsRequest ctr = new 
                         CreateTagsRequest().withTags(
                                         new Tag(TagNameKey, name),
-                                        new Tag(TagRunIdKey, Long.toHexString(pdelayData.coord.getRunId())),
+                                        new Tag(TagRunIdKey, Long.toString(pdelayData.coord.getRunId())),
                                         new Tag(TagTemplateIdKey, pdelayData.coord.templateId),
-                                        new Tag(TagResourceIdKey, Long.toHexString(pdelayData.coord.resourceId)))
+                                        new Tag(TagResourceIdKey, "0x"+Long.toHexString(pdelayData.coord.resourceId)))
                                         .withResources(resourceId);
         //@formatter:on
         do
@@ -187,6 +189,10 @@ public class AwsResourcesManager implements ResourcesManager
         snsClient.setEndpoint(cconfig.endpoint);
         config.initsb.ttl("obtained snsClient");
         
+        sesClient = new AmazonSimpleEmailServiceClient(cconfig.clientConfig);
+        sesClient.setEndpoint(cconfig.endpoint);
+        config.initsb.ttl("obtained sesClient");
+        
         subnetManager = new SubnetManager(this);
         subnetManager.init(config);
         
@@ -207,7 +213,7 @@ public class AwsResourcesManager implements ResourcesManager
                 resourceProviders.get(i).destroy();
             resourceProviders.clear();
             ec2Client.shutdown();
-            snsClient.shutdown();
+            sesClient.shutdown();
         } catch (Exception e)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".destroy failed", e);

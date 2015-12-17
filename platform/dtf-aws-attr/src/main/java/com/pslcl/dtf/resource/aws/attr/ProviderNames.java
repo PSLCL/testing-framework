@@ -216,15 +216,16 @@ public class ProviderNames
     /* ****************************************************************************
      * PersonProvider declarations    
     ******************************************************************************/
-    public static final String PersonKeyBase = ClientNames.AwsKeyBase + ".sns";
+    public static final String PersonKeyBase = ClientNames.AwsKeyBase + ".ses";
     
-    public static final String PersonTopicKey = PersonKeyBase + ".topic";
-    public static final String PersonMaxDelayKey = PersonKeyBase + ".max-delay";
-    public static final String PersonMaxRetriesKey = PersonKeyBase + ".max-retries";
+    // note that inspector is a base key and can be numbered from 0 on up, to add as many inspectors as desired
+    public static final String SesInspectorKey = PersonKeyBase + ".inspector";
+    public static final String SesMaxDelayKey = PersonKeyBase + ".max-delay";
+    public static final String SesMaxRetriesKey = PersonKeyBase + ".max-retries";
     
-    public static final String PersonTopicDefault = ClientNames.TestShortNameDefault + "-inspect";
-    public static final String PersonMaxDelayDefault = InstanceNames.shortMaxDelay;      
-    public static final String PersonMaxRetriesDefault = InstanceNames.shortMaxRetries;  // about 1 min timeout
+    public static final String SesInspectorDefault = null;  // valid email address
+    public static final String SesMaxDelayDefault = InstanceNames.shortMaxDelay;      
+    public static final String SesMaxRetriesDefault = InstanceNames.shortMaxRetries;  // about 1 min timeout
     
     /* ****************************************************************************
      * Various helper key lists    
@@ -289,9 +290,9 @@ public class ProviderNames
     public static List<String> getAllPersonProviderKeys()
     {
         List<String> keys = new ArrayList<String>();
-        keys.add(PersonTopicKey);
-        keys.add(PersonMaxDelayKey);
-        keys.add(PersonMaxRetriesKey);
+        keys.add(SesInspectorKey);
+        keys.add(SesMaxDelayKey);
+        keys.add(SesMaxRetriesKey);
         return keys;
     }
 }

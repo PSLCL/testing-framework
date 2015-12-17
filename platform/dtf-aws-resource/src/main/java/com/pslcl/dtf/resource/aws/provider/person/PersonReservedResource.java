@@ -21,40 +21,29 @@ import java.util.concurrent.ScheduledFuture;
 
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.ec2.model.GroupIdentifier;
-import com.amazonaws.services.ec2.model.Subnet;
-import com.amazonaws.services.ec2.model.Vpc;
-import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
+import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.provider.SubnetConfigData;
 
 @SuppressWarnings("javadoc")
-public class PersonReservedResource implements Runnable
+public class PersonReservedResource extends ReservedResource  implements Runnable
 {
     public final ResourceDescription resource;
-    public final GroupIdentifier groupIdentifier;
+    public final String email;
     private final ProgressiveDelayData pdelayData;
     
-    public volatile SubnetConfigData subnetConfig;
-    public volatile Vpc vpc;
-    public volatile Subnet subnet;  // at least this one needs filled in
-
     private ScheduledFuture<?> timerFuture;
     private Future<PersonInstance> instanceFuture;
-
-    PersonReservedResource(ProgressiveDelayData pdelayData, ResourceDescription resource, GroupIdentifier groupId)
+    
+    PersonReservedResource(AwsPersonProvider provider, ResourceDescription resource, int timeoutSeconds, String email)
     {
-        this.pdelayData = pdelayData;
+        super(resource.getCoordinates(), resource.getAttributes(), timeoutSeconds);
         this.resource = resource;
-        this.groupIdentifier = groupId;
-        ResourceCoordinates newCoord = pdelayData.coord;
-        resource.getCoordinates().setManager(newCoord.getManager());
-        resource.getCoordinates().setProvider(newCoord.getProvider());
-        resource.getCoordinates().setRunId(newCoord.getRunId());
+        pdelayData = new ProgressiveDelayData(provider, resource.getCoordinates());
+        this.email = email;
     }
-
+    
     synchronized void setTimerFuture(ScheduledFuture<?> future)
     {
         timerFuture = future;
@@ -82,14 +71,11 @@ public class PersonReservedResource implements Runnable
         synchronized (map)
         {
             map.remove(resource.getCoordinates().resourceId);
-            try
-            {
-                pdelayData.provider.manager.subnetManager.releaseSecurityGroup(pdelayData);
-            } catch (Exception e)
-            {
-                LoggerFactory.getLogger(getClass()).warn("failed to cleanup securityGroup: " + groupIdentifier.getGroupId());
-            }
         }
         LoggerFactory.getLogger(getClass()).info(resource.toString() + " reserve timed out");
     }
 }
+
+
+
+

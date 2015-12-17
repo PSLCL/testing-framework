@@ -234,6 +234,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
     boolean internalIsAvailable(ResourceDescription resource, MachineQueryResult result) throws ResourceNotFoundException
     {
+        if(!ResourceProvider.MachineName.equals(resource.getName()))
+            return false;
         InstanceType instanceType = instanceFinder.findInstance(resource);
         if (!instanceFinder.checkLimits(instanceType))
             return false;

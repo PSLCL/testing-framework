@@ -20,26 +20,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
-import com.pslcl.dtf.core.runner.resource.exception.FatalException;
-import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
-import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
-import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.instance.person.AwsPersonInstance;
 import com.pslcl.dtf.resource.aws.instance.person.PersonConfigData;
 import com.pslcl.dtf.resource.aws.instance.person.PersonInstanceFuture;
@@ -51,14 +46,27 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     private final HashMap<Long, AwsPersonInstance> boundPeople; // key is templateId
     private final HashMap<Long, PersonReservedResource> reservedPeople; // key is resourceId
     public volatile PersonConfigData defaultPersonConfigData;
+    private final AtomicInteger roundRobinIndex;
 
     public AwsPersonProvider(AwsResourcesManager manager)
     {
         super(manager);
         reservedPeople = new HashMap<Long, PersonReservedResource>();
         boundPeople = new HashMap<Long, AwsPersonInstance>();
+        roundRobinIndex = new AtomicInteger(-1);
     }
 
+    int getNextInspectorIndex()
+    {
+        int index = roundRobinIndex.incrementAndGet();
+        if(roundRobinIndex.get() >= defaultPersonConfigData.inspectors.size())
+        {
+            roundRobinIndex.set(0);
+            index = 0;
+        }
+        return index;
+    }
+    
     RunnerConfig getConfig()
     {
         return config;
@@ -83,7 +91,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         {
             for (Entry<Long, PersonReservedResource> entry : reservedPeople.entrySet())
             {
-                ResourceCoordinates coord = entry.getValue().resource.getCoordinates();
+                ResourceCoordinates coord = entry.getValue().getCoordinates();
                 if (coord.templateId.equals(templateId))
                     coord.setRunId(runId);
             }
@@ -96,8 +104,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
 
     public void release(String templateId, boolean isReusable)
     {
-        if(true)
-            return;
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
         synchronized (boundPeople)
@@ -114,13 +120,13 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
                 for (Long key : releaseList)
                 {
                     AwsPersonInstance instance = boundPeople.remove(key);
-                    PersonReservedResource reservedResource = reservedPeople.remove(key);
+                    reservedPeople.remove(key);
                     ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
                     futures.add(config.blockingExecutor.submit(new ReleasePersonFuture(this, instance, pdelayData)));
                 }
             }
         }
-        // make sure they are all complete before deleting the key-pair
+        // make sure they are all complete before going further
         for (Future<Void> future : futures)
         {
             try
@@ -129,29 +135,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
             } catch (Exception e)
             {
             }
-        }
-
-        if (coordinates != null)
-        {
-            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
-            pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
-            String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
-            DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
-            ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-            String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + name);
-            do
-            {
-                try
-                {
-                    manager.ec2Client.deleteKeyPair(request);
-                    break;
-                } catch (Exception e)
-                {
-                    FatalResourceException fre = pdelay.handleException(msg, e);
-                    if (fre instanceof FatalException)
-                        break;
-                }
-            } while (true);
         }
     }
 
@@ -185,7 +168,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
             if (reservedResource == null)
                 throw new ResourceNotReservedException(resource.getName() + "(" + resource.getCoordinates().resourceId + ") is not reserved");
             reservedResource.getTimerFuture().cancel(true);
-            Future<PersonInstance> future = config.blockingExecutor.submit(new PersonInstanceFuture(reservedResource, reservedResource.groupIdentifier, pdelayData));
+            Future<PersonInstance> future = config.blockingExecutor.submit(new PersonInstanceFuture(reservedResource, pdelayData));
             reservedResource.setInstanceFuture(future);
             return future;
         }
