@@ -50,10 +50,10 @@ public class ResourceProviders
      * constructor
      */
     public ResourceProviders() {
-        resourceManagers = new ArrayList<ResourcesManager>();
-        resourceProviders = new ArrayList<ResourceProvider>();
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
+        resourceManagers = new ArrayList<ResourcesManager>();
+        resourceProviders = new ArrayList<ResourceProvider>();
     }
     
     public List<ResourcesManager> getManagers()
@@ -65,7 +65,12 @@ public class ResourceProviders
     {
         return new ArrayList<ResourceProvider>(resourceProviders);
     }
-    
+
+    /**
+     * @note Pair init() with a destroy() call
+     * @param config
+     * @throws Exception
+     */
     public void init(RunnerConfig config) throws Exception
     {
         config.initsb.level.incrementAndGet();

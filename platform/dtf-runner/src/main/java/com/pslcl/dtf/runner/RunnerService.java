@@ -25,15 +25,14 @@ import javax.management.ObjectName;
 
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonInitException;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.Runner;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueue;
-import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.ProcessTracker;
 import com.pslcl.dtf.runner.process.RunEntryCore;
+import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
 
 /**
@@ -54,15 +53,13 @@ public class RunnerService implements Runner, RunnerServiceMBean
     
     // instance declarations 
     
-    private final Logger log;
-    private final String simpleName;
-    private volatile MessageQueue mq;
-    private volatile RunnerConfig config;
+    private volatile MessageQueue mq = null;
+    private volatile RunnerConfig config = null;
 
     /** the process classes */
-    public volatile RunnerMachine runnerMachine;
-    public volatile RunEntryStateStore runEntryStateStore; // holds RunEntryState of each reNum
-    public volatile ProcessTracker processTracker;
+    public volatile RunnerMachine runnerMachine = null;
+    public volatile RunEntryStateStore runEntryStateStore = null; // holds RunEntryState of each reNum
+    public volatile ProcessTracker processTracker = null;
 
     
     // public class methods
@@ -72,20 +69,18 @@ public class RunnerService implements Runner, RunnerServiceMBean
      */
     public RunnerService()
     {
-        // Setup what we can, prior to knowing configuration
-        // Most setup should be done in the init method.
-        this.log = LoggerFactory.getLogger(getClass());
-        this.simpleName = getClass().getSimpleName() + " ";
+        // Setup what we can, prior to knowing configuration. Most setup is done in the init method.
         Thread.setDefaultUncaughtExceptionHandler(this);
+        
+        // Note: For this class that implements the Daemon interface, do not use a local variable for a logger.
+        //       We use LoggerFactory.getLogger(getClass()), to allow more predictable behavior in the face of the worst failures and the follow-on stop() and destroy() calls.
     }
 
-    @Override
     public RunnerMachine getRunnerMachine()
     {
         return runnerMachine;
     }
     
-    @Override
     public RunnerConfig getConfig()
     {
         return config;
@@ -99,25 +94,13 @@ public class RunnerService implements Runner, RunnerServiceMBean
     {
         try
         {
-            // The RunnerServiceConfig may initialize logging based on commandline switches and/or configuration file
-            // and yet this method can fail with a DaemonInitException, in which case other methods of this class
-            // will be called (stop, destroy).  Because of this, its best to not declare a local instance or static
-            // logger variable in this class, always use the factory for every log.
             config = new RunnerConfig(daemonContext, this);
             config.init();
 
-            runnerMachine = new RunnerMachine();
-            runEntryStateStore = new RunEntryStateStore();
-            processTracker = new ProcessTracker(this);
-
             config.initsb.ttl("Initialize JMX: ");
-            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-            mbs.registerMBean(this, new ObjectName("pslcl.dtf.platform:type=RunnerService"));
             config.initsb.indentedOk();
             config.initsb.ttl("Initialize RunnerMachine:");
-            runnerMachine.init(config);
             config.initsb.indentedOk();
-
             config.initsb.ttl("Initialize QueueStoreDao:");
             config.initsb.level.incrementAndGet(); // l2
             boolean enableQue =Boolean.parseBoolean(config.properties.getProperty(QueueStoreDaoEnableKey, QueueStoreDaoEnableDefault));
@@ -132,9 +115,17 @@ public class RunnerService implements Runner, RunnerServiceMBean
                 
             config.initsb.indentedOk();
             config.initsb.level.decrementAndGet();
+
+            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            mbs.registerMBean(this, new ObjectName("pslcl.dtf.platform:type=RunnerService"));
+            
+            runnerMachine = new RunnerMachine();
+            runEntryStateStore = new RunEntryStateStore();
+            processTracker = new ProcessTracker(this);
+            
         } catch (Exception e)
         {
-            log.error(simpleName + config.initsb.sb.toString(), e);
+        	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
             throw new DaemonInitException(getClass().getSimpleName() + " failed:", e);
         }
         // process RunnerService config
@@ -154,28 +145,31 @@ public class RunnerService implements Runner, RunnerServiceMBean
                     mq.initQueueStoreGet();
                 } else
                 {
-                    log.warn(simpleName + "start exits- QueueStore message queue not available.");
+                	LoggerFactory.getLogger(getClass()).warn(getClass().getSimpleName() + "start exits- QueueStore message queue not available.");
                     throw new Exception("QueueStore not available");
                 }
             }
             config.initsb.indentedOk();
+            runnerMachine.init(config);
+            RunEntryCore.prepare();
         } catch (Exception e)
         {
-            log.error(simpleName + config.initsb.sb.toString(), e);
+        	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
             throw e;
         }
-        log.debug(simpleName + config.initsb.sb.toString());
+        LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + config.initsb.sb.toString());
     }
 
     @Override
     public void stop() throws Exception
     {
-        log.debug("Stopping RunnerService.");
+    	LoggerFactory.getLogger(getClass()).debug("Stopping RunnerService.");
         if (runnerMachine != null)
             runnerMachine.destroy();
         // Destroy the Status Tracker
         if (config != null)
             config.statusTracker.destroy();
+        RunEntryCore.unprepare();
     }
 
     /**
@@ -185,7 +179,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
     public void destroy()
     {
         // jsvc calls this to destroy resources created in init()
-        log.info("Destroying RunnerService.");
+    	LoggerFactory.getLogger(getClass()).info("Destroying RunnerService.");
     }
 
     
@@ -222,8 +216,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
     public void uncaughtException(Thread thread, Throwable ex)
     {
         String msg = "FATAL ERROR: Uncaught exception in thread " + thread;
-        log.error(msg, ex);
-        log.debug("The FATAL ERROR message (at error log level) is issued by the handler RunnerService.uncaughtException()");
+        LoggerFactory.getLogger(getClass()).error(msg, ex);
+        LoggerFactory.getLogger(getClass()).debug("The FATAL ERROR message (at error log level) is issued by the handler RunnerService.uncaughtException()");
         // Since the state is unknown at this point, we may not be able to perform a graceful exit.
         System.exit(1); // forces termination of all threads in the JVM
     }
@@ -243,22 +237,22 @@ public class RunnerService implements Runner, RunnerServiceMBean
         {
             // the ordinary method
             long reNum = Long.parseLong(strRunEntryNumber);
-            log.debug(simpleName + "submitQueueStoreNumber() finds reNum " + reNum);
+            LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum);
             try
             {
                 if (ProcessTracker.isResultStored(reNum)) {
                     ackRunEntry(message);
-                    log.debug(simpleName + "submitQueueStoreNumber() finds reNum " + reNum + ", result already stored. Acking this reNum now.");
+                    LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", result already stored. Acking this reNum now.");
                 } else if (processTracker.isRunning(reNum)) {
-                    log.debug(simpleName + "submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
+                	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
                 } else {
-                    log.debug(simpleName + "submitQueueStoreNumber() finds reNum " + reNum + ", submitted for processing. ");
+                	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", submitted for processing. ");
                     // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.
                     runnerMachine.initiateProcessing(reNum, message);
                 }
             } catch (Exception e) {
                 // do nothing; reNum remains in InstanceStore, we will see it again
-                log.error(simpleName + "submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
+            	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + "submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
                 throw e;
             }
         } catch (Exception e) {

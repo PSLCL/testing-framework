@@ -49,7 +49,6 @@ public class RunnerMachine {
     public RunnerMachine() throws Exception {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
-        RunEntryCore.openDatabase();
         this.initialized = new AtomicBoolean(false);
     }
 
@@ -75,6 +74,11 @@ public class RunnerMachine {
         return (RunnerService)config.runnerService;
     }
     
+    /**
+     * @note Pair init() with a destroy() call
+     * @param config
+     * @throws Exception
+     */
     public void init(RunnerConfig config) throws Exception
     {
         this.config = config;
@@ -86,10 +90,9 @@ public class RunnerMachine {
     
     public void destroy() throws Exception
     {
-        config.statusTracker.deregisterResourceStatusListener(templateProvider);
-        templateProvider.destroy();
-        RunEntryCore.closeDatabase();
         initialized.set(false);
+        templateProvider.destroy();
+        config.statusTracker.deregisterResourceStatusListener(templateProvider);
     }
     
     /**

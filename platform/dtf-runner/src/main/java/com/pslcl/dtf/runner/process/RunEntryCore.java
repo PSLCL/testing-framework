@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2010-2015, Panasonic Corporation.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -33,7 +32,7 @@ import com.pslcl.dtf.runner.template.InstancedTemplate;
  */
 public class RunEntryCore {
 
-    // static declarations
+    // static private declarations
 
     /** The common connection to the database. */
 	static private Integer connectCount = 0; // ref count; also used as the synchronization object
@@ -46,12 +45,16 @@ public class RunEntryCore {
      * DTF_TEST_DB_USER and DTF_TEST_DB_PASSWORD are optional, and if not specified then a guest
      * account with no password is used. This sets the 'read_only' flag, which disables all
      * database modifications.
+     * 
+     * @note This is ref counted. Match every call to openDatabaseConnection() with a later call to closeDatabaseConnection(). Every database-user method calls openDatabaseConnection() first and closeDatabaseConnection() last.
      */
-    static public void openDatabase() throws Exception {
+    static private void openDatabaseConnection() throws Exception {
     	synchronized (connectCount) {
-//    		if (connectCount.intValue() < 0) {
-//    			// REVIEW: deal with badness
-//    		}
+    		if (connectCount.intValue() < 0) {
+    			LoggerFactory.getLogger("RunEntryCore").error("RunEntryCore.openDatabaseConnection finds illegal connectCount value " + connectCount.intValue());
+    			throw new Exception("RunEntryCore, improper ref count");
+    		}
+
     		if (connectCount.intValue() == 0) {
                 try {
                     // Setup the connection with the DB
@@ -69,7 +72,7 @@ public class RunEntryCore {
                     // com.mysql.jdbc.Driver required, at run time only, for .getConnection()
                     connect = DriverManager.getConnection("jdbc:mysql://"+host+"/qa_portal?user="+user+"&password="+password);
                 } catch ( Exception e ) {
-                    LoggerFactory.getLogger("RunEntryCore").error("openDatabase() could not open database connection, " + e);
+                    LoggerFactory.getLogger("RunEntryCore").error("openDatabaseConnection() could not open database connection, " + e);
                     throw e;
                 }
     		}
@@ -80,17 +83,19 @@ public class RunEntryCore {
     /**
      * Close the database connection if it is open.
      */
-    static public void closeDatabase() throws Exception {
+    static private void closeDatabaseConnection() throws Exception {
     	synchronized (connectCount) {
             --connectCount;
-//    		if (connectCount.intValue() < 0) {
-//    			// REVIEW: deal with badness
-//    		}
+    		if (connectCount.intValue() < 0) {
+    			LoggerFactory.getLogger("RunEntryCore").error("RunEntryCore.closeDatabaseConnection finds illegal connectCount value " + connectCount.intValue());
+    			throw new Exception("RunEntryCore, improper ref count");
+    		}
+
     		if (connectCount.intValue() == 0) {
                 try {
                     connect.close();
                 } catch ( Exception e ) {
-                    LoggerFactory.getLogger("RunEntryCore").error("closeDatabase() could not close database connection, " + e);
+                    LoggerFactory.getLogger("RunEntryCore").error("closeDatabaseConnection() could not close database connection, " + e);
                     throw e;
                 }
     		}
@@ -116,6 +121,23 @@ public class RunEntryCore {
             // Ignore
         }
     }
+
+    
+    // static public declarations
+    
+    /**
+     * @note Pair unprepare() with unprepare()
+     */
+    static public void prepare() throws Exception {
+    	RunEntryCore.openDatabaseConnection();
+    }
+    
+    /**
+     * 
+     */
+    static public void unprepare() throws Exception {
+    	RunEntryCore.closeDatabaseConnection();
+    }
     
     /**
      * 
@@ -127,7 +149,7 @@ public class RunEntryCore {
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-       		RunEntryCore.openDatabase();
+       		RunEntryCore.openDatabaseConnection();
             statement = connect.createStatement();
             String strRENum = String.valueOf(reNum);
 
@@ -151,7 +173,7 @@ public class RunEntryCore {
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
-       		RunEntryCore.closeDatabase(); // ref counting can keep it open until the very end
+       		RunEntryCore.closeDatabaseConnection(); // ref counting can keep it open until the very end
         }
    		
     	return retBoolean;
@@ -176,7 +198,7 @@ public class RunEntryCore {
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-        	RunEntryCore.openDatabase();
+        	RunEntryCore.openDatabaseConnection();
             statement = connect.createStatement();
 
             if (reNum != null) {
@@ -239,7 +261,7 @@ public class RunEntryCore {
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
-       		RunEntryCore.closeDatabase(); // ref counting can keep it open until the very end
+       		RunEntryCore.closeDatabaseConnection(); // ref counting can keep it open until the very end
         }
     }
 
@@ -276,7 +298,7 @@ public class RunEntryCore {
     	if (previousStoredResult == null) { // this check is a fail-safe
 	        Statement statement = null;
 	        try {
-	        	RunEntryCore.openDatabase();
+	        	RunEntryCore.openDatabaseConnection();
 	            statement = connect.createStatement();
 	            String strRENum = String.valueOf(topDBTemplate.reNum);
 	            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -310,7 +332,7 @@ public class RunEntryCore {
 	            log.error(simpleName + "writeRunEntryData() exception for reNum " + topDBTemplate.reNum + ": "+ e);
 	        } finally {
 	            safeClose( statement ); statement = null;
-	       		RunEntryCore.closeDatabase(); // ref counting can keep it open until the very end
+	       		RunEntryCore.closeDatabaseConnection(); // ref counting can keep it open until the very end
 	        }
     	} else {
     		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
@@ -337,14 +359,6 @@ public class RunEntryCore {
 		} catch (Exception e) {
 			throw e;
 		}
-    }
-
-    /**
-     * Close the RunEntryCore object, releasing any resources.
-     */
-    public void close() throws Exception {
-    	// handled now by refcounting, by actual methods that actually use the database
-//        closeDatabase();
     }
 
     public boolean isReadOnly() {
