@@ -103,15 +103,11 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config.initsb.indentedOk();
             config.initsb.ttl("Initialize QueueStoreDao:");
             config.initsb.level.incrementAndGet(); // l2
-            boolean enableQue =Boolean.parseBoolean(config.properties.getProperty(QueueStoreDaoEnableKey, QueueStoreDaoEnableDefault));
-            if(enableQue)
-            {
-                String daoClass = config.properties.getProperty(QueueStoreDaoClassKey, QueueStoreDaoClassDefault);
-                config.initsb.ttl(QueueStoreDaoClassKey, " = ", daoClass);
-                mq = (MessageQueue) Class.forName(daoClass).newInstance();
-                mq.init(config);
-            }else
-                config.initsb.ttl(QueueStoreDaoClassKey, " = ", "DISABLED");
+            
+            String daoClass = config.properties.getProperty(QueueStoreDaoClassKey, QueueStoreDaoClassDefault);
+            config.initsb.ttl(QueueStoreDaoClassKey, " = ", daoClass);
+            mq = (MessageQueue) Class.forName(daoClass).newInstance();
+            mq.init(config);
                 
             config.initsb.indentedOk();
             config.initsb.level.decrementAndGet();
@@ -120,6 +116,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             mbs.registerMBean(this, new ObjectName("pslcl.dtf.platform:type=RunnerService"));
             
             runnerMachine = new RunnerMachine();
+            runnerMachine.init(config);
             runEntryStateStore = new RunEntryStateStore();
             processTracker = new ProcessTracker(this);
             
@@ -150,7 +147,6 @@ public class RunnerService implements Runner, RunnerServiceMBean
                 }
             }
             config.initsb.indentedOk();
-            runnerMachine.init(config);
             RunEntryCore.prepare();
         } catch (Exception e)
         {
