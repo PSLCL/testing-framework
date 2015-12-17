@@ -17,10 +17,11 @@ package com.pslcl.dtf.resource.aws.instance.person;
 
 import java.util.concurrent.Callable;
 
-import com.amazonaws.services.ec2.model.GroupIdentifier;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 import com.pslcl.dtf.resource.aws.provider.person.PersonReservedResource;
 
 @SuppressWarnings("javadoc")
@@ -28,28 +29,22 @@ public class PersonInstanceFuture implements Callable<PersonInstance>
 {
     public final PersonReservedResource reservedResource;
     private final ProgressiveDelayData pdelayData;
-    private final GroupIdentifier groupIdentifier;
 
-    public PersonInstanceFuture(PersonReservedResource reservedResource, GroupIdentifier groupIdentifier, ProgressiveDelayData pdelayData)
+    public PersonInstanceFuture(PersonReservedResource reservedResource, ProgressiveDelayData pdelayData)
     {
         this.reservedResource = reservedResource;
-        this.groupIdentifier = groupIdentifier;
         this.pdelayData = pdelayData;
     }
 
     @Override
     public PersonInstance call() throws FatalResourceException
     {
-        return null;
 //        try
 //        {
-//            reservedResource.subnetConfig = SubnetConfigData.init(reservedResource.resource, null, ((AwsNetworkProvider)pdelayData.provider).defaultSubnetConfigData);
-//            reservedResource.vpc = pdelayData.provider.manager.subnetManager.getVpc(pdelayData, reservedResource.subnetConfig);
-//            reservedResource.subnet = pdelayData.provider.manager.subnetManager.getSubnet(pdelayData, reservedResource.subnetConfig);
-//            AwsPersonInstance networkInstance = new AwsPersonInstance(reservedResource, groupIdentifier, pdelayData.provider.config);
-//            pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
-//            ((AwsNetworkProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, networkInstance);
-//            return networkInstance;
+            AwsPersonInstance personInstance = new AwsPersonInstance(reservedResource, reservedResource.email, pdelayData.provider.config);
+            pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
+            ((AwsPersonProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, personInstance);
+            return personInstance;
 //        } catch (FatalResourceException e)
 //        {
 //            //TODO: as you figure out forceCleanup and optimization of normal releaseFuture cleanup, need to to do possible cleanup on these exceptions

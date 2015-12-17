@@ -217,7 +217,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                     manager.subnetManager.getVpc(pdelayData, subnetConfig);
                     first = false;
                 }
-                if (manager.subnetManager.availableSgs.get() > 0)
+                if (ResourceProvider.NetworkName.equals(resource.getName()) && manager.subnetManager.availableSgs.get() > 0)
                 {
                     resource.getCoordinates().setManager(manager);
                     resource.getCoordinates().setProvider(this);

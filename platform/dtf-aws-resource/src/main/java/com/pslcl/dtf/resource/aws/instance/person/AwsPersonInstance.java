@@ -34,13 +34,13 @@ public class AwsPersonInstance implements PersonInstance
     public final PersonReservedResource reservedResource;
     public final ResourceDescription resource;
     public final RunnerConfig runnerConfig;
-    public final GroupIdentifier groupIdentifier;
+    public final String email;
 
-    public AwsPersonInstance(PersonReservedResource reservedResource, GroupIdentifier groupIdentifier, RunnerConfig runnerConfig)
+    public AwsPersonInstance(PersonReservedResource reservedResource, String email, RunnerConfig runnerConfig)
     {
         this.reservedResource = reservedResource;
+        this.email = email;
         resource = reservedResource.resource;
-        this.groupIdentifier = groupIdentifier;
         this.runnerConfig = runnerConfig;
     }
 
@@ -85,7 +85,6 @@ public class AwsPersonInstance implements PersonInstance
     @Override
     public Future<Void> inspect(String instructions, InputStream fileContent, String fileName)
     {
-        // TODO Auto-generated method stub
         return null;
     }
 }

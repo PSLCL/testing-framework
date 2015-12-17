@@ -132,9 +132,9 @@ public class AwsResourcesManager implements ResourcesManager
         CreateTagsRequest ctr = new 
                         CreateTagsRequest().withTags(
                                         new Tag(TagNameKey, name),
-                                        new Tag(TagRunIdKey, Long.toHexString(pdelayData.coord.getRunId())),
+                                        new Tag(TagRunIdKey, Long.toString(pdelayData.coord.getRunId())),
                                         new Tag(TagTemplateIdKey, pdelayData.coord.templateId),
-                                        new Tag(TagResourceIdKey, Long.toHexString(pdelayData.coord.resourceId)))
+                                        new Tag(TagResourceIdKey, "0x"+Long.toHexString(pdelayData.coord.resourceId)))
                                         .withResources(resourceId);
         //@formatter:on
         do
