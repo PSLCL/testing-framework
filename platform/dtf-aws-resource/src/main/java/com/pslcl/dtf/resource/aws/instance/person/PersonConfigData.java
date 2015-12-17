@@ -89,6 +89,8 @@ public class PersonConfigData
         config.initsb.level.incrementAndGet();
         List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.SesInspectorKey, config.properties);
         // if there are no site configured inspectors, there is no possible default.
+        if(list.size() == 0)
+            throw new Exception("at least one " + ProviderNames.SesInspectorKey + " must be specified in the site configuration properties file");
         for (Entry<String, String> entry : list)
         {
             config.initsb.ttl(entry.getKey(), " = ", entry.getValue());
