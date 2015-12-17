@@ -81,7 +81,7 @@ public class ConnectHandler {
 	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
 	            		//       Now that we know it is used for the second parameter of connect, check resourceInstance for required type: network
 	            		// riRP: resourceInstanceResourceProvider, which has self-knowledge of resource-provider type
-	            		ResourceProvider riRP = machineInstance.getResourceProvider();
+	            		ResourceProvider riRP = networkInstance.getResourceProvider();
 	            		String resourceType = ResourceProvider.getTypeName(riRP);
 	            		if (resourceType==null || resourceType!=ResourceProvider.NetworkName)
 	            			throw new Exception("ConnectHandler processing asked to connect a machine to a non 'network' resource");	
@@ -104,7 +104,12 @@ public class ConnectHandler {
 		for (ConnectInfo connectInfo : connectInfos) {
 			ResourceInstance machineInstance = connectInfo.getMachineInstance();
 			// We know that machineInstance is a MachineInstance, because a connect step must never direct its connecting resource to be anything except a MachineInstance.
-			//     Still, heck that condition to avoid problems that arise when template steps are improper. 
+			//     Still, check that condition to avoid problems that arise when template steps are improper.
+			Class cmi = machineInstance.getClass();
+			Class cMI = MachineInstance.class;
+			boolean b = cmi.isAssignableFrom(cMI);
+			
+			
 			if (!machineInstance.getClass().isAssignableFrom(MachineInstance.class))
 				throw new Exception("Specified connecting resource is not a MachineInstance");
 			MachineInstance mi = MachineInstance.class.cast(machineInstance);

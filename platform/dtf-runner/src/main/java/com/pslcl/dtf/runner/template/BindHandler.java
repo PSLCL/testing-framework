@@ -35,8 +35,7 @@ public class BindHandler {
 	private List<ResourceProvider> listResourceProviders;
 	private int nextIndexResourceProvider;
     private ResourceProvider currentRP;
-	private Future<List<ResourceReserveDisposition>> currentFutureListOfRRD;
-    private List<ReservedResource> currentReservedResources;
+	private Future<List<ResourceReserveDisposition>> currentRPFutureListOfRRD;
     private List<ReservedResource> reservedResources;
     private List<Future<? extends ResourceInstance>> futuresOfResourceInstances;
 
@@ -67,8 +66,7 @@ public class BindHandler {
 		this.listResourceProviders = this.resourceProviders.getProviders();
 		this.nextIndexResourceProvider = 0;
 		this.currentRP = null;
-		this.currentFutureListOfRRD = null;
-		this.currentReservedResources = new ArrayList<>();
+		this.currentRPFutureListOfRRD = null;
 		this.reservedResources = new ArrayList<>();
 		this.futuresOfResourceInstances = null;
 		this.resourceInstances = new ArrayList<>();
@@ -171,7 +169,7 @@ public class BindHandler {
 	    		if (this.reserveInProgress) { // once cleared, .reserveInProgress is not set again
 	    			// reserve loop
 	    			if (!this.reserveResourceRequests.isEmpty()) {
-	    				if (this.currentFutureListOfRRD == null) {
+	    				if (this.currentRPFutureListOfRRD == null) {
 		    				// ask next-in-line ResourceProvider to reserve the resources in reserveResourceRequests
 		    				if (this.nextIndexResourceProvider >= this.listResourceProviders.size()) {
 			    		        // Note: As an initial working step, proceed() is coded to a safe algorithm:
@@ -184,13 +182,13 @@ public class BindHandler {
 		    				
 		    				// note: each element of reserveReseourceRequests is a ResourceDescriptionImpl
 		    				// initiate reserving of each resource specified by each ResourceDescription, with 6 minute timeout for each reservation
-		    				this.currentFutureListOfRRD = this.currentRP.reserve(this.reserveResourceRequests, 1000*60 * 6);
+		    				this.currentRPFutureListOfRRD = this.currentRP.reserve(this.reserveResourceRequests, 60 * 6);
 		    				return; // come back later to check this future
 	    				} else {
 	    					try {
-		    					// obtain our resolved future and process its result list
-								List<ResourceReserveDisposition> rrds = this.currentFutureListOfRRD.get();
-								this.currentFutureListOfRRD = null; // for next resource provider to fill
+		    					// for currentRP, obtain our resolved future and process its result list
+								List<ResourceReserveDisposition> rrds = this.currentRPFutureListOfRRD.get();
+								this.currentRPFutureListOfRRD = null; // for next resource provider to fill
 								for (ResourceReserveDisposition rrd : rrds) {
 				    				if (rrd.isInvalidResource())
 				    					throw new Exception("invalid resource request");
@@ -227,12 +225,11 @@ public class BindHandler {
 			    		            	// record this newly reserved resource to a list of ReservedResource's
 				    					ResourceDescription inputRD = rrd.getInputResourceDescription();
 				    					ReservedResource rr = new ReservedResource(inputRD.getCoordinates(), inputRD.getAttributes(), 1000*60 * 1); // 1 minute timeout; TODO: this needs to come from ResourceProvider
-					    				this.currentReservedResources.add(rr);
+					    				this.reservedResources.add(rr);
 					    				// successful reservation: remove input resource description from this.reserveResourceRequests
 					    				this.reserveResourceRequests.remove(inputRD);
 				    				}									
 								}
-				    			this.reservedResources.addAll(this.currentReservedResources); // accumulating linear list will be submitted to a final bind call
 				    			continue; // initiate more reservations or possibly initiate the follow-on parallel binds
 							} catch (Exception e) {
 								log.debug(simpleName + "proceed() fails to reserve with exception " + e);
