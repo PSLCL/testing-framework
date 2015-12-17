@@ -120,6 +120,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             mbs.registerMBean(this, new ObjectName("pslcl.dtf.platform:type=RunnerService"));
             
             runnerMachine = new RunnerMachine();
+            runnerMachine.init(config);
             runEntryStateStore = new RunEntryStateStore();
             processTracker = new ProcessTracker(this);
             
@@ -150,7 +151,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
                 }
             }
             config.initsb.indentedOk();
-            runnerMachine.init(config);
+//            runnerMachine.init(config);
             RunEntryCore.prepare();
         } catch (Exception e)
         {
