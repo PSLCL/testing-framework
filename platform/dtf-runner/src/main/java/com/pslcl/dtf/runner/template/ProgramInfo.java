@@ -30,7 +30,7 @@ public class ProgramInfo {
 	MachineInstance computeProgramRunInformation() throws Exception {
 		// We know resourceInstance is a MachineInstance, because a configure/start/run step always directs its work to MachineInstance.
 		//     Still, check that condition to avoid problems that arise when template steps are improper. 
-		if (!resourceInstance.getClass().isAssignableFrom(MachineInstance.class)) {
+		if (!MachineInstance.class.isAssignableFrom(resourceInstance.getClass())) {
 			throw new Exception("Specified program run target is not a MachineInstance");
 		}
 		MachineInstance mi = MachineInstance.class.cast(resourceInstance);		

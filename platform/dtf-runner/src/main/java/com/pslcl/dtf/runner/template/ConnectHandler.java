@@ -35,6 +35,7 @@ public class ConnectHandler {
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
+		this.futuresOfConnects = new ArrayList<>();
 //		this.mapFuturesToMachineInstance = new HashMap<Future<? extends CableInstance>, MachineInstance>();
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
@@ -105,19 +106,15 @@ public class ConnectHandler {
 			ResourceInstance machineInstance = connectInfo.getMachineInstance();
 			// We know that machineInstance is a MachineInstance, because a connect step must never direct its connecting resource to be anything except a MachineInstance.
 			//     Still, check that condition to avoid problems that arise when template steps are improper.
-			Class cmi = machineInstance.getClass();
-			Class cMI = MachineInstance.class;
-			boolean b = cmi.isAssignableFrom(cMI);
-			
-			
-			if (!machineInstance.getClass().isAssignableFrom(MachineInstance.class))
+			if (!MachineInstance.class.                                                                        // interface MachineInstance
+				                       isAssignableFrom(machineInstance.getClass())) // class AWSMachineInstance implements MachineInstance
 				throw new Exception("Specified connecting resource is not a MachineInstance");
 			MachineInstance mi = MachineInstance.class.cast(machineInstance);
 			
 			ResourceInstance networkInstance = connectInfo.getNetworkInstance();
 			// We know that networkInstance is a NetworkInstance, because a connect step must never connect to anything except a NetworkInstance.
 			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!networkInstance.getClass().isAssignableFrom(NetworkInstance.class))
+			if (!NetworkInstance.class.isAssignableFrom(networkInstance.getClass()))
 				throw new Exception("Specified connection is not a NetworkInstance");
 			NetworkInstance ni = NetworkInstance.class.cast(networkInstance);
 			Future<CableInstance> future = mi.connect(ni);

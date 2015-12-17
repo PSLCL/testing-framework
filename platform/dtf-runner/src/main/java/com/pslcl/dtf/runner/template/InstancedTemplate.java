@@ -394,10 +394,10 @@ public class InstancedTemplate {
                 	boolean allConnectsSucceeded = false;
     				try {
     	            	List<CableInstance> localCableInstances = connectHandler.waitComplete();
-    					cableInstances.addAll(localCableInstances);
-    					if (ConnectInfo.getAllConnectedSuccess() && localCableInstances.size()!=connectInfos.size())
+    					if (ConnectInfo.getAllConnectedSuccess() && localCableInstances.size()==connectInfos.size()) {
     						allConnectsSucceeded = true;
-    					else {
+    						cableInstances.addAll(localCableInstances);
+    					} else {
     						// TODO: log and notify
     					}					
     				} catch (Exception e) {

@@ -105,7 +105,7 @@ public class DeployHandler {
 			ResourceInstance resourceInstance = deployInfo.getResourceInstance();
 			// We know resourceInstance is a MachineInstance, because a deploy step must never direct its work to anything except a MachineInstance.
 			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!resourceInstance.getClass().isAssignableFrom(MachineInstance.class))
+			if (!MachineInstance.class.isAssignableFrom(resourceInstance.getClass()))
 				throw new Exception("Specified deploy target is not a MachineInstance"); // futuresOfDeploys may have entries filled; at this moment they are benign
 			MachineInstance mi = MachineInstance.class.cast(resourceInstance);
 			Future<Void> future = mi.deploy(deployInfo.getFilename(), deployInfo.getArtifactHash());

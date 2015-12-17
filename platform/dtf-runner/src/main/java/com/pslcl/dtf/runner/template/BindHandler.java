@@ -293,6 +293,8 @@ public class BindHandler {
                     // retrieve this resource's step reference, then use it to mark resourceInstance, in hash map referenceToResourceInstance, held in iT
                     int stepReference = iT.getStepReference(resourceInstance.getCoordinates());
                     iT.markResourceInstance(stepReference, resourceInstance);
+                    
+                    log.debug(this.simpleName + "1 bind completes, with attributes of " + resourceInstance.getAttributes());
                 } catch (InterruptedException ie) {
                     allBindsSucceeded = false;
                     exception = ie;

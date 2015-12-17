@@ -105,7 +105,7 @@ public class InspectHandler {
 			ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
 			// We know that resourceInstance is a PersonInstance, because an inspect step must always direct its work to a PersonInstance.
 			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!resourceInstance.getClass().isAssignableFrom(PersonInstance.class))
+			if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
 				throw new Exception("Specified inspect target is not a PersonInstance");
 			PersonInstance pi = PersonInstance.class.cast(resourceInstance);
 			String instructions = new String("instructions"); // TODO: use inspectInfos.getInstructionsHash(), and asynchronously go get the instructions file and fill this local variable
