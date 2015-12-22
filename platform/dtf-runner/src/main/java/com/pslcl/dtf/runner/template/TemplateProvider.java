@@ -18,6 +18,7 @@ package com.pslcl.dtf.runner.template;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
@@ -29,15 +30,25 @@ import com.pslcl.dtf.runner.process.RunEntryCore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
 
 public class TemplateProvider implements ResourceStatusListener {
-    
+	private long uniqueMark; // synchronized access only
+	private final Map<Long,InstancedTemplate> templateReleaseMap; // tracks Long unique marker numbers; synchronized access only
+	// Note: Although Java is strictly pass by value, the value we store in this map is a reference to an InstancedTemplate object. The map does not hold the Java object itself.
+	//       When that value is eventually extracted from this map, it is still a reference to the original object; all transitory changes in that object are reflected.
+	
     private final Map<byte[],InstancedTemplate> availableInstancedTemplates; // note: this populates in the destroy method
     private final ResourceProviders resourceProviders;
     private volatile StatusTracker statusTracker;
+    private final Logger log;
+    private final String simpleName;
     
     public TemplateProvider() 
     {
-        availableInstancedTemplates = new HashMap<byte[],InstancedTemplate>();
-        resourceProviders = new ResourceProviders();
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
+    	this.uniqueMark = 0;
+    	this.templateReleaseMap = new HashMap<>();
+        this.availableInstancedTemplates = new HashMap<byte[],InstancedTemplate>();
+        this.resourceProviders = new ResourceProviders();
     }
 
     public ResourceProviders getResourceProviders()
@@ -51,22 +62,70 @@ public class TemplateProvider implements ResourceStatusListener {
         statusTracker.registerResourceStatusListener(this);
         resourceProviders.init(config);
     }
+
+    public void destroy(byte [] template_hash, InstancedTemplate iT) {
+        // can also choose to destroy iT; this is early impl with no smarts
+        availableInstancedTemplates.put(template_hash, iT);
+    }
     
+    /**
+     * Cleanup operation of the TemplateProvider
+     */
     public void destroy() 
     {
+    	log.debug(this.simpleName + "- Destroying TemplateProvider");
+    	// release (and destroy) each known InstancedTemplate
+    	while (true) {
+    		synchronized(this.templateReleaseMap) {
+    			if (this.templateReleaseMap.isEmpty())
+    				break;
+    			InstancedTemplate oneFoundIT = InstancedTemplate.class.cast(this.templateReleaseMap.values().toArray()[0]);
+    			this.releaseTemplate(oneFoundIT); // besides releasing oneFoundIT, this removes its entry in this.templateReleaseMap
+    		} // end synchronized()
+    	}
+
+    	// remaining cleanup
         resourceProviders.destroy();
         statusTracker.deregisterResourceStatusListener(this);
     }
     
-    public void destroy(byte [] template_hash, InstancedTemplate iT) {
-        // Can also choose to destroy iT. This is early impl with no smarts.
-        availableInstancedTemplates.put(template_hash, iT);
-    }
-    
-    public void releaseTemplate(InstancedTemplate iT) {
-        iT.destroy();
-    }
+	/**
+	 * 
+	 * @param iT
+	 */
+	long addToReleaseMap(InstancedTemplate iT) {
+    	synchronized(this.templateReleaseMap) {
+    		long retUnique = this.uniqueMark++;
+    		this.templateReleaseMap.put(retUnique, iT);
+    		return retUnique;
+		} // end synchronized()
+	}
 
+	
+    /**
+     * Release the template, or determine that it is being released by other code.
+     * 
+     * @param iT
+     */
+    public void releaseTemplate(InstancedTemplate iT) {
+    	// Avoid conflict: the same template can be released by normal template processing, or by us (TemplateProvider) being asked to go down, such as happens at dtf application exit.
+    	boolean found = false;
+    	Long uniqueMark = iT.getUniqueMark();
+    	synchronized (this.templateReleaseMap) {
+    		if (this.templateReleaseMap.containsKey(uniqueMark)) {
+    			found = true;
+    			this.templateReleaseMap.remove(uniqueMark);
+    		}
+    	} // end synchronized()
+
+    	if (found) {
+    		iT.destroy();
+			log.debug(simpleName + "releaseTemplate() releases template, for uniqueMark " + uniqueMark);
+    	} else {
+			log.debug(simpleName + "releaseTemplate() finds no template to release, for uniqueMark " + uniqueMark);
+    	}
+    }
+	
     /**
      * Get an instanced template. An instanced template has executed all its steps, and has recorded enough information along the way to be reused.
      *  
@@ -98,15 +157,16 @@ public class TemplateProvider implements ResourceStatusListener {
     public InstancedTemplate getInstancedTemplate(int nestedStepReference, RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) throws Exception {
         // first check our tracking- is a matching reusable template available?
         InstancedTemplate iT = availableInstancedTemplates.get(dbTemplate.hash);
-        // At any one time, there can be multiple instanced templates of the same .template_hash. They differ at least in which test run (or parent template) had used each one.
+        // At any one time, there can be multiple instanced templates of the same templateID string. They differ at least in which test run (or parent template) had used each one.
+        // At some future time of dtf-runner shutdown, we release every template. To distinguish them, we assign each a Long unique marker number.
 
         if (iT != null) {
-            // we will now use iT
+            // we will now re-use iT
             availableInstancedTemplates.remove(dbTemplate.hash);
-            // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the instantiated template, they get it, and now it is not available to another user.  
+            // Note: This is early impl with no smarts to optimize anything. At this line, they asked for the instantiated template, they get it, and now it is not available to another user.
             iT.runSteps(); // resets internal StepsParser object and uses it to run steps
         } else {
-        	iT = InstancedTemplate.createInstancedTemplate(reCore, dbTemplate, runnerMachine); // sets internal StepsParser object and uses it to run steps
+        	iT = InstancedTemplate.createInstancedTemplate(reCore, dbTemplate, runnerMachine); // sets internal StepsParser object and uses it to run steps; assign a Long unique marker number
         }
         return iT;
     }

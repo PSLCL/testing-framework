@@ -53,6 +53,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
     
     private volatile MessageQueue mq = null;
     private volatile RunnerConfig config = null;
+    private volatile DBConnPool dbConnPool = null;
 
     /** the process classes */
     public volatile RunnerMachine runnerMachine = null;
@@ -111,18 +112,18 @@ public class RunnerService implements Runner, RunnerServiceMBean
 
             MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             mbs.registerMBean(this, new ObjectName("pslcl.dtf.platform:type=RunnerService"));
-            
-            runnerMachine = new RunnerMachine();
+
+            dbConnPool = new DBConnPool();
+            dbConnPool.init(config);
+            runnerMachine = new RunnerMachine(dbConnPool);
             runnerMachine.init(config);
             runEntryStateStore = new RunEntryStateStore();
             processTracker = new ProcessTracker(this);
-            
         } catch (Exception e)
         {
         	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
             throw new DaemonInitException(getClass().getSimpleName() + " failed:", e);
         }
-        // process RunnerService config
     }
 
     @Override
@@ -144,7 +145,6 @@ public class RunnerService implements Runner, RunnerServiceMBean
                 }
             }
             config.initsb.indentedOk();
-            RunEntryCore.prepare();
         } catch (Exception e)
         {
         	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
@@ -162,7 +162,6 @@ public class RunnerService implements Runner, RunnerServiceMBean
         // Destroy the Status Tracker
         if (config != null)
             config.statusTracker.destroy();
-        RunEntryCore.unprepare();
     }
 
     /**
@@ -173,6 +172,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
     {
         // jsvc calls this to destroy resources created in init()
     	LoggerFactory.getLogger(getClass()).info("Destroying RunnerService.");
+        this.dbConnPool.destroy();
     }
 
     
@@ -233,7 +233,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum);
             try
             {
-                if (ProcessTracker.isResultStored(reNum)) {
+                if (ProcessTracker.isResultStored(this.dbConnPool, reNum)) {
                     ackRunEntry(message);
                     LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", result already stored. Acking this reNum now.");
                 } else if (processTracker.isRunning(reNum)) {

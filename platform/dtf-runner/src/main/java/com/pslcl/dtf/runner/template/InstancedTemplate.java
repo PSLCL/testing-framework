@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +57,7 @@ public class InstancedTemplate {
 	private DBTemplate dbTemplate; // holds templateID as a hash
 	private RunnerMachine runnerMachine;
 	private ResourceCoordinates templateCleanupInfo;
+	private long uniqueMark;
 	
 	private StepsParser stepsParser;
     private Map<Integer, InstancedTemplate> mapStepReferenceToNestedTemplate;
@@ -73,7 +73,7 @@ public class InstancedTemplate {
 
     private List<ResourceInfo> orderedResourceInfos = null;
     
-    InstancedTemplate(RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) {
+    InstancedTemplate(RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) throws Exception {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
     	this.reCore = reCore;
@@ -86,6 +86,11 @@ public class InstancedTemplate {
         this.boundResourceInstances = new ArrayList<>();
         this.deployedInfos = new ArrayList<>();
         this.cableInstances = new ArrayList<>();
+        this.uniqueMark = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
+    }
+    
+    long getUniqueMark() {
+    	return this.uniqueMark;
     }
     
     public ResourceProviders getResourceProviders() {

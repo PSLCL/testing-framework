@@ -17,6 +17,7 @@ package com.pslcl.dtf.runner.process;
 
 import java.util.concurrent.TimeoutException;
 
+import com.pslcl.dtf.runner.DBConnPool;
 import com.pslcl.dtf.runner.RunnerService;
 
 public class ProcessTracker {
@@ -31,11 +32,11 @@ public class ProcessTracker {
      * @return
      * @throws Exception
      */
-    static public boolean isResultStored(long reNum) throws TimeoutException, Exception {
+    static public boolean isResultStored(DBConnPool dbConnPool, long reNum) throws TimeoutException, Exception {
     	boolean retBoolean = false;
 
     	if (true) { // false: temporarily disable this code; by so doing, we allow local testing to proceed, even if a result is already stored
-    		Boolean result = RunEntryCore.getResult(reNum);
+    		Boolean result = RunEntryCore.getResult(dbConnPool, reNum);
     		retBoolean = (result!=null && result.booleanValue()==true);
     	}
         return retBoolean;

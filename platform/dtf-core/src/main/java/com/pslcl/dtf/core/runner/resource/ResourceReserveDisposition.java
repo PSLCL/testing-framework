@@ -5,7 +5,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 /**
- * ResourceReserveDisposition identifies the outcome of a resource reserve request.
+ * ResourceReserveDisposition identifies the outcome of a resource reserve request, with three reports:
+ *     An unavailable resource.
+ *     An invalid resource.
+ *     A reserved resource.
+ *
+ * @note Invalid is returned for encountered situations that prevent reservation. Two known cases are:
+ *           The .reserve() call parameters not able to be interpreted.
+ *           The reserve is denied because an identical reservation already exists, having identical identifiers. This uniqueness is offered in normal operation, but testbeds can produce non-unique reserve requests.  
+ * @note Unavailable is returned if the reserve request is both:
+ *           Not invalid.
+ *           Not able to be reserved by this ResourceProvider. Examples: attributes not recognized or not supported, or request is for person when the provider is for a machine.
+ * @note ReserverResource is returned when a resource instance can be reserved. This means that the request is not invalid, and not unavailable. 
  * 
  *
  */

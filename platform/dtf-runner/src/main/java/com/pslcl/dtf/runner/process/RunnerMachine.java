@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.runner.DBConnPool;
 import com.pslcl.dtf.runner.RunnerService;
 import com.pslcl.dtf.runner.template.TemplateProvider;
 
@@ -36,6 +37,7 @@ public class RunnerMachine {
     private final AtomicBoolean initialized;
     private volatile TemplateProvider templateProvider;
     private volatile RunnerConfig config;
+    private final DBConnPool dbConnPool;
     private final Logger log;
     private final String simpleName;
 
@@ -46,12 +48,17 @@ public class RunnerMachine {
      * 
      * @param runnerService
      */
-    public RunnerMachine() throws Exception {
+    public RunnerMachine(DBConnPool dbConnPool) throws Exception {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
+        this.dbConnPool = dbConnPool;
         this.initialized = new AtomicBoolean(false);
     }
 
+    public DBConnPool getDBConnPool() {
+    	return this.dbConnPool;
+    }
+    
     public RunnerConfig getConfig()
     {
         return config;
@@ -61,8 +68,7 @@ public class RunnerMachine {
     {
         return templateProvider;
     }
-    
-    
+        
     public RunnerService getService()
     {
         if(!initialized.get())
