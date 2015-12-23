@@ -6,6 +6,8 @@ import java.util.Properties;
 
 import org.apache.commons.daemon.DaemonInitException;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
@@ -21,11 +23,15 @@ public class DBConnPool {
     private volatile String password;
     private boolean read_only; // a status indicator, reflecting setup of the MySQLServer we connect to
 	private BasicDataSource pool;
+    private final Logger log;
+    private final String simpleName;
 	
 	/**
 	 * 
 	 */
 	public DBConnPool() {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
 		pool = new BasicDataSource();
 	}
 	
@@ -51,7 +57,7 @@ public class DBConnPool {
 			password = properties.getProperty(RunnerDBPasswordKey, RunnerDBPasswordDefault);
 		}
 		
-		if (false) // temporarily, and only if needed (something is still null), replace with db access with local machine environment variables
+		if (false) // true: temporarily, and only if needed (host or user are still null), replace db access parameters with local machine environment variables
 		{
 			if (host==null || user==null) { // password config is not required
 				// config from environment variables
@@ -67,6 +73,7 @@ public class DBConnPool {
 		if (user!=null && password!=null) {
 			read_only = false;
 		} else {
+			log.warn(simpleName + "configured for guest database user with readonly access");
             user = "guest";
             password = "";
 		}

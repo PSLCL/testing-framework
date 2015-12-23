@@ -37,7 +37,7 @@ public class ProcessTracker {
 
     	if (true) { // false: temporarily disable this code; by so doing, we allow local testing to proceed, even if a result is already stored
     		Boolean result = RunEntryCore.getResult(dbConnPool, reNum);
-    		retBoolean = (result!=null && result.booleanValue()==true);
+    		retBoolean = (result != null);
     	}
         return retBoolean;
     }

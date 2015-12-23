@@ -38,26 +38,25 @@ public class RunEntryCore {
      *
      * @param dbConnPool
      * @param reNum
-     * @return
+     * @return null if no if no result is stored, or true or false
      */
     static public Boolean getResult(DBConnPool dbConnPool, long reNum) throws Exception {
     	Boolean retBoolean = null;
+        Connection connection = null;
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-        	Connection connection = dbConnPool.getConnection();
+        	connection = dbConnPool.getConnection();
             statement = connection.createStatement();
             String strRENum = String.valueOf(reNum);
-
-            // These table run entries are filled: pk_run, fk_template, start_time, and maybe owner.
-            // topDBTemplate.reNum was filled in constructor; now fill all other entries of topDBTemplate
-            //     acquire run table information for entry reNum
-            //     acquire the matching template table information
             resultSet = statement.executeQuery( "SELECT pk_run, result " +
                                                 "FROM run " +
                                                 "WHERE pk_run = " + strRENum );
             if ( resultSet.next() ) {
-                retBoolean = resultSet.getBoolean("result");
+                retBoolean = resultSet.getBoolean("result"); // note: false is returned for SQL_NULL
+                // the really cool api is: getBoolean first to get true or false, but only AFTER that, check to see if database column really holds null.
+                if (resultSet.wasNull())
+                	retBoolean = null;
                 if (resultSet.next())
                     throw new Exception("resultSet wrongly has more than one entry");
             } else {
@@ -82,6 +81,8 @@ public class RunEntryCore {
                 // ignore
             }
             statement = null;
+            
+            connection.close();
         }
     	return retBoolean;
     }	
@@ -123,10 +124,11 @@ public class RunEntryCore {
      */
     private void loadRunEntryData() throws Exception {
         // meant to be called once only; if more than once becomes useful, might work but review
+        Connection connection = null;
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-        	Connection connection = this.dbConnPool.getConnection();
+        	connection = this.dbConnPool.getConnection();
         	statement = connection.createStatement();
             if (reNum != null) {
                 String strRENum = String.valueOf(this.reNum);
@@ -188,6 +190,7 @@ public class RunEntryCore {
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
+            connection.close();
         }
     }
 
@@ -220,11 +223,13 @@ public class RunEntryCore {
      *
      */
     private void writeRunEntryData() throws Exception {
-    	Boolean previousStoredResult = RunEntryCore.getResult(this.dbConnPool, reNum);
-    	if (previousStoredResult == null) { // this check is a fail-safe
+    	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, reNum);
+    	if (previousResultIsStored == null) { // this check is a fail-safe
+            Connection connection = null;
 	        Statement statement = null;
 	        try {
-	        	Connection connection = this.dbConnPool.getConnection();
+	        	connection = this.dbConnPool.getConnection();
+	            connection.setAutoCommit(true);
 	        	statement = connection.createStatement();
 	            String strRENum = String.valueOf(topDBTemplate.reNum);
 	            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -258,6 +263,7 @@ public class RunEntryCore {
 	            log.error(simpleName + "writeRunEntryData() exception for reNum " + topDBTemplate.reNum + ": "+ e);
 	        } finally {
 	            safeClose( statement ); statement = null;
+	            connection.close();
 	        }
     	} else {
     		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
@@ -335,8 +341,11 @@ public class RunEntryCore {
             this.topDBTemplate.result = new Boolean(true); // no exception means success
             runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
         } catch (Exception e) {
-        	if (iT != null)
-        		iT.destroy();
+        	// the template has already cleaned itself up
+        	// (we don't have iT in hand, and cannot clean itself up)
+//        	if (iT != null)
+//        		iT.destroy();
+        	log.debug("add info here");
             throw e;
         } finally {
             result = this.topDBTemplate.result.booleanValue();
