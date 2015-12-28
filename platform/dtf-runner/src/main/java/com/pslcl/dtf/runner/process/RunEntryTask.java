@@ -18,6 +18,8 @@ package com.pslcl.dtf.runner.process;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pslcl.dtf.runner.RunnerService;
+
 public class RunEntryTask implements Runnable {
 
 	// instance declarations 
@@ -68,7 +70,10 @@ public class RunEntryTask implements Runnable {
         log.debug(simpleName + "run() opens reNum " + reNum);
         
         while(true) {
-            RunEntryState reState = runnerMachine.getService().runEntryStateStore.get(reNum);
+        	RunnerMachine rm = this.runnerMachine;
+        	RunnerService rs = rm.getService();
+        	RunEntryStateStore ress = rs.runEntryStateStore;
+        	RunEntryState reState = ress.get(reNum);
             Action action = reState.getAction();
             Action nextAction;
 			try {

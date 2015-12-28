@@ -56,7 +56,7 @@ public class InspectHandler {
             	log.debug(simpleName + "computeInspectRequests() finds inspect in stepSet " + parsedSetStep.getSetID() + ": " + inspectStep);
             	int parsedSetStepParameterCount = parsedSetStep.getParameterCount();
             	if (parsedSetStepParameterCount < 4) // after setID and command, must have 0-based-person-ref, instructionsHash, and at least this couple "strArtifactName strArtifactHash", each of which adds 2 to parameter count
-              		throw new IllegalArgumentException("inspect step does not specify person reference, instructionsHash, artifact name, or artifact hash");
+              		throw new IllegalArgumentException("inspect step did not specify all needed person reference, instructionsHash, artifact name, and artifact hash");
             	if (parsedSetStepParameterCount%2 != 0) { // odd parameter count means a strArtifactName is missing its associated strArtifactHash
             		throw new IllegalArgumentException("InspectHandler.computeInspectRequests() finds its final artifact name parameter is missing its required artifact hash paramenter");
             	}
@@ -85,7 +85,7 @@ public class InspectHandler {
 	            		throw new Exception("InspectHandler.computeInspectRequests() finds null bound ResourceInstance at reference " + strPersonReference);
 					}
 				} catch (Exception e) {
-                    log.debug(simpleName + "inspect step does not specify person reference, instruction hash, artifact name, or artifact hash");
+                    log.debug(simpleName + "inspect step processing error, msg: " + e);
 					throw e;
 				}
             }

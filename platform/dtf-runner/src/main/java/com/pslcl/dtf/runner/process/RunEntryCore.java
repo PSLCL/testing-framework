@@ -341,18 +341,15 @@ public class RunEntryCore {
             this.topDBTemplate.result = new Boolean(true); // no exception means success
             runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
         } catch (Exception e) {
-        	// the template has already cleaned itself up
-        	// (we don't have iT in hand, and cannot clean itself up)
-//        	if (iT != null)
-//        		iT.destroy();
-        	log.debug("add info here");
+        	// the template has already cleaned itself up (required because we don't have iT in hand, and cannot clean it up)
+        	log.debug(simpleName + "testRun errors out, reNum : " + this.topDBTemplate.reNum);
             throw e;
         } finally {
             result = this.topDBTemplate.result.booleanValue();
-            log.debug(simpleName + "testRun() stores to database this result: " + result);
+            log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stores to database this result: " + result);
         	storeResultRunEntryData();
         }
-        return result; // true
+        return result; // always true, for exception not thrown
     }
 
         // unneeded- our real approach involves an api to come to us soon
