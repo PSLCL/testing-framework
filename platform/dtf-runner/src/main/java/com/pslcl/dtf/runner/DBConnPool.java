@@ -39,6 +39,10 @@ public class DBConnPool {
 		return pool.getConnection();
 	}
 	
+	public boolean getReadOnly() {
+		return this.read_only;
+	}
+	
 	/**
 	 * Determine the DB host, user, and password, and setup the MySQL connection pool.
 	 * 

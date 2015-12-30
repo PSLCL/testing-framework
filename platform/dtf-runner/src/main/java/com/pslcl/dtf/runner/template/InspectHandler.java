@@ -108,11 +108,11 @@ public class InspectHandler {
 			if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
 				throw new Exception("Specified inspect target is not a PersonInstance");
 			PersonInstance pi = PersonInstance.class.cast(resourceInstance);
-			String instructions = new String("instructions"); // TODO: use inspectInfos.getInstructionsHash(), and asynchronously go get the instructions file and fill this local variable
+			String instructions = new String("instructions"); // temporarily, a cheap substitution; TODO: use inspectInfo.getInstructionsHash(), and asynchronously go get the instructions file and fill this local variable
 
 			String archiveFilename = new String("attachments.tar.gz");
 			
-			String strContent = "content"; // TODO: use inspectInfos.getArtifacts(), and asynchronously go get the several files and fill this local variable, or directly fill variable arrayContent
+			String strContent = "content"; // temporarily, a cheap substitution; TODO: use inspectInfo.getArtifacts(), and asynchronously go get the several files and fill this local variable, or directly fill variable arrayContent
 			byte [] arrayContent = strContent.getBytes();
 			ByteArrayInputStream bais = new ByteArrayInputStream(arrayContent); // we own bais
 			Future<? extends Void> future = pi.inspect(instructions, bais, archiveFilename);
