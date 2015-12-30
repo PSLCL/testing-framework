@@ -204,7 +204,12 @@ public class RunEntryCore {
         topDBTemplate.ready_time = new Date(); // now; assume start_time was filled when the reNum run table entry was placed
         if (topDBTemplate.owner == null)
             topDBTemplate.owner = "dtf-runner";
-        writeRunEntryData(); // ready_time and owner have changed
+		try { 
+	        writeRunEntryData(); // ready_time and owner have changed
+		} catch (Exception e) {
+			if (true) // false: temporarily allow test run to proceed, after write failure 
+				throw e;
+		}
     }
 
     /**
@@ -213,7 +218,12 @@ public class RunEntryCore {
     private void storeResultRunEntryData() throws Exception {
         // Calling this with null for topDBTemplate.result makes no sense. It may be an error. TODO: check that and log it, and maybe reject it entirely.
         topDBTemplate.end_time = new Date(); // now
-        writeRunEntryData();
+        try {
+            writeRunEntryData();
+        } catch (Exception e) {
+			if (true) // false: temporarily allow test run to proceed, after write failure 
+				throw e;
+        }
     }
 
     /**
@@ -224,49 +234,57 @@ public class RunEntryCore {
      */
     private void writeRunEntryData() throws Exception {
     	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, reNum);
-    	if (previousResultIsStored == null) { // this check is a fail-safe
-            Connection connection = null;
-	        Statement statement = null;
-	        try {
-	        	connection = this.dbConnPool.getConnection();
-	            connection.setAutoCommit(true);
-	        	statement = connection.createStatement();
-	            String strRENum = String.valueOf(topDBTemplate.reNum);
-	            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	
-	            String readyTime = "null";
-	            if (topDBTemplate.ready_time != null)
-	                readyTime = "'" + sdf.format(topDBTemplate.ready_time) + "'";
-	            String endTime = "null";
-	            if (topDBTemplate.end_time != null)
-	                endTime = "'" + sdf.format(topDBTemplate.end_time) + "'";
-	            String owner = "null";
-	            if (topDBTemplate.owner != null)
-	                owner = "'" + topDBTemplate.owner + "'";
-	            Boolean result = null;
-	            if (topDBTemplate.result != null)
-	                result = topDBTemplate.result;
-	            byte [] artifacts = null;
-	            if (topDBTemplate.artifacts != null)
-	                artifacts = topDBTemplate.artifacts;
-	
-	            String str = "UPDATE run " +
-	                         "SET ready_time = " + readyTime + ", " +
-	                               "end_time = " + endTime   + ", " +
-	                                  "owner = " + owner + ", " +
-	                                 "result = " + result + ", " +
-	                              "artifacts = " + artifacts + " " +
-	                         "WHERE pk_run = " + strRENum;
-	
-	            statement.executeUpdate( str ); // returns the matching row count: 1 for pk_run row exists, or 0
-	        } catch(Exception e) {
-	            log.error(simpleName + "writeRunEntryData() exception for reNum " + topDBTemplate.reNum + ": "+ e);
-	        } finally {
-	            safeClose( statement ); statement = null;
-	            connection.close();
-	        }
+    	if (false || // true: temporarily allow overwriting of a past result
+    		previousResultIsStored == null) { // this check is a fail-safe
+    		if (!this.dbConnPool.getReadOnly()) {
+                Connection connection = null;
+    	        Statement statement = null;
+    	        try {
+    	        	connection = this.dbConnPool.getConnection();
+    	            connection.setAutoCommit(true);
+    	        	statement = connection.createStatement();
+    	            String strRENum = String.valueOf(topDBTemplate.reNum);
+    	            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    	
+    	            String readyTime = "null";
+    	            if (topDBTemplate.ready_time != null)
+    	                readyTime = "'" + sdf.format(topDBTemplate.ready_time) + "'";
+    	            String endTime = "null";
+    	            if (topDBTemplate.end_time != null)
+    	                endTime = "'" + sdf.format(topDBTemplate.end_time) + "'";
+    	            String owner = "null";
+    	            if (topDBTemplate.owner != null)
+    	                owner = "'" + topDBTemplate.owner + "'";
+    	            Boolean result = null;
+    	            if (topDBTemplate.result != null)
+    	                result = topDBTemplate.result;
+    	            byte [] artifacts = null;
+    	            if (topDBTemplate.artifacts != null)
+    	                artifacts = topDBTemplate.artifacts;
+    	
+    	            String str = "UPDATE run " +
+    	                         "SET ready_time = " + readyTime + ", " +
+    	                               "end_time = " + endTime   + ", " +
+    	                                  "owner = " + owner + ", " +
+    	                                 "result = " + result + ", " +
+    	                              "artifacts = " + artifacts + " " +
+    	                         "WHERE pk_run = " + strRENum;
+    	
+    	            statement.executeUpdate( str ); // returns the matching row count: 1 for pk_run row exists, or 0
+    	        } catch(Exception e) {
+    	            log.error(simpleName + "writeRunEntryData() exception for reNum " + topDBTemplate.reNum + ": "+ e);
+    	            throw e;
+    	        } finally {
+    	            safeClose( statement ); statement = null;
+    	            connection.close();
+    	        }    			
+    		} else {
+    			log.warn(simpleName + "writeRunEntryData() finds readonly status; does not write a result, for reNum " + topDBTemplate.reNum);
+    			throw new Exception("Database write not accomplished");
+    		}
     	} else {
     		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
+			throw new Exception("Database write not accomplished");
     	}
     }
 
@@ -347,7 +365,7 @@ public class RunEntryCore {
         } finally {
             result = this.topDBTemplate.result.booleanValue();
             log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stores to database this result: " + result);
-        	storeResultRunEntryData();
+           	storeResultRunEntryData();
         }
         return result; // always true, for exception not thrown
     }
