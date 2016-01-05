@@ -18,6 +18,7 @@ package com.pslcl.dtf.resource.aws.provider.machine;
 import java.util.HashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,7 @@ import com.amazonaws.services.ec2.model.Vpc;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
+import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class MachineReservedResource implements Runnable
@@ -36,6 +38,7 @@ public class MachineReservedResource implements Runnable
     public final ResourceDescription resource;
     public final InstanceType instanceType;
     public final String imageId;
+    public final AtomicBoolean bindFutureCanceled;
     public volatile GroupIdentifier groupIdentifier;
     public volatile String groupId;
     public volatile Vpc vpc;
@@ -43,7 +46,7 @@ public class MachineReservedResource implements Runnable
     public volatile String net;
     public volatile Instance ec2Instance;
     public volatile long runId;
-
+    
     private ScheduledFuture<?> timerFuture;
     private Future<MachineInstance> instanceFuture;
     public final AwsMachineProvider provider;
@@ -57,6 +60,7 @@ public class MachineReservedResource implements Runnable
         resource.getCoordinates().setRunId(newCoord.getRunId());
         instanceType = result.getInstanceType();
         imageId = result.getImageId();
+        bindFutureCanceled = new AtomicBoolean(false);
     }
 
     synchronized void setTimerFuture(ScheduledFuture<?> future)
@@ -89,5 +93,24 @@ public class MachineReservedResource implements Runnable
             provider.getInstanceFinder().releaseInstance(instanceType);
             LoggerFactory.getLogger(getClass()).info(resource.toString() + " reserve timed out");
         }
+    }
+    
+    @Override
+    public String toString()
+    {
+        TabToLevel format = new TabToLevel();
+        return toString(format).toString(); 
+    }
+    
+    public TabToLevel toString(TabToLevel format)
+    {
+        format.sb.append(getClass().getSimpleName() + ":\n");
+        format.level.incrementAndGet();
+        format.ttl("instanceType = ", instanceType);
+        format.ttl("imageId = ", imageId);
+        format.ttl("groupId = ", groupId);
+        format.level.decrementAndGet();
+        resource.getCoordinates().toString(format);
+        return format;
     }
 }
