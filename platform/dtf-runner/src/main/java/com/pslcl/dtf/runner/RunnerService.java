@@ -31,7 +31,6 @@ import com.pslcl.dtf.core.runner.Runner;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueue;
 import com.pslcl.dtf.runner.process.ProcessTracker;
-import com.pslcl.dtf.runner.process.RunEntryCore;
 import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
 
@@ -54,6 +53,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
     private volatile MessageQueue mq = null;
     private volatile RunnerConfig config = null;
     private volatile DBConnPool dbConnPool = null;
+    private volatile QAPortalAccess qaPortalAccess = null;
 
     /** the process classes */
     public volatile RunnerMachine runnerMachine = null;
@@ -104,8 +104,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config.initsb.level.incrementAndGet(); // l2
             String daoClass = config.properties.getProperty(QueueStoreDaoClassKey, QueueStoreDaoClassDefault);
             config.initsb.ttl(QueueStoreDaoClassKey, " = ", daoClass);
-            mq = (MessageQueue) Class.forName(daoClass).newInstance();
-            mq.init(config);
+            this.mq = (MessageQueue) Class.forName(daoClass).newInstance();
+            this.mq.init(config);
                 
             config.initsb.indentedOk();
             config.initsb.level.decrementAndGet();
@@ -113,12 +113,14 @@ public class RunnerService implements Runner, RunnerServiceMBean
             MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             mbs.registerMBean(this, new ObjectName("pslcl.dtf.platform:type=RunnerService"));
 
-            dbConnPool = new DBConnPool();
-            dbConnPool.init(config);
-            runnerMachine = new RunnerMachine(dbConnPool);
-            runnerMachine.init(config);
-            runEntryStateStore = new RunEntryStateStore();
-            processTracker = new ProcessTracker(this);
+            this.dbConnPool = new DBConnPool();
+            this.dbConnPool.init(config);
+            this.runnerMachine = new RunnerMachine(dbConnPool);
+            this.runnerMachine.init(config);
+            this.runEntryStateStore = new RunEntryStateStore();
+            this.processTracker = new ProcessTracker(this);
+            this.qaPortalAccess = new QAPortalAccess();
+            this.qaPortalAccess.init(config);
         } catch (Exception e)
         {
         	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
@@ -216,7 +218,11 @@ public class RunnerService implements Runner, RunnerServiceMBean
     }
 
     
-    //
+    // public methods 
+    
+    public QAPortalAccess getQAPortalAccess() {
+    	return this.qaPortalAccess;
+    }
     
     /**
      * 

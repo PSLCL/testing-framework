@@ -27,6 +27,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.runner.QAPortalAccess;
 import com.pslcl.dtf.runner.process.DBTemplate;
 import com.pslcl.dtf.runner.process.RunEntryCore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
@@ -96,6 +97,10 @@ public class InstancedTemplate {
     
     public ResourceProviders getResourceProviders() {
     	return this.runnerMachine.getTemplateProvider().getResourceProviders();
+    }
+    
+    public QAPortalAccess getQAPortalAccess() {
+    	return this.runnerMachine.getService().getQAPortalAccess();
     }
     
     public StepsParser getStepsParser() {

@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.runner.QAPortalAccess;
 
 public class InspectHandler {
 	private InstancedTemplate iT;
@@ -99,7 +100,8 @@ public class InspectHandler {
 	 * @throws Exception 
 	 */
 	void initiateInspect(List<InspectInfo> inspectInfos) throws Exception {
-		
+		QAPortalAccess qapa = this.iT.getQAPortalAccess();
+
         // start multiple asynch inspects
 		for (InspectInfo inspectInfo : inspectInfos) {
 			ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
@@ -108,13 +110,20 @@ public class InspectHandler {
 			if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
 				throw new Exception("Specified inspect target is not a PersonInstance");
 			PersonInstance pi = PersonInstance.class.cast(resourceInstance);
-			String instructions = new String("instructions"); // temporarily, a cheap substitution; TODO: use inspectInfo.getInstructionsHash(), and asynchronously go get the instructions file and fill this local variable
-
-			String archiveFilename = new String("attachments.tar.gz");
 			
-			String strContent = "content"; // temporarily, a cheap substitution; TODO: use inspectInfo.getArtifacts(), and asynchronously go get the several files and fill this local variable, or directly fill variable arrayContent
+			String instructionsHash = inspectInfo.getInstructionsHash();
+			String instructions = qapa.getContent("content", instructionsHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
+			if (false) // true: temporarily, a cheap substitution to overcome QAPortal access problem
+				instructions = new String("this is instructions");
+			
+			String contentHash = inspectInfo.getInstructionsHash();
+			String strContent = qapa.getContent("content", contentHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
+			if (false) // true: temporarily, a cheap substitution to overcome QAPortal access problem
+				strContent = "this is content";
 			byte [] arrayContent = strContent.getBytes();
-			ByteArrayInputStream bais = new ByteArrayInputStream(arrayContent); // we own bais
+			
+			ByteArrayInputStream bais = new ByteArrayInputStream(arrayContent); // we own bais; TODO: Does .waitComplete() clean it up?
+			String archiveFilename = new String("attachments.tar.gz"); // hard coded per the design docs for PersonInstance
 			Future<? extends Void> future = pi.inspect(instructions, bais, archiveFilename);
 			// TODO: close this Stream when the Future<Void> comes back; will have to track stream bais against each future 
 
