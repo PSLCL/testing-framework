@@ -36,6 +36,7 @@ import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
@@ -78,7 +79,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         return boundInstances;
     }
 
-    HashMap<Long, MachineReservedResource> getReservedMachines()
+    public HashMap<Long, MachineReservedResource> getReservedMachines()
     {
         return reservedMachines;
     }
@@ -120,11 +121,13 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     {
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
+
         synchronized (boundInstances)
         {
             synchronized (reservedMachines)
             {
                 List<Long> releaseList = new ArrayList<Long>();
+                releasePossiblePendings(templateId, isReusable);
                 for (Entry<Long, AwsMachineInstance> entry : boundInstances.entrySet())
                 {
                     coordinates = entry.getValue().getCoordinates();
@@ -136,11 +139,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     AwsMachineInstance instance = boundInstances.remove(key);
                     reservedMachines.remove(key);
                     ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
-                    futures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance, null, /*reservedResource.vpc.getVpcId() reservedResource.subnet.getSubnetId()*/ null, pdelayData)));
+                    futures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, /*reservedResource.vpc.getVpcId() reservedResource.subnet.getSubnetId()*/ null, pdelayData)));
                 }
             }
         }
-        // make sure they are all complete before deleting the key-pair
+        // make sure all the release futures are complete before deleting the key-pair
         for (Future<Void> future : futures)
         {
             try
@@ -148,6 +151,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 future.get();
             } catch (Exception e)
             {
+                // nothing further we can really do if these fail, futures should have logged error details
+                // could email someone to double check manual clean may be needed.
+                log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
             }
         }
 
@@ -175,6 +181,66 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         }
     }
 
+    private void releasePossiblePendings(String templateId, boolean isReusable)
+    {
+        // note this is being called already synchronized to reservedMachines
+        
+        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        ResourceCoordinates coordinates = null;
+        List<Long> releaseList = new ArrayList<Long>();
+        for (Entry<Long, MachineReservedResource> entry : reservedMachines.entrySet())
+        {
+            MachineReservedResource rresource = entry.getValue(); 
+            coordinates = rresource.resource.getCoordinates();
+            if (coordinates.templateId.equals(templateId))
+            {
+                Future<MachineInstance> future = rresource.getInstanceFuture();
+                boolean cancelResult = future.cancel(false);
+                /*
+                    This attempt will fail if the task has already completed, has already been cancelled,
+                    or could not be cancelled for some other reason.
+                    To guarantee that we don't kill the future.call thread right in the middle of the ec2Client.runInstances()
+                    we use the mayInterruptIfRunning false call to allow the future.call thread to continue.  
+                    There is synchronized(reservedMachines) around the critical ec2Client.runInstances call to block it if we
+                    are here doing cleanup.  We we set a canceled flag so when it resumes it will throw an exception on the future.
+                    Within that synchronized block, the call method will have set the ec2Instance prior to our getting here and 
+                    we can then execute the terminate command for it. 
+                */
+                rresource.bindFutureCanceled.set(true);
+                if(cancelResult)
+                {
+                    try
+                    {
+                        future.get();
+                    } catch (Exception e)
+                    {
+                        TabToLevel format = new TabToLevel();
+                        format.ttl("\n", getClass().getSimpleName(), ".release cancel pending future handling");
+                        log.debug(rresource.toString(format).toString());
+                        releaseList.add(entry.getKey());
+                        if(rresource.ec2Instance != null)
+                        {
+                            // the future made it far enough to trigger aws to startup the instance.
+                            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
+                            futures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, coordinates, rresource.ec2Instance, null, /*reservedResource.vpc.getVpcId() reservedResource.subnet.getSubnetId()*/ null, pdelayData)));
+                        }
+                    }
+                }else
+                {
+                    try
+                    {
+                        future.get();
+                    } catch (Exception e)
+                    {
+                        log.info("release machine code caught a somewhat unexpected exception during cancel cleanup", e);
+                    }
+                }
+            }
+        }
+        for (Long key : releaseList)
+            reservedMachines.remove(key);
+    }
+    
     public void releaseReservedResource(String templateId)
     {
         release(templateId, false);
