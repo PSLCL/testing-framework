@@ -9,7 +9,9 @@ import org.apache.http.client.fluent.Response;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
 public class QAPortalAccess {
-	
+
+    private static final String RunnerQAPortalHostKey = "pslcl.dtf.runner.qa.portal.host";
+
 	private final Executor executor; // is pooling, uses PoolingHttpClientConnectionManager 
 	private volatile String hostQAPortal = null;
 	//private ResponseHandler rh = null;
@@ -19,7 +21,7 @@ public class QAPortalAccess {
 	}
 	
 	void init(RunnerConfig runnerConfig) {
-		this.hostQAPortal = runnerConfig.properties.getProperty(null, "https://testing.opendof.org/#/dashboard"); // TODO: figure out a property key to place here
+		this.hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey, "https://testing.opendof.org/#/dashboard");
 	}
 	
 	public String getContent(String contentDescriptor, String contentSpecifier) throws Exception {

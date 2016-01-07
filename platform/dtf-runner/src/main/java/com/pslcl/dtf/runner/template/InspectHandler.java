@@ -1,6 +1,7 @@
 package com.pslcl.dtf.runner.template;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -122,10 +123,11 @@ public class InspectHandler {
 				strContent = "this is content";
 			byte [] arrayContent = strContent.getBytes();
 			
-			ByteArrayInputStream bais = new ByteArrayInputStream(arrayContent); // we own bais; TODO: Does .waitComplete() clean it up?
+			InputStream is = new ByteArrayInputStream(arrayContent); // ByteArrayInputStream extends InputStream
+			// we own is; TODO: Does .waitComplete() clean it up?
 			String archiveFilename = new String("attachments.tar.gz"); // hard coded per the design docs for PersonInstance
-			Future<? extends Void> future = pi.inspect(instructions, bais, archiveFilename);
-			// TODO: close this Stream when the Future<Void> comes back; will have to track stream bais against each future 
+			Future<? extends Void> future = pi.inspect(instructions, is, archiveFilename);
+			// TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future 
 
 			futuresOfInspects.add(future);
 		}
