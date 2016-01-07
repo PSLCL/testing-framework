@@ -80,11 +80,16 @@ public class BindHandler {
 			this.iFinalSetOffset = i;
 		}
 	}
-	
-    int getReserveResourceRequestCount() {
-    	return reserveResourceRequests!=null ? reserveResourceRequests.size() : 0;
+
+    int getReserveResourceRequestCount() throws Exception {
+    	if (this.reserveResourceRequests != null) {
+    		int retCount = this.reserveResourceRequests.size();
+    		if (retCount > 0)
+    			return retCount;
+    	}
+    	throw new Exception("BindHandler unexpectedly finds no inpect requests");
     }
-    
+	
     List<ResourceInstance> getResourceInstances() {
     	return this.resourceInstances;
     }
