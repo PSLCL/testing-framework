@@ -18,30 +18,37 @@ package com.pslcl.dtf.resource.aws.provider.person;
 import java.util.HashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
+import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.instance.person.PersonConfigData;
 
 @SuppressWarnings("javadoc")
 public class PersonReservedResource extends ReservedResource  implements Runnable
 {
     public final ResourceDescription resource;
+    public final PersonConfigData pconfig;
     public final String email;
-    private final ProgressiveDelayData pdelayData;
+    public final ProgressiveDelayData pdelayData;
+    public final AtomicBoolean bindFutureCanceled;
     
     private ScheduledFuture<?> timerFuture;
     private Future<PersonInstance> instanceFuture;
     
-    PersonReservedResource(AwsPersonProvider provider, ResourceDescription resource, int timeoutSeconds, String email)
+    PersonReservedResource(AwsPersonProvider provider, ResourceDescription resource, int timeoutSeconds, PersonConfigData pconfig, String email)
     {
         super(resource.getCoordinates(), resource.getAttributes(), timeoutSeconds);
         this.resource = resource;
+        this.pconfig = pconfig;
         pdelayData = new ProgressiveDelayData(provider, resource.getCoordinates());
         this.email = email;
+        bindFutureCanceled = new AtomicBoolean(false);
     }
     
     synchronized void setTimerFuture(ScheduledFuture<?> future)
@@ -59,7 +66,7 @@ public class PersonReservedResource extends ReservedResource  implements Runnabl
         instanceFuture = future;
     }
 
-    synchronized Future<PersonInstance> getInstanceFuture()
+    public synchronized Future<PersonInstance> getInstanceFuture()
     {
         return instanceFuture;
     }
@@ -73,6 +80,23 @@ public class PersonReservedResource extends ReservedResource  implements Runnabl
             map.remove(resource.getCoordinates().resourceId);
         }
         LoggerFactory.getLogger(getClass()).info(resource.toString() + " reserve timed out");
+    }
+    
+    @Override
+    public String toString()
+    {
+        TabToLevel format = new TabToLevel();
+        return toString(format).toString(); 
+    }
+    
+    public TabToLevel toString(TabToLevel format)
+    {
+        format.sb.append(getClass().getSimpleName() + ":\n");
+        format.level.incrementAndGet();
+        format.ttl("email = ", email);
+        format.level.decrementAndGet();
+        resource.getCoordinates().toString(format);
+        return format;
     }
 }
 

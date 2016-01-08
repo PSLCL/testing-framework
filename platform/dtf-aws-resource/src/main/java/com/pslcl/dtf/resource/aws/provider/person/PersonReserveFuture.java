@@ -72,9 +72,9 @@ public class PersonReserveFuture implements Callable<List<ResourceReserveDisposi
                 roundRobinIndex = provider.getNextInspectorIndex();
                 email = config.inspectors.get(roundRobinIndex);
             }else
-                email = config.givenInspector;
+                email = config.sender;
             pdelayData.preFixMostName = provider.config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
-            PersonReservedResource rresource = new PersonReservedResource(provider, resource, timeoutSeconds, email);
+            PersonReservedResource rresource = new PersonReservedResource(provider, resource, timeoutSeconds, config, email);
             ScheduledFuture<?> future = provider.config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
             rresource.setTimerFuture(future);
             resource.getCoordinates().setManager(provider.manager);

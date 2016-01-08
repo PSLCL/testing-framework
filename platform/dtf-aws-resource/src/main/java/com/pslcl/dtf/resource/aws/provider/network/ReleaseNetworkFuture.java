@@ -20,25 +20,25 @@ import java.util.concurrent.Callable;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 
 @SuppressWarnings("javadoc")
 public class ReleaseNetworkFuture implements Callable<Void>
 {
     private final AwsNetworkProvider provider;
-    private final AwsNetworkInstance instance;
+    private final ResourceCoordinates coordinates;
     @SuppressWarnings("unused")
     private final String vpcId;
     @SuppressWarnings("unused")
     private final String subnetId;
     private final ProgressiveDelayData pdelayData;
 
-    public ReleaseNetworkFuture(AwsNetworkProvider provider, AwsNetworkInstance instance, String vpcId, String subnetId, ProgressiveDelayData pdelayData)
+    public ReleaseNetworkFuture(AwsNetworkProvider provider, ResourceCoordinates coord, String vpcId, String subnetId, ProgressiveDelayData pdelayData)
     {
         this.vpcId = vpcId;
         this.subnetId = subnetId;
-        this.instance = instance;
+        coordinates = coord;
         this.provider = provider;
         this.pdelayData = pdelayData;
     }
@@ -46,10 +46,10 @@ public class ReleaseNetworkFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
-        LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + instance.getCoordinates().toString());
+        LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + coordinates.toString());
         pdelayData.provider.manager.subnetManager.releaseSecurityGroup(pdelayData);
         provider.getConfig().statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
-        LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
+        LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + coordinates.toString());
         return null;
     }
 }

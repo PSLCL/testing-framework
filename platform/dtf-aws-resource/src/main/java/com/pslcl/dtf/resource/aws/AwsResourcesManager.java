@@ -190,7 +190,8 @@ public class AwsResourcesManager implements ResourcesManager
         config.initsb.ttl("obtained snsClient");
         
         sesClient = new AmazonSimpleEmailServiceClient(cconfig.clientConfig);
-        sesClient.setEndpoint(cconfig.endpoint);
+        sesClient.setRegion(cconfig.region);
+//        sesClient.setEndpoint(cconfig.endpoint);
         config.initsb.ttl("obtained sesClient");
         
         subnetManager = new SubnetManager(this);
