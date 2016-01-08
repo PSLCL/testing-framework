@@ -17,11 +17,8 @@ package com.pslcl.dtf.resource.aws.provider.person;
 
 import java.util.concurrent.Callable;
 
-import org.slf4j.LoggerFactory;
-
-import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.instance.person.AwsPersonInstance;
 
 @SuppressWarnings("javadoc")
 public class ReleasePersonFuture implements Callable<Void>
@@ -29,15 +26,15 @@ public class ReleasePersonFuture implements Callable<Void>
     @SuppressWarnings("unused")
     private final AwsPersonProvider provider;
     @SuppressWarnings("unused")
-    private final AwsPersonInstance instance;
-    @SuppressWarnings("unused")
     private final ProgressiveDelayData pdelayData;
+    @SuppressWarnings("unused")
+    private final ResourceCoordinates coordinates;
 
-    public ReleasePersonFuture(AwsPersonProvider provider, AwsPersonInstance instance, ProgressiveDelayData pdelayData)
+    public ReleasePersonFuture(AwsPersonProvider provider, ResourceCoordinates coord, ProgressiveDelayData pdelayData)
     {
         this.provider = provider;
-        this.instance = instance;
         this.pdelayData = pdelayData;
+        coordinates = coord;
     }
 
     @Override

@@ -219,10 +219,16 @@ public class ProviderNames
     public static final String PersonKeyBase = ClientNames.AwsKeyBase + ".ses";
     
     // note that inspector is a base key and can be numbered from 0 on up, to add as many inspectors as desired
+    public static final String SesSenderKey = PersonKeyBase + ".sender";
+    public static final String SesReplyKey = PersonKeyBase + ".reply";
+    public static final String SesSubjectKey = PersonKeyBase + ".subject";
     public static final String SesInspectorKey = PersonKeyBase + ".inspector";
     public static final String SesMaxDelayKey = PersonKeyBase + ".max-delay";
     public static final String SesMaxRetriesKey = PersonKeyBase + ".max-retries";
     
+    public static final String SesSenderDefault = null; // valid email address
+    public static final String SesReplyDefault = null; // valid email address
+    public static final String SesSubjectDefault = "dtf-runner inspect";
     public static final String SesInspectorDefault = null;  // valid email address
     public static final String SesMaxDelayDefault = InstanceNames.shortMaxDelay;      
     public static final String SesMaxRetriesDefault = InstanceNames.shortMaxRetries;  // about 1 min timeout
