@@ -55,7 +55,6 @@ import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 public class InspectWithIncludeFuture implements Callable<Void>
 {
     public static final String SesMidStr = "ses";
-    private static final String TempFilePrefix = "dtf-runner-";
     // IMPORTANT: To successfully send an email, you must replace the values of the strings below with your own values.   
     //    private static String EMAIL_FROM = "SENDER@EXAMPLE.COM"; // Replace with the sender's address. This address must be verified with Amazon SES.
     //    private static String EMAIL_REPLY_TO = "REPLY-TO@EXAMPLE.COM"; // Replace with the address replies should go to. This address must be verified with Amazon SES. 
@@ -86,8 +85,6 @@ public class InspectWithIncludeFuture implements Callable<Void>
     private final String recipient;
     private final String bodyText;
     private final ProgressiveDelayData pdelayData;
-//    private final String msg;
-    private final File tmpFile;
     private final TabToLevel format;
 
     //@formatter:off
@@ -95,32 +92,40 @@ public class InspectWithIncludeFuture implements Callable<Void>
                     AmazonSimpleEmailServiceClient client, 
                     PersonConfigData config, 
                     String recipient, 
-                    String fileName,
+                    String includeFileName,
                     InputStream fileStream,
                     String bodyText,
-                    ProgressiveDelayData pdelayData) throws IOException
+                    ProgressiveDelayData pdelayData)
     //@formatter:on
     {
         this.client = client;
         this.config = config;
-        this.includeFileName = fileName;
+        this.includeFileName = includeFileName;
         this.includeFileStream = fileStream;
         this.recipient = recipient;
         this.bodyText = bodyText;
         this.pdelayData = pdelayData;
-        tmpFile = File.createTempFile(TempFilePrefix+fileName, ".gz");
         format = new TabToLevel();
         format.ttl(getClass().getSimpleName());
         format.level.incrementAndGet();
         format.ttl("sender = ", config.sender);
         format.ttl("reply = ", config.reply);
         format.ttl("recipient = ", recipient);
-        format.ttl("tmpFile = ", tmpFile.getAbsolutePath());
         format.level.decrementAndGet();
     }
-
+    
     private File getFilePath(String fileName, InputStream inputStream) throws IOException
     {
+        int idx = fileName.lastIndexOf('.');
+        String postfix = null;
+        if(idx != -1)
+        {
+            postfix = fileName.substring(idx);
+            fileName = fileName.substring(0, idx);
+        }
+            
+        File tmpFile = File.createTempFile(pdelayData.preFixMostName+"-"+fileName, postfix);
+        format.ttl("tmpFile = ", tmpFile.getAbsolutePath());
         FileOutputStream fos = null;
         try
         {
@@ -218,12 +223,12 @@ public class InspectWithIncludeFuture implements Callable<Void>
                 FatalResourceException fre = pdelay.handleException(msg, e);
                 if(fre instanceof FatalException)
                 {
-                    tmpFile.delete();
+                    attachmentFile.delete();
                     throw fre;
                 }
             }
         }while(true);
-        tmpFile.delete();
+        attachmentFile.delete();
         return null;
     }
 }

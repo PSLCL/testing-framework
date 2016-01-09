@@ -46,6 +46,7 @@ public class PersonInstanceFuture implements Callable<PersonInstance>
         try
         {
             checkFutureCanceled();
+            reservedResource.pdelayData.preFixMostName = reservedResource.pconfig.resoucePrefixName;
             AwsPersonInstance personInstance = new AwsPersonInstance(reservedResource, pdelayData.provider.config);
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsPersonProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, personInstance);
