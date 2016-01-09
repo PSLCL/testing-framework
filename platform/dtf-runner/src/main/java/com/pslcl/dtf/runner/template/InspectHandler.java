@@ -18,12 +18,15 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.runner.QAPortalAccess;
 
 public class InspectHandler {
+	static String archiveFilename = new String("attachments.tar.gz"); // hard coded per the design docs for PersonInstance
+
 	private final InstancedTemplate iT;
 	private final List<String> setSteps;
     private List<Future<? extends Void>> futuresOfInspects;
 	private List<InspectInfo> inspectInfos = null;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+	private int indexNextInspectInfo = 0;
     private boolean done;
     private final Logger log;
     private final String simpleName;
@@ -118,20 +121,15 @@ public class InspectHandler {
      * @throws Exception
      */
     void proceed() throws Exception {
-    	try {
+    	if (this.inspectInfos==null || this.inspectInfos.isEmpty())
+    		throw new Exception("InspectHandler processing has no inspectInfo");
+    		
+    	try {    		
     		QAPortalAccess qapa = this.iT.getQAPortalAccess();
     		while (!done) {
-    			// first, form a list of futures for every QAPortal read access
-    			
-    			// second, process every future to have every needed instruction and every needed content InputStream
-    			
-    			// third, form a list of futures from actual inspect calls
-    			
-    			// fourth, process every future
-
-    			
-    			// temporarily, instead of pure parallel processing, do this sequential blocking behavior
-    			for (InspectInfo inspectInfo : inspectInfos) {
+    			// REVIEW: this is setup for future benefit of yielding, by involving futures in the access of data from QA Portal
+    			if (this.indexNextInspectInfo < this.inspectInfos.size()) {
+    				InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
     				ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
     				// We know that resourceInstance is a PersonInstance, because an inspect step must always direct its work to a PersonInstance.
     				//     Still, check that condition to avoid problems that arise when template steps are improper. 
@@ -139,82 +137,49 @@ public class InspectHandler {
     					throw new Exception("Specified inspect target is not a PersonInstance");
     				PersonInstance pi = PersonInstance.class.cast(resourceInstance);
     				
+    				// obtain instructions for this inspectInfo
     				String instructionsHash = inspectInfo.getInstructionsHash();
-    				String instructions = qapa.getContent("content", instructionsHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
-    				if (false) // true: temporarily, a cheap substitution to overcome QAPortal access problem
-    					instructions = new String("this is instructions");
+    				String inst = qapa.getContent("content", instructionsHash); // TODO: this needs to be asynchronous
+    				inspectInfo.setInstruction(inst);
+    				if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
+    					inspectInfo.setInstruction(new String("this is instructions"));
     				
+    				// obtain content for this inspectInfo
     				String contentHash = inspectInfo.getInstructionsHash();
     				String strContent = qapa.getContent("content", contentHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
-    				if (false) // true: temporarily, a cheap substitution to overcome QAPortal access problem
+    				if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
     					strContent = "this is content";
     				byte [] arrayContent = strContent.getBytes();
-    				
     				InputStream is = new ByteArrayInputStream(arrayContent); // ByteArrayInputStream extends InputStream
     				// we own is; TODO: Does .waitComplete() clean it up?
-    				String archiveFilename = new String("attachments.tar.gz"); // hard coded per the design docs for PersonInstance
-    				Future<? extends Void> future = pi.inspect(instructions, is, archiveFilename);
+    				inspectInfo.setContentStream(is);
+
+    				// initiate inspect
+    				Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
     				// TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future 
 
     				futuresOfInspects.add(future);
+
+    				++this.indexNextInspectInfo;
+    				return;
     			}
-    			// Each list element of futuresOfInspects:
+    	
+    			// List futuresOfInspects is now full
+    			// Each list element:
     			//     can be a null (inspect failed while in the act of creating a Future), or
     			//     can be a Future<Void>, for which future.get():
     			//        returns a Void on inspect success, or
     			//        throws an exception on inspect failure
     			
+    			// complete work by waiting for all the futures to complete
     			this.waitComplete();
-    		}
+    			this.done = true;
+    		} // end while
     	} catch (Exception e) {
-    		throw e;
-    	} finally {
 			this.done = true;
+    		throw e;
     	}
     }
-    
-//	/**
-//	 * 
-//	 * @param inspectInfos
-//	 * @throws Exception 
-//	 */
-//	void initiateInspect(List<InspectInfo> inspectInfos) throws Exception {
-//		QAPortalAccess qapa = this.iT.getQAPortalAccess();
-//
-//        // start multiple asynch inspects
-//		for (InspectInfo inspectInfo : inspectInfos) {
-//			ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
-//			// We know that resourceInstance is a PersonInstance, because an inspect step must always direct its work to a PersonInstance.
-//			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-//			if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
-//				throw new Exception("Specified inspect target is not a PersonInstance");
-//			PersonInstance pi = PersonInstance.class.cast(resourceInstance);
-//			
-//			String instructionsHash = inspectInfo.getInstructionsHash();
-//			String instructions = qapa.getContent("content", instructionsHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
-//			if (false) // true: temporarily, a cheap substitution to overcome QAPortal access problem
-//				instructions = new String("this is instructions");
-//			
-//			String contentHash = inspectInfo.getInstructionsHash();
-//			String strContent = qapa.getContent("content", contentHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
-//			if (false) // true: temporarily, a cheap substitution to overcome QAPortal access problem
-//				strContent = "this is content";
-//			byte [] arrayContent = strContent.getBytes();
-//			
-//			InputStream is = new ByteArrayInputStream(arrayContent); // ByteArrayInputStream extends InputStream
-//			// we own is; TODO: Does .waitComplete() clean it up?
-//			String archiveFilename = new String("attachments.tar.gz"); // hard coded per the design docs for PersonInstance
-//			Future<? extends Void> future = pi.inspect(instructions, is, archiveFilename);
-//			// TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future 
-//
-//			futuresOfInspects.add(future);
-//		}
-//		// Each list element of futuresOfInspects:
-//		//     can be a null (inspect failed while in the act of creating a Future), or
-//		//     can be a Future<Void>, for which future.get():
-//		//        returns a Void on inspect success, or
-//		//        throws an exception on inspect failure
-//	}
 	
 	/**
 	 * thread blocks

@@ -284,8 +284,7 @@ public class InstancedTemplate {
 							if (inspectHandler == null) {
 								inspectHandler = new InspectHandler(this, stepsOfSet, setStepCount);
 								inspectHandler.computeInspectRequests(); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
-								if (false) // false: temporarily defer activity to be in the loop that is below this switch() statement
-									inspectHandler.proceed();
+								inspectHandler.proceed();
 								// inspect processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
 
 								int consumedStepReferences = inspectHandler.getInspectRequestCount();    // the number of step lines processed, regardless of the outcome of eventual inspect activity
@@ -398,17 +397,8 @@ public class InstancedTemplate {
 			        if (inspectHandler!=null && !inspectHandler.isDone()) {
 			        	inspectHandler.proceed();
 			    		if (inspectHandler.isDone()) {
-//			    			List<ResourceInstance> localRI = bindHandler.getResourceInstances();
-//			    			this.boundResourceInstances.addAll(localRI);
-			    			log.debug(simpleName + "inspectHandler() completes " /*+ localRI.size()*/ + " inspect(s) for one setID");
+			    			log.debug(simpleName + "inspectHandler() completes " + " inspect(s) for one setID");
 			    		}
-//			        	try {
-//							inspectHandler.waitComplete();
-//						} catch (Exception e) {
-//							// one or more inspect steps errored out; this template is errored out
-//							throw new Exception("InstancedTemplate.runSteps() inspect handling finds failed inspect, for setID " + setID);
-//							// initiate destroy of this template run; we do not cleanup past inspect steps
-//						}
 			        }
 			        if (connectHandler != null) {
 						// we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
