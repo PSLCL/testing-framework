@@ -107,7 +107,7 @@ public class AwsPersonInstance implements PersonInstance
             AmazonSimpleEmailServiceClient sesClient = ((AwsPersonProvider) reservedResource.getResourceProvider()).manager.sesClient; 
 //            sesClient.sendEmail(request);
             //@formatter:off
-            InspectWithIncludeFuture iwif = new InspectWithIncludeFuture(
+            InspectWithAttachmentFuture iwif = new InspectWithAttachmentFuture(
                             sesClient, pconfig, recipient, fileName, fileContent, instructions, reservedResource.pdelayData);
             //@formatter:off
             return runnerConfig.blockingExecutor.submit(iwif);

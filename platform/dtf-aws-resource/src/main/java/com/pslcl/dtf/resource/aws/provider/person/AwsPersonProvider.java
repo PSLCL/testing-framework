@@ -32,6 +32,7 @@ import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.util.RequestThrottle;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
@@ -48,6 +49,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     private final HashMap<Long, PersonReservedResource> reservedPeople; // key is resourceId
     public volatile PersonConfigData defaultPersonConfigData;
     private final AtomicInteger roundRobinIndex;
+    public final RequestThrottle inspectThrottle;
 
     public AwsPersonProvider(AwsResourcesManager manager)
     {
@@ -55,6 +57,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         reservedPeople = new HashMap<Long, PersonReservedResource>();
         boundPeople = new HashMap<Long, AwsPersonInstance>();
         roundRobinIndex = new AtomicInteger(-1);
+        inspectThrottle = new RequestThrottle(1);
     }
 
     int getNextInspectorIndex()
