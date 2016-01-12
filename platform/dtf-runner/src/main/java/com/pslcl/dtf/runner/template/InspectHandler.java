@@ -139,14 +139,17 @@ public class InspectHandler {
     				
     				// obtain instructions for this inspectInfo
     				String instructionsHash = inspectInfo.getInstructionsHash();
-    				String inst = qapa.getContent("content", instructionsHash); // TODO: this needs to be asynchronous
+    				String inst = qapa.getContent(instructionsHash); // TODO: this needs to be asynchronous
     				inspectInfo.setInstruction(inst);
     				if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
     					inspectInfo.setInstruction(new String("this is instructions"));
     				
     				// obtain content for this inspectInfo
     				String contentHash = inspectInfo.getInstructionsHash();
-    				String strContent = qapa.getContent("content", contentHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
+    				String strContent = qapa.getContent(contentHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
+    				// TODO; Do this for each of n contentHash'es, then form a tar.gz file holding all of them, the place it in an InputStream
+    				//InputStream inputStream = new InputStream();
+    				//inspectInfo.setContentStream(inputStream);
     				if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
     					strContent = "this is content";
     				byte [] arrayContent = strContent.getBytes();
