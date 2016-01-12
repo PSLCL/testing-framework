@@ -20,13 +20,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
-import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
 import javax.mail.Address;
@@ -51,7 +49,7 @@ import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 
 @SuppressWarnings("javadoc")
-public class InspectWithAttachmentFuture implements Callable<Void>, DataSource
+public class InspectWithAttachmentFuture implements Callable<Void>
 {
     public static final String SesMidStr = "ses";
     private final AmazonSimpleEmailServiceClient client;
@@ -220,35 +218,5 @@ public class InspectWithAttachmentFuture implements Callable<Void>, DataSource
         message.writeTo(baos);
         String msg = new String(baos.toByteArray());
         LoggerFactory.getLogger(getClass()).debug("\n"+msg);
-    }
-    
-    @Override
-    public String getContentType()
-    {
-        return "application/octet-stream";
-    }
-
-    @Override
-    public InputStream getInputStream() throws IOException
-    {
-        attachmentFileStream.reset();
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        
-//        
-//        attachmentFileStream.reset();
-        return attachmentFileStream;
-    }
-
-    @Override
-    public String getName()
-    {
-        return attachmentFileName;
-    }
-
-    @Override
-    public OutputStream getOutputStream() throws IOException
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 }

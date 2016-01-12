@@ -22,7 +22,6 @@ import java.util.concurrent.Future;
 import com.amazonaws.services.ec2.model.Instance;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.exception.IncompatibleResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
@@ -85,7 +84,7 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
-    public Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException
+    public Future<CableInstance> connect(NetworkInstance network)// throws IncompatibleResourceException
     {
         AwsNetworkInstance instance = (AwsNetworkInstance) network;
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, resource.getCoordinates());
