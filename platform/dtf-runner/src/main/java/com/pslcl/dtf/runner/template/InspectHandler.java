@@ -1,6 +1,7 @@
 package com.pslcl.dtf.runner.template;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,13 +15,19 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.runner.QAPortalAccess;
 
 public class InspectHandler {
-	private InstancedTemplate iT;
-	private List<String> setSteps;
+	static String archiveFilename = new String("attachments.tar.gz"); // hard coded per the design docs for PersonInstance
+
+	private final InstancedTemplate iT;
+	private final List<String> setSteps;
     private List<Future<? extends Void>> futuresOfInspects;
+	private List<InspectInfo> inspectInfos = null;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+	private int indexNextInspectInfo = 0;
+    private boolean done;
     private final Logger log;
     private final String simpleName;
 
@@ -29,12 +36,13 @@ public class InspectHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public InspectHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+	InspectHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
 		this.futuresOfInspects = new ArrayList<Future<? extends Void>>();
+		this.done = false;
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
 			SetStep setStep = new SetStep(setSteps.get(i));
@@ -45,13 +53,26 @@ public class InspectHandler {
 			this.iFinalSetOffset = i;
 		}
 	}
+
+    int getInspectRequestCount() throws Exception {
+    	if (this.inspectInfos != null) {
+    		int retCount = this.inspectInfos.size();
+    		if (retCount > 0)
+    			return retCount;
+    	}
+    	throw new Exception("InspectHandler unexpectedly finds no inpect requests");
+    }
 	
-	public List<InspectInfo> computeInspectRequests() throws Exception { // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
-    	List<InspectInfo> retList = new ArrayList<>();
+	boolean isDone() {
+		return done;
+	}
+	
+	void computeInspectRequests() throws Exception { // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
+    	this.inspectInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
             	String inspectStep = setSteps.get(i);
-            	SetStep parsedSetStep = new SetStep(inspectStep); // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
+            	SetStep parsedSetStep = new SetStep(inspectStep); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
                                                                   // 8 inspect 0 A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
             	log.debug(simpleName + "computeInspectRequests() finds inspect in stepSet " + parsedSetStep.getSetID() + ": " + inspectStep);
             	int parsedSetStepParameterCount = parsedSetStep.getParameterCount();
@@ -80,7 +101,7 @@ public class InspectHandler {
 						strInstructionsHash = parsedSetStep.getParameter(1);
 						for (int j=2; j<parsedSetStepParameterCount; j+=2)
 							artifacts.put(parsedSetStep.getParameter(j), parsedSetStep.getParameter(j+1));
-		            	retList.add(new InspectInfo(resourceInstance, strInstructionsHash, artifacts));
+		            	this.inspectInfos.add(new InspectInfo(resourceInstance, strInstructionsHash, artifacts));
 					} else {
 	            		throw new Exception("InspectHandler.computeInspectRequests() finds null bound ResourceInstance at reference " + strPersonReference);
 					}
@@ -90,42 +111,75 @@ public class InspectHandler {
 				}
             }
 		}
-		return retList;		
 	}
-	
-	/**
-	 * 
-	 * @param inspectInfos
-	 * @throws Exception 
-	 */
-	void initiateInspect(List<InspectInfo> inspectInfos) throws Exception {
-		
-        // start multiple asynch inspects
-		for (InspectInfo inspectInfo : inspectInfos) {
-			ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
-			// We know that resourceInstance is a PersonInstance, because an inspect step must always direct its work to a PersonInstance.
-			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
-				throw new Exception("Specified inspect target is not a PersonInstance");
-			PersonInstance pi = PersonInstance.class.cast(resourceInstance);
-			String instructions = new String("instructions"); // temporarily, a cheap substitution; TODO: use inspectInfo.getInstructionsHash(), and asynchronously go get the instructions file and fill this local variable
 
-			String archiveFilename = new String("attachments.tar.gz");
-			
-			String strContent = "content"; // temporarily, a cheap substitution; TODO: use inspectInfo.getArtifacts(), and asynchronously go get the several files and fill this local variable, or directly fill variable arrayContent
-			byte [] arrayContent = strContent.getBytes();
-			ByteArrayInputStream bais = new ByteArrayInputStream(arrayContent); // we own bais
-			Future<? extends Void> future = pi.inspect(instructions, bais, archiveFilename);
-			// TODO: close this Stream when the Future<Void> comes back; will have to track stream bais against each future 
+    /**
+     * Proceed to reserve and then bind resources, as far as possible, then return. Set done only when binds complete or error out.
+     * 
+     * @note First, reserve resources by sequentially calling independent ResourceProvider's, with yielding. Last, make a single call to bind all reserved resources, in parallel.  
+     * 
+     * @throws Exception
+     */
+    void proceed() throws Exception {
+    	if (this.inspectInfos==null || this.inspectInfos.isEmpty())
+    		throw new Exception("InspectHandler processing has no inspectInfo");
+    		
+    	try {    		
+    		QAPortalAccess qapa = this.iT.getQAPortalAccess();
+    		while (!done) {
+    			// REVIEW: this is setup for future benefit of yielding, by involving futures in the access of data from QA Portal
+    			if (this.indexNextInspectInfo < this.inspectInfos.size()) {
+    				InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
+    				ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
+    				// We know that resourceInstance is a PersonInstance, because an inspect step must always direct its work to a PersonInstance.
+    				//     Still, check that condition to avoid problems that arise when template steps are improper. 
+    				if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
+    					throw new Exception("Specified inspect target is not a PersonInstance");
+    				PersonInstance pi = PersonInstance.class.cast(resourceInstance);
+    				
+    				// obtain instructions for this inspectInfo
+    				String instructionsHash = inspectInfo.getInstructionsHash();
+    				String inst = qapa.getContent("content", instructionsHash); // TODO: this needs to be asynchronous
+    				inspectInfo.setInstruction(inst);
+    				if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
+    					inspectInfo.setInstruction(new String("this is instructions"));
+    				
+    				// obtain content for this inspectInfo
+    				String contentHash = inspectInfo.getInstructionsHash();
+    				String strContent = qapa.getContent("content", contentHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
+    				if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
+    					strContent = "this is content";
+    				byte [] arrayContent = strContent.getBytes();
+    				InputStream is = new ByteArrayInputStream(arrayContent); // ByteArrayInputStream extends InputStream
+    				// we own is; TODO: Does .waitComplete() clean it up?
+    				inspectInfo.setContentStream(is);
 
-			futuresOfInspects.add(future);
-		}
-		// Each list element of futuresOfInspects:
-		//     can be a null (inspect failed while in the act of creating a Future), or
-		//     can be a Future<Void>, for which future.get():
-		//        returns a Void on inspect success, or
-		//        throws an exception on inspect failure
-	}
+    				// initiate inspect
+    				Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
+    				// TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future 
+
+    				futuresOfInspects.add(future);
+
+    				++this.indexNextInspectInfo;
+    				return;
+    			}
+    	
+    			// List futuresOfInspects is now full
+    			// Each list element:
+    			//     can be a null (inspect failed while in the act of creating a Future), or
+    			//     can be a Future<Void>, for which future.get():
+    			//        returns a Void on inspect success, or
+    			//        throws an exception on inspect failure
+    			
+    			// complete work by waiting for all the futures to complete
+    			this.waitComplete();
+    			this.done = true;
+    		} // end while
+    	} catch (Exception e) {
+			this.done = true;
+    		throw e;
+    	}
+    }
 	
 	/**
 	 * thread blocks

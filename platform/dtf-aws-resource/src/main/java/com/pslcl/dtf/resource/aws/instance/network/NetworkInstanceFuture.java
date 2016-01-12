@@ -16,6 +16,7 @@
 package com.pslcl.dtf.resource.aws.instance.network;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +49,13 @@ public class NetworkInstanceFuture implements Callable<NetworkInstance>
     {
         try
         {
+            checkFutureCanceled();
             reservedResource.subnetConfig = SubnetConfigData.init(reservedResource.resource, null, ((AwsNetworkProvider)pdelayData.provider).defaultSubnetConfigData);
+            checkFutureCanceled();
             reservedResource.vpc = pdelayData.provider.manager.subnetManager.getVpc(pdelayData, reservedResource.subnetConfig);
+            checkFutureCanceled();
             reservedResource.subnet = pdelayData.provider.manager.subnetManager.getSubnet(pdelayData, reservedResource.subnetConfig);
+            checkFutureCanceled();
             AwsNetworkInstance networkInstance = new AwsNetworkInstance(reservedResource, groupIdentifier, pdelayData.provider.config);
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsNetworkProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, networkInstance);
@@ -59,10 +64,22 @@ public class NetworkInstanceFuture implements Callable<NetworkInstance>
         {
             //TODO: as you figure out forceCleanup and optimization of normal releaseFuture cleanup, need to to do possible cleanup on these exceptions
             throw e;
-        } catch (Throwable t)
+        }
+        catch(CancellationException ie)
+        {
+            throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), ie);
+        }
+        catch (Throwable t)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + " call method threw a non-FatalResourceException", t);
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), t);
         }
     }
+    
+    private void checkFutureCanceled()
+    {
+        if(reservedResource.bindFutureCanceled.get())
+            throw new CancellationException();
+    }
+
 }

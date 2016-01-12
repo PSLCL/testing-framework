@@ -32,6 +32,8 @@ import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.provider.PersonProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.util.RequestThrottle;
+import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
@@ -47,6 +49,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     private final HashMap<Long, PersonReservedResource> reservedPeople; // key is resourceId
     public volatile PersonConfigData defaultPersonConfigData;
     private final AtomicInteger roundRobinIndex;
+    public final RequestThrottle inspectThrottle;
 
     public AwsPersonProvider(AwsResourcesManager manager)
     {
@@ -54,6 +57,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         reservedPeople = new HashMap<Long, PersonReservedResource>();
         boundPeople = new HashMap<Long, AwsPersonInstance>();
         roundRobinIndex = new AtomicInteger(-1);
+        inspectThrottle = new RequestThrottle(1);
     }
 
     int getNextInspectorIndex()
@@ -110,6 +114,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         {
             synchronized (reservedPeople)
             {
+                releasePossiblePendings(templateId, isReusable);
                 List<Long> releaseList = new ArrayList<Long>();
                 for (Entry<Long, AwsPersonInstance> entry : boundPeople.entrySet())
                 {
@@ -122,7 +127,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
                     AwsPersonInstance instance = boundPeople.remove(key);
                     reservedPeople.remove(key);
                     ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
-                    futures.add(config.blockingExecutor.submit(new ReleasePersonFuture(this, instance, pdelayData)));
+                    futures.add(config.blockingExecutor.submit(new ReleasePersonFuture(this, coordinates, pdelayData)));
                 }
             }
         }
@@ -138,6 +143,59 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         }
     }
 
+    private void releasePossiblePendings(String templateId, boolean isReusable)
+    {
+        // note this is being called already synchronized to reservedMachines
+        
+        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        ResourceCoordinates coordinates = null;
+        List<Long> releaseList = new ArrayList<Long>();
+        for (Entry<Long, PersonReservedResource> entry : reservedPeople.entrySet())
+        {
+            PersonReservedResource rresource = entry.getValue(); 
+            coordinates = rresource.resource.getCoordinates();
+            if (coordinates.templateId.equals(templateId))
+            {
+                Future<PersonInstance> future = rresource.getInstanceFuture();
+                boolean cancelResult = future.cancel(false);
+                /*
+                    This attempt will fail if the task has already completed, has already been cancelled,
+                    or could not be cancelled for some other reason.
+                    In the PersonInstanceFuture's case no aws side resources are being obtained.
+                    Thus we could do the future.cancel(true) here but I wanted to maintain the same cancel policy as the
+                    more complex Machine incase things may change in the future and for consistency.
+                */
+                rresource.bindFutureCanceled.set(true);
+                if(cancelResult)
+                {
+                    try
+                    {
+                        future.get();
+                    } catch (Exception e)
+                    {
+                        TabToLevel format = new TabToLevel();
+                        format.ttl("\n", getClass().getSimpleName(), ".release cancel pending future handling");
+                        log.debug(rresource.toString(format).toString());
+                        releaseList.add(entry.getKey());
+                        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
+                        futures.add(config.blockingExecutor.submit(new ReleasePersonFuture(this, coordinates, pdelayData)));
+                    }
+                }else
+                {
+                    try
+                    {
+                        future.get();
+                    } catch (Exception e)
+                    {
+                        log.info("release machine code caught a somewhat unexpected exception during cancel cleanup", e);
+                    }
+                }
+            }
+        }
+        for (Long key : releaseList)
+            reservedPeople.remove(key);
+    }
+    
     public void releaseReservedResource(String templateId)
     {
         release(templateId, false);

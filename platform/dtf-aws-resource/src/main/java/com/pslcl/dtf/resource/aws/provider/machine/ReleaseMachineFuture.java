@@ -26,48 +26,50 @@ import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance;
-import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanceState;
+import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 
 @SuppressWarnings("javadoc")
 public class ReleaseMachineFuture implements Callable<Void>
 {
     private final AwsMachineProvider provider;
-    private final AwsMachineInstance instance;
+    private final ResourceCoordinates coordinates;
+    private final Instance instance;
     private final String vpcId;
     private final String subnetId;
     private final ProgressiveDelayData pdelayData;
 
-    public ReleaseMachineFuture(AwsMachineProvider provider, AwsMachineInstance instance, String vpcId, String subnetId, ProgressiveDelayData pdelayData)
+    public ReleaseMachineFuture(AwsMachineProvider provider, ResourceCoordinates coord, Instance instance, String vpcId, String subnetId, ProgressiveDelayData pdelayData)
     {
         this.vpcId = vpcId;
         this.subnetId = subnetId;
         this.instance = instance;
         this.provider = provider;
+        coordinates = coord;
         this.pdelayData = pdelayData;
     }
 
     @Override
     public Void call() throws Exception
     {
-        LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + instance.getCoordinates().toString());
+        LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + coordinates.toString());
         terminateEc2Instance();
         deleteSubnet();
         deleteVpc();
         
         provider.config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
-        LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
+        LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + coordinates.toString());
         return null;
     }
     
     private void terminateEc2Instance() throws FatalResourceException
     {
-        String instanceId = instance.ec2Instance.getInstanceId();
+        String instanceId = instance.getInstanceId();
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
         String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "terminateInstances:" + instanceId);
         do
@@ -84,7 +86,7 @@ public class ReleaseMachineFuture implements Callable<Void>
                     throw fre;
             }
         }while(true);
-        DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(instance.ec2Instance.getInstanceId());
+        DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(instance.getInstanceId());
         pdelay.reset();
         msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "describeInstances: " + instanceId);
         do

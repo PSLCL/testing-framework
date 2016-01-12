@@ -16,10 +16,14 @@
 package com.pslcl.dtf.resource.aws.instance.person;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+
+import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 import com.pslcl.dtf.resource.aws.provider.person.PersonReservedResource;
@@ -39,20 +43,34 @@ public class PersonInstanceFuture implements Callable<PersonInstance>
     @Override
     public PersonInstance call() throws FatalResourceException
     {
-//        try
-//        {
-            AwsPersonInstance personInstance = new AwsPersonInstance(reservedResource, reservedResource.email, pdelayData.provider.config);
+        try
+        {
+            checkFutureCanceled();
+            reservedResource.pdelayData.preFixMostName = reservedResource.pconfig.resoucePrefixName;
+            AwsPersonInstance personInstance = new AwsPersonInstance(reservedResource, pdelayData.provider.config);
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsPersonProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, personInstance);
+            checkFutureCanceled();
             return personInstance;
-//        } catch (FatalResourceException e)
+        }
+//        catch (FatalResourceException e)
 //        {
-//            //TODO: as you figure out forceCleanup and optimization of normal releaseFuture cleanup, need to to do possible cleanup on these exceptions
 //            throw e;
-//        } catch (Throwable t)
-//        {
-//            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + " call method threw a non-FatalResourceException", t);
-//            throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), t);
-//        }
+//        } 
+        catch(CancellationException ie)
+        {
+            throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), ie);
+        }
+        catch (Throwable t)
+        {
+            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + " call method threw a non-FatalResourceException", t);
+            throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), t);
+        }
+    }
+    
+    private void checkFutureCanceled()
+    {
+        if(reservedResource.bindFutureCanceled.get())
+            throw new CancellationException();
     }
 }

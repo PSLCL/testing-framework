@@ -68,4 +68,10 @@ public class TabToLevel
         ttl("ok");
         level.decrementAndGet();
     }
+    
+    @Override
+    public String toString()
+    {
+        return sb.toString();
+    }
 }
