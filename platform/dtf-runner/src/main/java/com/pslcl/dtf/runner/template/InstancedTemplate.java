@@ -27,6 +27,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.runner.QAPortalAccess;
 import com.pslcl.dtf.runner.process.DBTemplate;
 import com.pslcl.dtf.runner.process.RunEntryCore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
@@ -96,6 +97,10 @@ public class InstancedTemplate {
     
     public ResourceProviders getResourceProviders() {
     	return this.runnerMachine.getTemplateProvider().getResourceProviders();
+    }
+    
+    public QAPortalAccess getQAPortalAccess() {
+    	return this.runnerMachine.getService().getQAPortalAccess();
     }
     
     public StepsParser getStepsParser() {
@@ -254,9 +259,9 @@ public class InstancedTemplate {
 								bindHandler.proceed();
 								// bind processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
 
-								int consumedStepReferencesA = bindHandler.getReserveResourceRequestCount(); // the number of step lines processed (won't be 0), regardless of the outcome of actual reserve and bind activity
-								setStepCount += consumedStepReferencesA;
-								currentStepReference += consumedStepReferencesA;
+								int consumedStepReferences = bindHandler.getReserveResourceRequestCount(); // the number of step lines processed, regardless of the outcome of eventual reserve and bind activity
+								setStepCount += consumedStepReferences;
+								currentStepReference += consumedStepReferences;
 							} else {
 								// TODO: warn log to report improper ordering of steps within a step set
 							}
@@ -278,12 +283,13 @@ public class InstancedTemplate {
 						case "inspect":
 							if (inspectHandler == null) {
 								inspectHandler = new InspectHandler(this, stepsOfSet, setStepCount);
-								List<InspectInfo> inspectInfos = inspectHandler.computeInspectRequests(); // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
-								inspectHandler.initiateInspect(inspectInfos);
-								int consumedStepReferences = inspectInfos.size();
+								inspectHandler.computeInspectRequests(); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
+								inspectHandler.proceed();
+								// inspect processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
+
+								int consumedStepReferences = inspectHandler.getInspectRequestCount();    // the number of step lines processed, regardless of the outcome of eventual inspect activity
 								setStepCount += consumedStepReferences;
 								currentStepReference += consumedStepReferences;
-								// inspect(s) are being processed; notification comes to us asynchronously, below, where we receive inspect notification after we have initiated the processing of other steps of this step set
 							} else {
 								// TODO: warn log to report improper ordering of steps within a step set
 							}
@@ -388,14 +394,11 @@ public class InstancedTemplate {
 							// initiate cleanup/destroy of this template run; deployedInfos holds all information
 			            }
 			        }
-			        if (inspectHandler != null) {
-			        	try {
-							inspectHandler.waitComplete();
-						} catch (Exception e) {
-							// one or more inspect steps errored out; this template is errored out
-							throw new Exception("InstancedTemplate.runSteps() inspect handling finds failed inspect, for setID " + setID);
-							// initiate destroy of this template run; we do not cleanup past inspect steps
-						}
+			        if (inspectHandler!=null && !inspectHandler.isDone()) {
+			        	inspectHandler.proceed();
+			    		if (inspectHandler.isDone()) {
+			    			log.debug(simpleName + "inspectHandler() completes " + " inspect(s) for one setID");
+			    		}
 			        }
 			        if (connectHandler != null) {
 						// we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
@@ -459,7 +462,8 @@ public class InstancedTemplate {
 			        	}
 			        }
 			    } while (bindHandler!=null  && !bindHandler.isDone() ||
-			    		 deployHandler!=null && !deployHandler.isDone());
+			    		 deployHandler!=null && !deployHandler.isDone() ||
+			    		 inspectHandler!=null && !inspectHandler.isDone());
 			}
 		} catch (Exception e) {
 			log.debug(this.simpleName + "runSteps() errors out for runID " + this.getRunID() + ", templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());

@@ -37,6 +37,7 @@ import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
@@ -105,6 +106,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         {
             synchronized (reservedNetworks)
             {
+                releasePossiblePendings(templateId, isReusable);
                 List<Long> releaseList = new ArrayList<Long>();
                 for (Entry<Long, AwsNetworkInstance> entry : boundNetworks.entrySet())
                 {
@@ -117,7 +119,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                     AwsNetworkInstance instance = boundNetworks.remove(key);
                     NetworkReservedResource reservedResource = reservedNetworks.remove(key);
                     ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
-                    futures.add(config.blockingExecutor.submit(new ReleaseNetworkFuture(this, instance, reservedResource.vpc.getVpcId(), reservedResource.subnet.getSubnetId(), pdelayData)));
+                    futures.add(config.blockingExecutor.submit(new ReleaseNetworkFuture(this, instance.getCoordinates(), reservedResource.vpc.getVpcId(), reservedResource.subnet.getSubnetId(), pdelayData)));
                 }
             }
         }
@@ -156,6 +158,59 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         }
     }
 
+    private void releasePossiblePendings(String templateId, boolean isReusable)
+    {
+        // note this is being called already synchronized to reservedNetworks
+        
+        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        ResourceCoordinates coordinates = null;
+        List<Long> releaseList = new ArrayList<Long>();
+        for (Entry<Long, NetworkReservedResource> entry : reservedNetworks.entrySet())
+        {
+            NetworkReservedResource rresource = entry.getValue(); 
+            coordinates = rresource.resource.getCoordinates();
+            if (coordinates.templateId.equals(templateId))
+            {
+                Future<NetworkInstance> future = rresource.getInstanceFuture();
+                boolean cancelResult = future.cancel(false);
+                /*
+                    This attempt will fail if the task has already completed, has already been cancelled,
+                    or could not be cancelled for some other reason.
+                    In the NetworkInstanceFuture's case the aws side resources have actually been obtain at reserve time.
+                    Thus we could do the future.cancel(true) here but I wanted to maintain the same cancel policy as the
+                    more complex Machine in case things may change in the future and for consistency.
+                */
+                rresource.bindFutureCanceled.set(true);
+                if(cancelResult)
+                {
+                    try
+                    {
+                        future.get();
+                    } catch (Exception e)
+                    {
+                        TabToLevel format = new TabToLevel();
+                        format.ttl("\n", getClass().getSimpleName(), ".release cancel pending future handling");
+                        log.debug(rresource.toString(format).toString());
+                        releaseList.add(entry.getKey());
+                        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
+                        futures.add(config.blockingExecutor.submit(new ReleaseNetworkFuture(this, coordinates, rresource.vpc.getVpcId(), rresource.subnet.getSubnetId(), pdelayData)));
+                    }
+                }else
+                {
+                    try
+                    {
+                        future.get();
+                    } catch (Exception e)
+                    {
+                        log.info("release network code caught a somewhat unexpected exception during cancel cleanup", e);
+                    }
+                }
+            }
+        }
+        for (Long key : releaseList)
+            reservedNetworks.remove(key);
+    }
+    
     public void releaseReservedResource(String templateId)
     {
         release(templateId, false);

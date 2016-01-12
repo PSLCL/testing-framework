@@ -394,6 +394,8 @@ public class SubnetManager
         {
             for (SecurityGroup sg: sgs)
             {
+                if (sg.getGroupName().equals("default"))
+                    continue;
                 if (AwsResourcesManager.isDtfObject(sg.getTags()))
                 {
                     releaseSecurityGroup(pdelayData, sg.getGroupId());

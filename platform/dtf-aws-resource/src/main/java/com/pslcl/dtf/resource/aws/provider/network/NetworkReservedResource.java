@@ -18,6 +18,7 @@ package com.pslcl.dtf.resource.aws.provider.network;
 import java.util.HashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.LoggerFactory;
 
@@ -27,12 +28,14 @@ import com.amazonaws.services.ec2.model.Vpc;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
+import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.provider.SubnetConfigData;
 
 @SuppressWarnings("javadoc")
 public class NetworkReservedResource implements Runnable
 {
+    public final AtomicBoolean bindFutureCanceled;
     public final ResourceDescription resource;
     public final GroupIdentifier groupIdentifier;
     private final ProgressiveDelayData pdelayData;
@@ -49,6 +52,7 @@ public class NetworkReservedResource implements Runnable
         this.pdelayData = pdelayData;
         this.resource = resource;
         this.groupIdentifier = groupId;
+        bindFutureCanceled = new AtomicBoolean(false);
         ResourceCoordinates newCoord = pdelayData.coord;
         resource.getCoordinates().setManager(newCoord.getManager());
         resource.getCoordinates().setProvider(newCoord.getProvider());
@@ -70,7 +74,7 @@ public class NetworkReservedResource implements Runnable
         instanceFuture = future;
     }
 
-    synchronized Future<NetworkInstance> getInstanceFuture()
+    public synchronized Future<NetworkInstance> getInstanceFuture()
     {
         return instanceFuture;
     }
@@ -91,5 +95,23 @@ public class NetworkReservedResource implements Runnable
             }
         }
         LoggerFactory.getLogger(getClass()).info(resource.toString() + " reserve timed out");
+    }
+    
+    @Override
+    public String toString()
+    {
+        TabToLevel format = new TabToLevel();
+        return toString(format).toString(); 
+    }
+    
+    public TabToLevel toString(TabToLevel format)
+    {
+        format.sb.append(getClass().getSimpleName() + ":\n");
+        format.level.incrementAndGet();
+        format.ttl("groupIdentifier = ", groupIdentifier.getGroupId());
+        format.ttl("groupName = ", groupIdentifier.getGroupName());
+        format.level.decrementAndGet();
+        resource.getCoordinates().toString(format);
+        return format;
     }
 }

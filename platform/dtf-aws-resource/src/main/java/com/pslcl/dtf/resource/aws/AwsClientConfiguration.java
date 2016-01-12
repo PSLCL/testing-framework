@@ -24,6 +24,8 @@ import org.apache.commons.daemon.DaemonInitException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.retry.RetryPolicy;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
@@ -50,7 +52,11 @@ public class AwsClientConfiguration
         config.initsb.ttl("AWS Client Configuration:");
         config.initsb.level.incrementAndGet();
 
-        String value = config.properties.getProperty(ClientNames.EndpointKey, ClientNames.EndpointDefault);
+        String value = config.properties.getProperty(ClientNames.RegionKey, ClientNames.RegionDefault);
+        config.initsb.ttl(ClientNames.RegionKey, " = ", value);
+        Region region = RegionUtils.getRegion(value);
+        
+        value = config.properties.getProperty(ClientNames.EndpointKey, ClientNames.EndpointDefault);
         config.initsb.ttl(ClientNames.EndpointKey, " = ", value);
         String endpoint = value;
         
@@ -182,7 +188,7 @@ public class AwsClientConfiguration
             clientConfig.setRetryPolicy(rpolicy);
         }
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain(); // finds available aws creds
-        awsClientConfig = new AwsClientConfig(clientConfig, providerChain, endpoint, groupId);
+        awsClientConfig = new AwsClientConfig(clientConfig, providerChain, region, endpoint, groupId);
         config.properties.put(ClientNames.ConfiKey, awsClientConfig);
         return awsClientConfig;
     }
@@ -191,13 +197,22 @@ public class AwsClientConfiguration
     {
         public final ClientConfiguration clientConfig;
         public final DefaultAWSCredentialsProviderChain providerChain;
+        public final Region region;
         public final String endpoint;
         public final String groupId;
 
-        public AwsClientConfig(ClientConfiguration clientConfig, DefaultAWSCredentialsProviderChain providerChain, String endpoint, String groupId)
+        //@formatter:off
+        public AwsClientConfig(
+                        ClientConfiguration clientConfig, 
+                        DefaultAWSCredentialsProviderChain providerChain, 
+                        Region region,
+                        String endpoint, 
+                        String groupId)
+        //@formatter:on
         {
             this.clientConfig = clientConfig;
             this.providerChain = providerChain;
+            this.region = region;
             this.endpoint = endpoint;
             this.groupId = groupId;
         }

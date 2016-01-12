@@ -37,6 +37,7 @@ public class ClientNames
     public static final String ClientKeyBase = AwsKeyBase + ".client";
     
     public static final String ConfiKey = ClientKeyBase + ".client-config"; // only used internally to cache the AWSClientConfiguration
+    public static final String RegionKey = ClientKeyBase + ".region";
     public static final String EndpointKey = ClientKeyBase + ".endpoint";
 
     public static final String ConnectionTimeoutKey = ClientKeyBase + ".connection-timeout";
@@ -62,6 +63,7 @@ public class ClientNames
     public static final String ConnectionTtlKey = ClientKeyBase + ".connection-ttl";
     
     public static final String GroupIdDefault = "AwsTestResource";
+    public static final String RegionDefault = "us-west-1";
     public static final String EndpointDefault = "ec2.us-west-2.amazonaws.com";
     public static final String ConnectionTimeoutDefault = "50000";
     public static final String MaxConnectionsDefault = "50";

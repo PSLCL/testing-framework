@@ -20,12 +20,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import com.amazonaws.services.ec2.model.GroupIdentifier;
+import org.slf4j.LoggerFactory;
+
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 import com.pslcl.dtf.resource.aws.provider.person.PersonReservedResource;
 
 @SuppressWarnings("javadoc")
@@ -34,12 +37,14 @@ public class AwsPersonInstance implements PersonInstance
     public final PersonReservedResource reservedResource;
     public final ResourceDescription resource;
     public final RunnerConfig runnerConfig;
-    public final String email;
+    public final PersonConfigData pconfig;
+    public final String recipient;
 
-    public AwsPersonInstance(PersonReservedResource reservedResource, String email, RunnerConfig runnerConfig)
+    public AwsPersonInstance(PersonReservedResource reservedResource, RunnerConfig runnerConfig)
     {
         this.reservedResource = reservedResource;
-        this.email = email;
+        this.pconfig = reservedResource.pconfig;
+        this.recipient = reservedResource.email;
         resource = reservedResource.resource;
         this.runnerConfig = runnerConfig;
     }
@@ -69,7 +74,7 @@ public class AwsPersonInstance implements PersonInstance
             map.put(key, value);
         }
     }
-    
+
     @Override
     public ResourceProvider getResourceProvider()
     {
@@ -85,6 +90,31 @@ public class AwsPersonInstance implements PersonInstance
     @Override
     public Future<Void> inspect(String instructions, InputStream fileContent, String fileName)
     {
+        try
+        {
+//            Destination destination = new Destination().withToAddresses(new String[] {recipient});
+//            Content subject = new Content().withData(pconfig.subject);
+//            Content textBody = new Content().withData(instructions);
+//            Body body = new Body().withText(textBody);
+//            Message message = new Message().withSubject(subject).withBody(body);
+//
+//            //@formatter:off
+//            SendEmailRequest request = new SendEmailRequest()
+//                .withSource(pconfig.sender)
+//                .withDestination(destination)
+//                .withMessage(message);
+//            //@formatter:on
+            AmazonSimpleEmailServiceClient sesClient = ((AwsPersonProvider) reservedResource.getResourceProvider()).manager.sesClient; 
+//            sesClient.sendEmail(request);
+            //@formatter:off
+            InspectWithAttachmentFuture iwif = new InspectWithAttachmentFuture(
+                            sesClient, pconfig, recipient, fileName, fileContent, instructions, reservedResource.pdelayData);
+            //@formatter:off
+            return runnerConfig.blockingExecutor.submit(iwif);
+        } catch (Exception e)
+        {
+            LoggerFactory.getLogger(getClass()).info("look here", e);
+        }
         return null;
     }
 }

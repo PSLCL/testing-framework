@@ -21,24 +21,37 @@ import java.util.Map.Entry;
 
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.InstanceNames;
+import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 
 @SuppressWarnings("javadoc")
 public class PersonConfigData
 {
+    public volatile AmazonSimpleEmailServiceClient sesClient;
     public volatile String topicArn;
     public volatile int sesMaxDelay;
     public volatile int sesMaxRetries;
     public final List<String> inspectors;
+    public volatile String subject;
+    public volatile String sender;
+    public volatile String reply;
     public volatile String givenInspector;
-
+    public volatile String resoucePrefixName;
+    
+//    private final String sender;
+//    private final String reply;
+//  private final String subject;
+//    private final String recipient;
+//    private final Region region;
+    
+    
     private PersonConfigData()
     {
         inspectors = new ArrayList<String>();
@@ -52,6 +65,9 @@ public class PersonConfigData
         format.level.incrementAndGet();
         data.sesMaxDelay = Integer.parseInt(getAttribute(ProviderNames.SesMaxDelayKey, "" + defaultData.sesMaxDelay, resource, format));
         data.sesMaxRetries = Integer.parseInt(getAttribute(ProviderNames.SesMaxRetriesKey, "" + defaultData.sesMaxRetries, resource, format));
+        data.sender = getAttribute(ProviderNames.SesSenderKey, "" + defaultData.sender, resource, format);
+        data.reply = getAttribute(ProviderNames.SesReplyKey, "" + defaultData.reply, resource, format);
+        data.subject = getAttribute(ProviderNames.SesSubjectKey, "" + defaultData.subject, resource, format);
         format.ttl(PersonConfigData.class.getSimpleName() + " inspectors:");
         format.level.incrementAndGet();
         List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.SesInspectorKey, resource.getAttributes());
@@ -72,7 +88,9 @@ public class PersonConfigData
             format.ttl(ProviderNames.SesInspectorKey, " = ", data.givenInspector);
         }
         format.level.decrementAndGet();
-        format.level.decrementAndGet();
+        format.ttl("Test name prefix:");
+        format.level.incrementAndGet();
+        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
         LoggerFactory.getLogger(PersonConfigData.class).debug(format.sb.toString());
         return data;
     }
@@ -84,6 +102,9 @@ public class PersonConfigData
         config.initsb.level.incrementAndGet();
         data.sesMaxDelay = Integer.parseInt(getAttribute(config, ProviderNames.SesMaxDelayKey, ProviderNames.SesMaxDelayDefault));
         data.sesMaxRetries = Integer.parseInt(getAttribute(config, ProviderNames.SesMaxRetriesKey, ProviderNames.SesMaxRetriesDefault));
+        data.sender = getAttribute(config, ProviderNames.SesSenderKey, ProviderNames.SesSenderDefault);
+        data.reply = getAttribute(config, ProviderNames.SesReplyKey, ProviderNames.SesReplyDefault);
+        data.subject = getAttribute(config, ProviderNames.SesSubjectKey, ProviderNames.SesSubjectDefault);
 
         config.initsb.ttl(SubnetManager.class.getSimpleName() + " inspectors:");
         config.initsb.level.incrementAndGet();
@@ -97,6 +118,9 @@ public class PersonConfigData
             data.inspectors.add(entry.getValue());
         }
         data.givenInspector = null;
+        config.initsb.ttl("Test name prefix:");
+        config.initsb.level.incrementAndGet();
+        data.resoucePrefixName = getAttribute(config, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;
