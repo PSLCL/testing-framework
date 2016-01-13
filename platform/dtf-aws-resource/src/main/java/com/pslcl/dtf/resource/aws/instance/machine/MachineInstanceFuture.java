@@ -15,6 +15,7 @@
  */
 package com.pslcl.dtf.resource.aws.instance.machine;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -115,6 +116,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         if (config.keyName == null)
             config.keyName = createKeyPair();
 
+        Base64.Encoder encoder = Base64.getMimeEncoder();
+        String userData = encoder.encodeToString(config.userData.getBytes());
         //@formatter:off
         Placement placement = new Placement().withAvailabilityZone(config.subnetConfigData.availabilityZone);
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
@@ -124,6 +127,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             .withMaxCount(1)
             .withKeyName(config.keyName)
             .withSubnetId(subnetId)
+            .withUserData(userData)
 //            .withSecurityGroupIds(sgGroupId)
             .withPlacement(placement);
         //@formatter:off
@@ -189,27 +193,55 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         }while(true);
     }
   
-    private String createKeyPair()
+    @SuppressWarnings("null")
+    private String createKeyPair() throws FatalResourceException
     {
         synchronized (pdelayData.provider)
         {
             String name = pdelayData.getFullTemplateIdName(KeyPairMidStr, null);
+            ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+            String msg = pdelayData.getHumanName(KeyPairMidStr, "describeKeyPairs");
             DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest().withKeyNames(name);
-            try
+            DescribeKeyPairsResult keyPairsResult = null;
+            do
             {
-                DescribeKeyPairsResult keyPairsResult = ec2Client.describeKeyPairs(dkpr);
-                for (KeyPairInfo pair : keyPairsResult.getKeyPairs())
+                try
                 {
-                    name.equals(pair.getKeyName());
-                    return name;
+                    keyPairsResult = ec2Client.describeKeyPairs(dkpr);
+                    break;
+                }catch (Exception e)
+                {
+                    FatalResourceException fre = pdelay.handleException(msg, e);
+                    if(fre instanceof FatalException)
+                        throw fre;
                 }
-            } catch (Exception e)
+            }while(true);
+            
+            for (KeyPairInfo pair : keyPairsResult.getKeyPairs())
             {
+                name.equals(pair.getKeyName());
+                return name;
             }
+            
             CreateKeyPairRequest ckpr = new CreateKeyPairRequest().withKeyName(name);
-            CreateKeyPairResult keypairResult = ec2Client.createKeyPair(ckpr);
+            CreateKeyPairResult keypairResult = null;
+            pdelay.reset();
+            msg = pdelayData.getHumanName(KeyPairMidStr, "createKeyPair");
+            do
+            {
+                try
+                {
+                    keypairResult = ec2Client.createKeyPair(ckpr);
+                    break;
+                }catch (Exception e)
+                {
+                    FatalResourceException fre = pdelay.handleException(msg, e);
+                    if(fre instanceof FatalException)
+                        throw fre;
+                }
+            }while(true);
             KeyPair keypair = keypairResult.getKeyPair();
-            keypair.getKeyName();
+            
             return keypair.getKeyName();
         }
     }

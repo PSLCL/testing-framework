@@ -154,6 +154,8 @@ public class ImageFinder
                 String loc = image.getImageLocation();
                 loc = StrH.getAtomicName(loc, '/');
                 String[] frags = loc.split("\\.");
+                if(images.size() == 1)
+                    latestImage = image;
                 if(frags.length > 3)
                 {
                     int index = frags[0].lastIndexOf('-');
@@ -215,11 +217,13 @@ public class ImageFinder
                     }// if year delimiter found
                 } // if 4 or more frags
             } // outer for loop
-            if(locations.size() == 0)
+            // images.size() == 1 on given image-id
+            if(images.size() != 1 && locations.size() == 0)
                 throw new ResourceNotFoundException();
             int size = locations.size();
-            log.debug(getClass().getSimpleName() + ".findImage, " + size + " images found");
+            log.debug(getClass().getSimpleName() + ".findImage, " + size + " images found by location");
 //            if(locations.size() == 1)
+//                latestImage = image;
 //                return locations.get(0).getImageId();
             log.debug(getClass().getSimpleName() + ".findImage: " + latestImage.toString());
             return latestImage.getImageId();
