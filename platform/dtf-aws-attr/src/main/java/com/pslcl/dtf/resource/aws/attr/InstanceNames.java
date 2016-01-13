@@ -28,6 +28,9 @@ public class InstanceNames
     public static final String AvailabilityZoneKey = InstanceKeyBase + ".avail-zone";
     public static final String AvailabilityZoneDefault = "us-west-2a";
     
+    public static final String Ec2UserDataKey = InstanceKeyBase + ".user-data";
+    public static final String Ec2UserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh $(curl http://169.254.169.254/latest/meta-data/instance-id)";
+    
     /* ****************************************************************************
      * AWS Machine Provider bind declarations
      * see com.pslcl.dtf.resource.aws.instance.AwsMachineInstance     
@@ -154,6 +157,7 @@ public class InstanceNames
        keys.add(Ec2IamArnKey);
        keys.add(Ec2IamNameKey);
        keys.add(Ec2KeyPairNameKey);
+       keys.add(Ec2UserDataKey);
        keys.add(ClientNames.TestShortNameKey);
        return keys;
     }

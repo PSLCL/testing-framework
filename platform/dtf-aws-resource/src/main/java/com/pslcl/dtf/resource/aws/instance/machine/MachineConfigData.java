@@ -36,6 +36,7 @@ public class MachineConfigData
     public volatile int ec2MaxDelay;
     public volatile int ec2MaxRetries;
     public volatile String resoucePrefixName;
+    public volatile String userData;
     
     private MachineConfigData()
     {
@@ -54,7 +55,8 @@ public class MachineConfigData
         data.ec2MaxRetries = Integer.parseInt(getAttribute(InstanceNames.Ec2MaxRetriesKey, ""+defaultData.ec2MaxRetries, resource, format));
         data.iamArn = getAttribute(InstanceNames.Ec2IamArnKey, null, resource, format);
         data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, null, resource, format);
-        data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, null, resource, format);
+        data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, defaultData.keyName, resource, format);
+        data.userData = getAttribute(InstanceNames.Ec2UserDataKey, defaultData.userData, resource, format);
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
@@ -79,6 +81,8 @@ public class MachineConfigData
         data.iamArn = getAttribute(config, InstanceNames.Ec2IamArnKey, null);
         data.iamName = getAttribute(config, InstanceNames.Ec2IamNameKey, null);
         data.keyName = getAttribute(config, InstanceNames.Ec2KeyPairNameKey, null);
+        data.userData = getAttribute(config, InstanceNames.Ec2UserDataKey, InstanceNames.Ec2UserDataDefault);
+        
         config.initsb.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(config);
