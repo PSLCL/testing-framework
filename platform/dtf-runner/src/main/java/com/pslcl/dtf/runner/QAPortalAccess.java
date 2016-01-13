@@ -1,6 +1,6 @@
 package com.pslcl.dtf.runner;
 
-import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 import org.apache.http.client.fluent.Executor;
@@ -17,31 +17,61 @@ public class QAPortalAccess {
 	private final Executor executor; // is pooling, uses PoolingHttpClientConnectionManager 
 	private volatile String hostQAPortal = null;
 	
+	private Response request(String contentSpecifier) throws Exception {
+		String urlAsString = this.formArtifactHashSpecifiedURL(contentSpecifier).toString();
+		Request request = Request.Get(urlAsString)
+                .connectTimeout(1000)
+                .socketTimeout(1000);
+		Response retResponse =	this.executor.execute(request); // submits the request and collects the response
+		return retResponse;
+	}
+	
+	/**
+	 * 
+	 */
 	QAPortalAccess() {
 		this.executor = Executor.newInstance();
 	}
 	
+	/**
+	 * 
+	 * @param runnerConfig
+	 */
 	void init(RunnerConfig runnerConfig) {
 		this.hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey, "https://testing.opendof.org/#/dashboard");
 	}
 	
-	public String getContent(String contentSpecifier) throws Exception {
-		try {
-			String urlAsString = this.formArtifactHashSpecifiedURL(contentSpecifier).toString();
-			
-			// Note: Without adding a header, this path will return a String, of the entire web page at the indicated web page.
-			Request request = Request.Get(urlAsString)
-                                     .connectTimeout(1000)
-                                     .socketTimeout(1000);
-			Response response =	this.executor.execute(request); // submits the request and collects the response
-			String retString = response.returnContent().asString();
-			return retString;
-		} catch (IOException e) {
-			throw new Exception(e);
-		}
+	/**
+	 * 
+	 * @param contentSpecifier
+	 * @return
+	 * @throws Exception
+	 */
+	public String getContentAsString(String contentSpecifier) throws Exception {
+		Response response = this.request(contentSpecifier); 
+		String retString = response.returnContent().asString();
+		return retString;
+	}
+	
+	/**
+	 * 
+	 * @param contentSpecifier
+	 * @return
+	 * @throws Exception
+	 */
+	public InputStream getContentAsStream(String contentSpecifier) throws Exception {
+		Response response = this.request(contentSpecifier); 
+		InputStream retStream = response.returnContent().asStream();
+		return retStream;
 	}
 
-	public URL formArtifactHashSpecifiedURL(String artifactHash) throws Exception {
+	/**
+	 * 
+	 * @param artifactHash
+	 * @return
+	 * @throws Exception
+	 */
+	URL formArtifactHashSpecifiedURL(String artifactHash) throws Exception {
 		// Note: When requesting https://testing.opendof.org, answer comes as: https://testing.opendof.org/#/dashboard
 		
 		URIBuilder b = new URIBuilder(this.hostQAPortal);
@@ -67,7 +97,8 @@ public class QAPortalAccess {
 			throw new Exception("QA Portal host not configured");
 		if (b.getScheme() == null)
 			b.setScheme("https");
-        // adding a header informs QA Portal that it should return something more specific than its web page
+        // Note: Adding a header informs QA Portal that it should return something more specific than its web page.
+		//       Without a header, this QA Portal will return a String, of the entire web page at the indicated web page.
 		b.addParameter("content", artifactHash);
 		
 		URL retURL = b.build().toURL();	
