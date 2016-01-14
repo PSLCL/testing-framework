@@ -25,6 +25,8 @@ import com.amazonaws.services.ec2.model.CreateTagsRequest;
 import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.sns.AmazonSNSClient;
+import com.ibm.staf.STAFException;
+import com.ibm.staf.STAFHandle;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
@@ -201,6 +203,10 @@ public class AwsResourcesManager implements ResourcesManager
         personProvider.init(config);
         networkProvider.init(config);
         
+        StafSupport.ping("local");
+        StafSupport.ping("52.91.84.25");
+        StafSupport.ping("52.23.151.187");
+        
         config.initsb.level.decrementAndGet();
     }
 
@@ -209,6 +215,7 @@ public class AwsResourcesManager implements ResourcesManager
     {
         try
         {
+            StafSupport.destroy();
             int size = resourceProviders.size();
             for (int i = 0; i < size; i++)
                 resourceProviders.get(i).destroy();

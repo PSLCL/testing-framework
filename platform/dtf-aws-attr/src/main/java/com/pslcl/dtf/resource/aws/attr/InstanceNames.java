@@ -29,7 +29,8 @@ public class InstanceNames
     public static final String AvailabilityZoneDefault = "us-west-2a";
     
     public static final String Ec2UserDataKey = InstanceKeyBase + ".user-data";
-    public static final String Ec2UserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh $(curl http://169.254.169.254/latest/meta-data/instance-id)";
+//    public static final String Ec2UserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh $(curl http://169.254.169.254/latest/meta-data/instance-id)";
+    public static final String Ec2UserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh";
     
     /* ****************************************************************************
      * AWS Machine Provider bind declarations
