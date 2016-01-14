@@ -1,6 +1,5 @@
 package com.pslcl.dtf.runner.template;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Map;
 

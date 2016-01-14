@@ -24,7 +24,9 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.runner.QAPortalAccess;
 
 public class InspectHandler {
+	static String tempArtifactDirectory = new String("tempArtifactDirectory");
     static String archiveFilename = new String("attachments.tar.gz"); // hard coded per design docs for PersonInstance
+    static String archiveTopDirectory = new String("attachments");    // implied by design docs; impl chooses "attachments" anyway, when archiveTopDirectory is an empty string
 
     private final InstancedTemplate iT;
     private final List<String> setSteps;
@@ -152,9 +154,18 @@ public class InspectHandler {
                         inspectInfo.setInstruction(new String("this is instructions"));
 
                     // place temp directory to hold all specified artifacts to inspect
-                    File tempArtifactDirectory = new File("tempArtifactDirectory");
+                    File tempArtifactDirectory = new File(InspectHandler.tempArtifactDirectory);
                     tempArtifactDirectory.mkdirs();
+                    
+                    // TODO: Move code from below, to here, to fill the temp directory
+                    
+                    ToTarGz toTarGz = new ToTarGz(tempArtifactDirectory.getName(), InspectHandler.archiveFilename);
+                    toTarGz.CreateTarGz();
+                    
+                    
 
+
+                    
                     // into temp directory, place n filename/contents and place
                     for (Entry<String, String> artifact: inspectInfo.getArtifacts().entrySet()) {
                         String contentFilename = artifact.getKey();
