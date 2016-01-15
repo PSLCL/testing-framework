@@ -23,11 +23,12 @@ import java.util.concurrent.Future;
 public interface MachineInstance extends ResourceInstance
 {
     /**
-     * Place an file on a machine.
+     * Place a file on a machine.
      * <p>An example of use would be 
      * <code>partialDestPath = "lib/dof-oal.jar", url = "http://someqaportalhost/content/somehash"</code>
      * <p>A destination sandbox url is a configurable value.  It's key and default values are declared in
-     * <code>ResourceNames
+     * ResourceNames.  If the sandbox url is /opt/dtf/sandbox, then the whole path would be 
+     * /opt/dtf/sandbox/lib/dof-oal.jar 
      *  
      * @param partialDestPath
      *            The partial destination path to be copied to the destination sandbox.
@@ -40,14 +41,18 @@ public interface MachineInstance extends ResourceInstance
     Future<Void> deploy(String partialDestPath, String url);
 
     /**
-     * Delete an artifact from a machine.
-     * 
-     * @param filename
-     *            The filename of the artifact to delete.
-     *            
+     * Delete a file from a machine.
+     * <p>An example of use would be 
+     * <code>partialDestPath = "lib/dof-oal.jar"</code>
+     * <p>A destination sandbox url is a configurable value.  It's key and default values are declared in
+     * ResourceNames.  If the sandbox url is /opt/dtf/sandbox, then the file to be deleted would be 
+     * /opt/dtf/sandbox/lib/dof-oal.jar
+     *  
+     * @param partialDestPath
+     *            The partial destination file to be deleted from to the destination sandbox.
      * @return A Future<Void> which returns once the delete is complete. The Future will throw an exception if the delete fails. 
      */
-    Future<Void> delete(String filename);
+    Future<Void> delete(String partialDestPath);
 
     /**
      * Connect a machine to a network.
