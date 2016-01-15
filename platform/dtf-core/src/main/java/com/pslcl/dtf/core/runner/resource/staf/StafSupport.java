@@ -15,16 +15,22 @@
  */
 package com.pslcl.dtf.core.runner.resource.staf;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ibm.staf.STAFException;
 import com.ibm.staf.STAFHandle;
 import com.ibm.staf.STAFResult;
+import com.ibm.staf.STAFUtil;
+import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class StafSupport
 {
     public static final String StafHandleName = "dtf-staf-handle";
+    private static final String ServiceReturnCode = "Return Code:";
+    
+    private static Logger log = LoggerFactory.getLogger(StafSupport.class);
     private static STAFHandle handle;
     
     private StafSupport()
@@ -51,8 +57,36 @@ public class StafSupport
     
     public static void ping(String host) throws Exception
     {
-        STAFResult result = getStafHandle().submit2(host, "PING", "PING");
+        request(host, "ping", "ping");
+    }
+    
+    public static void request(String host, String service, String request) throws Exception
+    {
+        STAFResult result = getStafHandle().submit2(host, service, request);
         checkStafResult(result);
+        if(!log.isDebugEnabled())
+            return;
+        if(result.resultContext != null)
+        {
+            String serviceResult = result.resultContext.toString();
+            int idx = serviceResult.indexOf(ServiceReturnCode);
+            if(idx != -1)
+            {
+                idx += ServiceReturnCode.length() + 1; // step past space;
+                if(serviceResult.charAt(idx) != '0')
+                    throw new Exception("StafException remote service request failed, host: " + host + " service: " + service + " request: " + request);
+            }
+        }
+        if(log.isDebugEnabled())
+        {
+            TabToLevel format = new TabToLevel();
+            format.ttl("\n", StafSupport.class.getSimpleName(),".request ", host, " ", service, " ", request);
+            format.level.incrementAndGet();
+            format.ttl("result =", result.result);
+            format.ttl("resultContext =", result.resultContext);
+            format.ttl("resultObject =", result.resultObj == null ? "null" : result.resultObj.getClass().getName());
+            log.debug(format.toString());
+        }
     }
     
     public static void checkStafResult(STAFResult result) throws Exception
@@ -266,7 +300,7 @@ public class StafSupport
                         checkStafResult(result);
                     } catch (Exception e1)
                     {
-                        LoggerFactory.getLogger(StafSupport.class).warn("failed to cleanup staf", e1);
+                        log.warn("failed to cleanup staf", e1);
                     }
                 }
             }

@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
@@ -37,6 +38,7 @@ public class MachineConfigData
     public volatile int ec2MaxRetries;
     public volatile String resoucePrefixName;
     public volatile String userData;
+    public volatile String deploySandboxPath;
     
     private MachineConfigData()
     {
@@ -57,6 +59,7 @@ public class MachineConfigData
         data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, null, resource, format);
         data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, defaultData.keyName, resource, format);
         data.userData = getAttribute(InstanceNames.Ec2UserDataKey, defaultData.userData, resource, format);
+        data.deploySandboxPath = getAttribute(ResourceNames.DeployDestSandboxKey, defaultData.deploySandboxPath, resource, format);
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
@@ -82,6 +85,7 @@ public class MachineConfigData
         data.iamName = getAttribute(config, InstanceNames.Ec2IamNameKey, null);
         data.keyName = getAttribute(config, InstanceNames.Ec2KeyPairNameKey, null);
         data.userData = getAttribute(config, InstanceNames.Ec2UserDataKey, InstanceNames.Ec2UserDataDefault);
+        data.deploySandboxPath = getAttribute(config, ResourceNames.DeployDestSandboxKey, ResourceNames.DeployDestSandboxDefault);
         
         config.initsb.level.decrementAndGet();
 

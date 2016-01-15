@@ -203,8 +203,6 @@ public class AwsResourcesManager implements ResourcesManager
         networkProvider.init(config);
         
         StafSupport.ping("local");
-        StafSupport.ping("52.91.84.25");
-        StafSupport.ping("52.23.151.187");
         
         config.initsb.level.decrementAndGet();
     }
