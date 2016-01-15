@@ -185,6 +185,21 @@ public class StrH
         return value;
     }
     
+    public static String addTrailingSeparator(String value, char seperator)
+    {
+        if(value == null || value.length() == 0)
+            return value;
+        value = value.trim();
+        boolean exists = false;
+        if(value.charAt(value.length() - 1) == '/')
+            exists = true;
+        if(value.charAt(value.length() - 1) == '\\')
+            exists = true;
+        if(!exists)
+            value += seperator;
+        return value;
+    }
+    
     public static class StringPair implements Entry<String, String>
     {
         private final String key;

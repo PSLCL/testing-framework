@@ -85,7 +85,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             reservedResource.subnet = pdelayData.provider.manager.subnetManager.getSubnet(pdelayData, config.subnetConfigData);
             checkFutureCanceled();
             createInstance(reservedResource.subnet.getSubnetId());
-            AwsMachineInstance retMachineInstance = new AwsMachineInstance(reservedResource);
+            AwsMachineInstance retMachineInstance = new AwsMachineInstance(reservedResource, config);
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, retMachineInstance);
             return retMachineInstance;
@@ -182,7 +182,13 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
                 if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
+                {
+                    synchronized (((AwsMachineProvider)pdelayData.provider).getReservedMachines())
+                    {
+                        reservedResource.ec2Instance = inst;
+                    }
                     break;
+                }
                 pdelay.retry(pdelayData.getHumanName(Ec2MidStr, "describeInstances"));
             } catch (Exception e)
             {
@@ -193,7 +199,6 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         }while(true);
     }
   
-    @SuppressWarnings("null")
     private String createKeyPair() throws FatalResourceException
     {
         synchronized (pdelayData.provider)

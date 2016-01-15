@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.services.ec2.model.Instance;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
@@ -27,6 +29,7 @@ import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.runner.resource.staf.DeployFuture;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
@@ -37,11 +40,13 @@ public class AwsMachineInstance implements MachineInstance
     private final MachineReservedResource reservedResource;
     public final ResourceDescription resource;
     public final Instance ec2Instance;
-
-    public AwsMachineInstance(MachineReservedResource reservedResource)
+    public final MachineConfigData config;
+    
+    public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData config)
     {
         this.reservedResource = reservedResource;
         this.resource = reservedResource.resource; 
+        this.config = config;
         ec2Instance = reservedResource.ec2Instance;
     }
 
@@ -110,8 +115,20 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
-    public Future<Void> deploy(String filename, String artifactHash)
+    public Future<Void> deploy(String partialDestPath, String url)
     {
+        try
+        {
+            String platform = ec2Instance.getPlatform();
+            boolean windows = false;
+            if(platform != null && platform.length() > 0)
+                windows = true;
+            DeployFuture df = new DeployFuture(ec2Instance.getPublicIpAddress(), config.deploySandboxPath, partialDestPath, url, windows);
+            return reservedResource.provider.config.blockingExecutor.submit(df);
+        } catch (Exception e)
+        {
+            LoggerFactory.getLogger(getClass()).info("look here", e);
+        }
         return null;
     }
 
@@ -126,90 +143,6 @@ public class AwsMachineInstance implements MachineInstance
     {
         return null;
     }
-
-//    public static class WaitForInstanceState implements Callable<AwsInstanceState>
-//    {
-//        private final Instance instance;
-//        private final AwsInstanceState state;
-//        private final int pollDelay;
-//        private final int timeout;
-//        private final RunnerConfig config;
-//        private final AtomicBoolean interrupted;
-//        private final AtomicBoolean timedOut;
-//
-//        public WaitForInstanceState(Instance instance, AwsInstanceState state, RunnerConfig config, int pollDelay, int timeout)
-//        {
-//            this.instance = instance;
-//            this.state = state;
-//            this.pollDelay = pollDelay;
-//            this.timeout = timeout;
-//            this.config = config;
-//            interrupted = new AtomicBoolean(false);
-//            timedOut = new AtomicBoolean(false);
-//        }
-//
-//        @Override
-//        public AwsInstanceState call() throws Exception
-//        {
-//            Timeout timeoutTask = new Timeout(this, config.scheduledExecutor, timeout);
-//            config.blockingExecutor.execute(timeoutTask);
-//            do
-//            {
-//                if (AwsInstanceState.getState(instance.getState().getName()) == state)
-//                {
-//                    timeoutTask.cancel();
-//                    return state;
-//                }
-//                if(interrupted.get())
-//                    throw new InterruptedException();
-//                if(timedOut.get())
-//                    throw new Exception("timedout exception");
-//                Thread.sleep(pollDelay);
-//            } while (true);
-//        }
-//
-//        public void interrupted()
-//        {
-//            interrupted.set(true);
-//        }
-//
-//        public void timeout()
-//        {
-//            timedOut.set(true);
-//        }
-//    }
-
-//    public static class Timeout implements Runnable
-//    {
-//        private final AtomicBoolean cancel;
-//        private final TimeoutTask timeoutTask;
-//        private final WaitForInstanceState caller;
-//
-//        public Timeout(WaitForInstanceState caller, ScheduledExecutor timer, int timeout)
-//        {
-//            cancel = new AtomicBoolean(false);
-//            this.caller = caller;
-//            timeoutTask = new TimeoutTask(timer, timeout);
-//        }
-//
-//        @Override
-//        public void run()
-//        {
-//            try
-//            {
-//                timeoutTask.waitForComplete();
-//                caller.timeout();
-//            } catch (InterruptedException e)
-//            {
-//                caller.interrupted();
-//            }
-//        }
-//
-//        public void cancel()
-//        {
-//            timeoutTask.cancel(true);
-//        }
-//    }
 
     public enum AwsInstanceState
     {

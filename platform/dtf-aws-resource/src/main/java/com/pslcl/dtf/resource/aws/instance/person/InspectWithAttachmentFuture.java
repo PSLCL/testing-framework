@@ -25,6 +25,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
 import javax.mail.Address;
@@ -175,7 +176,11 @@ public class InspectWithAttachmentFuture implements Callable<Void>
             String id = UUID.randomUUID().toString();
             MimeBodyPart attachment = new MimeBodyPart();
             DataSource fds = new FileDataSource(attachmentFile.getAbsolutePath());
-            
+            attachment.setDataHandler(new DataHandler(fds));
+            attachment.setHeader("Content-ID", "<" + id + ">");
+            attachment.setFileName(fds.getName());
+
+            content.addBodyPart(attachment);            
             html.setContent("<html><body>" + bodyText + "</body></html>", "text/html");
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

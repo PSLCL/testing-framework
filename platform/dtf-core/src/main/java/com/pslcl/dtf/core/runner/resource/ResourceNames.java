@@ -38,6 +38,4 @@ public class ResourceNames
     public static final String DeployDestSandboxKey = DepoyKeyBase + ".dest-sandbox-path";
     
     public static final String DeployDestSandboxDefault = "/opt/dtf/sandbox";
-    
-
 }

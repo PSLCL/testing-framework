@@ -92,20 +92,7 @@ public class AwsPersonInstance implements PersonInstance
     {
         try
         {
-//            Destination destination = new Destination().withToAddresses(new String[] {recipient});
-//            Content subject = new Content().withData(pconfig.subject);
-//            Content textBody = new Content().withData(instructions);
-//            Body body = new Body().withText(textBody);
-//            Message message = new Message().withSubject(subject).withBody(body);
-//
-//            //@formatter:off
-//            SendEmailRequest request = new SendEmailRequest()
-//                .withSource(pconfig.sender)
-//                .withDestination(destination)
-//                .withMessage(message);
-//            //@formatter:on
             AmazonSimpleEmailServiceClient sesClient = ((AwsPersonProvider) reservedResource.getResourceProvider()).manager.sesClient; 
-//            sesClient.sendEmail(request);
             //@formatter:off
             InspectWithAttachmentFuture iwif = new InspectWithAttachmentFuture(
                             sesClient, pconfig, recipient, fileName, fileContent, instructions, reservedResource.pdelayData);
