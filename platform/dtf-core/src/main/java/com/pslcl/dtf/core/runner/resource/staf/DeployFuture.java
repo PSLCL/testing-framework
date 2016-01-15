@@ -83,6 +83,7 @@ public class DeployFuture implements Callable<Void>
         StringBuilder sb = new StringBuilder(Request)
                         .append("\"")
                         .append(clParams)
+//                        .append("\"");
                         .append("\" wait");
         //@formatter:on
         StafSupport.request(host, Service, sb.toString());
