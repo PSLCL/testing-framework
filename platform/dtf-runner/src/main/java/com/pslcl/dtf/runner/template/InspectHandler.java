@@ -2,7 +2,6 @@ package com.pslcl.dtf.runner.template;
 
 import java.io.File;
 import java.io.InputStream;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +14,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.runner.QAPortalAccess;
 
 public class InspectHandler {
-	static String tempArtifactDirectory = new String("tempArtifactDirectory");
+    static String tempArtifactDirectory = new String("tempArtifactDirectory");
     static String archiveFilename = new String("attachments.tar.gz"); // hard coded per design docs for PersonInstance
     static String archiveTopDirectory = new String("attachments");    // implied by design docs; impl chooses "attachments" anyway, when archiveTopDirectory is an empty string
 
@@ -107,9 +108,11 @@ public class InspectHandler {
                         if (resourceType==null || resourceType!=ResourceProvider.PersonName)
                             throw new Exception("InspectHandler processing asked to deploy to non 'person' resource");
                         strInstructionsHash = parsedSetStep.getParameter(1);
-                        for (int j=2; j<parsedSetStepParameterCount; j+=2)
+                        for (int j=2; j<parsedSetStepParameterCount; j+=2) {
+                        	// for the case where duplicate filenames are encountered (an error in the template step), this .put() will not object, i.e. will not throw an exception
                             artifacts.put(parsedSetStep.getParameter(j),    // artifact filename
                                           parsedSetStep.getParameter(j+1)); // artifact hash
+                        }
                         this.inspectInfos.add(new InspectInfo(resourceInstance, strInstructionsHash, artifacts));
                     } else {
                         throw new Exception("InspectHandler.computeInspectRequests() finds null bound ResourceInstance at reference " + strPersonReference);
@@ -138,6 +141,7 @@ public class InspectHandler {
             while (!done) {
                 // REVIEW: this is setup for future benefit of yielding, by involving futures in the access of data from QA Portal
                 if (this.indexNextInspectInfo < this.inspectInfos.size()) {
+                	// process person.inspect() for this one inspectInfo
                     InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
                     ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
                     // We know that resourceInstance is a PersonInstance, because an inspect step must always direct its work to a PersonInstance.
@@ -146,6 +150,13 @@ public class InspectHandler {
                         throw new Exception("Specified inspect target is not a PersonInstance");
                     PersonInstance pi = PersonInstance.class.cast(resourceInstance);
 
+                    // place new empty temp directory, with delete if needed, to hold all specified artifacts to inspect
+                    File fileTempArtifactDirectory = new File(InspectHandler.tempArtifactDirectory);
+                    FileUtils.deleteDirectory(fileTempArtifactDirectory); // whether directory is present, or not, this operates without exception
+                    fileTempArtifactDirectory.mkdirs();
+                    
+                    // REVIEW: How to place code here that will hold until proven that the directory at .tempArtifactDirectory is actually in place. Have not seen the problem, but it could happen that code will write to disk before the disk is fully set up.
+                    
                     // obtain instructions for this.inspectInfo
                     String instructionsHash = inspectInfo.getInstructionsHash();
                     String instructions = qapa.getContentAsString(instructionsHash); // TODO: needs to be asynchronous
@@ -153,20 +164,7 @@ public class InspectHandler {
                     if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
                         inspectInfo.setInstruction(new String("this is instructions"));
 
-                    // place temp directory to hold all specified artifacts to inspect
-                    File tempArtifactDirectory = new File(InspectHandler.tempArtifactDirectory);
-                    tempArtifactDirectory.mkdirs();
-                    
-                    // TODO: Move code from below, to here, to fill the temp directory
-                    
-                    ToTarGz toTarGz = new ToTarGz(tempArtifactDirectory.getName(), InspectHandler.archiveFilename);
-                    toTarGz.CreateTarGz();
-                    
-                    
-
-
-                    
-                    // into temp directory, place n filename/contents and place
+                    // into local temp directory, place n filename/contents and place
                     for (Entry<String, String> artifact: inspectInfo.getArtifacts().entrySet()) {
                         String contentFilename = artifact.getKey();
                         File contentFile = new File(contentFilename); // empty File
@@ -174,30 +172,23 @@ public class InspectHandler {
                         // TODO: asynch, gather in .waitComplete()
                         String contentHash = artifact.getValue();
                         InputStream streamContent = qapa.getContentAsStream(contentHash);
-                        Path dest = Paths.get(tempArtifactDirectory.getPath() + File.separator + contentFile.getPath());
-                        // to C:\gitdtf\ws\apps\tempArtifactDirectory\readme.txt
-                        Files.copy(streamContent, dest, StandardCopyOption.REPLACE_EXISTING);
+                        Path dest = Paths.get(fileTempArtifactDirectory.getPath() + File.separator + contentFile.getPath());
+                        // It should never happen that a file is copied over a file of the same filenmaem, bbecause:
+                        //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.   
+                        Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
                     }
 
-
-
-//                  String contentHash = inspectInfo.getInstructionsHash();
-//                  String strContent = qapa.getStringContent(contentHash); // TODO: this needs to be asynchronous and gathering moved to .waitComplete()
-//                  // TODO; Do this for each of n contentHash'es, then form a tar.gz file holding all of them, the place it in an InputStream
-//                  //InputStream inputStream = new InputStream();
-//                  //inspectInfo.setContentStream(inputStream);
-//                  if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
-//                      strContent = "this is content";
-//                  byte [] arrayContent = strContent.getBytes();
-//                  InputStream is = new ByteArrayInputStream(arrayContent); // ByteArrayInputStream extends InputStream
-//                  // we own is; TODO: Does .waitComplete() clean it up?
-//                  inspectInfo.setContentStream(is);
+                    // from local temp directory, place tarGz file in local directory
+                    ToTarGz toTarGz = new ToTarGz(fileTempArtifactDirectory.getName(), InspectHandler.archiveFilename);
+                    toTarGz.CreateTarGz();
+                    TarArchiveInputStream tais = toTarGz.getTarArchiveInputStream();
+                    inspectInfo.setContentStream(tais);
+                    // TODO: We need to clean up the InputStream tais, after consumed. The right place may be in .waitComplete().
 
                     // initiate inspect
                     Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
-                    // TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future
-
                     futuresOfInspects.add(future);
+                    // TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future
 
                     ++this.indexNextInspectInfo;
                     return;

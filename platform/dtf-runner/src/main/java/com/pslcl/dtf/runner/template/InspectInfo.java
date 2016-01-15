@@ -3,6 +3,8 @@ package com.pslcl.dtf.runner.template;
 import java.io.InputStream;
 import java.util.Map;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
 public class InspectInfo {
@@ -10,7 +12,7 @@ public class InspectInfo {
 	private String strInstructionsHash;    // from template include step: the hash to access a file that holds instructions
 	private Map<String, String> artifacts; // from template include step: {filename, hash}; hash to access content of a file
 	private String instructions;
-	private InputStream contentStream;
+	private TarArchiveInputStream contentStream;
 	
 	public InspectInfo(ResourceInstance resourceInstance, String strInstructionsHash, Map<String, String> artifacts) {
 		this.resourceInstance = resourceInstance;
@@ -39,10 +41,10 @@ public class InspectInfo {
 		this.instructions = instructions;
 	}
 	
-	InputStream getContentStream() {
+	TarArchiveInputStream getContentStream() {
 		return this.contentStream;
 	}
-	void setContentStream(InputStream contentStream) {
+	void setContentStream(TarArchiveInputStream contentStream) {
 		this.contentStream = contentStream;
 	}
 
