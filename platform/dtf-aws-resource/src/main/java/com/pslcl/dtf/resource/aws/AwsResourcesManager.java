@@ -27,6 +27,7 @@ import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
@@ -202,7 +203,8 @@ public class AwsResourcesManager implements ResourcesManager
         personProvider.init(config);
         networkProvider.init(config);
         
-        StafSupport.ping("local");
+        if(Boolean.parseBoolean(config.properties.getProperty(ResourceNames.DeployStafPingKey, "true")))
+            StafSupport.ping("local");
         
         config.initsb.level.decrementAndGet();
     }

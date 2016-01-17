@@ -23,22 +23,20 @@ import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
-public class DeployFuture implements Callable<Void>
+public class DeleteFuture implements Callable<Void>
 {
     private final static String Service = "process";
     private final static String Request = "start shell command ";
     private final String host;
     private final String sandboxPath;
     private final String partialDestPath;
-    private final String sourceUrl;
     private final boolean windows;
 
-    public DeployFuture(String host, String sandboxPath, String partialDestPath, String sourceUrl, boolean windows)
+    public DeleteFuture(String host, String sandboxPath, String partialDestPath, boolean windows)
     {
         this.host = host;
         this.sandboxPath = windows ? sandboxPath.replace('/', '\\') : sandboxPath.replace('\\', '/');
         this.partialDestPath = partialDestPath;
-        this.sourceUrl = sourceUrl;
         this.windows = windows;
         TabToLevel format = new TabToLevel();
         format.ttl(getClass().getSimpleName());
@@ -46,7 +44,6 @@ public class DeployFuture implements Callable<Void>
         format.ttl("host = ", host);
         format.ttl("sandboxPath = ", sandboxPath);
         format.ttl("partialDestPath = ", partialDestPath);
-        format.ttl("sourceUrl = ", sourceUrl);
         LoggerFactory.getLogger(getClass()).debug(format.toString());
     }
 
@@ -59,23 +56,17 @@ public class DeployFuture implements Callable<Void>
         String penultimate = partialDestPath.replace('\\', '/');        // lib/someApp.jar, topLevelFile
         String fileName = StrH.getAtomicNameFromPath(penultimate);      // someApp.jar, topLevelFile
         boolean fileOnly = penultimate.equals(fileName);                // false, true
-        penultimate = StrH.getPenultimateNameFromPath(penultimate);     // lib, null
-        if(penultimate == null)
-            penultimate = "";
+        penultimate = StrH.getPenultimateNameFromPath(penultimate);     // lib, topLevelFile 
         String path = StrH.addTrailingSeparator(sandboxPath, windows ? '\\' : '/'); // /opt/dtf/sandbox/
         if(windows)
             penultimate = penultimate.replace('/', '\\');
         if(!fileOnly)
             path = StrH.addTrailingSeparator(path + penultimate, windows ? '\\' : '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/  
-        String urlFile = StrH.getAtomicName(sourceUrl, '/');            // hashname
-        String wgetName = path + urlFile;                               // /opt/dtf/sandbox/lib/hashname, /opt/dtf/sandbox/hashname
         String newName = path + fileName;                               // /opt/dtf/sandbox/lib/someApp.jar, /opt/dtf/sandbox/topLevelFile 
         String sudo = "sudo ";
         if(windows)
             sudo="";
-        issueRequest(sudo + "mkdir -p " + path);
-        issueRequest(sudo + "wget -O " + wgetName + " " +sourceUrl);
-        issueRequest(sudo + "mv " + wgetName + " " + newName);
+        issueRequest(sudo + "rm " + newName);
         return null;
     }
     

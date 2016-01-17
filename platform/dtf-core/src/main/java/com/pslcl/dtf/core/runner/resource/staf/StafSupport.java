@@ -21,20 +21,69 @@ import org.slf4j.LoggerFactory;
 import com.ibm.staf.STAFException;
 import com.ibm.staf.STAFHandle;
 import com.ibm.staf.STAFResult;
-import com.ibm.staf.STAFUtil;
-import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class StafSupport
 {
-    public static final String StafHandleName = "dtf-staf-handle";
-    private static final String ServiceReturnCode = "Return Code:";
+    public final static String StafHandleName = "dtf-staf-handle";
+    public final static String ProcessService = "process";
+    public final static String ProcessRequest = "start shell command ";
+    public final static String ServiceReturnCode = "Return Code:";
+    
+    public final static String StafRcKey = "rc";
+    public final static String StafKeyKey = "key";
+    public final static String StafMapClassKey = "staf-map-class-name";
+    public final static String StafFileListKey = "fileList";
+    public final static String StafFileDataKey = "data";
+
+    public final static String StafProcessMapClassDefault = "STAF/Service/Process/CompletionInfo";
+    public final static String StafReturnFileInfoMapClassDefault = "STAF/Service/Process/ReturnFileInfo";
     
     private static Logger log = LoggerFactory.getLogger(StafSupport.class);
     private static STAFHandle handle;
     
     private StafSupport()
     {
+    }
+    
+    public static StafRunnableProgram issueProcessRequest(String host, String clParams, boolean wait, Object context) throws Exception
+    {
+        StringBuilder sb = new StringBuilder(ProcessRequest).append("\"").append(clParams);
+        if(wait)
+            sb.append("\" wait ");
+        else
+            sb.append("\" ");
+        sb.append("returnstdout ")
+        .append("returnstderr");
+        StafRunnableProgram runnableProgram = new StafRunnableProgram(StafSupport.request(host, ProcessService, sb.toString(), false), context);
+        if(log.isDebugEnabled())
+            log.debug(runnableProgram.toString());
+        return runnableProgram;
+    }
+
+    public static STAFResult request(String host, String service, String request) throws Exception
+    {
+        return request(host, service, request, true);
+    }
+    
+    private static STAFResult request(String host, String service, String request, boolean checkServiceCcode) throws Exception
+    {
+        STAFResult result = getStafHandle().submit2(host, service, request);
+        checkStafResult(result);
+        if(!log.isDebugEnabled())
+            return result;
+        if (checkServiceCcode && result.resultContext != null)
+        {
+            String serviceResult = result.resultContext.toString();
+            int idx = serviceResult.indexOf(ServiceReturnCode);
+            if (idx != -1)
+            {
+                idx += ServiceReturnCode.length() + 1; // step past space;
+                if (serviceResult.charAt(idx) != '0')
+                    throw new Exception("StafException remote service request failed, host: " + host + " service: " + service + " request: " + request);
+            }
+        }
+        return result;
     }
     
     public static STAFHandle getStafHandle() throws Exception
@@ -58,35 +107,6 @@ public class StafSupport
     public static void ping(String host) throws Exception
     {
         request(host, "ping", "ping");
-    }
-    
-    public static void request(String host, String service, String request) throws Exception
-    {
-        STAFResult result = getStafHandle().submit2(host, service, request);
-        checkStafResult(result);
-        if(!log.isDebugEnabled())
-            return;
-        if(result.resultContext != null)
-        {
-            String serviceResult = result.resultContext.toString();
-            int idx = serviceResult.indexOf(ServiceReturnCode);
-            if(idx != -1)
-            {
-                idx += ServiceReturnCode.length() + 1; // step past space;
-                if(serviceResult.charAt(idx) != '0')
-                    throw new Exception("StafException remote service request failed, host: " + host + " service: " + service + " request: " + request);
-            }
-        }
-        if(log.isDebugEnabled())
-        {
-            TabToLevel format = new TabToLevel();
-            format.ttl("\n", StafSupport.class.getSimpleName(),".request ", host, " ", service, " ", request);
-            format.level.incrementAndGet();
-            format.ttl("result =", result.result);
-            format.ttl("resultContext =", result.resultContext);
-            format.ttl("resultObject =", result.resultObj == null ? "null" : result.resultObj.getClass().getName());
-            log.debug(format.toString());
-        }
     }
     
     public static void checkStafResult(STAFResult result) throws Exception

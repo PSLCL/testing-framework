@@ -29,7 +29,10 @@ import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.runner.resource.staf.ConfigureFuture;
+import com.pslcl.dtf.core.runner.resource.staf.DeleteFuture;
 import com.pslcl.dtf.core.runner.resource.staf.DeployFuture;
+import com.pslcl.dtf.core.runner.resource.staf.RunFuture;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
@@ -99,18 +102,55 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public Future<RunnableProgram> run(String command)
     {
+        try
+        {
+            String platform = ec2Instance.getPlatform();
+            boolean windows = false;
+            if(platform != null && platform.length() > 0)
+                windows = true;
+            RunFuture df = new RunFuture(ec2Instance.getPublicIpAddress(), config.deploySandboxPath, command, false, windows, this);
+            return reservedResource.provider.config.blockingExecutor.submit(df);
+        } catch (Exception e)
+        {
+            LoggerFactory.getLogger(getClass()).info("look here", e);
+        }
         return null;
     }
 
     @Override
     public Future<Integer> configure(String command)
     {
+        reservedResource.reusable.set(false);
+        try
+        {
+            String platform = ec2Instance.getPlatform();
+            boolean windows = false;
+            if(platform != null && platform.length() > 0)
+                windows = true;
+            ConfigureFuture cf = new ConfigureFuture(ec2Instance.getPublicIpAddress(), config.deploySandboxPath, command, windows, this);
+            return reservedResource.provider.config.blockingExecutor.submit(cf);
+        } catch (Exception e)
+        {
+            LoggerFactory.getLogger(getClass()).info("look here", e);
+        }
         return null;
     }
 
     @Override
     public Future<RunnableProgram> start(String command)
     {
+        try
+        {
+            String platform = ec2Instance.getPlatform();
+            boolean windows = false;
+            if(platform != null && platform.length() > 0)
+                windows = true;
+            RunFuture df = new RunFuture(ec2Instance.getPublicIpAddress(), config.deploySandboxPath, command, true, windows, this);
+            return reservedResource.provider.config.blockingExecutor.submit(df);
+        } catch (Exception e)
+        {
+            LoggerFactory.getLogger(getClass()).info("look here", e);
+        }
         return null;
     }
 
@@ -133,8 +173,20 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
-    public Future<Void> delete(String filename)
+    public Future<Void> delete(String partialDestPath)
     {
+        try
+        {
+            String platform = ec2Instance.getPlatform();
+            boolean windows = false;
+            if(platform != null && platform.length() > 0)
+                windows = true;
+            DeleteFuture df = new DeleteFuture(ec2Instance.getPublicIpAddress(), config.deploySandboxPath, partialDestPath, windows);
+            return reservedResource.provider.config.blockingExecutor.submit(df);
+        } catch (Exception e)
+        {
+            LoggerFactory.getLogger(getClass()).info("look here", e);
+        }
         return null;
     }
 
