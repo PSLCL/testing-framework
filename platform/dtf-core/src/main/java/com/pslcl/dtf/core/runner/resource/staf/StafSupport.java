@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import com.ibm.staf.STAFException;
 import com.ibm.staf.STAFHandle;
 import com.ibm.staf.STAFResult;
+import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
+import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class StafSupport
@@ -29,35 +31,46 @@ public class StafSupport
     public final static String ProcessService = "process";
     public final static String ProcessRequest = "start shell command ";
     public final static String ServiceReturnCode = "Return Code:";
-    
-    public final static String StafRcKey = "rc";
-    public final static String StafKeyKey = "key";
-    public final static String StafMapClassKey = "staf-map-class-name";
-    public final static String StafFileListKey = "fileList";
-    public final static String StafFileDataKey = "data";
 
-    public final static String StafProcessMapClassDefault = "STAF/Service/Process/CompletionInfo";
-    public final static String StafReturnFileInfoMapClassDefault = "STAF/Service/Process/ReturnFileInfo";
-    
     private static Logger log = LoggerFactory.getLogger(StafSupport.class);
     private static STAFHandle handle;
-    
+
     private StafSupport()
     {
     }
-    
-    public static StafRunnableProgram issueProcessRequest(String host, String clParams, boolean wait, Object context) throws Exception
+
+    public static StafRunnableProgram issueProcessRequest(String host, String command, boolean wait, Object context) throws Exception
     {
-        StringBuilder sb = new StringBuilder(ProcessRequest).append("\"").append(clParams);
-        if(wait)
-            sb.append("\" wait ");
+        TabToLevel format = null;
+        if (log.isDebugEnabled())
+        {
+            format = new TabToLevel();
+            format.ttl("\n", StafSupport.class.getSimpleName() + ".issueProcessRequest:");
+            format.level.incrementAndGet();
+            format.ttl("host = ", host);
+            format.ttl("command = ", command);
+            format.ttl("wait = ", wait);
+            format.ttl("context = ", (context == null ? "null" : context.getClass().getName()));
+            format.ttl("response:");
+        }
+
+        StringBuilder cmd = new StringBuilder(ProcessRequest).append("\"").append(command);
+        if (wait)
+            cmd.append("\" wait");
         else
-            sb.append("\" ");
-        sb.append("returnstdout ")
-        .append("returnstderr");
-        StafRunnableProgram runnableProgram = new StafRunnableProgram(StafSupport.request(host, ProcessService, sb.toString(), false), context);
-        if(log.isDebugEnabled())
-            log.debug(runnableProgram.toString());
+        {
+            cmd.append("\" ");
+            cmd.append("returnstdout ").append("returnstderr");
+        }
+
+        if (log.isDebugEnabled())
+            format.ttl("stafCmd = ", ProcessService + " " + cmd);
+        StafRunnableProgram runnableProgram = new StafRunnableProgram(StafSupport.request(host, ProcessService, cmd.toString(), false), context);
+        if (log.isDebugEnabled())
+        {
+            format.level.incrementAndGet();
+            log.debug(runnableProgram.toString(format).toString());
+        }
         return runnableProgram;
     }
 
@@ -65,12 +78,12 @@ public class StafSupport
     {
         return request(host, service, request, true);
     }
-    
+
     private static STAFResult request(String host, String service, String request, boolean checkServiceCcode) throws Exception
     {
         STAFResult result = getStafHandle().submit2(host, service, request);
         checkStafResult(result);
-        if(!log.isDebugEnabled())
+        if (!log.isDebugEnabled())
             return result;
         if (checkServiceCcode && result.resultContext != null)
         {
@@ -85,17 +98,17 @@ public class StafSupport
         }
         return result;
     }
-    
+
     public static STAFHandle getStafHandle() throws Exception
     {
         synchronized (StafHandleName)
         {
-            if(handle != null)
+            if (handle != null)
                 return handle;
             try
             {
                 handle = new STAFHandle(StafHandleName);
-            }catch(STAFException e)
+            } catch (STAFException e)
             {
                 STAFResult result = new STAFResult(e.rc, "failed to obtain handle name: " + StafHandleName);
                 checkStafResult(result);
@@ -103,13 +116,24 @@ public class StafSupport
         }
         return handle;
     }
-    
+
     public static void ping(String host) throws Exception
     {
         request(host, "ping", "ping");
     }
-    
+
     public static void checkStafResult(STAFResult result) throws Exception
+    {
+        try
+        {
+            getResultRc(result, true);
+        } catch (Exception e)
+        {
+            throw new Exception(e.getMessage(), e);
+        }
+    }
+
+    public static String getResultRc(STAFResult result, boolean throwOnError)
     {
         String msg = null;
         switch (result.rc)
@@ -298,16 +322,16 @@ public class StafSupport
                 msg = "unknown or user error";
                 break;
         }
-        if (result.rc == STAFResult.Ok)
-            return;
-        throw new Exception("StafException, rc: " + result.rc + "("+msg+") result: " + result.result);
+        if (throwOnError && result.rc != 0)
+            throw new RuntimeException("StafException, rc: " + result.rc + " (" + msg + ") result: " + result.result);
+        return result.rc + " - " + msg;
     }
-    
+
     public static void destroy()
     {
         synchronized (StafHandleName)
         {
-            if(handle != null)
+            if (handle != null)
             {
                 try
                 {

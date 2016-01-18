@@ -13,21 +13,19 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.core.runner.resource.staf;
+package com.pslcl.dtf.core.runner.resource.staf.futures;
 
 import java.util.concurrent.Future;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ibm.staf.STAFResult;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
+import com.pslcl.dtf.core.runner.resource.staf.ProcessResult;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class StafRunnableProgram implements RunnableProgram
 {
-    private final Logger log;
+    //TODO: if query returns same ProcessResult, lose this variable 
     private Integer ccode;
     private boolean running;
     private final Object context;
@@ -40,8 +38,7 @@ public class StafRunnableProgram implements RunnableProgram
     
     public StafRunnableProgram(STAFResult result, boolean running, Object context) throws Exception
     {
-        log = LoggerFactory.getLogger(getClass());
-        this.ccode = ccode;
+        this.ccode = null;
         this.running = running;
         this.context = context;
         this.result = new ProcessResult(result);
@@ -96,9 +93,7 @@ public class StafRunnableProgram implements RunnableProgram
         format.level.incrementAndGet();
         format.ttl("ccode = ", (ccode == null ? "unknown" : ccode.toString()));
         format.ttl("running = ", ""+running);
-        format.level.incrementAndGet();
         result.toString(format);
-        format.level.decrementAndGet();
         format.level.decrementAndGet();
         return format;
     }

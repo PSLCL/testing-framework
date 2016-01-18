@@ -32,7 +32,9 @@ public class ProcessResult
     public final STAFResult result;
     public final int rc;
     public final String key;
-    public final List<ReturnFileInfo> fileList;
+    public final List<ReturnFileStreams> fileList;
+    public final boolean waitResponse;
+    public final CompletionInfo complInfo;
 
     @SuppressWarnings("rawtypes")
     public ProcessResult(STAFResult result) throws Exception
@@ -41,26 +43,45 @@ public class ProcessResult
         try
         {
             this.result = result;
-            Object rootObject =  result.resultContext.getRootObject();
-            if(!(rootObject instanceof Map))
-                throw new Exception(getClass().getSimpleName() + " invalid rootObject type: " + rootObject.toString());
-            Map map = (Map) result.resultContext.getRootObject();
-            if (!map.get(StafSupport.StafMapClassKey).equals(StafSupport.StafProcessMapClassDefault))
-                throw new Exception("Staf unexpected Process Result Map Class");
-            rc = Integer.parseInt((String) map.get(StafSupport.StafRcKey));
-            key = (String) map.get(StafSupport.StafKeyKey);
-            List<ReturnFileInfo> myFiles = null;
-            List returnedFiles = (List)map.get(StafSupport.StafFileListKey);
-            if(returnedFiles != null)
+            Object rootObject = result.resultContext.getRootObject();
+            if (rootObject instanceof Map)
             {
-                myFiles = new ArrayList<ReturnFileInfo>();
-                for(int i=0; i < returnedFiles.size(); i++)
-                    myFiles.add(new ReturnFileInfo((Map)returnedFiles.get(i), i));
+log.info(getClass().getSimpleName() + " its a map, wtf");        
+                waitResponse = false;
+                Map map = (Map) result.resultContext.getRootObject();
+                if (!map.get(CompletionInfo.StafMapClassKey).equals(CompletionInfo.StafProcessMapClass))
+                    throw new Exception("Staf unexpected Process Result Map Class");
+                rc = Integer.parseInt((String) map.get(CompletionInfo.StafRcKey));
+                key = (String) map.get(CompletionInfo.StafKeyKey);
+                List<ReturnFileStreams> myFiles = null;
+                List returnedFiles = (List) map.get(CompletionInfo.StafFileListKey);
+                if (returnedFiles != null)
+                {
+                    myFiles = new ArrayList<ReturnFileStreams>();
+                    for (int i = 0; i < returnedFiles.size(); i++)
+                        myFiles.add(new ReturnFileStreams((Map) returnedFiles.get(i), i));
+                }
+                this.fileList = myFiles;
+                complInfo = null;
+                return;
             }
-            this.fileList = myFiles;
-            
+            // must be a wait string result
+log.info(getClass().getSimpleName() + " must be a wait string result");        
+            waitResponse = true;
+            rc = result.rc;
+            key = null;
+            fileList = null;
+            CompletionInfo ci = null;
+            if(log.isDebugEnabled())
+            {
+log.info(getClass().getSimpleName() + " going for unmarshall");        
+                ci = CompletionInfo.unmarshallCompletionInfo(result.result);
+log.info(getClass().getSimpleName() + " gotit: " + ci.toString());        
+            }
+            complInfo = ci;
         } catch (Exception e)
         {
+            //TODO: get rid of this catch
             log.info("\n***** ProcessResult exception: " + e.getClass().getName() + " : " + e.getMessage());
             throw e;
         }
@@ -72,47 +93,52 @@ public class ProcessResult
         format.ttl("\n");
         return toString(format).toString();
     }
-    
+
     public TabToLevel toString(TabToLevel format)
     {
         format.ttl(getClass().getSimpleName() + ":");
         format.level.incrementAndGet();
-        format.ttl("rc = " + rc);
+        if(waitResponse)
+        format.ttl("rc = ", StafSupport.getResultRc(result, false));
+        format.ttl("result = ", result.result);
         format.ttl("key = ", key);
         format.ttl("fileList:");
         format.level.incrementAndGet();
-        if(fileList != null)
+        if (fileList != null)
         {
-            for(ReturnFileInfo fi : fileList)
+            for (ReturnFileStreams fi : fileList)
                 fi.toString(format);
-        }else
+        } else
             format.ttl("null");
+        if(complInfo != null)
+            complInfo.toString(format);
+log.info(getClass().getSimpleName() + " complInfo = " + complInfo);        
         format.level.decrementAndGet();
         format.level.decrementAndGet();
         return format;
     }
-    
-    public class ReturnFileInfo
+
+    public class ReturnFileStreams
     {
         public final int streamIdx;
         public final int rc;
         public final String data;
 
         @SuppressWarnings("rawtypes")
-        private ReturnFileInfo(Map fileMap, int streamIdx)
+        private ReturnFileStreams(Map fileMap, int streamIdx)
         {
-            rc = Integer.parseInt((String) fileMap.get(StafSupport.StafRcKey));
-            data = (String) fileMap.get(StafSupport.StafFileDataKey);
+            rc = Integer.parseInt((String) fileMap.get(CompletionInfo.StafRcKey));
+            data = (String) fileMap.get(CompletionInfo.StafFileDataKey);
             this.streamIdx = streamIdx;
         }
-        
+
         public String toString()
         {
             TabToLevel format = new TabToLevel();
             format.ttl("\n");
             return toString(format).toString();
         }
-        
+
         public TabToLevel toString(TabToLevel format)
         {
             format.ttl(getClass().getSimpleName() + ": ", (streamIdx == 0 ? "stdout" : "stderr"));
@@ -124,4 +150,3 @@ public class ProcessResult
         }
     }
 }
-

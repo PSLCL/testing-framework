@@ -13,13 +13,15 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-package com.pslcl.dtf.core.runner.resource.staf;
+package com.pslcl.dtf.core.runner.resource.staf.futures;
 
 import java.util.concurrent.Callable;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.pslcl.dtf.core.util.StrH;
+import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
+import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture.CommandData;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
@@ -27,49 +29,47 @@ public class DeleteFuture implements Callable<Void>
 {
     private final static String Service = "process";
     private final static String Request = "start shell command ";
+
+    private final Logger log;
     private final String host;
-    private final String sandboxPath;
+    private final String linuxSandbox;
+    private final String winSandbox;
     private final String partialDestPath;
     private final boolean windows;
 
-    public DeleteFuture(String host, String sandboxPath, String partialDestPath, boolean windows)
+    public DeleteFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows)
     {
         this.host = host;
-        this.sandboxPath = windows ? sandboxPath.replace('/', '\\') : sandboxPath.replace('\\', '/');
+        this.linuxSandbox = linuxSandbox;
+        this.winSandbox = winSandbox;
         this.partialDestPath = partialDestPath;
         this.windows = windows;
-        TabToLevel format = new TabToLevel();
-        format.ttl(getClass().getSimpleName());
-        format.level.incrementAndGet();
-        format.ttl("host = ", host);
-        format.ttl("sandboxPath = ", sandboxPath);
-        format.ttl("partialDestPath = ", partialDestPath);
-        LoggerFactory.getLogger(getClass()).debug(format.toString());
+        log = LoggerFactory.getLogger(getClass());
+        if (log.isDebugEnabled())
+        {
+            TabToLevel format = new TabToLevel();
+            format.ttl(getClass().getSimpleName());
+            format.level.incrementAndGet();
+            format.ttl("host = ", host);
+            format.ttl("linuxSandboxPath = ", linuxSandbox);
+            format.ttl("winSandboxPath = ", winSandbox);
+            format.ttl("partialDestPath = ", partialDestPath);
+            format.ttl("windows = ", windows);
+            log.debug(format.toString());
+        }
     }
 
     @Override
     public Void call() throws Exception
     {
-        // where partialDestPath is one of these two
-        // 1. lib/someApp.jar
-        // 2. topLevelFile
-        String penultimate = partialDestPath.replace('\\', '/');        // lib/someApp.jar, topLevelFile
-        String fileName = StrH.getAtomicNameFromPath(penultimate);      // someApp.jar, topLevelFile
-        boolean fileOnly = penultimate.equals(fileName);                // false, true
-        penultimate = StrH.getPenultimateNameFromPath(penultimate);     // lib, topLevelFile 
-        String path = StrH.addTrailingSeparator(sandboxPath, windows ? '\\' : '/'); // /opt/dtf/sandbox/
-        if(windows)
-            penultimate = penultimate.replace('/', '\\');
-        if(!fileOnly)
-            path = StrH.addTrailingSeparator(path + penultimate, windows ? '\\' : '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/  
-        String newName = path + fileName;                               // /opt/dtf/sandbox/lib/someApp.jar, /opt/dtf/sandbox/topLevelFile 
+        CommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
         String sudo = "sudo ";
-        if(windows)
-            sudo="";
-        issueRequest(sudo + "rm " + newName);
+        if (windows)
+            sudo = "";
+        issueRequest(sudo + "rm " + commandData.getFdn());
         return null;
     }
-    
+
     private void issueRequest(String clParams) throws Exception
     {
         //@formatter:off

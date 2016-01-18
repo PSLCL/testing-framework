@@ -35,9 +35,11 @@ public class ResourceNames
     ******************************************************************************/    
     public static final String DepoyKeyBase = PslclKeyBase + ".deploy";
     
-    public static final String DeployDestSandboxKey = DepoyKeyBase + ".dest-sandbox-path";
+    public static final String DeployLinuxSandboxKey = DepoyKeyBase + ".linux-sandbox-path";
+    public static final String DeployWinSandboxKey = DepoyKeyBase + ".win-sandbox-path";
     public static final String DeployStafPingKey = DepoyKeyBase + ".staf-ping";
     
-    public static final String DeployDestSandboxDefault = "/opt/dtf/sandbox";
+    public static final String DeployLinuxSandboxDefault = "/opt/dtf/sandbox";
+    public static final String DeployWinSandboxDefault = "c:\\opt\\dtf\\sandbox";
     public static final String DeployStafPingDefault = "true";
 }
