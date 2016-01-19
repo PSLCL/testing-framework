@@ -39,6 +39,48 @@ public class StafSupport
     {
     }
 
+    public static StopResult processStop(StafRunnableProgram runnableProg) throws Exception
+    {
+        String cmd = runnableProg.getProcessStopCommand();
+        TabToLevel format = null;
+        if (log.isDebugEnabled())
+        {
+            format = new TabToLevel();
+            format.ttl("\n", StafSupport.class.getSimpleName(), ".processKill:");
+            format.level.incrementAndGet();
+            format.ttl("stafCmd = ", ProcessService + " " + cmd);
+        }
+        
+        StopResult stopResult = null;
+        STAFResult result = null;
+        boolean resultParse = false;
+        try
+        {
+            QueryResult qresult = processQuery(runnableProg);
+            if(qresult.isRunning())
+            {
+                result = StafSupport.request(runnableProg.getCommandData().getHost(), ProcessService, cmd, format);
+                resultParse = true;
+                stopResult = new StopResult(result, true);  // currently only byHandle is supported
+            }else
+                stopResult = new StopResult();
+        }finally
+        {
+            if (log.isDebugEnabled())
+            {
+                if(stopResult != null)
+                    log.debug(stopResult.toString(format).toString());
+                else
+                {
+                    if(resultParse)
+                        format.ttl("\nStafRunnableProgram failed to parse the result");
+                    log.debug(format.toString());
+                }
+            }
+        }
+        return stopResult;
+    }
+    
     public static QueryResult processQuery(StafRunnableProgram runnableProg) throws Exception
     {
         String cmd = runnableProg.getProcessQueryCommand();

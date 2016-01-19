@@ -16,6 +16,7 @@
 package com.pslcl.dtf.core.runner.resource.staf.futures;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -36,17 +37,24 @@ public class RunFuture implements Callable<RunnableProgram>
     private final String linuxSandbox;
     private final String winSandbox;
     private final String partialDestPath;
-    private final boolean start;
+    private final ExecutorService executor;
     private final boolean windows;
     private final Object context;
 
-    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean start, boolean windows, Object context)
+    
+    
+    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, Object context)
+    {
+        this(host, linuxSandbox, winSandbox, partialDestPath, null, windows, context);
+    }
+    
+    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, ExecutorService executor, boolean windows, Object context)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
         this.winSandbox = winSandbox;
         this.partialDestPath = partialDestPath;
-        this.start = start;
+        this.executor = executor;
         this.windows = windows;
         this.context = context;
         log = LoggerFactory.getLogger(getClass());
@@ -59,7 +67,7 @@ public class RunFuture implements Callable<RunnableProgram>
             format.ttl("linuxSandboxPath = ", linuxSandbox);
             format.ttl("winSandboxPath = ", winSandbox);
             format.ttl("partialDestPath = ", partialDestPath);
-            format.ttl("start = ", start);
+            format.ttl("executor = ", (executor == null ? "null" : executor.getClass().getName()));
             format.ttl("windows = ", windows);
             LoggerFactory.getLogger(getClass()).debug(format.toString());
         }
@@ -73,16 +81,19 @@ public class RunFuture implements Callable<RunnableProgram>
         if (windows)
             sudo = "";
         cmdData.setHost(host);
-        cmdData.setWait(false);
+        cmdData.setWait(executor == null);
         cmdData.setContext(context);
         cmdData.setCommand(sudo + cmdData.getFileName());
         StafRunnableProgram runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
-        if (start)
+        runnableProgram.setExecutorService(executor);
+        if (executor != null)
             return runnableProgram;
-        waitForComplete(runnableProgram, 20, 800);
+        //TODO: if we decide to support timeout
+//        waitForComplete(runnableProgram, 20, 800);
         return runnableProgram;
     }
 
+    @SuppressWarnings("unused")
     private void waitForComplete(StafRunnableProgram runnableProgram, int maxRetries, int maxDelay) throws Exception
     {
         int count = 0;

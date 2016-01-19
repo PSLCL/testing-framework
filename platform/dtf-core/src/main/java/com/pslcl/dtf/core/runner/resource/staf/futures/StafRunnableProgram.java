@@ -15,36 +15,65 @@
  */
 package com.pslcl.dtf.core.runner.resource.staf.futures;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.ibm.staf.STAFResult;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.ProcessResult;
+import com.pslcl.dtf.core.runner.resource.staf.StopResult;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class StafRunnableProgram implements RunnableProgram
 {
     public final static String ProcessQueryHandle = "query handle ";
+    public final static String ProcessStopHandle = "stop handle ";
     
     private final ProcessResult result;
     private final ProcessCommandData commandData;
+    private ExecutorService executor;
+    private boolean stopped;
     
     public StafRunnableProgram(STAFResult result, ProcessCommandData commandData) throws Exception
     {
         this.commandData = commandData;
         this.result = new ProcessResult(result, commandData.isWait());
     }
+    
+    public synchronized boolean isStopped()
+    {
+        return stopped;
+    }
 
-//    public synchronized void setServiceCcode(Integer serviceCcode)
-//    {
-//        result.setServiceCcode(serviceCcode);
-//    }
+    public synchronized void setStopped(StopResult result)
+    {
+        this.stopped = true;
+        this.result.setStopResult(result);
+    }
+
+    public synchronized void setExecutorService(ExecutorService executor)
+    {
+        this.executor = executor;
+    }
+
+    public synchronized ExecutorService getExecutorService()
+    {
+        return executor;
+    }
 
     public synchronized String getProcessQueryCommand()
     {
         StringBuilder cmd = new StringBuilder(ProcessQueryHandle)
+                        .append(" ")
+                        .append(getProcessHandle());
+        return cmd.toString();
+    }
+    
+    public synchronized String getProcessStopCommand()
+    {
+        StringBuilder cmd = new StringBuilder(ProcessStopHandle)
                         .append(" ")
                         .append(getProcessHandle());
         return cmd.toString();
@@ -65,14 +94,14 @@ public class StafRunnableProgram implements RunnableProgram
     @Override
     public Future<Integer> kill()
     {
-        return null;
+        return executor.submit(new KillFuture(this));
     }
 
     @Override
     public synchronized boolean isRunning()
     {
         //TODO: poll or notify? needs added here
-        return !commandData.isWait() && result.rc == 0;
+        return !commandData.isWait() && !stopped;
     }
 
     @Override
@@ -80,6 +109,7 @@ public class StafRunnableProgram implements RunnableProgram
     {
         if(isRunning())
             return null;
+        //TODO: when runforever with kill for stop but get "start" ccode ... this is broken here
         return result.getServiceCcode();
     }
     
