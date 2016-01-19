@@ -39,63 +39,109 @@ public class StafSupport
     {
     }
 
-    public static StafRunnableProgram issueProcessRequest(String host, String command, boolean wait, Object context) throws Exception
+    public static QueryResult processQuery(StafRunnableProgram runnableProg) throws Exception
+    {
+        String cmd = runnableProg.getProcessQueryCommand();
+        TabToLevel format = null;
+        if (log.isDebugEnabled())
+        {
+            format = new TabToLevel();
+            format.ttl("\n", StafSupport.class.getSimpleName(), ".processQuery:");
+            format.level.incrementAndGet();
+            format.ttl("stafCmd = ", ProcessService + " " + cmd);
+        }
+        
+        QueryResult queryResult = null;
+        STAFResult result = null;
+        boolean resultParse = false;
+        try
+        {
+            result = StafSupport.request(runnableProg.getCommandData().getHost(), ProcessService, cmd, format);
+            resultParse = true;
+            queryResult = new QueryResult(result);
+        }finally
+        {
+            if (log.isDebugEnabled())
+            {
+                if(queryResult != null)
+                    log.debug(queryResult.toString(format).toString());
+                else
+                {
+                    if(resultParse)
+                        format.ttl("\nStafRunnableProgram failed to parse the result");
+                    log.debug(format.toString());
+                }
+            }
+        }
+        return queryResult;
+    }
+    
+    public static StafRunnableProgram issueProcessShellRequest(ProcessCommandData commandData) throws Exception
+    {
+        return issueProcessRequest(commandData, true);
+    }
+    
+    public static StafRunnableProgram issueProcessRequest(ProcessCommandData commandData) throws Exception
+    {
+        return issueProcessRequest(commandData, false);
+    }
+    
+    private static StafRunnableProgram issueProcessRequest(ProcessCommandData commandData, boolean shell) throws Exception
     {
         TabToLevel format = null;
         if (log.isDebugEnabled())
         {
             format = new TabToLevel();
-            format.ttl("\n", StafSupport.class.getSimpleName() + ".issueProcessRequest:");
+            format.sb.append("\n" + StafSupport.class.getSimpleName());
+            if(shell)
+                format.sb.append(".issueProcessShellRequest:");
+            else
+                format.sb.append(".issueProcessRequest:");
+            format.sb.append("\n");
             format.level.incrementAndGet();
-            format.ttl("host = ", host);
-            format.ttl("command = ", command);
-            format.ttl("wait = ", wait);
-            format.ttl("context = ", (context == null ? "null" : context.getClass().getName()));
-            format.ttl("response:");
+            commandData.toString(format);
         }
 
-        StringBuilder cmd = new StringBuilder(ProcessRequest).append("\"").append(command);
-        if (wait)
-            cmd.append("\" wait");
-        else
-        {
-            cmd.append("\" ");
-            cmd.append("returnstdout ").append("returnstderr");
-        }
-
+        String cmd = commandData.getProcessCommand();
+        if(shell)
+            cmd = commandData.getShellCommand();
         if (log.isDebugEnabled())
             format.ttl("stafCmd = ", ProcessService + " " + cmd);
-        StafRunnableProgram runnableProgram = new StafRunnableProgram(StafSupport.request(host, ProcessService, cmd.toString(), false), context);
-        if (log.isDebugEnabled())
+        
+        StafRunnableProgram runnableProgram = null;
+        STAFResult result = null;
+        boolean resultParse = false;
+        try
         {
-            format.level.incrementAndGet();
-            log.debug(runnableProgram.toString(format).toString());
+            result = StafSupport.request(commandData.getHost(), ProcessService, cmd, format);
+            resultParse = true;
+            runnableProgram = new StafRunnableProgram(result, commandData);
+        }finally
+        {
+            if (log.isDebugEnabled())
+            {
+                if(runnableProgram != null)
+                    log.debug(runnableProgram.toString(format).toString());
+                else
+                {
+                    if(resultParse)
+                        format.ttl("\nStafRunnableProgram failed to parse the result");
+                    log.debug(format.toString());
+                }
+            }
         }
         return runnableProgram;
     }
 
     public static STAFResult request(String host, String service, String request) throws Exception
     {
-        return request(host, service, request, true);
+        return request(host, service, request, null);
     }
 
-    private static STAFResult request(String host, String service, String request, boolean checkServiceCcode) throws Exception
+    private static STAFResult request(String host, String service, String request, TabToLevel format) throws Exception
     {
         STAFResult result = getStafHandle().submit2(host, service, request);
-        checkStafResult(result);
-        if (!log.isDebugEnabled())
-            return result;
-        if (checkServiceCcode && result.resultContext != null)
-        {
-            String serviceResult = result.resultContext.toString();
-            int idx = serviceResult.indexOf(ServiceReturnCode);
-            if (idx != -1)
-            {
-                idx += ServiceReturnCode.length() + 1; // step past space;
-                if (serviceResult.charAt(idx) != '0')
-                    throw new Exception("StafException remote service request failed, host: " + host + " service: " + service + " request: " + request);
-            }
-        }
+        checkStafResult(result, format);
         return result;
     }
 
@@ -111,7 +157,7 @@ public class StafSupport
             } catch (STAFException e)
             {
                 STAFResult result = new STAFResult(e.rc, "failed to obtain handle name: " + StafHandleName);
-                checkStafResult(result);
+                checkStafResult(result, null);
             }
         }
         return handle;
@@ -122,18 +168,18 @@ public class StafSupport
         request(host, "ping", "ping");
     }
 
-    public static void checkStafResult(STAFResult result) throws Exception
+    public static void checkStafResult(STAFResult result, TabToLevel format) throws Exception
     {
         try
         {
-            getResultRc(result, true);
+            getResultRc(result, true, format);
         } catch (Exception e)
         {
             throw new Exception(e.getMessage(), e);
         }
     }
 
-    public static String getResultRc(STAFResult result, boolean throwOnError)
+    public static String getResultRc(STAFResult result, boolean throwOnError, TabToLevel format)
     {
         String msg = null;
         switch (result.rc)
@@ -323,7 +369,17 @@ public class StafSupport
                 break;
         }
         if (throwOnError && result.rc != 0)
+        {
+            if(format != null)
+            {
+                format.ttl("\nSTAF request failed");
+                format.level.incrementAndGet();
+                format.ttl("rc: ", result.rc, " (", msg, ")" );
+                format.ttl("result: ", result.result);
+                format.level.decrementAndGet();
+            }
             throw new RuntimeException("StafException, rc: " + result.rc + " (" + msg + ") result: " + result.result);
+        }
         return result.rc + " - " + msg;
     }
 
@@ -341,7 +397,7 @@ public class StafSupport
                     STAFResult result = new STAFResult(e.rc, "failed to unRegister handle name: " + StafHandleName);
                     try
                     {
-                        checkStafResult(result);
+                        checkStafResult(result, null);
                     } catch (Exception e1)
                     {
                         log.warn("failed to cleanup staf", e1);

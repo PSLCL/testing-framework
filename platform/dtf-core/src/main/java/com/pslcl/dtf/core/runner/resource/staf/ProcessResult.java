@@ -19,72 +19,72 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.ibm.staf.STAFMarshallingContext;
 import com.ibm.staf.STAFResult;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class ProcessResult
 {
-    private final Logger log;
-    public final STAFResult result;
-    public final int rc;
-    public final String key;
-    public final List<ReturnFileStreams> fileList;
-    public final boolean waitResponse;
-    public final CompletionInfo complInfo;
+    public final static String StafMapClassKey = "staf-map-class-name";
+    public final static String StafMapClassMap = "map-class-map";
+    public final static String StafProcessMapClass = "STAF/Service/Process/CompletionInfo";
+    public final static String StafRcKey = "rc";
+    public final static String StafKeyKey = "key";
+    public final static String StafFileListKey = "fileList";
+    public final static String StafFileDataKey = "data";
 
-    @SuppressWarnings("rawtypes")
-    public ProcessResult(STAFResult result) throws Exception
+    public final STAFResult result;
+    public final boolean wait;
+    public volatile int rc;
+    public volatile String key;
+    public volatile List<ReturnFileStreams> fileList;
+    //    public final CompletionInfo complInfo;
+
+    public ProcessResult(STAFResult result, boolean wait) throws Exception
     {
-        log = LoggerFactory.getLogger(getClass());
-        try
+        this.result = result;
+        this.wait = wait;
+        if (checkMap(result.resultContext.getRootObject()))
+            return;
+        // must be a string result
+        rc = result.rc;
+        key = null;
+        fileList = null;
+        if (STAFMarshallingContext.isMarshalledData(result.result))
+            checkMap(STAFMarshallingContext.unmarshall(result.result));
+    }
+
+    public Integer getServiceCcode()
+    {
+        return result.rc;
+    }
+    
+    public String getServiceHandle()
+    {
+        return result.result;
+    }
+    
+    @SuppressWarnings("rawtypes")
+    private boolean checkMap(Object rootObject) throws Exception
+    {
+        if (!(rootObject instanceof Map))
+            return false;
+        Map map = (Map) result.resultContext.getRootObject();
+        if (!map.get(StafMapClassKey).equals(StafProcessMapClass))
+            throw new Exception("Staf unexpected Process Result Map Class");
+        rc = Integer.parseInt((String) map.get(StafRcKey));
+        key = (String) map.get(StafKeyKey);
+        List<ReturnFileStreams> myFiles = null;
+        List returnedFiles = (List) map.get(StafFileListKey);
+        if (returnedFiles != null)
         {
-            this.result = result;
-            Object rootObject = result.resultContext.getRootObject();
-            if (rootObject instanceof Map)
-            {
-log.info(getClass().getSimpleName() + " its a map, wtf");        
-                waitResponse = false;
-                Map map = (Map) result.resultContext.getRootObject();
-                if (!map.get(CompletionInfo.StafMapClassKey).equals(CompletionInfo.StafProcessMapClass))
-                    throw new Exception("Staf unexpected Process Result Map Class");
-                rc = Integer.parseInt((String) map.get(CompletionInfo.StafRcKey));
-                key = (String) map.get(CompletionInfo.StafKeyKey);
-                List<ReturnFileStreams> myFiles = null;
-                List returnedFiles = (List) map.get(CompletionInfo.StafFileListKey);
-                if (returnedFiles != null)
-                {
-                    myFiles = new ArrayList<ReturnFileStreams>();
-                    for (int i = 0; i < returnedFiles.size(); i++)
-                        myFiles.add(new ReturnFileStreams((Map) returnedFiles.get(i), i));
-                }
-                this.fileList = myFiles;
-                complInfo = null;
-                return;
-            }
-            // must be a wait string result
-log.info(getClass().getSimpleName() + " must be a wait string result");        
-            waitResponse = true;
-            rc = result.rc;
-            key = null;
-            fileList = null;
-            CompletionInfo ci = null;
-            if(log.isDebugEnabled())
-            {
-log.info(getClass().getSimpleName() + " going for unmarshall");        
-                ci = CompletionInfo.unmarshallCompletionInfo(result.result);
-log.info(getClass().getSimpleName() + " gotit: " + ci.toString());        
-            }
-            complInfo = ci;
-        } catch (Exception e)
-        {
-            //TODO: get rid of this catch
-            log.info("\n***** ProcessResult exception: " + e.getClass().getName() + " : " + e.getMessage());
-            throw e;
+            myFiles = new ArrayList<ReturnFileStreams>();
+            for (int i = 0; i < returnedFiles.size(); i++)
+                myFiles.add(new ReturnFileStreams((Map) returnedFiles.get(i), i));
         }
+        this.fileList = myFiles;
+        return true;
     }
 
     public String toString()
@@ -98,8 +98,7 @@ log.info(getClass().getSimpleName() + " gotit: " + ci.toString());
     {
         format.ttl(getClass().getSimpleName() + ":");
         format.level.incrementAndGet();
-        if(waitResponse)
-        format.ttl("rc = ", StafSupport.getResultRc(result, false));
+        format.ttl("rc = ", StafSupport.getResultRc(result, false, null));
         format.ttl("result = ", result.result);
         format.ttl("key = ", key);
         format.ttl("fileList:");
@@ -110,9 +109,6 @@ log.info(getClass().getSimpleName() + " gotit: " + ci.toString());
                 fi.toString(format);
         } else
             format.ttl("null");
-        if(complInfo != null)
-            complInfo.toString(format);
-log.info(getClass().getSimpleName() + " complInfo = " + complInfo);        
         format.level.decrementAndGet();
         format.level.decrementAndGet();
         return format;
@@ -127,8 +123,8 @@ log.info(getClass().getSimpleName() + " complInfo = " + complInfo);
         @SuppressWarnings("rawtypes")
         private ReturnFileStreams(Map fileMap, int streamIdx)
         {
-            rc = Integer.parseInt((String) fileMap.get(CompletionInfo.StafRcKey));
-            data = (String) fileMap.get(CompletionInfo.StafFileDataKey);
+            rc = Integer.parseInt((String) fileMap.get(StafRcKey));
+            data = (String) fileMap.get(StafFileDataKey);
             this.streamIdx = streamIdx;
         }
 

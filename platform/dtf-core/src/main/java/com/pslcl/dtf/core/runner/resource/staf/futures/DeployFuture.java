@@ -20,6 +20,7 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
@@ -62,23 +63,32 @@ public class DeployFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
-        CommandData commandData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
-        String urlFile = StrH.getAtomicName(sourceUrl, '/'); // hashname
-        String wgetName = commandData.basePath + urlFile; // /opt/dtf/sandbox/lib/hashname, /opt/dtf/sandbox/hashname
-        String newName = commandData.basePath + commandData.fileName; // /opt/dtf/sandbox/lib/someApp.jar, /opt/dtf/sandbox/topLevelFile 
+        ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        String urlFile = StrH.getAtomicName(sourceUrl, '/');            // hashname
+        String wgetName = cmdData.getBasePath() + urlFile;              // /opt/dtf/sandbox/lib/hashname, /opt/dtf/sandbox/hashname
+        String newName = cmdData.getBasePath() + cmdData.getFileName(); // /opt/dtf/sandbox/lib/someApp.jar, /opt/dtf/sandbox/topLevelFile 
         String sudo = "sudo ";
         if (windows)
             sudo = "";
         if(windows)
             throw new Exception("not implemented yet");
         
-        StafSupport.issueProcessRequest(host, sudo + "mkdir -p " + commandData.basePath, true, null);
-        StafSupport.issueProcessRequest(host, sudo + "wget -O " + wgetName + " " + sourceUrl, true, null);
-        StafSupport.issueProcessRequest(host, sudo + "mv " + wgetName + " " + newName, true, null);
+        cmdData.setHost(host);
+        cmdData.setWait(true);
+        cmdData.setContext(null);
+        cmdData.setCommand(sudo + "mkdir -p ");
+        
+        StafSupport.issueProcessRequest(cmdData);
+        cmdData = new ProcessCommandData(cmdData);
+        cmdData.setCommand(sudo + "wget -O " + wgetName + " " + sourceUrl);
+        StafSupport.issueProcessRequest(cmdData);
+        cmdData = new ProcessCommandData(cmdData);
+        cmdData.setCommand(sudo + "mv " + wgetName + " " + newName);
+        StafSupport.issueProcessRequest(cmdData);
         return null;
     }
 
-    public static CommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows) throws Exception
+    public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows) throws Exception
     {
         // where partialDestPath is one of these three
         // 1. lib/someApp.jar
@@ -109,29 +119,7 @@ public class DeployFuture implements Callable<Void>
             if (!fileOnly)
                 path = StrH.addTrailingSeparator(path + penultimate, '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/
         }
-        path += penultimate;
-        return new CommandData(path, fileName);
-    }
-    
-    public static class CommandData
-    {
-        public final String basePath;
-        public final String fileName;
-        
-        public CommandData(String basePath, String fileName)
-        {
-            this.basePath = basePath;
-            this.fileName = fileName;
-        }
-        
-        public String getFdn()
-        {
-            return basePath + fileName;
-        }
-        
-        public String toString()
-        {
-            return getClass().getSimpleName() + ": " + getFdn();
-        }
+        path = StrH.stripTrailingSeparator(path);        
+        return new ProcessCommandData(path, fileName, fdn);
     }
 }

@@ -20,8 +20,8 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
-import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture.CommandData;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
@@ -61,13 +61,14 @@ public class ConfigureFuture implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        CommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        cmdData.setHost(host);
+        cmdData.setWait(true);
+        cmdData.setContext(context);
         String sudo = "sudo ";
         if (windows)
             sudo = "";
-//        StafSupport.issueProcessRequest(host, sudo + "md " + commandData.basePath, true, null);
-        StafSupport.issueProcessRequest(host, sudo + "xxdir", true, null);
-        return 1;
-//        return StafSupport.issueProcessRequest(host, sudo + commandData.getFdn(), true, context).getRunResult();
+        cmdData.setCommand(sudo + cmdData.getFileName());
+        return  StafSupport.issueProcessShellRequest(cmdData).getRunResult();
     }
 }

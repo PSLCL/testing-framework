@@ -19,49 +19,49 @@ import java.util.concurrent.Future;
 
 import com.ibm.staf.STAFResult;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
+import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.ProcessResult;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
 public class StafRunnableProgram implements RunnableProgram
 {
-    //TODO: if query returns same ProcessResult, lose this variable 
-    private Integer ccode;
-    private boolean running;
-    private final Object context;
+    public final static String ProcessQueryHandle = "query handle ";
+    
     private final ProcessResult result;
+    private final ProcessCommandData commandData;
     
-    public StafRunnableProgram(STAFResult result, Object context) throws Exception
+    public StafRunnableProgram(STAFResult result, ProcessCommandData commandData) throws Exception
     {
-        this(result, false, context);
-    }
-    
-    public StafRunnableProgram(STAFResult result, boolean running, Object context) throws Exception
-    {
-        this.ccode = null;
-        this.running = running;
-        this.context = context;
-        this.result = new ProcessResult(result);
-        if(!running)
-            ccode = result.rc;
+        this.commandData = commandData;
+        this.result = new ProcessResult(result, commandData.isWait());
     }
 
-    public Object getContext()
+//    public synchronized void setServiceCcode(Integer serviceCcode)
+//    {
+//        result.setServiceCcode(serviceCcode);
+//    }
+
+    public synchronized String getProcessQueryCommand()
     {
-        return context;
+        StringBuilder cmd = new StringBuilder(ProcessQueryHandle)
+                        .append(" ")
+                        .append(getProcessHandle());
+        return cmd.toString();
     }
     
-    public synchronized void setRunResult(int ccode)
+    public ProcessResult getResult()
     {
-        this.ccode = ccode;
+        return result;
     }
-    
-    public synchronized void setRunning(boolean running)
+
+
+    public ProcessCommandData getCommandData()
     {
-        this.running = running;
+        return commandData;
     }
-    
-    
+
+
     @Override
     public Future<Integer> kill()
     {
@@ -71,13 +71,16 @@ public class StafRunnableProgram implements RunnableProgram
     @Override
     public synchronized boolean isRunning()
     {
-        return running;
+        //TODO: poll or notify? needs added here
+        return !commandData.isWait() && result.rc == 0;
     }
 
     @Override
     public synchronized Integer getRunResult()
     {
-        return ccode;
+        if(isRunning())
+            return null;
+        return result.getServiceCcode();
     }
     
     public synchronized String toString()
@@ -87,13 +90,20 @@ public class StafRunnableProgram implements RunnableProgram
         return toString(format).toString();
     }
     
+    public String getProcessHandle()
+    {
+        if(commandData.isWait())
+            return null;
+        return result.getServiceHandle();
+    }
+    
     public synchronized TabToLevel toString(TabToLevel format)
     {
         format.ttl(getClass().getSimpleName() + ":");
         format.level.incrementAndGet();
-        format.ttl("ccode = ", (ccode == null ? "unknown" : ccode.toString()));
-        format.ttl("running = ", ""+running);
+        format.ttl("running = ", isRunning());
         result.toString(format);
+        commandData.toString(format);
         format.level.decrementAndGet();
         return format;
     }

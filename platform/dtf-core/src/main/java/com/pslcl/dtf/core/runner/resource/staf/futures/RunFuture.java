@@ -21,8 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
+import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
-import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture.CommandData;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
@@ -65,10 +65,14 @@ public class RunFuture implements Callable<RunnableProgram>
     @Override
     public RunnableProgram call() throws Exception
     {
-        CommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
         String sudo = "sudo ";
         if (windows)
             sudo = "";
-        return StafSupport.issueProcessRequest(host, sudo + commandData.getFdn(), true, context);
+        cmdData.setHost(host);
+        cmdData.setWait(false);
+        cmdData.setContext(context);
+        cmdData.setCommand(sudo + cmdData.getFileName());
+        return StafSupport.issueProcessShellRequest(cmdData);
     }
 }

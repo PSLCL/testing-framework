@@ -20,8 +20,8 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
-import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture.CommandData;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
@@ -62,7 +62,7 @@ public class DeleteFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
-        CommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        ProcessCommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
         String sudo = "sudo ";
         if (windows)
             sudo = "";
