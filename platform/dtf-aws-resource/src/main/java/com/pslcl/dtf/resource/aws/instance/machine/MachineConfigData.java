@@ -38,7 +38,8 @@ public class MachineConfigData
     public volatile int ec2MaxRetries;
     public volatile String resoucePrefixName;
     public volatile String userData;
-    public volatile String deploySandboxPath;
+    public volatile String linuxSandboxPath;
+    public volatile String winSandboxPath;
     
     private MachineConfigData()
     {
@@ -59,7 +60,8 @@ public class MachineConfigData
         data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, null, resource, format);
         data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, defaultData.keyName, resource, format);
         data.userData = getAttribute(InstanceNames.Ec2UserDataKey, defaultData.userData, resource, format);
-        data.deploySandboxPath = getAttribute(ResourceNames.DeployDestSandboxKey, defaultData.deploySandboxPath, resource, format);
+        data.linuxSandboxPath = getAttribute(ResourceNames.DeployLinuxSandboxKey, defaultData.linuxSandboxPath, resource, format);
+        data.winSandboxPath = getAttribute(ResourceNames.DeployWinSandboxKey, defaultData.winSandboxPath, resource, format);
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
@@ -85,7 +87,8 @@ public class MachineConfigData
         data.iamName = getAttribute(config, InstanceNames.Ec2IamNameKey, null);
         data.keyName = getAttribute(config, InstanceNames.Ec2KeyPairNameKey, null);
         data.userData = getAttribute(config, InstanceNames.Ec2UserDataKey, InstanceNames.Ec2UserDataDefault);
-        data.deploySandboxPath = getAttribute(config, ResourceNames.DeployDestSandboxKey, ResourceNames.DeployDestSandboxDefault);
+        data.linuxSandboxPath = getAttribute(config, ResourceNames.DeployLinuxSandboxKey, ResourceNames.DeployLinuxSandboxDefault);
+        data.winSandboxPath = getAttribute(config, ResourceNames.DeployWinSandboxKey, ResourceNames.DeployWinSandboxDefault);
         
         config.initsb.level.decrementAndGet();
 

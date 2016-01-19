@@ -39,6 +39,7 @@ public class MachineReservedResource implements Runnable
     public final InstanceType instanceType;
     public final String imageId;
     public final AtomicBoolean bindFutureCanceled;
+    public final AtomicBoolean reusable;
     public volatile GroupIdentifier groupIdentifier;
     public volatile String groupId;
     public volatile Vpc vpc;
@@ -61,6 +62,7 @@ public class MachineReservedResource implements Runnable
         instanceType = result.getInstanceType();
         imageId = result.getImageId();
         bindFutureCanceled = new AtomicBoolean(false);
+        reusable = new AtomicBoolean(true);
     }
 
     synchronized void setTimerFuture(ScheduledFuture<?> future)
