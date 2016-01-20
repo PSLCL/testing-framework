@@ -30,6 +30,7 @@ public class StafRunnableProgram implements RunnableProgram
 {
     public final static String ProcessQueryHandle = "query handle ";
     public final static String ProcessStopHandle = "stop handle ";
+    public final static String ProcessFreeHandle = "free handle ";
     
     private final ProcessResult result;
     private final ProcessCommandData commandData;
@@ -74,6 +75,14 @@ public class StafRunnableProgram implements RunnableProgram
     public synchronized String getProcessStopCommand()
     {
         StringBuilder cmd = new StringBuilder(ProcessStopHandle)
+                        .append(" ")
+                        .append(getProcessHandle());
+        return cmd.toString();
+    }
+    
+    public synchronized String getProcessFreeCommand()
+    {
+        StringBuilder cmd = new StringBuilder(ProcessFreeHandle)
                         .append(" ")
                         .append(getProcessHandle());
         return cmd.toString();

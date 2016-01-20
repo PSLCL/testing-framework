@@ -48,7 +48,7 @@ public class DeployFuture implements Callable<Void>
         if (log.isDebugEnabled())
         {
             TabToLevel format = new TabToLevel();
-            format.ttl(getClass().getSimpleName());
+            format.ttl("\n", getClass().getSimpleName(),":");
             format.level.incrementAndGet();
             format.ttl("host = ", host);
             format.ttl("linuxSandboxPath = ", linuxSandbox);
@@ -64,27 +64,40 @@ public class DeployFuture implements Callable<Void>
     public Void call() throws Exception
     {
         ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        cmdData.setUseWorkingDir(false);
         String urlFile = StrH.getAtomicName(sourceUrl, '/');            // hashname
-        String wgetName = cmdData.getBasePath() + urlFile;              // /opt/dtf/sandbox/lib/hashname, /opt/dtf/sandbox/hashname
-        String newName = cmdData.getBasePath() + cmdData.getFileName(); // /opt/dtf/sandbox/lib/someApp.jar, /opt/dtf/sandbox/topLevelFile 
+//        String wgetName = cmdData.getBasePath();
+//        wgetName = StrH.addTrailingSeparator(wgetName, (windows ? "\\" : "/"));
+//        wgetName += urlFile;                                            // /opt/dtf/sandbox/lib/hashname, /opt/dtf/sandbox/hashname
+//        String newName = cmdData.getBasePath() + cmdData.getFileName(); // /opt/dtf/sandbox/lib/someApp.jar, /opt/dtf/sandbox/topLevelFile 
         String sudo = "sudo ";
         if (windows)
             sudo = "";
         if(windows)
             throw new Exception("not implemented yet");
+//sudo = "";
         
         cmdData.setHost(host);
         cmdData.setWait(true);
         cmdData.setContext(null);
-        cmdData.setCommand(sudo + "mkdir -p ");
+        cmdData.setCommand(sudo + "mkdir -p " + cmdData.getBasePath());
+        StafSupport.issueProcessShellRequest(cmdData);
         
-        StafSupport.issueProcessRequest(cmdData);
         cmdData = new ProcessCommandData(cmdData);
-        cmdData.setCommand(sudo + "wget -O " + wgetName + " " + sourceUrl);
-        StafSupport.issueProcessRequest(cmdData);
+        cmdData.setUseWorkingDir(true);
+        cmdData.setCommand(sudo + "wget -O " + urlFile + " " + sourceUrl);
+        StafSupport.issueProcessShellRequest(cmdData);
+        
         cmdData = new ProcessCommandData(cmdData);
-        cmdData.setCommand(sudo + "mv " + wgetName + " " + newName);
-        StafSupport.issueProcessRequest(cmdData);
+        cmdData.setCommand(sudo + "mv " + urlFile + " " + cmdData.getFileName());
+        StafSupport.issueProcessShellRequest(cmdData);
+        
+        if(!windows)
+        {
+            cmdData = new ProcessCommandData(cmdData);
+            cmdData.setCommand(sudo + "chmod 777 " + cmdData.getFileName());
+            StafSupport.issueProcessShellRequest(cmdData);
+        }
         return null;
     }
 
@@ -115,7 +128,8 @@ public class DeployFuture implements Callable<Void>
                 penultimate = penultimate.replace('/', '\\');           // lib\someApp.jr, topLevelFile 
                 path = StrH.addTrailingSeparator(winSandbox, '\\');     // c:\opt\dtf\sandbox\
             }else
-                path = StrH.addTrailingSeparator(winSandbox, '/');     // /opt/dtf/sandbox\
+                path = StrH.addTrailingSeparator(linuxSandbox, '/');     // /opt/dtf/sandbox\
+                
             if (!fileOnly)
                 path = StrH.addTrailingSeparator(path + penultimate, '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/
         }

@@ -15,6 +15,7 @@
  */
 package com.pslcl.dtf.core.runner.resource.staf;
 
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
@@ -31,12 +32,14 @@ public class ProcessCommandData
     private boolean wait;
     private int timeout;
     private Object context;
+    private boolean useWorkingDir;
 
     public ProcessCommandData(String basePath, String fileName, boolean fdn)
     {
         this.fdn = fdn;
         this.basePath = basePath;
         this.fileName = fileName;
+        this.useWorkingDir = useWorkingDir;
     }
 
     public ProcessCommandData(ProcessCommandData commandData)
@@ -48,6 +51,8 @@ public class ProcessCommandData
         wait = commandData.isWait();
         timeout = commandData.getTimeout();
         context = commandData.getContext();
+        fdn = commandData.isFdn();
+        useWorkingDir = commandData.isUseWorkingDir();
     }
 
     public synchronized boolean isFdn()
@@ -57,7 +62,21 @@ public class ProcessCommandData
 
     public synchronized String getFdn()
     {
-        return basePath + fileName;
+        char separator = '\\';
+        int idx = basePath.indexOf('/');
+        if(idx != -1)
+            separator = '/';
+        return StrH.addTrailingSeparator(basePath, separator) + fileName;
+    }
+    
+    public synchronized boolean isUseWorkingDir()
+    {
+        return useWorkingDir;
+    }
+
+    public synchronized void setUseWorkingDir(boolean useWorkingDir)
+    {
+        this.useWorkingDir = useWorkingDir;
     }
 
     public synchronized String getProcessCommand()
@@ -84,7 +103,7 @@ public class ProcessCommandData
 //            cmd.append("\" notify onend ");
         cmd.append("returnstdout ")
         .append("returnstderr ");
-        if(!fdn)
+        if(!fdn && useWorkingDir)
             cmd.append("workdir ").append(basePath);
         return cmd.toString();
     }
@@ -178,6 +197,7 @@ public class ProcessCommandData
         format.ttl("command: ", command);
         format.ttl("wait: ", wait);
         format.ttl("timeout: ", timeout);
+        format.ttl("useWorkingDir: ", useWorkingDir);
         format.ttl("context: ", (context == null ? "null" : context.getClass().getName()));
         return format;
     }

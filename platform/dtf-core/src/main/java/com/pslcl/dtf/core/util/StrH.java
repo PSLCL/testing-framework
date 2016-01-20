@@ -187,6 +187,11 @@ public class StrH
     
     public static String addTrailingSeparator(String value, char seperator)
     {
+        return addTrailingSeparator(value, ""+seperator);
+    }
+    
+    public static String addTrailingSeparator(String value, String seperator)
+    {
         if(value == null || value.length() == 0)
             return value;
         value = value.trim();
