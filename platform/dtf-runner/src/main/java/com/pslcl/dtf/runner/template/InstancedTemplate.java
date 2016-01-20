@@ -219,8 +219,8 @@ public class InstancedTemplate {
 			}
 			int currentStepReference = this.mapStepReferenceToNestedTemplate.size();
 
-			// second, process step sets (steps in the same set)
-			// process each step set in sequential order (starting at setID 0, with no missing setID)
+			// second, process each step set, in sequence (starting at setID 0, with no missing setID)
+			//     do this by fully processing steps of the same set, before moving on to the next set
 			// any error terminates step handling
 			for (int setID=0; ; setID++) {
 				String strSetID = Integer.toString(setID) + ' '; // trailing space required for a legal setID
@@ -231,11 +231,11 @@ public class InstancedTemplate {
 				    // Decision: Exit step processing. If there exist follow-on steps, we don't know about them.
 			    	break; // step handling now complete
 			    }
-			    
+
+			    // algorithm for each setID: initiate step processing in sequence, as supplied by the template, while also allowing parallel processing; within a setID, order of step completion is uncertain
 				BindHandler bindHandler = null;
 				DeployHandler deployHandler = null;
-				List<DeployInfo> deployInfos = null;
-				InspectHandler inspectHandler = null; // Inspect purposely has no overall list of InspectInfo
+				InspectHandler inspectHandler = null;
 				ConnectHandler connectHandler = null;
 				List<ConnectInfo> connectInfos = null;
 				ConfigureHandler configureHandler = null;
@@ -244,7 +244,8 @@ public class InstancedTemplate {
 				List<ProgramInfo> startInfos = null;
 				RunHandler runHandler = null;
 				List<ProgramInfo> runInfos = null;
-			    // algorithm for each setID: initiate step processing in sequence, as supplied, while also allowing parallel processing; order of step completion is uncertain
+
+				// this for() loop: initiate all step commands for same setID
 			    for (int setStepCount=0; setStepCount<stepsOfSet.size(); setStepCount++) {
 			    	// from the first step of a possible group of same-command steps, get its command and act on it
 			    	String commandString = null;
@@ -252,12 +253,15 @@ public class InstancedTemplate {
 			    	try {
 						commandString = firstLikeStep.getCommand();
 						switch(commandString) {
+							// NOTE: In a pattern, none of these cases accomplish their final work. That work is accomplished in the do/while loop that follows our for loop.
 						case "bind":
 							if (bindHandler == null) {
 								bindHandler = new BindHandler(this, stepsOfSet, setStepCount);
 								bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for loop that initiates all step commands for same setID. This first call will not block. 
 								bindHandler.proceed();
-								// bind processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
+								// bind processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
 
 								int consumedStepReferences = bindHandler.getReserveResourceRequestCount(); // the number of step lines processed, regardless of the outcome of eventual reserve and bind activity
 								setStepCount += consumedStepReferences;
@@ -270,12 +274,15 @@ public class InstancedTemplate {
 							// We track MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to the machine of a nested template
 							if (deployHandler == null) {
 								deployHandler = new DeployHandler(this, stepsOfSet, setStepCount);
-								deployInfos = deployHandler.computeDeployRequests(); // setID deploy 0-based-machine-ref artifact-name artifactHash
-								deployHandler.initiateDeploy(deployInfos);
-								int consumedStepReferences = deployInfos.size();
+								deployHandler.computeDeployRequests(); // setID deploy 0-based-machine-ref artifact-name artifactHash
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for loop that initiates all step commands for same setID. This first call will not block.
+								deployHandler.proceed();
+								// deploy processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
+
+								int consumedStepReferences = deployHandler.getDeployRequestCount(); // the number of step lines processed, regardless of the outcome of eventual inspect activity
 								setStepCount += consumedStepReferences;
 								currentStepReference += consumedStepReferences;
-								// deploy(s) are being processed; notification comes to us asynchronously, below, where we receive deploy notification after we have initiated the processing of other steps of this step set
 							} else {
 								// TODO: warn log to report improper ordering of steps within a step set
 							}
@@ -284,10 +291,12 @@ public class InstancedTemplate {
 							if (inspectHandler == null) {
 								inspectHandler = new InspectHandler(this, stepsOfSet, setStepCount);
 								inspectHandler.computeInspectRequests(); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for loop that initiates all step commands for same setID. This first call will not block.
 								inspectHandler.proceed();
-								// inspect processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
+								// inspect processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
 
-								int consumedStepReferences = inspectHandler.getInspectRequestCount();    // the number of step lines processed, regardless of the outcome of eventual inspect activity
+								int consumedStepReferences = inspectHandler.getInspectRequestCount(); // the number of step lines processed, regardless of the outcome of eventual inspect activity
 								setStepCount += consumedStepReferences;
 								currentStepReference += consumedStepReferences;
 							} else {
@@ -360,8 +369,9 @@ public class InstancedTemplate {
 					    log.debug(simpleName + "runSteps(): " + commandString + " executing step fails");
 						throw e;
 					}
-			    } // end for() same setID command initiating
+			    } // end for(): initiate all step commands for same setID
 			    
+				// this do loop: process all step commands for same setID
 			    do {
 			        // block, in turn, until all steps of this set have concluded their processing
 			    	if (bindHandler!=null && !bindHandler.isDone()) {
@@ -374,30 +384,23 @@ public class InstancedTemplate {
 			    	}
 			        if (deployHandler!=null && !deployHandler.isDone()) {
 						// we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
-			        	boolean allDeploysSucceeded = false;
-			            try {
-							List<DeployInfo> localDeployInfos = deployHandler.waitComplete();
-							deployedInfos.addAll(localDeployInfos);
-							if (DeployInfo.getAllDeployedSuccess() && localDeployInfos.size()==deployInfos.size()) // check success further
-								allDeploysSucceeded = true;
-							else {
-								// TODO: log and notify
+			    		deployHandler.proceed();
+			    		if (deployHandler.isDone()) {
+			    			List<DeployInfo> localDeployInfos = deployHandler.getDeployInfos();
+							this.deployedInfos.addAll(localDeployInfos);
+							if (DeployInfo.getAllDeployedSuccess() && localDeployInfos.size()==deployHandler.getDeployRequestCount()) {
+				    			log.debug(simpleName + "deployHandler() completes " + deployHandler.getDeployRequestCount() + " deploys(s) for one setID");
+							} else {
+								// one or more deploy steps errored out; this template is errored out
+								throw new Exception("InstancedTemplate.runSteps() deploy handling has incomplete successful deployed list, for setID " + setID);
+								// initiate cleanup/destroy of this template run; this.deployedInfos holds all information
 							}
-						} catch (Exception e) {
-							// e is an unchecked exception; respond by throwing a new exception to cause this template run to error out
-							// TODO: log and notify
-						}
-
-			            if (!allDeploysSucceeded) {
-							// one or more deploy steps errored out; this template is errored out
-							throw new Exception("InstancedTemplate.runSteps() deploy handling has incomplete successful deployed list, for setID " + setID);
-							// initiate cleanup/destroy of this template run; deployedInfos holds all information
-			            }
+			    		}
 			        }
 			        if (inspectHandler!=null && !inspectHandler.isDone()) {
 			        	inspectHandler.proceed();
 			    		if (inspectHandler.isDone()) {
-			    			log.debug(simpleName + "inspectHandler() completes " + " inspect(s) for one setID");
+			    			log.debug(simpleName + "inspectHandler() completes " + inspectHandler.getInspectRequestCount() + " inspect(s) for one setID");
 			    		}
 			        }
 			        if (connectHandler != null) {
@@ -463,9 +466,9 @@ public class InstancedTemplate {
 			        }
 			    } while (bindHandler!=null  && !bindHandler.isDone() ||
 			    		 deployHandler!=null && !deployHandler.isDone() ||
-			    		 inspectHandler!=null && !inspectHandler.isDone());
-			}
-		} catch (Exception e) {
+			    		 inspectHandler!=null && !inspectHandler.isDone()); // end do loop: process all step commands for same setID
+			} // end for(): process each step set, in sequence
+    	} catch (Exception e) {
 			log.debug(this.simpleName + "runSteps() errors out for runID " + this.getRunID() + ", templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());
 			this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
 			throw e;

@@ -38,7 +38,7 @@ public class QAPortalAccess {
 	 * @param runnerConfig
 	 */
 	void init(RunnerConfig runnerConfig) {
-		this.hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey, "https://testing.opendof.org/#/dashboard");
+		this.hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey, "https://testing.opendof.org");
 	}
 	
 	/**
@@ -71,23 +71,23 @@ public class QAPortalAccess {
 	 * @return
 	 * @throws Exception
 	 */
-	URL formArtifactHashSpecifiedURL(String artifactHash) throws Exception {
+	public URL formArtifactHashSpecifiedURL(String artifactHash) throws Exception {
 		// Note: When requesting https://testing.opendof.org, answer comes as: https://testing.opendof.org/#/dashboard
 		
 		URIBuilder b = new URIBuilder(this.hostQAPortal);
-		// for submitted ""
+		// for parameter ""
         // scheme: null
         // host: null
         // path: null
         // fragment: null
 		
-		// for submitted https://testing.opendof.org
+		// for parameter https://testing.opendof.org
         // scheme: https
         // host: testing.opendof.org
         // path: ""
         // fragment: null
 
-		// for submitted https://testing.opendof.org/#/dashboard    // dashboard is a fragment, representing an implied client side request
+		// for parameter https://testing.opendof.org/#/dashboard    // dashboard is a fragment, representing an implied client side request
         // scheme: https
         // host: testing.opendof.org
         // path: "/"
@@ -97,15 +97,29 @@ public class QAPortalAccess {
 			throw new Exception("QA Portal host not configured");
 		if (b.getScheme() == null)
 			b.setScheme("https");
-        // Note: Adding a header informs QA Portal that it should return something more specific than its web page.
-		//       Without a header, this QA Portal will return a String, of the entire web page at the indicated web page.
-		b.addParameter("content", artifactHash);
 		
-		URL retURL = b.build().toURL();	
+		// http://54.85.89.189/content/2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
+		String contentPath = "/" + "content/" + artifactHash;
+		b.setPath(contentPath);
+		// on artifact not found, the eventual http request returns "org.apache.http.client.HttpResponseException: Not Found"
+
+		// Note: results from alternative setters 
+		// http://54.85.89.189?content=2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
+//		b.addParameter("content", artifactHash);
+		
+		// http://54.85.89.189?content=2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
+//		b.setParameter("content", artifactHash);
+		
+		// http://54.85.89.189##/content/2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
+//		b.setFragment("/" + "content/" + artifactHash);
+
+		//http://%2Fcontent%2F2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7@54.85.89.189
+//		b.setUserInfo("/" + "content/" + artifactHash);
+
+		URL retURL = b.build().toURL();
 		return retURL;
 
 
-		
 //		File file = new File(artifactHash); // someArtifactHash
 //		URI uri = file.toURI();         // uri.path is C:/gitdtf/ws/apps/someArtifactHash, apparently builds onto the base directory of the launching java app
 //		URL url = uri.toURL();          // url.path is C:/gitdtf/ws/apps/someArtifactHash

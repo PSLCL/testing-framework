@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,8 +30,8 @@ public class InspectHandler {
 
     private final InstancedTemplate iT;
     private final List<String> setSteps;
-    private List<Future<? extends Void>> futuresOfInspects;
     private List<InspectInfo> inspectInfos = null;
+    private List<Future<? extends Void>> futuresOfInspects;
     private int iBeginSetOffset = -1;
     private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin
     private int indexNextInspectInfo = 0;
@@ -63,6 +62,11 @@ public class InspectHandler {
         }
     }
 
+    /**
+     * 
+     * @return
+     * @throws Exception
+     */
     int getInspectRequestCount() throws Exception {
         if (this.inspectInfos != null) {
             int retCount = this.inspectInfos.size();
@@ -72,6 +76,10 @@ public class InspectHandler {
         throw new Exception("InspectHandler unexpectedly finds no inpect requests");
     }
 
+    /**
+     * 
+     * @return
+     */
     boolean isDone() {
         return done;
     }
@@ -80,21 +88,22 @@ public class InspectHandler {
         this.inspectInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
-                String inspectStep = setSteps.get(i);
-                SetStep parsedSetStep = new SetStep(inspectStep); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
-                                                                  // 8 inspect 0 A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
-                log.debug(simpleName + "computeInspectRequests() finds inspect in stepSet " + parsedSetStep.getSetID() + ": " + inspectStep);
-                int parsedSetStepParameterCount = parsedSetStep.getParameterCount();
-                if (parsedSetStepParameterCount < 4) // after setID and command, must have 0-based-person-ref, instructionsHash, and at least this couple "strArtifactName strArtifactHash", each of which adds 2 to parameter count
-                    throw new IllegalArgumentException("inspect step did not specify all needed person reference, instructionsHash, artifact name, and artifact hash");
-                if (parsedSetStepParameterCount%2 != 0) { // odd parameter count means a strArtifactName is missing its associated strArtifactHash
-                    throw new IllegalArgumentException("InspectHandler.computeInspectRequests() finds its final artifact name parameter is missing its required artifact hash paramenter");
-                }
-
-                ResourceInstance resourceInstance = null;
-                String strInstructionsHash = null;
-                Map<String, String> artifacts = new HashMap<>();
                 try {
+                    ResourceInstance resourceInstance = null;
+                    String strInstructionsHash = null;
+                    Map<String, String> artifacts = new HashMap<>();
+                    
+                    String inspectStep = setSteps.get(i);
+                    SetStep parsedSetStep = new SetStep(inspectStep); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
+                                                                      // 8 inspect 0 A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
+                    log.debug(simpleName + "computeInspectRequests() finds inspect in stepSet " + parsedSetStep.getSetID() + ": " + inspectStep);
+                    int parsedSetStepParameterCount = parsedSetStep.getParameterCount();
+                    if (parsedSetStepParameterCount < 4) // after setID and command, must have 0-based-person-ref, instructionsHash, and at least this couple "strArtifactName strArtifactHash", each of which adds 2 to parameter count
+                        throw new IllegalArgumentException("inspect step did not specify all needed person reference, instructionsHash, artifact name, and artifact hash");
+                    if (parsedSetStepParameterCount%2 != 0) { // odd parameter count means a strArtifactName is missing its associated strArtifactHash
+                        throw new IllegalArgumentException("InspectHandler.computeInspectRequests() finds its final artifact name parameter is missing its required artifact hash paramenter");
+                    }
+                	
                     String strPersonReference = parsedSetStep.getParameter(0);
                     int personReference = Integer.valueOf(strPersonReference).intValue();
                     resourceInstance = iT.getResourceInstance(personReference);
@@ -119,6 +128,7 @@ public class InspectHandler {
                     }
                 } catch (Exception e) {
                     log.debug(simpleName + "inspect step processing error, msg: " + e);
+                    this.done = true;
                     throw e;
                 }
             }
@@ -126,91 +136,101 @@ public class InspectHandler {
     }
 
     /**
-     * Proceed to reserve and then bind resources, as far as possible, then return. Set done only when binds complete or error out.
-     *
-     * @note First, reserve resources by sequentially calling independent ResourceProvider's, with yielding. Last, make a single call to bind all reserved resources, in parallel.
+     * Proceed to obtain inspect instructions and files to inspect, then issue inspect command(s), then return. Set done when inspects complete or error out.
      *
      * @throws Exception
      */
     void proceed() throws Exception {
-        if (this.inspectInfos==null || this.inspectInfos.isEmpty())
+        if (this.inspectInfos==null || this.inspectInfos.isEmpty()) {
+        	this.done = true;
             throw new Exception("InspectHandler processing has no inspectInfo");
+        }
 
         try {
             QAPortalAccess qapa = this.iT.getQAPortalAccess();
             while (!done) {
-                // REVIEW: this is setup for future benefit of yielding, by involving futures in the access of data from QA Portal
-                if (this.indexNextInspectInfo < this.inspectInfos.size()) {
-                	// process person.inspect() for this one inspectInfo
-                    InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
-                    ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
-                    // We know that resourceInstance is a PersonInstance, because an inspect step must always direct its work to a PersonInstance.
-                    //     Still, check that condition to avoid problems that arise when template steps are improper.
-                    if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
-                        throw new Exception("Specified inspect target is not a PersonInstance");
-                    PersonInstance pi = PersonInstance.class.cast(resourceInstance);
+            	if (futuresOfInspects.isEmpty()) {
+            		if (this.indexNextInspectInfo < this.inspectInfos.size()) {
+            			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+            			while (this.indexNextInspectInfo < this.inspectInfos.size()) {
+                            // place new empty temp directory for this particular inspectInfo, with delete if needed, to hold all specified artifacts to inspect
+                            File fileTempArtifactDirectory = new File(InspectHandler.tempArtifactDirectory);
+                            FileUtils.deleteDirectory(fileTempArtifactDirectory); // whether directory is present, or not, this operates without exception
+                            fileTempArtifactDirectory.mkdirs();
+                            // REVIEW: How to place code here that will yield until proven that the directory at .tempArtifactDirectory is actually in place. Have not seen the problem, but it could happen that code will write to disk before the disk is fully set up.
+                            
+                            // TODO: Add async behavior here. It is setup for that, to involve futures in the two QA Portal data accesses.
+                            
+                			// for this one inspectInfo, get inspect info from web page
+                            InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
+                            
+                            // obtain instructions for this.inspectInfo
+                            String instructionsHash = inspectInfo.getInstructionsHash();
+                            String instructions = qapa.getContentAsString(instructionsHash); // TODO: needs to be asynchronous
+                            inspectInfo.setInstruction(instructions);
+                            if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
+                                inspectInfo.setInstruction(new String("this is instructions"));
 
-                    // place new empty temp directory, with delete if needed, to hold all specified artifacts to inspect
-                    File fileTempArtifactDirectory = new File(InspectHandler.tempArtifactDirectory);
-                    FileUtils.deleteDirectory(fileTempArtifactDirectory); // whether directory is present, or not, this operates without exception
-                    fileTempArtifactDirectory.mkdirs();
-                    
-                    // REVIEW: How to place code here that will hold until proven that the directory at .tempArtifactDirectory is actually in place. Have not seen the problem, but it could happen that code will write to disk before the disk is fully set up.
-                    
-                    // obtain instructions for this.inspectInfo
-                    String instructionsHash = inspectInfo.getInstructionsHash();
-                    String instructions = qapa.getContentAsString(instructionsHash); // TODO: needs to be asynchronous
-                    inspectInfo.setInstruction(instructions);
-                    if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
-                        inspectInfo.setInstruction(new String("this is instructions"));
+                            // into local temp directory, place n filename/contents and place
+                            for (Entry<String, String> artifact: inspectInfo.getArtifacts().entrySet()) {
+                                String contentFilename = artifact.getKey();
+                                File contentFile = new File(contentFilename); // empty File
 
-                    // into local temp directory, place n filename/contents and place
-                    for (Entry<String, String> artifact: inspectInfo.getArtifacts().entrySet()) {
-                        String contentFilename = artifact.getKey();
-                        File contentFile = new File(contentFilename); // empty File
+                                // TODO: asynch, gather in .waitComplete()
+                                String contentHash = artifact.getValue();
+                                InputStream streamContent = qapa.getContentAsStream(contentHash);
+                                Path dest = Paths.get(fileTempArtifactDirectory.getPath() + File.separator + contentFile.getPath());
+                                // It should never happen that a file is copied over a file of the same filenmaem, bbecause:
+                                //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.   
+                                Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
+                            }
 
-                        // TODO: asynch, gather in .waitComplete()
-                        String contentHash = artifact.getValue();
-                        InputStream streamContent = qapa.getContentAsStream(contentHash);
-                        Path dest = Paths.get(fileTempArtifactDirectory.getPath() + File.separator + contentFile.getPath());
-                        // It should never happen that a file is copied over a file of the same filenmaem, bbecause:
-                        //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.   
-                        Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
-                    }
-
-                    // from local temp directory, place tarGz file in local directory
-                    ToTarGz toTarGz = new ToTarGz(fileTempArtifactDirectory.getName(), InspectHandler.archiveFilename);
-                    toTarGz.CreateTarGz();
-                    TarArchiveInputStream tais = toTarGz.getTarArchiveInputStream();
-                    inspectInfo.setContentStream(tais);
-                    // TODO: We need to clean up the InputStream tais, after consumed. The right place may be in .waitComplete().
-
-                    // initiate inspect
-                    Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
-                    futuresOfInspects.add(future);
-                    // TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future
-
-                    ++this.indexNextInspectInfo;
-                    return;
-                }
-
-                // List futuresOfInspects is now full
-                // Each list element:
-                //     can be a null (inspect failed while in the act of creating a Future), or
-                //     can be a Future<Void>, for which future.get():
-                //        returns a Void on inspect success, or
-                //        throws an exception on inspect failure
-
-                // complete work by waiting for all the futures to complete
-                this.waitComplete();
-                this.done = true;
-            } // end while
+                            // from local temp directory, place tarGz file in local directory
+                            ToTarGz toTarGz = new ToTarGz(fileTempArtifactDirectory.getName(), InspectHandler.archiveFilename);
+                            toTarGz.CreateTarGz();
+                            TarArchiveInputStream tais = toTarGz.getTarArchiveInputStream();
+                            inspectInfo.setContentStream(tais);
+                            
+                            ++this.indexNextInspectInfo;
+                			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
+            			} // end while()
+            		} else {
+            			// call the full set of (async) PersonInstance.inspect() method calls
+            			for (InspectInfo inspectInfo : this.inspectInfos) {
+                            ResourceInstance resourceInstance = inspectInfo.getResourceInstance();
+                            // We know that resourceInstance is a PersonInstance, because an inspect step must always direct its work to a PersonInstance.
+                            //     Still, check that condition to avoid problems that arise when template steps are improper.
+                            if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
+                                throw new Exception("Specified inspect target is not a PersonInstance");
+                            PersonInstance pi = PersonInstance.class.cast(resourceInstance);
+            				
+                        	// initiate person.inspect() for this one inspectInfo; fills futuresOfInspects
+                            Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
+                            futuresOfInspects.add(future);
+                            // TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future
+            			}
+                        // List futuresOfInspects is now full
+                        // Each list element:
+                        //     can be a null (inspect failed while in the act of creating a Future), or
+                        //     can be a Future<Void>, for which future.get():
+                        //        returns a Void on inspect success, or
+                        //        throws an exception on inspect failure
+            			
+            			return; // allow time for futures to resolve
+            		}
+            	} // end if(futuresOfInspects.isEmpty())
+            	  else {
+                    // complete work by blocking until all the futures complete
+                    this.waitComplete();
+                    this.done = true;
+            	}
+            } // end while()
         } catch (Exception e) {
             this.done = true;
             throw e;
         }
     }
-
+    
     /**
      * thread blocks
      */

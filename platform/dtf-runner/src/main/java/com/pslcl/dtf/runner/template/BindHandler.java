@@ -172,7 +172,8 @@ public class BindHandler {
     	try {
     		while (!done) {
 	    		if (this.reserveInProgress) { // once cleared, .reserveInProgress is not set again
-	    			// reserve loop
+        			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+	    			//     reserve loop
 	    			if (!this.reserveResourceRequests.isEmpty()) {
 	    				if (this.currentRPFutureListOfRRD == null) {
 		    				// ask next-in-line ResourceProvider to reserve the resources in reserveResourceRequests
@@ -188,7 +189,7 @@ public class BindHandler {
 		    				// note: each element of reserveReseourceRequests is a ResourceDescriptionImpl
 		    				// initiate reserving of each resource specified by each ResourceDescription, with 6 minute timeout for each reservation
 		    				this.currentRPFutureListOfRRD = this.currentRP.reserve(this.reserveResourceRequests, 60 * 6);
-		    				return; // come back later to check this future
+                			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
 	    				} else {
 	    					try {
 		    					// for currentRP, obtain our resolved future and process its result list
@@ -253,10 +254,12 @@ public class BindHandler {
 	    				//      can be a Future, for which future.get():
 	    				//          returns a ResourceInstance on bind success
 	    				//          throws an exception on bind failure
-	    				return; // come back later to check this future, in code just below: this.waitComplete()
+	    				
+            			return; // allow time for futures to resolve
 	    			}
 	    		} // end if (reserveInProgress)
 	    		
+                // complete work by blocking until all the futures complete
 				this.waitBindsComplete();
 				done = true;
     		} //end while()
