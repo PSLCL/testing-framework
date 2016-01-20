@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.Instance;
+import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
@@ -43,13 +44,15 @@ public class AwsMachineInstance implements MachineInstance
     private final MachineReservedResource reservedResource;
     public final ResourceDescription resource;
     public final Instance ec2Instance;
-    public final MachineConfigData config;
+    public final MachineConfigData mconfig;
+    public final RunnerConfig rconfig;
     
-    public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData config)
+    public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
         this.reservedResource = reservedResource;
         this.resource = reservedResource.resource; 
-        this.config = config;
+        this.mconfig = mconfig;
+        this.rconfig = rconfig;
         ec2Instance = reservedResource.ec2Instance;
     }
 
@@ -108,7 +111,7 @@ public class AwsMachineInstance implements MachineInstance
             boolean windows = false;
             if(platform != null && platform.length() > 0)
                 windows = true;
-            RunFuture df = new RunFuture(ec2Instance.getPublicIpAddress(), config.linuxSandboxPath, config.winSandboxPath, command, false, windows, this);
+            RunFuture df = new RunFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, command, null, windows, this);
             return reservedResource.provider.config.blockingExecutor.submit(df);
         } catch (Exception e)
         {
@@ -127,7 +130,7 @@ public class AwsMachineInstance implements MachineInstance
             boolean windows = false;
             if(platform != null && platform.length() > 0)
                 windows = true;
-            ConfigureFuture cf = new ConfigureFuture(ec2Instance.getPublicIpAddress(), config.linuxSandboxPath, config.winSandboxPath, command, windows, this);
+            ConfigureFuture cf = new ConfigureFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, command, windows, this);
             return reservedResource.provider.config.blockingExecutor.submit(cf);
         } catch (Exception e)
         {
@@ -145,7 +148,7 @@ public class AwsMachineInstance implements MachineInstance
             boolean windows = false;
             if(platform != null && platform.length() > 0)
                 windows = true;
-            RunFuture df = new RunFuture(ec2Instance.getPublicIpAddress(), config.linuxSandboxPath, config.winSandboxPath, command, true, windows, this);
+            RunFuture df = new RunFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, command, rconfig.blockingExecutor, windows, this);
             return reservedResource.provider.config.blockingExecutor.submit(df);
         } catch (Exception e)
         {
@@ -163,7 +166,7 @@ public class AwsMachineInstance implements MachineInstance
             boolean windows = false;
             if(platform != null && platform.length() > 0)
                 windows = true;
-            DeployFuture df = new DeployFuture(ec2Instance.getPublicIpAddress(), config.linuxSandboxPath, config.winSandboxPath, partialDestPath, url, windows);
+            DeployFuture df = new DeployFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, partialDestPath, url, windows);
             return reservedResource.provider.config.blockingExecutor.submit(df);
         } catch (Exception e)
         {
@@ -181,7 +184,7 @@ public class AwsMachineInstance implements MachineInstance
             boolean windows = false;
             if(platform != null && platform.length() > 0)
                 windows = true;
-            DeleteFuture df = new DeleteFuture(ec2Instance.getPublicIpAddress(), config.linuxSandboxPath, config.winSandboxPath, partialDestPath, windows);
+            DeleteFuture df = new DeleteFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, partialDestPath, windows);
             return reservedResource.provider.config.blockingExecutor.submit(df);
         } catch (Exception e)
         {

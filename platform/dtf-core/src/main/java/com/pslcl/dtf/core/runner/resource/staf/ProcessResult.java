@@ -35,6 +35,7 @@ public class ProcessResult
     public final static String StafFileDataKey = "data";
 
     public final STAFResult result;
+    public StopResult stopResult;
     public final boolean wait;
     public volatile int rc;
     public volatile String key;
@@ -55,6 +56,23 @@ public class ProcessResult
             checkMap(STAFMarshallingContext.unmarshall(result.result));
     }
 
+    public synchronized StopResult getStopResult()
+    {
+        return stopResult;
+    }
+
+    public synchronized void setStopResult(StopResult stopResult)
+    {
+        this.stopResult = stopResult;
+    }
+
+    public Integer getStopCcode()
+    {
+        if(stopResult == null)
+            return null;
+        return stopResult.ccode;
+    }
+    
     public Integer getServiceCcode()
     {
         return result.rc;

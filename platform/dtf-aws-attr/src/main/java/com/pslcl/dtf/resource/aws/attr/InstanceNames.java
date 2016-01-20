@@ -63,7 +63,7 @@ public class InstanceNames
     public static final String shortMaxDelay = "800";  // 0.8 seconds
     public static final String shortMaxRetries = "76"; // roughly 1 minute
     public static final String longMaxDelay = "6400";  // roughly 6.4 seconds
-    public static final String longMaxRetries = "152"; // rouchly 16 minutes
+    public static final String longMaxRetries = "152"; // roughly 16 minutes
     
     /* ****************************************************************************
      * VPC declarations
