@@ -1081,8 +1081,10 @@ public class CommandLine
                 }
 
                 i += 1;
-            } else
+            } else{
+            	System.err.println("Unrecognized argument " + args[i]);
                 populateHelp();
+            }
         }
 
         // Check for illegal combinations
