@@ -7,6 +7,8 @@ import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
@@ -16,20 +18,36 @@ public class QAPortalAccess {
 
 	private final Executor executor; // is pooling, uses PoolingHttpClientConnectionManager 
 	private volatile String hostQAPortal = null;
+    private final Logger log;
+    private final String simpleName;
 	
-	private Response request(String contentSpecifier) throws Exception {
-		String urlAsString = this.formArtifactHashSpecifiedURL(contentSpecifier).toString();
-		Request request = Request.Get(urlAsString)
-                .connectTimeout(1000)
-                .socketTimeout(1000);
-		Response retResponse =	this.executor.execute(request); // submits the request and collects the response
+    /**
+     * 
+     * @param contentSpecifier
+     * @return
+     * @throws Exception
+     */
+    private Response request(String contentSpecifier) throws Exception {
+		Response retResponse = null;
+		try {
+			String urlAsString = this.formArtifactHashSpecifiedURL(contentSpecifier).toString();
+			Request request = Request.Get(urlAsString)
+			        .connectTimeout(1000)
+			        .socketTimeout(1000);
+			retResponse =	this.executor.execute(request); // submits the request and collects the response
+		} catch (Exception e) {
+			log.debug(this.simpleName + "http content request exception for contentSpecifier " + contentSpecifier + ", exception message: " + e.getMessage());
+			throw e;
+		}
 		return retResponse;
 	}
 	
 	/**
-	 * 
+	 * Constructor
 	 */
 	QAPortalAccess() {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.simpleName = getClass().getSimpleName() + " ";
 		this.executor = Executor.newInstance();
 	}
 	
@@ -48,8 +66,14 @@ public class QAPortalAccess {
 	 * @throws Exception
 	 */
 	public String getContentAsString(String contentSpecifier) throws Exception {
-		Response response = this.request(contentSpecifier); 
-		String retString = response.returnContent().asString();
+		String retString = null;
+		try {
+			Response response = this.request(contentSpecifier); 
+			retString = response.returnContent().asString();
+		} catch (Exception e) {
+			log.debug(this.simpleName + "getContentAsString() http content request exception for contentSpecifier " + contentSpecifier + ", exception message: " + e.getMessage());
+			throw e;
+		}
 		return retString;
 	}
 	
@@ -60,8 +84,14 @@ public class QAPortalAccess {
 	 * @throws Exception
 	 */
 	public InputStream getContentAsStream(String contentSpecifier) throws Exception {
-		Response response = this.request(contentSpecifier); 
-		InputStream retStream = response.returnContent().asStream();
+		InputStream retStream = null;
+		try {
+			Response response = this.request(contentSpecifier); 
+			retStream = response.returnContent().asStream();
+		} catch (Exception e) {
+			log.debug(this.simpleName + "getContentAsStream() http content request exception for contentSpecifier " + contentSpecifier + ", exception message: " + e.getMessage());
+			throw e;
+		}
 		return retStream;
 	}
 
@@ -72,62 +102,39 @@ public class QAPortalAccess {
 	 * @throws Exception
 	 */
 	public URL formArtifactHashSpecifiedURL(String artifactHash) throws Exception {
-		// Note: When requesting https://testing.opendof.org, answer comes as: https://testing.opendof.org/#/dashboard
-		
 		URIBuilder b = new URIBuilder(this.hostQAPortal);
-		// for parameter ""
-        // scheme: null
-        // host: null
-        // path: null
-        // fragment: null
-		
-		// for parameter https://testing.opendof.org
-        // scheme: https
-        // host: testing.opendof.org
-        // path: ""
-        // fragment: null
-
-		// for parameter https://testing.opendof.org/#/dashboard    // dashboard is a fragment, representing an implied client side request
-        // scheme: https
-        // host: testing.opendof.org
-        // path: "/"
-        // fragment: /dashboard
-
 		if (b.getHost() == null)
 			throw new Exception("QA Portal host not configured");
 		if (b.getScheme() == null)
 			b.setScheme("https");
-		
+		b.setPath("/" + "content/" + artifactHash);
 		// http://54.85.89.189/content/2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
-		String contentPath = "/" + "content/" + artifactHash;
-		b.setPath(contentPath);
-		// on artifact not found, the eventual http request returns "org.apache.http.client.HttpResponseException: Not Found"
+		// Note: on artifact not found, the eventual http request returns "org.apache.http.client.HttpResponseException: Not Found"
 
-		// Note: results from alternative setters 
+		//b.addParameter("content", artifactHash);
 		// http://54.85.89.189?content=2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
-//		b.addParameter("content", artifactHash);
 		
+		//b.setParameter("content", artifactHash);
 		// http://54.85.89.189?content=2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
-//		b.setParameter("content", artifactHash);
 		
+		//b.setFragment("/" + "content/" + artifactHash);
 		// http://54.85.89.189##/content/2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
-//		b.setFragment("/" + "content/" + artifactHash);
 
+		//b.setUserInfo("/" + "content/" + artifactHash);
 		//http://%2Fcontent%2F2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7@54.85.89.189
-//		b.setUserInfo("/" + "content/" + artifactHash);
 
 		URL retURL = b.build().toURL();
 		return retURL;
-
-
-//		File file = new File(artifactHash); // someArtifactHash
-//		URI uri = file.toURI();         // uri.path is C:/gitdtf/ws/apps/someArtifactHash, apparently builds onto the base directory of the launching java app
-//		URL url = uri.toURL();          // url.path is C:/gitdtf/ws/apps/someArtifactHash
-//	
-//		String alternateFilename = url.getFile(); // filename is: C:/gitdtf/ws/apps/someArtifactHash
-//		file = new File(alternateFilename);       // filename is: C:/gitdtf/ws/apps/someArtifactHash
 	}
 }
+
+//File file = new File(artifactHash); // someArtifactHash
+//URI uri = file.toURI();         // uri.path is C:/gitdtf/ws/apps/someArtifactHash, apparently builds onto the base directory of the launching java app
+//URL url = uri.toURL();          // url.path is C:/gitdtf/ws/apps/someArtifactHash
+//
+//String alternateFilename = url.getFile(); // filename is: C:/gitdtf/ws/apps/someArtifactHash
+//file = new File(alternateFilename);       // filename is: C:/gitdtf/ws/apps/someArtifactHash
+
 
 //private ResponseHandler rh = null;
 
@@ -158,13 +165,3 @@ public class QAPortalAccess {
 //			
 //			if (result != null)
 //				return result.toString();
-			
-			
-			
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		return null;
-//	}

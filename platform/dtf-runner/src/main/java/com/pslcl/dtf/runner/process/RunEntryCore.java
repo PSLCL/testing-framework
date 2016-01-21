@@ -234,8 +234,8 @@ public class RunEntryCore {
      */
     private void writeRunEntryData() throws Exception {
     	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, reNum);
-    	if (false || // true: temporarily allow overwriting of a past result
-    		previousResultIsStored == null) { // this check is a fail-safe
+    	if(true || // true: temporarily allow overwriting of a past result
+    	   previousResultIsStored == null) { // this check is a fail-safe
     		if (!this.dbConnPool.getReadOnly()) {
                 Connection connection = null;
     	        Statement statement = null;

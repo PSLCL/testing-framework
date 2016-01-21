@@ -16,6 +16,8 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 public class RunHandler {
 	private InstancedTemplate iT;
 	private List<String> setSteps;
+	private boolean done;
+	private List<ProgramInfo> runInfos = null;
     private List<RunState> futuresOfRunState = null;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
@@ -32,6 +34,7 @@ public class RunHandler {
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
+		this.done = false;
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
 			SetStep setStep = new SetStep(setSteps.get(i));
@@ -43,8 +46,35 @@ public class RunHandler {
 		}
 	}
 
-	public List<ProgramInfo> computeRunRequests() throws Exception {
-    	List<ProgramInfo> retList = new ArrayList<>();
+    /**
+     * 
+     * @return
+     */
+	boolean isDone() {
+		return done;
+	}
+	
+    /**
+     * 
+     * @return
+     * @throws Exception
+     */
+    int getRunRequestCount() throws Exception {
+        if (this.runInfos != null) {
+            int retCount = this.runInfos.size();
+            if (retCount > 0)
+                return retCount;
+        }
+        throw new Exception("RunHandler unexpectedly finds no run requests");
+    }
+	
+	/**
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	int computeRunRequests() throws Exception {
+    	this.runInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
                 String runStep = setSteps.get(i);
@@ -70,7 +100,7 @@ public class RunHandler {
 	            		strProgramName = parsedSetStep.getParameter(1);
 	            		for (int j=0; j<(parsedSetStep.getParameterCount()-2); j++)
 	            			parameters.add(parsedSetStep.getParameter(i));
-	                	retList.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
+	                	this.runInfos.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
 					} else {
 	            		throw new Exception("RunHandler.computeRunRequests() finds null ResourceInstance at reference " + strMachineReference);
 					}
@@ -80,8 +110,32 @@ public class RunHandler {
 				}
             }
 		}
-		return retList;
+		return this.runInfos.size();
 	}
+	
+    /**
+     * Proceed to apply this.runInfos to bound machines, then return. Set done when runs complete or error out.
+     *
+     * @throws Exception
+     */
+    List<ProgramState> proceed() throws Exception {
+        if (this.runInfos==null || this.runInfos.isEmpty()) {
+        	this.done = true;
+            throw new Exception("ConfigureHandler processing has no configureInfo");
+        }
+        
+        List<ProgramState> retList = new ArrayList<ProgramState>();
+        try {
+            while (!done) {
+            	
+            }
+        } catch (Exception e) {
+            
+        }
+        return retList;
+    }
+	
+	
 	
 	void initiateRun(List<ProgramInfo> programInfos) throws Exception {
         // start multiple asynch runs

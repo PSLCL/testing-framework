@@ -159,7 +159,7 @@ public class BindHandler {
 			done = true; // as a just in case, we set this even on exception, even though throwing e is thought to close out the entire test run
 			throw e;
 		}
-        return reserveResourceRequests.size();
+        return this.reserveResourceRequests.size();
     }
     
     /**

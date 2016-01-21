@@ -17,6 +17,7 @@ public class StartHandler {
 
 	private InstancedTemplate iT;
 	private List<String> setSteps;
+	private boolean done;
     private List<StartState> futuresOfStartState = null;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
@@ -33,6 +34,7 @@ public class StartHandler {
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
+		this.done = false;
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
 			SetStep setStep = new SetStep(setSteps.get(i));
@@ -43,7 +45,20 @@ public class StartHandler {
 			this.iFinalSetOffset = i;
 		}
 	}
+	
+    /**
+     * 
+     * @return
+     */
+	boolean isDone() {
+		return done;
+	}
 
+	/**
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
 	public List<ProgramInfo> computeStartRequests() throws Exception {
     	List<ProgramInfo> retList = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {

@@ -82,7 +82,7 @@ public class DeployHandler {
 	 * 
 	 * @return
 	 */
-	void computeDeployRequests() throws Exception {
+	int computeDeployRequests() throws Exception {
     	this.deployInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
@@ -121,6 +121,7 @@ public class DeployHandler {
 				}
             }
 		}
+        return this.deployInfos.size();
 	}
 	
     /**

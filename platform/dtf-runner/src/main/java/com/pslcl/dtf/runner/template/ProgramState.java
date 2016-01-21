@@ -4,22 +4,26 @@ import java.util.concurrent.Future;
 
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 
-public class ConfigureState {
-	static private boolean allProgramsRan = false;
+/**
+ * State of programs that run on machines. 
+ * These are programs placed on machines from configure, run, and start template steps. 
+ */
+public class ProgramState {
+//	static private boolean allProgramsRan = false;
+//	
+//	static public void setAllProgramsRan(boolean allProgramsRan) {
+//		ProgramState.allProgramsRan = allProgramsRan;
+//	}
 	
-	static public void setAllProgramsRan(boolean allProgramsRan) {
-		ConfigureState.allProgramsRan = allProgramsRan;
-	}
-	
-	static public boolean getAllProgramsRan() {
-		return allProgramsRan;
-	}
+//	static public boolean getAllProgramsRan() {
+//		return allProgramsRan;
+//	}
 	
 	private Future<Integer> futureProgramRunResult = null;
 	private MachineInstance machineInstance;
 	private Integer programRunResult = null;
 	
-	public ConfigureState(Future<Integer> futureProgramRunResult, MachineInstance machineInstance) {
+	public ProgramState(Future<Integer> futureProgramRunResult, MachineInstance machineInstance) {
 		this.futureProgramRunResult = futureProgramRunResult;
 		this.machineInstance = machineInstance;
 	}

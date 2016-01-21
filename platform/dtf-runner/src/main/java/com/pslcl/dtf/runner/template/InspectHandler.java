@@ -84,7 +84,7 @@ public class InspectHandler {
         return done;
     }
 
-    void computeInspectRequests() throws Exception { // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
+    int computeInspectRequests() throws Exception { // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
         this.inspectInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
@@ -133,6 +133,7 @@ public class InspectHandler {
                 }
             }
         }
+        return this.inspectInfos.size();
     }
 
     /**
@@ -161,7 +162,7 @@ public class InspectHandler {
                             
                             // TODO: Add async behavior here. It is setup for that, to involve futures in the two QA Portal data accesses.
                             
-                			// for this one inspectInfo, get inspect info from web page
+                			// for this one inspectInfo, get inspect information from QA Portal web server
                             InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
                             
                             // obtain instructions for this.inspectInfo

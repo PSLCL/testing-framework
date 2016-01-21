@@ -17,8 +17,10 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 public class ConnectHandler {
 	private InstancedTemplate iT;
 	private List<String> setSteps;
+    private boolean done;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+	private List<ConnectInfo> connectInfos;
     private List<Future<? extends CableInstance>> futuresOfConnects;
     private final Logger log;
     private final String simpleName;
@@ -35,7 +37,9 @@ public class ConnectHandler {
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
+		this.connectInfos = null;
 		this.futuresOfConnects = new ArrayList<>();
+        this.done = false;
 //		this.mapFuturesToMachineInstance = new HashMap<Future<? extends CableInstance>, MachineInstance>();
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
@@ -47,10 +51,31 @@ public class ConnectHandler {
 			this.iFinalSetOffset = i;
 		}
 	}
+	
+    /**
+     * 
+     * @return
+     */
+    boolean isDone() {
+        return done;
+    }
+	
+    /**
+     * 
+     * @return
+     * @throws Exception
+     */
+    int getConnectRequestCount() throws Exception {
+        if (this.connectInfos != null) {
+            int retCount = this.connectInfos.size();
+            if (retCount > 0)
+                return retCount;
+        }
+        throw new Exception("ConnectHandler unexpectedly finds no inpect requests");
+    }	
 
-
-	public List<ConnectInfo> computeConnectRequests() throws Exception {
-    	List<ConnectInfo> retList = new ArrayList<>();
+	public int computeConnectRequests() throws Exception {
+		this.connectInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
             	String connectStep = setSteps.get(i);
@@ -89,46 +114,74 @@ public class ConnectHandler {
 					} else {
 	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound ResourceInstance at reference " + strNetworkReference);
 					}
-					retList.add(new ConnectInfo(machineInstance, networkInstance));
+					this.connectInfos.add(new ConnectInfo(machineInstance, networkInstance));
 				} catch (Exception e) {
                     log.debug(simpleName + " connect step does not specify machine reference or network reference");
 					throw e;
 				}
             }
 		}
-		return retList;		
+		return this.connectInfos.size();		
 	}	
 	
-	void initiateConnect(List<ConnectInfo> connectInfos) throws Exception {
-		
-        // start multiple asynch connects
-		for (ConnectInfo connectInfo : connectInfos) {
-			ResourceInstance machineInstance = connectInfo.getMachineInstance();
-			// We know that machineInstance is a MachineInstance, because a connect step must never direct its connecting resource to be anything except a MachineInstance.
-			//     Still, check that condition to avoid problems that arise when template steps are improper.
-			if (!MachineInstance.class.                                                                        // interface MachineInstance
-				                       isAssignableFrom(machineInstance.getClass())) // class AWSMachineInstance implements MachineInstance
-				throw new Exception("Specified connecting resource is not a MachineInstance");
-			MachineInstance mi = MachineInstance.class.cast(machineInstance);
-			
-			ResourceInstance networkInstance = connectInfo.getNetworkInstance();
-			// We know that networkInstance is a NetworkInstance, because a connect step must never connect to anything except a NetworkInstance.
-			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!NetworkInstance.class.isAssignableFrom(networkInstance.getClass()))
-				throw new Exception("Specified connection is not a NetworkInstance");
-			NetworkInstance ni = NetworkInstance.class.cast(networkInstance);
-			Future<CableInstance> future = mi.connect(ni);
-//			this.mapFuturesToMachineInstance.put(future, mi); // to establish mi for future use
-//			this.mapFuturesToNetworkInstance.put(future, ni); // to establish ni for future use
-			futuresOfConnects.add(future);
-		}
-		// Each list element of futuresOfConnects:
-		//     can be a null (connect failed while in the act of creating a Future), or
-		//     can be a Future<CableInstance>, for which future.get():
-		//        returns a CableInstance on connect success, or
-		//        throws an exception on connect failure
-	}
+    /**
+     * Proceed to apply this.configureInfos to bound machines, then return. Set done when configures complete or error out.
+     *
+     * @throws Exception
+     */
+	List<CableInstance> proceed() throws Exception {
+        if (this.connectInfos==null || this.connectInfos.isEmpty()) {
+        	this.done = true;
+            throw new Exception("ConnectHandler processing has no connectInfo");
+        }
+        
+        List<CableInstance> retList = new ArrayList<CableInstance>();
+        try {
+            while (!done) {
+            	if (this.futuresOfConnects.isEmpty()) {
+	    			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+					//     initiate multiple asynch connects, this must add to this.futuresOfConnects: it will because this.connectInfos is NOT empty
+            		for (ConnectInfo connectInfo : this.connectInfos) {
+            			ResourceInstance machineInstance = connectInfo.getMachineInstance();
+            			// We know that machineInstance is a MachineInstance, because a connect step must never direct its connecting resource to be anything except a MachineInstance.
+            			//     Still, check that condition to avoid problems that arise when template steps are improper.
+            			if (!MachineInstance.class.                                                                        // interface MachineInstance
+            				                       isAssignableFrom(machineInstance.getClass())) // class AWSMachineInstance implements MachineInstance
+            				throw new Exception("Specified connecting resource is not a MachineInstance");
+            			MachineInstance mi = MachineInstance.class.cast(machineInstance);
+            			
+            			ResourceInstance networkInstance = connectInfo.getNetworkInstance();
+            			// We know that networkInstance is a NetworkInstance, because a connect step must never connect to anything except a NetworkInstance.
+            			//     Still, check that condition to avoid problems that arise when template steps are improper. 
+            			if (!NetworkInstance.class.isAssignableFrom(networkInstance.getClass()))
+            				throw new Exception("Specified connection is not a NetworkInstance");
+            			NetworkInstance ni = NetworkInstance.class.cast(networkInstance);
+            			
+            			Future<CableInstance> future = mi.connect(ni);
+//            			this.mapFuturesToMachineInstance.put(future, mi); // to establish mi for future use
+//            			this.mapFuturesToNetworkInstance.put(future, ni); // to establish ni for future use
+            			futuresOfConnects.add(future);
+            		}
+        			return retList;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
+            	} else {
+            		// Each list element of futuresOfConnects:
+            		//     can be a null (connect failed while in the act of creating a Future), or
+            		//     can be a Future<CableInstance>, for which future.get():
+            		//        returns a CableInstance on connect success, or
+            		//        throws an exception on connect failure
 
+                    // complete work by blocking until all the futures complete
+			        retList = this.waitComplete(); // TODO: fill this.connectInfos
+			        this.done = true;
+            	}
+			} // end while(!done)
+        } catch (Exception e) {
+			this.done = true;
+			throw e;
+        }
+        return retList;
+    }
+	
 	/**
 	 * Wait for all connects to complete, for the single setID that is being processed.
 	 * Mark connect errors in the returned CableInstance list.

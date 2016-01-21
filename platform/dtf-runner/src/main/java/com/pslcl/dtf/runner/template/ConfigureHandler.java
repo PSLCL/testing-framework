@@ -16,7 +16,7 @@ public class ConfigureHandler {
 	private InstancedTemplate iT;
 	private List<String> setSteps;
 	private List<ProgramInfo> configureInfos = null;
-    private List<ConfigureState> futuresOfConfigureState;
+    private List<ProgramState> futuresOfProgramState;
     private boolean done = false;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
@@ -33,7 +33,7 @@ public class ConfigureHandler {
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
-		this.futuresOfConfigureState = new ArrayList<ConfigureState>();
+		this.futuresOfProgramState = new ArrayList<ProgramState>();
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
 			SetStep setStep = new SetStep(setSteps.get(i));
@@ -67,7 +67,12 @@ public class ConfigureHandler {
         throw new Exception("ConfigureHandler unexpectedly finds no configure requests");
     }
 
-    void computeConfigureRequests() throws Exception {
+    /**
+     * 
+     * @return
+     * @throws Exception
+     */
+    int computeConfigureRequests() throws Exception {
     	this.configureInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
@@ -104,6 +109,7 @@ public class ConfigureHandler {
 				}
             }
 		}
+        return this.configureInfos.size();
 	}
 	
     /**
@@ -111,34 +117,35 @@ public class ConfigureHandler {
      *
      * @throws Exception
      */
-    List<ConfigureState> proceed() throws Exception {
+    List<ProgramState> proceed() throws Exception {
         if (this.configureInfos==null || this.configureInfos.isEmpty()) {
         	this.done = true;
             throw new Exception("ConfigureHandler processing has no configureInfo");
         }
         
-        List<ConfigureState> retList = new ArrayList<ConfigureState>();
+        List<ProgramState> retList = new ArrayList<ProgramState>();
         try {
             while (!done) {
-				if (this.futuresOfConfigureState.isEmpty()) {
+				if (this.futuresOfProgramState.isEmpty()) {
 	    			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
-					//     initiate multiple asynch configures, this must add to this.futuresOfConfigureState: it will because this.configureInfos is NOT empty
-					ConfigureState.setAllProgramsRan(true); // initialize this to be useful while we process every step of our current setID
+					//     initiate multiple asynch configures, this must add to this.futuresOfProgramState: it will because this.configureInfos is NOT empty
+//					ProgramState.setAllProgramsRan(true); // initialize this to be useful while we process every configure step of our current setID
 					for (ProgramInfo configureInfo : configureInfos) {
 						try {
 							MachineInstance mi = configureInfo.computeProgramRunInformation();
 							String configureProgramCommandLine = configureInfo.getComputedCommandLine();
 							Future<Integer> future = mi.configure(configureProgramCommandLine);
-							futuresOfConfigureState.add(new ConfigureState(future, mi));
+							futuresOfProgramState.add(new ProgramState(future, mi));
 						} catch (Exception e) {
-							ConfigureState.setAllProgramsRan(false);
+//							ProgramState.setAllProgramsRan(false);
+				            log.warn(simpleName + "proceed(), configure failed with exception: " + e.getMessage());
 							throw e;
 						}
 					}
 					// this return is for the 1st caller, who can ignore this empty list
         			return retList;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
 				} else {
-					// For each list element of futuresOfConfigureState, .getFuture():
+					// For each list element of futuresOfProgramState, .getFuture():
 					//     can be null (configure failed while in the act of creating a Future), or
 					//     can be a Future<Integer>, for which future.get():
 					//        returns an Integer from configure completion (the Integer is the run result of the configuring program, or
@@ -153,30 +160,29 @@ public class ConfigureHandler {
 			this.done = true;
 			throw e;
         }
-        
         return retList;
     }
     
 	/**
 	 * thread blocks
 	 */
-	public List<ConfigureState> waitComplete() throws Exception {
-		// At this moment, this.futuresOfConfigureState is filled. Its embedded Future's each give us an Integer. Our API is with each of these extracted Integer's.
+	public List<ProgramState> waitComplete() throws Exception {
+		// At this moment, this.futuresOfProgramState is filled. Its embedded Future's each give us an Integer. Our API is with each of these extracted Integer's.
 		//     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
 
         // Note: As an initial working step, this block is coded to a safe algorithm:
         //       We expect full configure success, and otherwise we back out (but we do not clean up whatever other configures had been put in place, because Configure's are deemed to pollute its machine).
 		
-		// Gather all results from futuresOfConfigureState, a list of objects with embedded Future's. This thread blocks, in waiting for each of the multiple asynch configure calls to complete.
-		List<ConfigureState> retList = new ArrayList<>();
-        for (ConfigureState configureState : this.futuresOfConfigureState) {
-        	if (configureState!=null && configureState.getFutureProgramRunResult()!=null) {
+		// Gather all results from futuresOfProgramState, a list of objects with embedded Future's. This thread blocks, in waiting for each of the multiple asynch configure calls to complete.
+		List<ProgramState> retList = new ArrayList<>();
+        for (ProgramState programState : this.futuresOfProgramState) {
+        	if (programState!=null && programState.getFutureProgramRunResult()!=null) {
                 try {
-					Integer runResult = configureState.getFutureProgramRunResult().get(); // blocks until asynch answer comes, or exception, or timeout
-					configureState.setProgramRunResult(runResult); // pass this Integer result back to caller
-					retList.add(configureState);
+					Integer runResult = programState.getFutureProgramRunResult().get(); // blocks until asynch answer comes, or exception, or timeout
+					programState.setProgramRunResult(runResult); // pass this Integer result back to caller
+					retList.add(programState);
 				} catch (InterruptedException | ExecutionException ioreE) {
-					ConfigureState.setAllProgramsRan(false);
+//					ProgramState.setAllProgramsRan(false);
 					
 		            Throwable t = ioreE.getCause();
 		            String msg = ioreE.getLocalizedMessage();
@@ -185,8 +191,11 @@ public class ConfigureHandler {
 		            log.warn(simpleName + "waitComplete(), configure errored out: " + msg + "; " + ioreE.getMessage());
 		        	throw ioreE;
 				}                
+
         	} else {
-				ConfigureState.setAllProgramsRan(false);
+	            log.warn(simpleName + "waitComplete(), configure errored out with a failed future");
+        		throw new Exception("Future.get() failed");
+//				ProgramState.setAllProgramsRan(false);
         	}
         }
         
