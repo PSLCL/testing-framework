@@ -15,7 +15,9 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 public class ConfigureHandler {
 	private InstancedTemplate iT;
 	private List<String> setSteps;
-    private List<ConfigureState> futuresOfConfigureState = null;
+	private List<ProgramInfo> configureInfos = null;
+    private List<ConfigureState> futuresOfConfigureState;
+    private boolean done = false;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
     private final Logger log;
@@ -31,6 +33,7 @@ public class ConfigureHandler {
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
+		this.futuresOfConfigureState = new ArrayList<ConfigureState>();
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
 			SetStep setStep = new SetStep(setSteps.get(i));
@@ -41,9 +44,31 @@ public class ConfigureHandler {
 			this.iFinalSetOffset = i;
 		}
 	}
+	
+    /**
+     * 
+     * @return
+     */
+	public boolean isDone() {
+		return done;
+	}
+	
+    /**
+     * 
+     * @return
+     * @throws Exception
+     */
+    int getConfigureRequestCount() throws Exception {
+        if (this.configureInfos != null) {
+            int retCount = this.configureInfos.size();
+            if (retCount > 0)
+                return retCount;
+        }
+        throw new Exception("ConfigureHandler unexpectedly finds no configure requests");
+    }
 
-	public List<ProgramInfo> computeConfigureRequests() throws Exception {
-    	List<ProgramInfo> retList = new ArrayList<>();
+    void computeConfigureRequests() throws Exception {
+    	this.configureInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
             	String configureStep = setSteps.get(i);
@@ -69,7 +94,7 @@ public class ConfigureHandler {
 	            		strProgramName = parsedSetStep.getParameter(1);
 	            		for (int j=0; j<(parsedSetStep.getParameterCount()-2); j++)
 	            			parameters.add(parsedSetStep.getParameter(i));
-	                	retList.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
+	                	this.configureInfos.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
 					} else {
 	            		throw new Exception("ConfigureHandler.computeConfigureRequests() finds null ResourceInstance at reference " + strMachineReference);
 					}
@@ -79,37 +104,59 @@ public class ConfigureHandler {
 				}
             }
 		}
-		return retList;
 	}
 	
-	/**
-	 * 
-	 * @param configureInfos
-	 * @throws Exception
-	 */
-	void initiateConfigure(List<ProgramInfo> configureInfos) throws Exception {
-        // start multiple asynch configures
-		this.futuresOfConfigureState = new ArrayList<ConfigureState>();
-		ConfigureState.setAllProgramsRan(true); // initialize this to be useful while we process every step of our current setID
-		for (ProgramInfo configureInfo : configureInfos) {
-			try {
-				MachineInstance mi = configureInfo.computeProgramRunInformation();
-				String configureProgramCommandLine = configureInfo.getComputedCommandLine();
-				Future<Integer> future = mi.configure(configureProgramCommandLine);
-				// future:
-				//     can be a null (configure failed while in the act of creating a Future), or
-				//     can be a Future<Integer>, for which an eventual call to future.get():
-				//        returns an Integer from configure completion (the Integer is the run result of the configuring program, or
-				//        throws an exception from configure error-out (e.g. the configuring program did not properly run)
-				
-				futuresOfConfigureState.add(new ConfigureState(future, mi));
-			} catch (Exception e) {
-				ConfigureState.setAllProgramsRan(false);
-				throw e;
-			}
-		}
-	}
-	
+    /**
+     * Proceed to apply this.configureInfos to bound machines, then return. Set done when configures complete or error out.
+     *
+     * @throws Exception
+     */
+    List<ConfigureState> proceed() throws Exception {
+        if (this.configureInfos==null || this.configureInfos.isEmpty()) {
+        	this.done = true;
+            throw new Exception("ConfigureHandler processing has no configureInfo");
+        }
+        
+        List<ConfigureState> retList = new ArrayList<ConfigureState>();
+        try {
+            while (!done) {
+				if (this.futuresOfConfigureState.isEmpty()) {
+	    			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+					//     initiate multiple asynch configures, this must add to this.futuresOfConfigureState: it will because this.configureInfos is NOT empty
+					ConfigureState.setAllProgramsRan(true); // initialize this to be useful while we process every step of our current setID
+					for (ProgramInfo configureInfo : configureInfos) {
+						try {
+							MachineInstance mi = configureInfo.computeProgramRunInformation();
+							String configureProgramCommandLine = configureInfo.getComputedCommandLine();
+							Future<Integer> future = mi.configure(configureProgramCommandLine);
+							futuresOfConfigureState.add(new ConfigureState(future, mi));
+						} catch (Exception e) {
+							ConfigureState.setAllProgramsRan(false);
+							throw e;
+						}
+					}
+					// this return is for the 1st caller, who can ignore this empty list
+        			return retList;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
+				} else {
+					// For each list element of futuresOfConfigureState, .getFuture():
+					//     can be null (configure failed while in the act of creating a Future), or
+					//     can be a Future<Integer>, for which future.get():
+					//        returns an Integer from configure completion (the Integer is the run result of the configuring program, or
+					//        throws an exception from configure error-out (e.g. the configuring program did not properly run)
+			    	
+                    // complete work by blocking until all the futures complete
+			        retList = this.waitComplete();
+			        this.done = true;				
+				}
+            } // end while(!done)
+        } catch (Exception e) {
+			this.done = true;
+			throw e;
+        }
+        
+        return retList;
+    }
+    
 	/**
 	 * thread blocks
 	 */
@@ -120,8 +167,7 @@ public class ConfigureHandler {
         // Note: As an initial working step, this block is coded to a safe algorithm:
         //       We expect full configure success, and otherwise we back out (but we do not clean up whatever other configures had been put in place, because Configure's are deemed to pollute its machine).
 		
-		// Gather all results from futuresOfConfigureState, a list of objects with embedded Future's. This thread yields, in waiting for each of the multiple asynch configure calls to complete.
-		Exception exception = null;
+		// Gather all results from futuresOfConfigureState, a list of objects with embedded Future's. This thread blocks, in waiting for each of the multiple asynch configure calls to complete.
 		List<ConfigureState> retList = new ArrayList<>();
         for (ConfigureState configureState : this.futuresOfConfigureState) {
         	if (configureState!=null && configureState.getFutureProgramRunResult()!=null) {
@@ -129,28 +175,23 @@ public class ConfigureHandler {
 					Integer runResult = configureState.getFutureProgramRunResult().get(); // blocks until asynch answer comes, or exception, or timeout
 					configureState.setProgramRunResult(runResult); // pass this Integer result back to caller
 					retList.add(configureState);
-				} catch (InterruptedException ee) {
+				} catch (InterruptedException | ExecutionException ioreE) {
 					ConfigureState.setAllProgramsRan(false);
-					exception = ee;
-                    Throwable t = ee.getCause();
-                    String msg = ee.getLocalizedMessage();
-                    if(t != null)
-                        msg = t.getLocalizedMessage();
-                	log.debug(simpleName + "waitComplete(), configure errored out: " + msg, ee);
-				} catch (ExecutionException e) {
-					ConfigureState.setAllProgramsRan(false);
-					exception = e;
-                	log.debug(simpleName + "waitComplete() Executor pool shutdown"); // TODO: new msg
-				}
+					
+		            Throwable t = ioreE.getCause();
+		            String msg = ioreE.getLocalizedMessage();
+		            if(t != null)
+		                msg = t.getLocalizedMessage();
+		            log.warn(simpleName + "waitComplete(), configure errored out: " + msg + "; " + ioreE.getMessage());
+		        	throw ioreE;
+				}                
         	} else {
 				ConfigureState.setAllProgramsRan(false);
         	}
         }
+        
         // each entry in retList is a config program that actually ran; it may have returned zero or non-zero, but it ran
         // retList contains information, for each config program that ran: the run result and the MachineInstance that ran the config program
-        
-        // TODO: check, for each config program that did not run, that we have cleaned up things that were put in place 
-        
         return retList;
 	}
 

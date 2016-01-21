@@ -81,14 +81,14 @@ public class BindHandler {
 		}
 	}
 
-    int getReserveResourceRequestCount() throws Exception {
-    	if (this.reserveResourceRequests != null) {
-    		int retCount = this.reserveResourceRequests.size();
-    		if (retCount > 0)
-    			return retCount;
-    	}
-    	throw new Exception("BindHandler unexpectedly finds no inpect requests");
-    }
+//    int getReserveResourceRequestCount() throws Exception {
+//    	if (this.reserveResourceRequests != null) {
+//    		int retCount = this.reserveResourceRequests.size();
+//    		if (retCount > 0)
+//    			return retCount;
+//    	}
+//    	throw new Exception("BindHandler unexpectedly finds no inpect requests");
+//    }
 	
     List<ResourceInstance> getResourceInstances() {
     	return this.resourceInstances;
@@ -104,7 +104,7 @@ public class BindHandler {
      * 
      * @return
      */
-    void computeReserveRequests(int currentStepReference, String templateId, long runId) throws Exception {
+    int computeReserveRequests(int currentStepReference, String templateId, long runId) throws Exception {
         try {
 			reserveResourceRequests = new ArrayList<>();
 			if (this.iBeginSetOffset != -1) {
@@ -159,6 +159,7 @@ public class BindHandler {
 			done = true; // as a just in case, we set this even on exception, even though throwing e is thought to close out the entire test run
 			throw e;
 		}
+        return reserveResourceRequests.size();
     }
     
     /**
@@ -260,7 +261,7 @@ public class BindHandler {
 	    		} // end if (reserveInProgress)
 	    		
                 // complete work by blocking until all the futures complete
-				this.waitBindsComplete();
+				this.waitComplete();
 				done = true;
     		} //end while()
 		} catch (Exception e) {
@@ -274,7 +275,7 @@ public class BindHandler {
 	/**
 	 * thread blocks
 	 */
-	private void waitBindsComplete() throws Exception {
+	private void waitComplete() throws Exception {
 		// At this moment, this.futuresOfResourceInstances is filled. It's Future's each give us a bound ResourceInstance. Our API is to return a list of each of these extracted ResourceInstance's.
 		//     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
 		

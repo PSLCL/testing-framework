@@ -123,9 +123,6 @@ public class DeployHandler {
 		}
 	}
 	
-	
-	
-	
     /**
      * Proceed to obtain inspect instructions and files to inspect, then issue inspect command(s), as far as possible, then return. Set done only when inspects complete or error out.
      *
@@ -153,8 +150,8 @@ public class DeployHandler {
 						Future<Void> future = mi.deploy(deployInfo.getFilename(), artifactURL.toString());
 						deployInfo.setFuture(future);
 						futuresOfDeploys.add(deployInfo);
-	        			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
 					}
+        			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
 				} else {
 					// For each list element of futuresOfDeploys, .getFuture():
 					//     can be a null (deploy failed while in the act of creating a Future), or
