@@ -127,6 +127,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             synchronized (reservedMachines)
             {
                 List<Long> releaseList = new ArrayList<Long>();
+log.debug(getClass().getSimpleName() + ".release calling releasePossiblePendings, templateId: " + templateId);                
                 releasePossiblePendings(templateId, isReusable);
                 for (Entry<Long, AwsMachineInstance> entry : boundInstances.entrySet())
                 {
@@ -207,6 +208,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     we can then execute the terminate command for it. 
                 */
                 rresource.bindFutureCanceled.set(true);
+                log.debug(getClass().getSimpleName() + ".releasePossiblePendings bindFutureCanceled.set(true)");
                 if(cancelResult)
                 {
                     try
