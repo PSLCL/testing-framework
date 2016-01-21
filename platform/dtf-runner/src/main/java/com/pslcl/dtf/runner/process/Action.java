@@ -94,7 +94,7 @@ public enum Action implements Actions {
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
             System.out.println("Action.REMOVE() removes reNum " + reNum);
-            if (false) // false: temporarily, allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
+            if (true) // false: temporarily, allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
             	runnerService.getRunnerMachine().disengageRunEntry(reNum);
             reState.setAction(DISCARDED);
             return reState.getAction();
@@ -106,7 +106,7 @@ public enum Action implements Actions {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
-            if (false) // false: temporarily, allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
+            if (true) // false: temporarily, allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
             	runnerService.getRunnerMachine().disengageRunEntry(reNum);
             return reState.getAction();
         }
