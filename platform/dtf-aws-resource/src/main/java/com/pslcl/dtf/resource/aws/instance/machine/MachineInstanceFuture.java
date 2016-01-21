@@ -149,6 +149,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             // this synch is required to guarantee that all ec2Client.runInstances success calls are seen by the 
             // AwsMachineProvider.release code.
             checkFutureCanceled();
+LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".createInstance bindFutureCanceled.get() == false");
             do
             {
                 try

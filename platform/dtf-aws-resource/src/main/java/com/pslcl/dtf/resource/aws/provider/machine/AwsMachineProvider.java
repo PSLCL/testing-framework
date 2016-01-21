@@ -207,6 +207,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     we can then execute the terminate command for it. 
                 */
                 rresource.bindFutureCanceled.set(true);
+                log.debug(getClass().getSimpleName() + ".releasePossiblePendings bindFutureCanceled.set(true)");
                 if(cancelResult)
                 {
                     try

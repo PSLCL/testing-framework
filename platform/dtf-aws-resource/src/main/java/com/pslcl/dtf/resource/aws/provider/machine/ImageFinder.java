@@ -92,7 +92,7 @@ public class ImageFinder
     {
         String value = config.properties.getProperty(key, defaultValue);
         config.initsb.ttl(key, " = ", value);
-        if(value == null)
+        if(value == null || value.length() == 0)
             return;
         defaultImageFilters.setProperty(key, value);
     }
@@ -113,8 +113,11 @@ public class ImageFinder
         for(int i=0; i < size; i++)
         {
             Entry<String,String> entry = list.get(i);
-            config.initsb.ttl(entry.getKey(), " = ", entry.getValue());
-            defaultLocationFilters.add(entry.getValue());
+            String value = entry.getValue();
+            if(value == null || value.length() == 0)
+                continue;
+            config.initsb.ttl(entry.getKey(), " = ", value);
+            defaultLocationFilters.add(value);
         }
     }
     
