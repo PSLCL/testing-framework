@@ -38,7 +38,7 @@ public class MachineReservedResource implements Runnable
     public final ResourceDescription resource;
     public final InstanceType instanceType;
     public final String imageId;
-    public final AtomicBoolean zzzbindFutureCanceled;
+    public final AtomicBoolean bindFutureCanceled;
     public final AtomicBoolean reusable;
     public volatile GroupIdentifier groupIdentifier;
     public volatile String groupId;
