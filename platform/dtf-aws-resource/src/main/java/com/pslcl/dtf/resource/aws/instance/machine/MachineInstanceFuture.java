@@ -58,7 +58,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     public final MachineReservedResource reservedResource;
     private final AmazonEC2Client ec2Client;
     private final ProgressiveDelayData pdelayData;
-    private volatile MachineConfigData config; 
+    private volatile MachineConfigData config;
 
     public MachineInstanceFuture(MachineReservedResource reservedResource, ProgressiveDelayData pdelayData)
     {
@@ -89,11 +89,10 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, retMachineInstance);
             return retMachineInstance;
-        }catch(CancellationException ie)
+        } catch (CancellationException ie)
         {
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), ie);
-        }
-        catch (FatalResourceException e)
+        } catch (FatalResourceException e)
         {
             //TODO: as you figure out forceCleanup and optimization of normal releaseFuture cleanup, need to to do possible cleanup on these exceptions
             throw e;
@@ -103,10 +102,10 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), t);
         }
     }
-    
+
     private void checkFutureCanceled()
     {
-        if(reservedResource.bindFutureCanceled.get())
+        if (reservedResource.bindFutureCanceled.get())
             throw new CancellationException();
     }
 
@@ -143,13 +142,12 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         pdelayData.maxRetries = config.ec2MaxRetries;
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
         String msg = pdelayData.getHumanName(Ec2MidStr, "runInstances");
-        synchronized (((AwsMachineProvider)pdelayData.provider).getReservedMachines())
+        synchronized (reservedResource)
         {
             // possibility of template release being called before all bind requests for that template have completed.
             // this synch is required to guarantee that all ec2Client.runInstances success calls are seen by the 
             // AwsMachineProvider.release code.
             checkFutureCanceled();
-LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".createInstance bindFutureCanceled.get() == false");
             do
             {
                 try
@@ -166,38 +164,35 @@ LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".createI
             
             if(runResult != null) // get rid of possible null warning
                 reservedResource.ec2Instance = runResult.getReservation().getInstances().get(0);
-        }
-        pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
-        List<GroupIdentifier> sgs = reservedResource.ec2Instance.getSecurityGroups();
-        reservedResource.groupId = sgs.get(0).getGroupId();
-        pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
-//        setSgPermissions(reservedResource.groupId);
-        DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(reservedResource.ec2Instance.getInstanceId());
-        pdelay.reset();
-        msg = pdelayData.getHumanName(Ec2MidStr, "describeInstances");
-        do
-        {
-            checkFutureCanceled();
-            try
+            pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
+            List<GroupIdentifier> sgs = reservedResource.ec2Instance.getSecurityGroups();
+            reservedResource.groupId = sgs.get(0).getGroupId();
+            pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
+    //        setSgPermissions(reservedResource.groupId);
+            DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(reservedResource.ec2Instance.getInstanceId());
+            pdelay.reset();
+            msg = pdelayData.getHumanName(Ec2MidStr, "describeInstances");
+            do
             {
-                DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
-                Instance inst = diResult.getReservations().get(0).getInstances().get(0);
-                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
+                checkFutureCanceled();
+                try
                 {
-                    synchronized (((AwsMachineProvider)pdelayData.provider).getReservedMachines())
+                    DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
+                    Instance inst = diResult.getReservations().get(0).getInstances().get(0);
+                    if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
                     {
-                        reservedResource.ec2Instance = inst;
+                        reservedResource.ec2Instance = inst; // this picks up the running information i.e. public ip addresses
+                        break;
                     }
-                    break;
+                    pdelay.retry(pdelayData.getHumanName(Ec2MidStr, "describeInstances"));
+                } catch (Exception e)
+                {
+                    FatalResourceException fre = pdelay.handleException(msg, e);
+                    if(fre instanceof FatalException)
+                        throw fre;
                 }
-                pdelay.retry(pdelayData.getHumanName(Ec2MidStr, "describeInstances"));
-            } catch (Exception e)
-            {
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
-                    throw fre;
-            }
-        }while(true);
+            }while(true);
+        } // synch reservedResource
     }
   
     private String createKeyPair() throws FatalResourceException
