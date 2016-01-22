@@ -27,6 +27,7 @@ public class ProgramInfo {
 		this.parameters = parameters;
 	}
 	
+	// TODO: rename this method
 	MachineInstance computeProgramRunInformation() throws Exception {
 		// We know resourceInstance is a MachineInstance, because a configure/start/run step always directs its work to MachineInstance.
 		//     Still, check that condition to avoid problems that arise when template steps are improper. 

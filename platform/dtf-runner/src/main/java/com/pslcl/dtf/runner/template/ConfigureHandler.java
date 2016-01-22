@@ -97,8 +97,8 @@ public class ConfigureHandler {
 	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
 	            			throw new Exception("ConfigureHandler processing asked to run a configure program on a non 'machine' resource");	
 	            		strProgramName = parsedSetStep.getParameter(1);
-	            		for (int j=0; j<(parsedSetStep.getParameterCount()-2); j++)
-	            			parameters.add(parsedSetStep.getParameter(i));
+	            		for (int j=2; j<(parsedSetStep.getParameterCount()); j++)
+	            			parameters.add(parsedSetStep.getParameter(j));
 	                	this.configureInfos.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
 					} else {
 	            		throw new Exception("ConfigureHandler.computeConfigureRequests() finds null ResourceInstance at reference " + strMachineReference);
@@ -129,15 +129,14 @@ public class ConfigureHandler {
 				if (this.futuresOfProgramState.isEmpty()) {
 	    			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
 					//     initiate multiple asynch configures, this must add to this.futuresOfProgramState: it will because this.configureInfos is NOT empty
-//					ProgramState.setAllProgramsRan(true); // initialize this to be useful while we process every configure step of our current setID
 					for (ProgramInfo configureInfo : configureInfos) {
 						try {
 							MachineInstance mi = configureInfo.computeProgramRunInformation();
 							String configureProgramCommandLine = configureInfo.getComputedCommandLine();
+							log.debug(this.simpleName + "proceed() submits program command line: " + configureProgramCommandLine);
 							Future<Integer> future = mi.configure(configureProgramCommandLine);
 							futuresOfProgramState.add(new ProgramState(future, mi));
 						} catch (Exception e) {
-//							ProgramState.setAllProgramsRan(false);
 				            log.warn(simpleName + "proceed(), configure failed with exception: " + e.getMessage());
 							throw e;
 						}
@@ -182,20 +181,17 @@ public class ConfigureHandler {
 					programState.setProgramRunResult(runResult); // pass this Integer result back to caller
 					retList.add(programState);
 				} catch (InterruptedException | ExecutionException ioreE) {
-//					ProgramState.setAllProgramsRan(false);
-					
 		            Throwable t = ioreE.getCause();
 		            String msg = ioreE.getLocalizedMessage();
 		            if(t != null)
 		                msg = t.getLocalizedMessage();
-		            log.warn(simpleName + "waitComplete(), configure errored out: " + msg + "; " + ioreE.getMessage());
+		            log.warn(simpleName + "waitComplete(), configure program errored out: " + msg + "; " + ioreE.getMessage());
 		        	throw ioreE;
 				}                
 
         	} else {
-	            log.warn(simpleName + "waitComplete(), configure errored out with a failed future");
+	            log.warn(simpleName + "waitComplete(), configure program errored out with a failed future");
         		throw new Exception("Future.get() failed");
-//				ProgramState.setAllProgramsRan(false);
         	}
         }
         

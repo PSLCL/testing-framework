@@ -18,7 +18,7 @@ public class RunHandler {
 	private List<String> setSteps;
 	private boolean done;
 	private List<ProgramInfo> runInfos = null;
-    private List<RunState> futuresOfRunState = null;
+    private List<ProgramState> futuresOfProgramState = null;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
     private final Logger log;
@@ -34,6 +34,7 @@ public class RunHandler {
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
+		this.futuresOfProgramState = new ArrayList<ProgramState>();
 		this.done = false;
 		
 		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
@@ -96,10 +97,10 @@ public class RunHandler {
 	            		ResourceProvider riRP = resourceInstance.getResourceProvider();
 	            		String resourceType = ResourceProvider.getTypeName(riRP);
 	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
-	            			throw new Exception("RunHandler processing asked to run a program on a non 'machine' resource");							
+	            			throw new Exception("RunHandler processing asked to run a program on a non 'machine' resource");
 	            		strProgramName = parsedSetStep.getParameter(1);
-	            		for (int j=0; j<(parsedSetStep.getParameterCount()-2); j++)
-	            			parameters.add(parsedSetStep.getParameter(i));
+	            		for (int j=2; j<(parsedSetStep.getParameterCount()); j++)
+	            			parameters.add(parsedSetStep.getParameter(j));
 	                	this.runInfos.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
 					} else {
 	            		throw new Exception("RunHandler.computeRunRequests() finds null ResourceInstance at reference " + strMachineReference);
@@ -114,7 +115,7 @@ public class RunHandler {
 	}
 	
     /**
-     * Proceed to apply this.runInfos to bound machines, then return. Set done when runs complete or error out.
+     * Proceed to apply this.runInfos to bound machines, then return. Set done when the runs complete or error out.
      *
      * @throws Exception
      */
@@ -127,80 +128,77 @@ public class RunHandler {
         List<ProgramState> retList = new ArrayList<ProgramState>();
         try {
             while (!done) {
-            	
-            }
-        } catch (Exception e) {
-            
-        }
+				if (this.futuresOfProgramState.isEmpty()) {
+	    			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+					//     initiate multiple asynch runs, this must add to this.futuresOfProgramState: it will because this.runInfos is NOT empty
+					for (ProgramInfo runInfo : runInfos) {
+						try {
+							MachineInstance mi = runInfo.computeProgramRunInformation();
+							String runProgramCommandLine = runInfo.getComputedCommandLine();
+							log.debug(this.simpleName + "proceed() submits program command line: " + runProgramCommandLine);
+							Future<RunnableProgram> future = mi.run(runProgramCommandLine);
+							futuresOfProgramState.add(new ProgramState(future, mi, 0));
+						} catch (Exception e) {
+				            log.warn(simpleName + "proceed(), run failed with exception: " + e.getMessage());
+							throw e;
+						}
+					}
+					// this return is for the 1st caller, who can ignore this empty list
+        			return retList;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
+				} else {
+					// For each list element of futuresOfProgramState, .getFuture():
+					//     can be null (run failed while in the act of creating a Future), or
+					//     can be a Future<RunnableProgram>, for which future.get():
+					//        returns a RunnableProgram object from run completion (which contains an Integer, as the run result of the running program, or
+					//        throws an exception from run error-out (e.g. the run program did not properly run)
+			    	
+                    // complete work by blocking until all the futures complete
+			        retList = this.waitComplete();
+			        this.done = true;				
+				}
+            } // end while(!done)
+	    } catch (Exception e) {
+			this.done = true;
+			throw e;
+	    }
         return retList;
     }
-	
-	
-	
-	void initiateRun(List<ProgramInfo> programInfos) throws Exception {
-        // start multiple asynch runs
-		this.futuresOfRunState = new ArrayList<RunState>();
-		RunState.setAllProgramsRan(true); // initialize this to be useful while we process every step of our current setID
-		for (ProgramInfo runInfo : programInfos) {
-			try {
-				MachineInstance mi = runInfo.computeProgramRunInformation();
-				String runProgramCommandLine = runInfo.getComputedCommandLine();
-				Future<RunnableProgram> future = mi.start(runProgramCommandLine);
-				// future:
-				//     can be a null (run failed while in the act of creating a Future), or
-				//     can be a Future<RunnableProgram>, for which an eventual call to future.get():
-				//        returns a RunnableProgram from run completion (the RunnableProgram refers to a program that was run and has now completed running and has returned a result), or
-				//        throws an exception from run error-out (e.g. the program did not actually run or did not properly run)
-				
-				futuresOfRunState.add(new RunState(future, mi));
-			} catch (Exception e) {
-				RunState.setAllProgramsRan(false);
-				throw e;
-			}			
-		}
-    }	
 
 	/**
 	 * thread blocks
 	 */
-	public List<RunState> waitComplete() throws Exception {
-		// At this moment, this.futuresOfRunState is filled. Its embedded Future's each give us a RunnableProgram object. Our API is with each of these extracted RunnableProgram's.
+	public List<ProgramState> waitComplete() throws Exception {
+		// At this moment, this.futuresOfProgramState is filled. Its embedded Future's each give us a RunnableProgram object. Our API is with each of these extracted RunnableProgram's.
 		//     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
 
         // Note: As an initial working step, this block is coded to a safe algorithm:
-        //       We expect full run success, and otherwise we back out and clean up whatever other run(s) had been put in place, along the way.
+        //       We expect full run success, and otherwise we back out. At the time that the governing template is eventually reused, the runs on other machines will be cleaned up.
 		
-		// Gather all results from futuresOfRunState, a list of objects with embedded Future's. This thread yields, in waiting for each of the multiple asynch start calls to complete.
-		Exception exception = null;
-		List<RunState> retList = new ArrayList<>();
-        for (RunState runState : this.futuresOfRunState) {
-        	if (runState != null) {
+		// Gather all results from futuresOfProgramState, a list of objects with embedded Future's. This thread yields, in waiting for each of the multiple asynch run calls to complete.
+		List<ProgramState> retList = new ArrayList<>();
+        for (ProgramState programState : this.futuresOfProgramState) {
+        	if (programState!=null && programState.getFutureRunnableProgram()!=null) {
                 try {
-					RunnableProgram runnableProgram = runState.getFutureRunnableProgram().get(); // blocks until asynch answer comes, or exception, or timeout
-					runState.setRunnableProgram(runnableProgram);
-					retList.add(runState);
-				} catch (InterruptedException ee) {
-					RunState.setAllProgramsRan(false);
-					exception = ee;
-                    Throwable t = ee.getCause();
-                    String msg = ee.getLocalizedMessage();
-                    if(t != null)
-                        msg = t.getLocalizedMessage();
-                    log.warn(simpleName + "waitComplete(), run errored out: " + msg, ee);
-				} catch (ExecutionException e) {
-					RunState.setAllProgramsRan(false);
-					exception = e;
-                    log.warn(simpleName + "waitComplete Executor pool shutdown"); // TODO: new msg
-				}
+					RunnableProgram runnableProgram = programState.getFutureRunnableProgram().get(); // blocks until asynch answer comes, or exception, or timeout
+					programState.setRunnableProgram(runnableProgram); // pass the result back to caller
+					retList.add(programState);
+				} catch (InterruptedException | ExecutionException ioreE) {
+		            Throwable t = ioreE.getCause();
+		            String msg = ioreE.getLocalizedMessage();
+		            if(t != null)
+		                msg = t.getLocalizedMessage();
+		            log.warn(simpleName + "waitComplete(), run program errored out: " + msg + "; " + ioreE.getMessage());
+		        	throw ioreE;
+				}                
+
         	} else {
-				RunState.setAllProgramsRan(false);
+	            log.warn(simpleName + "waitComplete(), run progra errored out with a failed future");
+        		throw new Exception("Future.get() failed");
         	}
         }
-        // each entry in retList is a run program that actually ran and returned a result
-        // retList contains information, for each run program that ran: the RunnableProgram object and the MachineInstance that ran the start program
         
-        // TODO: check, for each run program that did not run, that we have cleaned up things that were put in place 
-        
+        // each entry in retList is a run program that actually ran; it may have returned zero or non-zero, but it ran
+        // retList contains information, for each run program that ran: the run result and the MachineInstance that ran the run program
         return retList;
 	}
 	

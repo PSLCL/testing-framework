@@ -234,7 +234,8 @@ public class InstancedTemplate {
 
 			    // algorithm for each setID: initiate step processing in sequence, as supplied by the template, while also allowing parallel processing; within a setID, order of step completion is uncertain
 				BindHandler bindHandler = null;
-				ConfigureHandler configureHandler = null;
+				
+				ProgramHandler configureHandler = null;
 				ConnectHandler connectHandler = null;
 				DeployHandler deployHandler = null;
 				InspectHandler inspectHandler = null;
@@ -270,8 +271,8 @@ public class InstancedTemplate {
 							break;
 						case "configure":
 							if (configureHandler == null) {
-								configureHandler = new ConfigureHandler(this, stepsOfSet, setStepCount);
-								int consumedStepReferences = configureHandler.computeConfigureRequests(); // setID configure 0-based-machine-ref program-name [param param ...]
+								configureHandler = new ProgramHandler(this, stepsOfSet);
+							    int consumedStepReferences = configureHandler.computeProgramRequests(); // setID configure 0-based-machine-ref program-name [param param ...]
 								setStepCount += consumedStepReferences;
 								currentStepReference += consumedStepReferences;
 								
@@ -406,7 +407,7 @@ public class InstancedTemplate {
 			    do {
 		    		allStepsCompleteForThisStepSet = true;
 			    	
-			        // These individual .proceed() calls may each block for a while, then return. At each return, they mark themselves as done, or not.
+			        // These individual .proceed() calls may potentially each block for a while, then return. At each return, they mark themselves as done, or not.
 			    	//     Eventually, by cycling through this loop multiple times, all steps of this step set will be found to have concluded their processing.
 			    	//     The loop exits at that time.
 			    	if (bindHandler!=null && !bindHandler.isDone()) {
@@ -424,7 +425,7 @@ public class InstancedTemplate {
 			        	List<ProgramState> localProgramStates = configureHandler.proceed();
 			    		if (configureHandler.isDone()) {
 			    			boolean fail = true;
-			    			if (localProgramStates.size() == configureHandler.getConfigureRequestCount()) {
+			    			if (localProgramStates.size() == configureHandler.getConsecutiveSameStepCount()) {
 					        	boolean configStepErroredOut= false;
 					        	for (ProgramState ps : localProgramStates) {
 					        		if (ps.getProgramRunResult()==null || ps.getProgramRunResult()!=0) {
@@ -440,7 +441,7 @@ public class InstancedTemplate {
 			    			}
 			    			if (fail)
 				        		throw new Exception("Configure step(s) errored out");
-			    			log.debug(simpleName + "configureHandler() completes " + configureHandler.getConfigureRequestCount() + " configure(s) for setID " + setID);
+			    			log.debug(simpleName + "configureHandler() completes " + configureHandler.getConsecutiveSameStepCount() + " configure(s) for setID " + setID);
 			    		}
 			        }
 			        if (connectHandler!=null && !connectHandler.isDone()) {
@@ -484,21 +485,48 @@ public class InstancedTemplate {
 			    			log.debug(simpleName + "inspectHandler() completes " + inspectHandler.getInspectRequestCount() + " inspect(s) for setID " + setID);
 			    		}
 			        }
-			        if (runHandler != null) {
+			        
+			        if (runHandler!=null && !runHandler.isDone()) {
 			    		allStepsCompleteForThisStepSet = false;
-
-			        	// success is that no exception is thrown by .waitComplete() or the asynch run process(es) behind it
-			        	List<RunState> localRunStates = runHandler.waitComplete();
-			        	this.runProgramStates.addAll(localRunStates);
-			        	boolean runStepErroredOut = false;
-			        	for (RunState rs: localRunStates) {
-			        		if (rs.getProgramRunResult()==null || rs.getProgramRunResult()!=0) {
-			        			runStepErroredOut = true;
-			        		}
-			            	if (runStepErroredOut || RunState.getAllProgramsRan()==false || localRunStates.size()!=runInfos.size())
-			            		throw new Exception("Run step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
-			        	}
+			    		
+			        	List<ProgramState> localProgramStates = runHandler.proceed();
+			    		if (runHandler.isDone()) {
+			    			boolean fail = true;
+			    			if (localProgramStates.size() == runHandler.getRunRequestCount()) {
+					        	boolean runStepErroredOut= false;
+					        	for (ProgramState ps : localProgramStates) {
+					        		if (ps.getProgramRunResult()==null || ps.getProgramRunResult()!=0) {
+					        			runStepErroredOut = true;
+					        			log.debug(this.simpleName + "A run program returned non-zero, or failed to run at all");
+					        			break;
+					        		}
+					        	}
+					        	if (!runStepErroredOut)
+					        		fail = false;
+			    			} else {
+			    				log.debug(this.simpleName + "Run program results are missing");
+			    			}
+			    			if (fail)
+				        		throw new Exception("Run step(s) errored out");
+			    			log.debug(simpleName + "runHandler() completes " + runHandler.getRunRequestCount() + " configure(s) for setID " + setID);
+			    		}
 			        }
+			        
+//			        if (runHandler != null) {
+//			    		allStepsCompleteForThisStepSet = false;
+//
+//			        	// success is that no exception is thrown by .waitComplete() or the asynch run process(es) behind it
+//			        	List<RunState> localRunStates = runHandler.waitComplete();
+//			        	this.runProgramStates.addAll(localRunStates);
+//			        	boolean runStepErroredOut = false;
+//			        	for (RunState rs: localRunStates) {
+//			        		if (rs.getProgramRunResult()==null || rs.getProgramRunResult()!=0) {
+//			        			runStepErroredOut = true;
+//			        		}
+//			            	if (runStepErroredOut || RunState.getAllProgramsRan()==false || localRunStates.size()!=runInfos.size())
+//			            		throw new Exception("Run step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
+//			        	}
+//			        }
 			        if (startHandler != null) {
 			    		allStepsCompleteForThisStepSet = false;
 
