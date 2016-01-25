@@ -161,19 +161,18 @@ public class ProgramHandler {
 							String programCommandLine = programInfo.getComputedCommandLine();
 							log.debug(this.simpleName + "for run type " + this.runType + ", proceed() submits program command line: " + programCommandLine);
 							
-							if (this.runType == RunType.CONFIGURE) {
-								Future<Integer> future = mi.configure(programCommandLine);
-								futuresOfProgramState.add(new ProgramState(future, mi));
-							} else if (this.runType == RunType.RUN)	{
-								Future<RunnableProgram> future = mi.run(programCommandLine);
-								futuresOfProgramState.add(new ProgramState(future, mi, 0));
-							} else if (this.runType == RunType.START) {
-								Future<RunnableProgram> future = mi.start(programCommandLine);
-								futuresOfProgramState.add(new ProgramState(future, mi, 0));
-							} else {
-								// impossible to be here, but log it anyway
-								log.error(this.simpleName + "run type not [configure or run or start]");
+							Future<RunnableProgram> future;
+							if (this.runType == RunType.CONFIGURE)
+								future = mi.configure(programCommandLine);
+							else if (this.runType == RunType.RUN)
+								future = mi.run(programCommandLine);
+							else if (this.runType == RunType.START)
+								future = mi.start(programCommandLine);
+							else {
+								log.error(this.simpleName + "program type not [configure or run or start]"); // impossible to be here, but log it anyway
+								throw new Exception("illegal program type");
 							}
+							futuresOfProgramState.add(new ProgramState(future, mi, 0));
 						} catch (Exception e) {
 				            log.warn(simpleName + "proceed(), program failed with exception: " + e.getMessage());
 							throw e;
