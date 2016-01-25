@@ -173,8 +173,6 @@ public class InspectHandler {
                             String instructionsHash = inspectInfo.getInstructionsHash();
                             String instructions = qapa.getContentAsString(instructionsHash); // TODO: needs to be asynchronous
                             inspectInfo.setInstruction(instructions);
-                            if (true) // true: temporarily, a cheap substitution to overcome QAPortal access problem
-                                inspectInfo.setInstruction(new String("this is instructions"));
 
                             // into local temp directory, place n filename/contents and place
                             for (Entry<String, String> artifact: inspectInfo.getArtifacts().entrySet()) {
