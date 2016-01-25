@@ -73,9 +73,37 @@ public class ProcessResult
         return stopResult.ccode;
     }
     
+    public String getCompletionSysOut()
+    {
+        if(fileList == null || fileList.size() < 1)
+            return null;
+        ReturnFileStreams sysOut = fileList.get(0);
+        if(sysOut != null)
+            return sysOut.data;
+        return null;
+    }
+    
+    public String getCompletionSysErr()
+    {
+        if(fileList == null || fileList.size() < 2)
+            return null;
+        ReturnFileStreams sysErr = fileList.get(1);
+        if(sysErr != null)
+            return sysErr.data;
+        return null;
+    }
+    
     public Integer getServiceCcode()
     {
-        return result.rc;
+        if(fileList == null || fileList.size() < 2)
+            return result.rc;
+        ReturnFileStreams sysErr = fileList.get(1);
+        if(sysErr != null)
+        {
+            if(sysErr.data != null && sysErr.data.length() > 0)
+                return 1;
+        }
+        return 0;
     }
     
     public String getServiceHandle()
@@ -119,6 +147,8 @@ public class ProcessResult
         format.ttl("rc = ", StafSupport.getResultRc(result, false, null));
         format.ttl("result = ", result.result);
         format.ttl("key = ", key);
+        format.ttl("serviceCcode = ", getServiceCcode());
+        format.ttl("stopCcode = ", getStopCcode());
         format.ttl("fileList:");
         format.level.incrementAndGet();
         if (fileList != null)

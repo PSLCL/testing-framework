@@ -162,32 +162,32 @@ public class StafSupport
     
     public static StafRunnableProgram issueProcessShellRequest(ProcessCommandData commandData) throws Exception
     {
-        return issueProcessRequest(commandData, true);
-    }
-    
-    public static StafRunnableProgram issueProcessRequest(ProcessCommandData commandData) throws Exception
-    {
         return issueProcessRequest(commandData, false);
     }
     
-    private static StafRunnableProgram issueProcessRequest(ProcessCommandData commandData, boolean shell) throws Exception
+    public static StafRunnableProgram issueProcessPowershellRequest(ProcessCommandData commandData) throws Exception
+    {
+        return issueProcessRequest(commandData, true);
+    }
+    
+    private static StafRunnableProgram issueProcessRequest(ProcessCommandData commandData, boolean powershell) throws Exception
     {
         TabToLevel format = null;
         if (log.isDebugEnabled())
         {
             format = new TabToLevel();
             format.sb.append("\n" + StafSupport.class.getSimpleName());
-            if(shell)
+            if(!powershell)
                 format.sb.append(".issueProcessShellRequest:");
             else
-                format.sb.append(".issueProcessRequest:");
+                format.sb.append(".issueProcessPowershellRequest:");
             format.sb.append("\n");
             format.level.incrementAndGet();
             commandData.toString(format);
         }
 
-        String cmd = commandData.getProcessCommand();
-        if(shell)
+        String cmd = commandData.getPowershellCommand();
+        if(!powershell)
             cmd = commandData.getShellCommand();
         if (log.isDebugEnabled())
             format.ttl("stafCmd = ", ProcessService + " " + cmd);

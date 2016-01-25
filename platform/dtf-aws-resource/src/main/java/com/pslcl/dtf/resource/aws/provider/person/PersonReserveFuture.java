@@ -26,7 +26,6 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.instance.person.PersonConfigData;
 
 @SuppressWarnings("javadoc")
@@ -73,7 +72,7 @@ public class PersonReserveFuture implements Callable<List<ResourceReserveDisposi
                 email = config.inspectors.get(roundRobinIndex);
             }else
                 email = config.sender;
-            pdelayData.preFixMostName = provider.config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+            pdelayData.preFixMostName = config.resoucePrefixName;
             PersonReservedResource rresource = new PersonReservedResource(provider, resource, timeoutSeconds, config, email);
             ScheduledFuture<?> future = provider.config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
             rresource.setTimerFuture(future);

@@ -32,7 +32,7 @@ public class StafRunnableProgram implements RunnableProgram
     public final static String ProcessStopHandle = "stop handle ";
     public final static String ProcessFreeHandle = "free handle ";
     
-    private final ProcessResult result;
+    public final ProcessResult result;
     private final ProcessCommandData commandData;
     private ExecutorService executor;
     private boolean stopped;

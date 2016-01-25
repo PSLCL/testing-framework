@@ -96,9 +96,9 @@ public interface MachineInstance extends ResourceInstance
      * @param command
      *            An executable command, including arguments, to be run on the machine.
      *
-     * @return A future containing the result of the command once execution has completed. 
+     * @return A {@link RunnableProgram} containing the information about the command once execution has completed.
      */
-    Future<Integer> configure(String command);
+    Future<RunnableProgram> configure(String command);
 
     /**
      * Start an executable command on a machine and return a Future with the {@link RunnableProgram} set once the program
@@ -109,7 +109,7 @@ public interface MachineInstance extends ResourceInstance
      * @param command
      *            An executable command, including arguments, to be run on the machine.
      *
-     * @return A Future containing the result of the command once execution has completed.
+     * @return A {@link RunnableProgram} containing the information about the command once execution has completed.
      */
     Future<RunnableProgram> start(String command);
 

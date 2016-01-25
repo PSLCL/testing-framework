@@ -66,41 +66,62 @@ public class DeployFuture implements Callable<Void>
         ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
         cmdData.setUseWorkingDir(false);
         String urlFile = StrH.getAtomicName(sourceUrl, '/');            // hashname
-//        String wgetName = cmdData.getBasePath();
-//        wgetName = StrH.addTrailingSeparator(wgetName, (windows ? "\\" : "/"));
-//        wgetName += urlFile;                                            // /opt/dtf/sandbox/lib/hashname, /opt/dtf/sandbox/hashname
-//        String newName = cmdData.getBasePath() + cmdData.getFileName(); // /opt/dtf/sandbox/lib/someApp.jar, /opt/dtf/sandbox/topLevelFile 
-        String sudo = "sudo ";
-        if (windows)
-            sudo = "";
-        if(windows)
-            throw new Exception("not implemented yet");
-//sudo = "";
         
         cmdData.setHost(host);
         cmdData.setWait(true);
         cmdData.setContext(null);
-        cmdData.setCommand(sudo + "mkdir -p " + cmdData.getBasePath());
-        StafSupport.issueProcessShellRequest(cmdData);
         
+        if(windows)
+        {
+            cmdData.setCommand("md \"" + cmdData.getBasePath() + "\"");
+            StafSupport.issueProcessShellRequest(cmdData);  // if sandbox exists we ignore the error
+//            if(!cmdData.isFileOnly())
+//            {
+//                cmdData = new ProcessCommandData(cmdData);
+//                cmdData.setUseWorkingDir(true);
+//                cmdData.setCommand("md \"" + cmdData.getBasePath() + "\"");
+//                executeStafProcess(cmdData, false);
+//            }
+            cmdData = new ProcessCommandData(cmdData);
+            cmdData.setUseWorkingDir(true);
+            
+            StringBuilder cmd = new StringBuilder()
+                            .append("wget -Outfile ")
+                            .append(urlFile)
+                            .append(" ")
+                            .append(sourceUrl);
+            cmdData.setCommand(cmd.toString());
+            executeStafProcess(cmdData, true);
+            
+            cmdData = new ProcessCommandData(cmdData);
+            cmdData.setCommand("ren " + urlFile + " " + cmdData.getFileName());
+            executeStafProcess(cmdData, false);
+            return null;
+        }
+        // linux
+        cmdData.setCommand("sudo mkdir -p " + cmdData.getBasePath());
+        executeStafProcess(cmdData, false);
         cmdData = new ProcessCommandData(cmdData);
         cmdData.setUseWorkingDir(true);
-        cmdData.setCommand(sudo + "wget -O " + urlFile + " " + sourceUrl);
-        StafSupport.issueProcessShellRequest(cmdData);
-        
+        cmdData.setCommand("sudo wget -O " + urlFile + " " + sourceUrl);
+        executeStafProcess(cmdData, false);
         cmdData = new ProcessCommandData(cmdData);
-        cmdData.setCommand(sudo + "mv " + urlFile + " " + cmdData.getFileName());
-        StafSupport.issueProcessShellRequest(cmdData);
-        
-        if(!windows)
-        {
-            cmdData = new ProcessCommandData(cmdData);
-            cmdData.setCommand(sudo + "chmod 777 " + cmdData.getFileName());
-            StafSupport.issueProcessShellRequest(cmdData);
-        }
+        cmdData.setCommand("sudo chmod 777 " + cmdData.getFileName());
+        executeStafProcess(cmdData, false);
         return null;
     }
 
+    private void executeStafProcess(ProcessCommandData cmdData, boolean powershell) throws Exception
+    {
+        StafRunnableProgram runnableProgram = null;
+        if(powershell)
+            runnableProgram = StafSupport.issueProcessPowershellRequest(cmdData);
+        else
+            runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
+        if(runnableProgram.getRunResult() != 0)
+            throw new Exception("Staf requested process failed: " + runnableProgram.result.getCompletionSysErr());
+    }
+    
     public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows) throws Exception
     {
         // where partialDestPath is one of these three
@@ -134,6 +155,6 @@ public class DeployFuture implements Callable<Void>
                 path = StrH.addTrailingSeparator(path + penultimate, '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/
         }
         path = StrH.stripTrailingSeparator(path);        
-        return new ProcessCommandData(path, fileName, fdn);
+        return new ProcessCommandData((windows ? winSandbox : linuxSandbox), path, fileName, fdn, fileOnly);
     }
 }

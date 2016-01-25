@@ -40,7 +40,6 @@ import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance;
 import com.pslcl.dtf.resource.aws.instance.machine.MachineConfigData;
@@ -121,6 +120,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     {
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
+        String prefixTestName = null;
 
         synchronized (boundInstances)
         {
@@ -130,9 +130,12 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 releasePossiblePendings(templateId, isReusable);
                 for (Entry<Long, AwsMachineInstance> entry : boundInstances.entrySet())
                 {
-                    coordinates = entry.getValue().getCoordinates();
                     if (coordinates.templateId.equals(templateId))
+                    {
+                        coordinates = entry.getValue().getCoordinates();
+                        prefixTestName = entry.getValue().mconfig.resoucePrefixName;
                         releaseList.add(entry.getKey());
+                    }
                 }
                 for (Long key : releaseList)
                 {
@@ -157,10 +160,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             }
         }
 
-        if (coordinates != null)
+        if (coordinates != null)    // got at least one, all will have the same keypair
         {
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
-            pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+            pdelayData.preFixMostName = prefixTestName;
+            
             String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
             DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);

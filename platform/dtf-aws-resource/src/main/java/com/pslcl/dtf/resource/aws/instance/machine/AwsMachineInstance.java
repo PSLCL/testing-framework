@@ -121,7 +121,7 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
-    public Future<Integer> configure(String command)
+    public Future<RunnableProgram> configure(String command)
     {
         reservedResource.reusable.set(false);
         try

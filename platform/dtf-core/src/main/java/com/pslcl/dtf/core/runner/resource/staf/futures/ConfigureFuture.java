@@ -20,12 +20,13 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
 import com.pslcl.dtf.core.util.TabToLevel;
 
 @SuppressWarnings("javadoc")
-public class ConfigureFuture implements Callable<Integer>
+public class ConfigureFuture implements Callable<RunnableProgram>
 {
     private final Logger log;
     private final String host;
@@ -59,7 +60,7 @@ public class ConfigureFuture implements Callable<Integer>
     }
 
     @Override
-    public Integer call() throws Exception
+    public RunnableProgram call() throws Exception
     {
         ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
         cmdData.setHost(host);
@@ -69,6 +70,6 @@ public class ConfigureFuture implements Callable<Integer>
         if (windows)
             sudo = "";
         cmdData.setCommand(sudo + cmdData.getFileName());
-        return  StafSupport.issueProcessShellRequest(cmdData).getRunResult();
+        return  StafSupport.issueProcessShellRequest(cmdData);
     }
 }

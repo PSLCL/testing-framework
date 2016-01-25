@@ -22,9 +22,11 @@ import com.pslcl.dtf.core.util.TabToLevel;
 public class ProcessCommandData
 {
     public final static String ProcessShellRequest = "start shell command ";
-    public final static String ProcessRequest = "start command ";
+    public final static String ProcessPowershellRequest = "start shell \"powershell.exe %c\" command ";
     
     private boolean fdn;
+    private boolean fileOnly;
+    private String sandbox;
     private String basePath;
     private String fileName;
     private String host;
@@ -34,16 +36,20 @@ public class ProcessCommandData
     private Object context;
     private boolean useWorkingDir;
 
-    public ProcessCommandData(String basePath, String fileName, boolean fdn)
+    public ProcessCommandData(String sandbox, String basePath, String fileName, boolean fdn, boolean fileOnly)
     {
-        this.fdn = fdn;
+        this.sandbox = sandbox;
         this.basePath = basePath;
         this.fileName = fileName;
-        this.useWorkingDir = useWorkingDir;
+        this.fdn = fdn;
+        this.fileOnly = fileOnly;
     }
 
     public ProcessCommandData(ProcessCommandData commandData)
     {
+        fdn = commandData.isFdn();
+        fileOnly = commandData.isFileOnly();
+        sandbox = commandData.getSandbox();
         basePath = commandData.getBasePath();
         fileName = commandData.getFileName();
         host = commandData.getHost();
@@ -51,7 +57,6 @@ public class ProcessCommandData
         wait = commandData.isWait();
         timeout = commandData.getTimeout();
         context = commandData.getContext();
-        fdn = commandData.isFdn();
         useWorkingDir = commandData.isUseWorkingDir();
     }
 
@@ -69,6 +74,11 @@ public class ProcessCommandData
         return StrH.addTrailingSeparator(basePath, separator) + fileName;
     }
     
+    public synchronized boolean isFileOnly()
+    {
+        return fileOnly;
+    }
+
     public synchronized boolean isUseWorkingDir()
     {
         return useWorkingDir;
@@ -79,9 +89,19 @@ public class ProcessCommandData
         this.useWorkingDir = useWorkingDir;
     }
 
-    public synchronized String getProcessCommand()
+    public synchronized String getSandbox()
     {
-        return getProcessCmd(ProcessRequest);
+        return sandbox;
+    }
+
+    public synchronized void setSandbox(String sandbox)
+    {
+        this.sandbox = sandbox;
+    }
+
+    public synchronized String getPowershellCommand()
+    {
+        return getProcessCmd(ProcessPowershellRequest);
     }
 
     public synchronized String getShellCommand()
@@ -194,6 +214,8 @@ public class ProcessCommandData
         format.ttl("fdn: ", fdn);
         format.ttl("basePath: ", basePath);
         format.ttl("fileName: ", fileName);
+        format.ttl("fileOnly: ", fileOnly);
+        format.ttl("sandbox: ", sandbox);
         format.ttl("command: ", command);
         format.ttl("wait: ", wait);
         format.ttl("timeout: ", timeout);
