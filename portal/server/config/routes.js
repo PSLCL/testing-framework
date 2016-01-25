@@ -5,7 +5,7 @@ var plan      = require('../routes/test_plan');
 var version   = require('../routes/version');
 var artifact  = require('../routes/artifact');
 var instance  = require('../routes/instance');
-
+var content   = require('../routes/content');
 module.exports = function (app, config, passport) {
   require('./middlewares/auth')(passport,config);
 
@@ -53,6 +53,8 @@ module.exports = function (app, config, passport) {
   app.get('/artifact/:artifactid',                      artifact.single);
   app.get('/artifacts/:instanceid',                     artifact.multiple);
   app.get('/api/v1/artifacts/untested',                        artifact.untested);
+
+  app.get('/content/:contentid',			content.file);
 
   // Authentication routes.
   app.get('/auth/atlassian-oauth',
