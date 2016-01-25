@@ -54,7 +54,7 @@ public class BindHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public BindHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+	public BindHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -71,25 +71,24 @@ public class BindHandler {
 		this.futuresOfResourceInstances = null;
 		this.resourceInstances = new ArrayList<>();
 		
-		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
-			SetStep setStep = new SetStep(setSteps.get(i));
+		int iTempFinalSetOffset = 0;
+		int iSetOffset = 0;
+		while (true) {
+			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
 			if (!setStep.getCommand().equals("bind"))
 				break;
-			if (this.iBeginSetOffset == -1)
-				this.iBeginSetOffset = iBeginSetOffset;
-			this.iFinalSetOffset = i;
+			this.iBeginSetOffset = 0;
+			this.iFinalSetOffset = iTempFinalSetOffset;
+			if (++iTempFinalSetOffset >= setSteps.size())
+				break;
+			iSetOffset = iTempFinalSetOffset; // there is another step in this set
 		}
 	}
 
-//    int getReserveResourceRequestCount() throws Exception {
-//    	if (this.reserveResourceRequests != null) {
-//    		int retCount = this.reserveResourceRequests.size();
-//    		if (retCount > 0)
-//    			return retCount;
-//    	}
-//    	throw new Exception("BindHandler unexpectedly finds no inpect requests");
-//    }
-	
+	/**
+	 * 
+	 * @return
+	 */
     List<ResourceInstance> getResourceInstances() {
     	return this.resourceInstances;
     }

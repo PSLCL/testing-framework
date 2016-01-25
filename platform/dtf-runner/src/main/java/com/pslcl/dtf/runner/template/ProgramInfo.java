@@ -26,18 +26,26 @@ public class ProgramInfo {
 		this.strProgramName = strProgramName;
 		this.parameters = parameters;
 	}
-	
-	// TODO: rename this method
-	MachineInstance computeProgramRunInformation() throws Exception {
+
+	/**
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	MachineInstance getMachineInstance() throws Exception {
 		// We know resourceInstance is a MachineInstance, because a configure/start/run step always directs its work to MachineInstance.
 		//     Still, check that condition to avoid problems that arise when template steps are improper. 
 		if (!MachineInstance.class.isAssignableFrom(resourceInstance.getClass())) {
 			throw new Exception("Specified program run target is not a MachineInstance");
 		}
-		MachineInstance mi = MachineInstance.class.cast(resourceInstance);		
+		MachineInstance mi = MachineInstance.class.cast(resourceInstance);
 		return mi;
 	}
 	
+	/**
+	 * 
+	 * @return
+	 */
 	String getComputedCommandLine() {
 		String retProgramCommandLine = strProgramName;
 		for (String param: parameters) {

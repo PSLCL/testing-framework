@@ -64,10 +64,10 @@ public class ProgramHandler {
 			if (!setStep.getCommand().equals(programString))
 				break;
 			this.iBeginSetOffset = 0;
-			this.iFinalSetOffset = iTempFinalSetOffset++;
-			if (this.iBeginSetOffset >= setSteps.size()-1)
+			this.iFinalSetOffset = iTempFinalSetOffset;
+			if (++iTempFinalSetOffset >= setSteps.size())
 				break;
-			setStep = new SetStep(setSteps.get(++this.iBeginSetOffset));
+			setStep = new SetStep(setSteps.get(iTempFinalSetOffset));
 		}
 	}
 	
@@ -157,7 +157,7 @@ public class ProgramHandler {
 					//     initiate multiple asynch [configure | run | start]'s, this must add to this.futuresOfProgramState: it will because this.programInfos is NOT empty
 					for (ProgramInfo programInfo : programInfos) {
 						try {
-							MachineInstance mi = programInfo.computeProgramRunInformation();
+							MachineInstance mi = programInfo.getMachineInstance();
 							String programCommandLine = programInfo.getComputedCommandLine();
 							log.debug(this.simpleName + "for run type " + this.runType + ", proceed() submits program command line: " + programCommandLine);
 							
@@ -178,7 +178,7 @@ public class ProgramHandler {
 				            log.warn(simpleName + "proceed(), program failed with exception: " + e.getMessage());
 							throw e;
 						}
-					}
+					} // end for()
 					// this return is for the 1st caller, who can ignore this empty list
         			return retList;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
 				} else {
@@ -217,33 +217,58 @@ public class ProgramHandler {
 		// Gather all results from futuresOfProgramState, a list of objects with embedded Future's. This thread blocks, in waiting for each of the multiple asynch [configure | run | start] calls to complete.
 		List<ProgramState> retList = new ArrayList<>();
         for (ProgramState programState : this.futuresOfProgramState) {
-        	if (programState!=null && programState.getFutureProgramRunResult()!=null) {
-                try {
-                	if (this.runType == RunType.CONFIGURE) {
-						Integer runResult = programState.getFutureProgramRunResult().get(); // blocks until asynch answer comes, or exception, or timeout
-						programState.setProgramRunResult(runResult); // pass this Integer result back to caller
-                	} else {
-                		RunnableProgram runnableProgram = programState.getFutureRunnableProgram().get();
-                		programState.setRunnableProgram(runnableProgram);
-                	}
-					retList.add(programState);
-				} catch (InterruptedException | ExecutionException ioreE) {
-		            Throwable t = ioreE.getCause();
-		            String msg = ioreE.getLocalizedMessage();
-		            if(t != null)
-		                msg = t.getLocalizedMessage();
-		            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out: " + msg + "; " + ioreE.getMessage());
-		        	throw ioreE;
-				}                
-
-        	} else {
-	            log.warn(simpleName + "waitComplete(), configure program errored out with a failed future");
-        		throw new Exception("Future.get() failed");
-        	}
-        }
+        	if (programState!=null) {
+		    	if (this.runType == RunType.CONFIGURE) {
+		    		if (programState.getFutureProgramRunResult() != null) {
+		                try {
+							Integer runResult = programState.getFutureProgramRunResult().get(); // blocks until asynch answer comes, or exception, or timeout
+							programState.setProgramRunResult(runResult); // pass this Integer result back to caller
+							retList.add(programState);
+						} catch (InterruptedException | ExecutionException ioreE) {
+				            Throwable t = ioreE.getCause();
+				            String msg = ioreE.getLocalizedMessage();
+				            if(t != null)
+				                msg = t.getLocalizedMessage();
+				            log.warn(simpleName + "waitComplete(),  CONFIGURE program errored out: " + msg + "; " + ioreE.getMessage());
+				        	throw ioreE;
+						}                
+		        	} else {
+			            log.warn(simpleName + "waitComplete(), configure program errored out with a failed future");
+		        		throw new Exception("Future.get() failed");
+		        	}
+		    	} else {
+		    		// RunType.RUN or RunType.START
+		    		if (programState.getFutureRunnableProgram() != null) {
+		                try {
+		                	RunnableProgram runnableProgram = programState.getFutureRunnableProgram().get();
+		                	programState.setRunnableProgram(runnableProgram);
+							retList.add(programState);
+						} catch (InterruptedException | ExecutionException ioreE) {
+				            Throwable t = ioreE.getCause();
+				            String msg = ioreE.getLocalizedMessage();
+				            if(t != null)
+				                msg = t.getLocalizedMessage();
+				            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out: " + msg + "; " + ioreE.getMessage());
+				        	throw ioreE;
+						}             
+		    		} else {
+			            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out with a failed future");
+		        		throw new Exception("Future.get() failed");
+		    		}
+		    	}
+	    	} else {
+	            log.warn(simpleName + "waitComplete(), encountered null programState, internal error");
+        		throw new Exception("null programState, internal error");
+	    	}
+        } // end for()		
+        // Each entry in retList is a program that actually ran; the program may have returned zero or non-zero, but it ran.
         
-        // each entry in retList is a config program that actually ran; it may have returned zero or non-zero, but it ran
-        // retList contains information, for each config program that ran: the run result and the MachineInstance that ran the config program
+        // retList contains information:
+        //     for each config program: the MachineInstance that ran the program, and the run result of that program
+        //     for each run or start program: the MachineInstance that ran the program, and the RunnableProgram, which holds:
+        //         a method to test if the program is still running, and
+        //             if the program is still running, a kill method
+        //             if the program has stopped (i.e. returned from its run), the run result of the program
         return retList;
 	}
 

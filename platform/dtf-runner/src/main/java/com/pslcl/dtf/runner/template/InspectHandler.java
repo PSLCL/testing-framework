@@ -44,7 +44,7 @@ public class InspectHandler {
      * @param iT
      * @param setSteps
      */
-    InspectHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+    InspectHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
         this.iT = iT;
@@ -52,14 +52,18 @@ public class InspectHandler {
         this.futuresOfInspects = new ArrayList<Future<? extends Void>>();
         this.done = false;
 
-        for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
-            SetStep setStep = new SetStep(setSteps.get(i));
-            if (!setStep.getCommand().equals("inspect"))
-                break;
-            if (this.iBeginSetOffset == -1)
-                this.iBeginSetOffset = iBeginSetOffset;
-            this.iFinalSetOffset = i;
-        }
+		int iTempFinalSetOffset = 0;
+		int iSetOffset = 0;
+		while (true) {
+			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
+			if (!setStep.getCommand().equals("inspect"))
+				break;
+			this.iBeginSetOffset = 0;
+			this.iFinalSetOffset = iTempFinalSetOffset;
+			if (++iTempFinalSetOffset >= setSteps.size())
+				break;
+			iSetOffset = iTempFinalSetOffset; // there is another step in this set
+		}
     }
 
     /**
