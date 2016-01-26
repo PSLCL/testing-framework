@@ -402,21 +402,28 @@ public class InstancedTemplate {
 			    	}
 			        if (configureHandler!=null && !configureHandler.isDone()) {
 			    		allStepsCompleteForThisStepSet = false;
-			    		
+
 			        	List<ProgramState> localProgramStates = configureHandler.proceed();
 			    		if (configureHandler.isDone()) {
 			    			boolean fail = true;
 			    			if (localProgramStates.size() == configureHandler.getConsecutiveSameStepCount()) {
-					        	boolean configStepErroredOut= false;
+					        	boolean configureStepErroredOut= false;
 					        	for (ProgramState ps : localProgramStates) {
-					        		Integer programRunResult = ps.getProgramRunResult(); 
+					        		RunnableProgram runnableProgram = ps.getRunnableProgram(); 
+					        		if (runnableProgram == null) {
+					        			configureStepErroredOut = true;
+					        			log.debug(this.simpleName + "A configure program returned null RunnableProgram");
+					        			break;
+					        		}
+					        		
+					        		Integer programRunResult = runnableProgram.getRunResult();
 					        		if (programRunResult==null || programRunResult!=0) {
-					        			configStepErroredOut = true;
+					        			configureStepErroredOut = true;
 					        			log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
 					        			break;
 					        		}
 					        	}
-					        	if (!configStepErroredOut)
+					        	if (!configureStepErroredOut)
 					        		fail = false;
 			    			} else {
 			    				log.debug(this.simpleName + "Configure program results are missing");
@@ -425,6 +432,28 @@ public class InstancedTemplate {
 				        		throw new Exception("Configure step(s) errored out");
 			    			log.debug(simpleName + "configureHandler() completes " + configureHandler.getConsecutiveSameStepCount() + " configure program(s) for setID " + setID);
 			    		}
+//			        	List<ProgramState> localProgramStates = configureHandler.proceed();
+//			    		if (configureHandler.isDone()) {
+//			    			boolean fail = true;
+//			    			if (localProgramStates.size() == configureHandler.getConsecutiveSameStepCount()) {
+//					        	boolean configStepErroredOut= false;
+//					        	for (ProgramState ps : localProgramStates) {
+//					        		Integer programRunResult = ps.getProgramRunResult(); 
+//					        		if (programRunResult==null || programRunResult!=0) {
+//					        			configStepErroredOut = true;
+//					        			log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
+//					        			break;
+//					        		}
+//					        	}
+//					        	if (!configStepErroredOut)
+//					        		fail = false;
+//			    			} else {
+//			    				log.debug(this.simpleName + "Configure program results are missing");
+//			    			}
+//			    			if (fail)
+//				        		throw new Exception("Configure step(s) errored out");
+//			    			log.debug(simpleName + "configureHandler() completes " + configureHandler.getConsecutiveSameStepCount() + " configure program(s) for setID " + setID);
+//			    		}
 			        }
 			        if (connectHandler!=null && !connectHandler.isDone()) {
 			    		allStepsCompleteForThisStepSet = false;

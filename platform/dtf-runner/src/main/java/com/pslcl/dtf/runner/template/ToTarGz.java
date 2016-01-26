@@ -7,7 +7,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -66,7 +67,7 @@ public class ToTarGz {
 	}
 	
 	/**
-	 * 
+	 * Constructor
 	 * @param tarGzFilename name of tarGz file to create, e.g. attachments.tar.gz
 	 */
 	ToTarGz(String sourceDirectory, String tarGzFilename) {
@@ -77,17 +78,21 @@ public class ToTarGz {
 	}
 
 	/**
-	 * @throws FileNotFoundException, IOException 
+	 * @throws IOException 
 	 * 
 	 */
-	void CreateTarGz() throws FileNotFoundException, IOException {
+	void CreateTarGz() throws IOException {
+		// get absolute path of where this application resides
 		//String tarGzAbsoluteFilePath = new File("").getAbsolutePath(); // does not supply the trailing '\' that we need
 		String tarGzAbsoluteFilePath = new File(".").getAbsolutePath(); // add the '.' then delete it: final result has our needed trailing '\' 
 		if (tarGzAbsoluteFilePath.endsWith("."))
 			tarGzAbsoluteFilePath = tarGzAbsoluteFilePath.substring(0, tarGzAbsoluteFilePath.length()-1);
-			
+		
+		// place empty file attachments.tar.gz at .   [note: "attachments" was filled in this.tarGzFilename] 
 		FileOutputStream fOut = new FileOutputStream(new File(this.tarGzFilename)); // if this is the same name as a previous directory or file, then, when this is eventually written, it will blow away previous
 		log.debug(simpleName + "created new file " + this.tarGzFilename + " at directory " + tarGzAbsoluteFilePath);
+		
+		// from this.sourceDirectory, place whatever directories and files are found, with full directory nesting  
 		BufferedOutputStream bOut = new BufferedOutputStream(fOut);
 		GzipCompressorOutputStream gzOut = new GzipCompressorOutputStream(bOut);
 		TarArchiveOutputStream tOut = new TarArchiveOutputStream(gzOut);
@@ -112,42 +117,45 @@ public class ToTarGz {
 	
 	/**
 	 * 
-	 * @return
+	 * @return An input stream that holds a tar archive
 	 * @throws IOException
 	 */
 	TarArchiveInputStream getTarArchiveInputStream() throws IOException {
-		// Based on example 3: http://www.programcreek.com/java-api-examples/index.php?api=org.apache.commons.compress.archivers.tar.TarArchiveInputStream .
-		// Many other examples are shown there to handle many use cases.
+		// Based on example 3: http://www.programcreek.com/java-api-examples/index.php?api=org.apache.commons.compress.archivers.tar.TarArchiveInputStream . Many other examples are shown there to handle many use cases.
+		
+//		BufferedInputStream bufIS = new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzFilename))));
 		File tarGz = new File(this.tarGzFilename);
 		FileInputStream fIS = new FileInputStream(tarGz);
-		//fIS.read();
 		GZIPInputStream gzIS = new GZIPInputStream(fIS);
-		//gzIS.read();
 		BufferedInputStream bufIS = new BufferedInputStream(gzIS);
-		InputStream is = bufIS; // needed?
-		//is.read();
+		
 		try {
-			TarArchiveInputStream retTAIS = new TarArchiveInputStream(is);
-			//retTAIS.read();
-			
-			// temporarily: this is a way to count how many tar entries are present, and to characterize them.
-			int count = 0;
-			TarArchiveEntry taEntry;
-			TarArchiveEntry arrayTAEntry[] = {null, null, null};
-			while ((taEntry = retTAIS.getNextTarEntry()) != null) {
-				arrayTAEntry[count] = taEntry;  // entry 0 is of size 0, and name of the high level directory in retTAIS
-				                                // entry 1 is of size 2744, and name of the first file in retTAIS
-				                                // entry 2 is of size 2744, and name of the second file in retTAIS
-												// For the above, count ends at 3,
-				++count;
-				
+			TarArchiveInputStream retTAIS = new TarArchiveInputStream(bufIS);
+			if (true) { // true: temporarily, this is a way to count how many tar entries are present, and to characterize them.
+				TarArchiveEntry taEntry;
+				List<TarArchiveEntry> tarArchiveEntries = new ArrayList<TarArchiveEntry>();
+				while ((taEntry = retTAIS.getNextTarEntry()) != null) {
+					tarArchiveEntries.add(taEntry);
+				}
+				log.debug(simpleName + tarArchiveEntries.size() + " TarArchiveEntry's found"); // I see count being 1 for top directory "attachments," another for readme.txt, another for readme1.txt
 			}
-			log.debug(simpleName + count + " TarArchiveEntry's found"); // w/o any of the reads, above, I see count being 1 for the directory, another for readme.txt, another for readme1.txt
-			
 			return retTAIS;
 		} finally {
-			bufIS.close();
+			// try/finally used to accomplish this close even for unchecked exceptions that could occur
+			bufIS.close(); // in closing, this closes gzIS, which closes fIS 
 		}
 	}
+			
+//			int count = 0;
+//			TarArchiveEntry arrayTAEntry[] = {null, null, null};
+//			while ((taEntry = retTAIS.getNextTarEntry()) != null) {
+//				arrayTAEntry[count] = taEntry;  // entry 0 is of size 0, and name of the high level directory in retTAIS
+//				                                // entry 1 is of size 2744, and name of the first file in retTAIS
+//				                                // entry 2 is of size 2744, and name of the second file in retTAIS
+//												// For the above, count ends at 3,
+//				++count;
+//				
+//			}
+//			log.debug(simpleName + count + " TarArchiveEntry's found"); // w/o any of the reads, above, I see count being 1 for the directory, another for readme.txt, another for readme1.txt
 	
 }
