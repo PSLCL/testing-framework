@@ -1082,7 +1082,7 @@ public class CommandLine
 
                 i += 1;
             } else{
-            	System.err.println("Unrecognized argument " + args[i]);
+            	System.err.println("Invalid argument " + args[i]);
                 populateHelp();
             }
         }

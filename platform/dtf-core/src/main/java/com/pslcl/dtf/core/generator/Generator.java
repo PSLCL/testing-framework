@@ -92,57 +92,59 @@ public class Generator
         parameterReferenceMap.put(uuid, parameter);
     }
 
-    private static class StringContent implements Content
-    {
-        String content;
-        Hash hash;
-
-        StringContent(String content)
-        {
-            hash = Hash.fromContent(content);
-        }
-
-        @Override
-        public String getValue(Template template) throws Exception
-        {
-            return hash.toString();
-        }
-
-        @Override
-        public Hash getHash()
-        {
-            return hash;
-        }
-
-        @Override
-        public InputStream asStream()
-        {
-            return new ByteArrayInputStream(content.getBytes());
-        }
-
-        @Override
-        public byte[] asBytes()
-        {
-            return content.getBytes();
-        }
-    }
-
-    /**
-     * Create content that can be used in a test.
-     * @param content
-     * @return
-     */
-    public Content createContent(String content)
-    {
-        Content result = new StringContent(content);
-        if (!addedContent.containsKey(result.getHash()))
-        {
-            addedContent.put(result.getHash(), result);
-        } else
-            result = addedContent.get(result.getHash());
-
-        return result;
-    }
+    //TODO: https://github.com/PSLCL/testing-framework/issues/43
+//    private static class StringContent implements Content
+//    {
+//        String content;
+//        Hash hash;
+//
+//        StringContent(String content)
+//        {
+//            hash = Hash.fromContent(content);
+//        }
+//
+//        @Override
+//        public String getValue(Template template) throws Exception
+//        {
+//            return hash.toString();
+//        }
+//
+//        @Override
+//        public Hash getHash()
+//        {
+//            return hash;
+//        }
+//
+//        @Override
+//        public InputStream asStream()
+//        {
+//            return new ByteArrayInputStream(content.getBytes());
+//        }
+//
+//        @Override
+//        public byte[] asBytes()
+//        {
+//            return content.getBytes();
+//        }
+//    }
+//
+//    /**
+//     * Create content that can be used in a test.
+//     * 
+//     * @param content
+//     * @return
+//     */
+//    public Content createContent(String content)
+//    {    	 	
+//        Content result = new StringContent(content);
+//        if (!addedContent.containsKey(result.getHash()))
+//        {
+//            addedContent.put(result.getHash(), result);
+//        } else
+//            result = addedContent.get(result.getHash());
+//
+//        return result;
+//    }
 
     /**
      * Create an iterable set of all modules known to the generator.
