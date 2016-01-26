@@ -1,6 +1,8 @@
 package com.pslcl.dtf.runner.template;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.io.FileUtils;
@@ -188,11 +191,22 @@ public class InspectHandler {
                                 Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
                             }
 
-                            // from local temp directory, place tarGz file in local directory
-                            ToTarGz toTarGz = new ToTarGz(fileTempArtifactDirectory.getName(), InspectHandler.archiveFilename);
+                            // from local temp directory, place the tarGz file in local temp directory
+                            ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename, fileTempArtifactDirectory.getName());
                             toTarGz.CreateTarGz();
                             TarArchiveInputStream tais = toTarGz.getTarArchiveInputStream();
                             inspectInfo.setContentStream(tais);
+
+                            if (false) { // true: temporarily, which consumes tais and makes it useless to send to the inspect call, as a test, use tais to write a decoded file structure to disk
+                            	// from our actual TarArchiveInputStream
+                            	TarArchiveInputStream testTais = (inspectInfo.getContentStream());
+                            	toTarGz.writeFileStructure(testTais);
+                            } else if (false) { // true: temporarily, which consumes tais and makes it useless to send to the inspect call, as a test, use tais to write a decoded file structure to disk
+                                // from an InputStream; note: this path does not prove anything yet, need to create InputStream from scratch
+                            	InputStream is = InputStream.class.cast(inspectInfo.getContentStream()); // upcasting
+//                            	InputStream is = (InputStream)(inspectInfo.getContentStream());          // also upcasting, same behavior
+                            	toTarGz.writeFileStructure(is, 0);
+                            }
                             
                             ++this.indexNextInspectInfo;
                 			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
