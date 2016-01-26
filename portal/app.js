@@ -31,7 +31,7 @@ if ( env == 'production' ) {
         
         var child = spawn('java',
                 parameters,
-                { cwd: path.join(__dirname,'..') });
+                { cwd: config.home_dir });
         child.stdout.on('data', function(data) {
             var lines = (''+data).split(/\r?\n/);
             lines.forEach( function(line) { if ( line.length > 0 ) console.log('synchronize: '+line); } );

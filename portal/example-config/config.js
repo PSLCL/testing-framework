@@ -9,8 +9,11 @@
 //   * Generate your certificate and put the value below.
 //   * Enable development https by setting development.https_port if desired.
 
-if ( process != null )
-	env = process.env;
+var env, home_dir;
+if ( process != null ){
+  env = process.env;
+  home_dir = env.DTF_EXEC_HOME || process.cwd() + "/..";
+}
 
 var E = env.NODE_ENV || 'production';
 
@@ -24,8 +27,9 @@ var all = {
     db: env.DTF_TEST_DB_SCHEMA || 'qa_portal'
   },
   
-  artifacts_dir: env.DTF_TEST_ARTIFACTS || 'artifacts',
-  generators_dir: env.DTF_TEST_GENERATORS || 'generators',
+  home_dir: home_dir,
+  artifacts_dir: env.DTF_TEST_ARTIFACTS || home_dir + '/artifacts',
+  generators_dir: env.DTF_TEST_GENERATORS || home_dir + '/generators',
   shell: env.DTF_TEST_SHELL || '/bin/bash',
   
   // Page size for infinite scrolling default
@@ -44,10 +48,10 @@ var all = {
 };
 
 var oauth = {
-	applicationURL: "https://oath-hostname",
-	callbackURL: "https://this-hostname/auth/atlassian-oauth/callback",
-	consumerKey: "key",
-	consumerSecret: "-----BEGIN RSA PRIVATE KEY-----\n" +
+  applicationURL: "https://oath-hostname",
+  callbackURL: "https://this-hostname/auth/atlassian-oauth/callback",
+  consumerKey: "key",
+  consumerSecret: "-----BEGIN RSA PRIVATE KEY-----\n" +
 		"lines-of-key-text\n" +
 		"-----END RSA PRIVATE KEY-----"
 };
@@ -60,32 +64,34 @@ var configs = {
     mysql: all.mysql,
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
-	'synchronize_schedule': all.synchronize_schedule,
-	'certificate_passphrase': certificate_passphrase,
-	listen_ip: '0.0.0.0',
-	http_port: 80,
-	https_port: null,
-	'oauth': oauth,
-	artifacts_dir: all.artifacts_dir,
-	generators_dir: all.generators_dir,
-	shell: all.shell,
-	prune: all.prune
+    'synchronize_schedule': all.synchronize_schedule,
+    'certificate_passphrase': certificate_passphrase,
+    listen_ip: '0.0.0.0',
+    http_port: 80,
+    https_port: null,
+    'oauth': oauth,
+    artifacts_dir: all.artifacts_dir,
+    generators_dir: all.generators_dir,
+    shell: all.shell,
+    prune: all.prune,
+    home_dir: all.home_dir;
   },
   production: {
     enable_livereload: false,
     mysql: all.mysql,
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
-	'synchronize_schedule': all.synchronize_schedule,
-	'certificate_passphrase': certificate_passphrase,
-	listen_ip: '0.0.0.0',
-	http_port: 80,
-	https_port: 443,
-	'oauth': oauth,
-	artifacts_dir: all.artifacts_dir,
-	generators_dir: all.generators_dir,
-	shell: all.shell,
-	prune: all.prune
+    'synchronize_schedule': all.synchronize_schedule,
+    'certificate_passphrase': certificate_passphrase,
+    listen_ip: '0.0.0.0',
+    http_port: 80,
+    https_port: 443,
+    'oauth': oauth,
+    artifacts_dir: all.artifacts_dir,
+    generators_dir: all.generators_dir,
+    shell: all.shell,
+    prune: all.prune,
+    home_dir: all.home_dir;
   }
 };
 
