@@ -50,6 +50,12 @@ public class MachineConfigData
         MachineConfigData data = new MachineConfigData();
         format.ttl(MachineConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
+
+        format.ttl("Test name prefix:");
+        format.level.incrementAndGet();
+        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
+        LoggerFactory.getLogger(MachineConfigData.class).debug(format.sb.toString());
+        format.level.decrementAndGet();
         
         format.ttl("\nEc2 Instance:");
         format.level.incrementAndGet();
@@ -65,11 +71,6 @@ public class MachineConfigData
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
-        
-        format.ttl("Test name prefix:");
-        format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
-        LoggerFactory.getLogger(MachineConfigData.class).debug(format.sb.toString());
         return data;
     }
     
