@@ -29,7 +29,7 @@
   <property name="scm.branch" value="unknown"/>
   <property name="scm.path" value="unknown"/>
   <property name="scm.revision" value="unknown"/>
-  <property name="resolver" value="private"/>
+  <property name="resolver" value="local"/>
 
   <property name="src.dir" location="src/main/java"/>
   <property name="lib.dir" value="lib"/>
