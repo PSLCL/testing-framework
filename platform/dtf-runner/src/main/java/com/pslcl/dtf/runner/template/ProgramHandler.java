@@ -217,46 +217,23 @@ public class ProgramHandler {
 		List<ProgramState> retList = new ArrayList<>();
         for (ProgramState programState : this.futuresOfProgramState) {
         	if (programState!=null) {
-//		    	if (this.runType == RunType.CONFIGURE) {
-//		    		if (programState.getFutureProgramRunResult() != null) {
-//		                try {
-//							Integer runResult = programState.getFutureProgramRunResult().get(); // blocks until asynch answer comes, or exception, or timeout
-//							programState.setProgramRunResult(runResult); // pass this Integer result back to caller
-//							retList.add(programState);
-//						} catch (InterruptedException | ExecutionException ioreE) {
-//				            Throwable t = ioreE.getCause();
-//				            String msg = ioreE.getLocalizedMessage();
-//				            if(t != null)
-//				                msg = t.getLocalizedMessage();
-//				            log.warn(simpleName + "waitComplete(),  CONFIGURE program errored out: " + msg + "; " + ioreE.getMessage());
-//				        	throw ioreE;
-//						}                
-//		        	} else {
-//			            log.warn(simpleName + "waitComplete(), configure program errored out with a failed future");
-//		        		throw new Exception("Future.get() failed");
-//		        	}
-//		    	} else {
-		    		if (programState.getFutureRunnableProgram() != null) {
-		                try {
-		                	RunnableProgram runnableProgram = programState.getFutureRunnableProgram().get();
-		                	programState.setRunnableProgram(runnableProgram);
-							retList.add(programState);
-						} catch (InterruptedException | ExecutionException ioreE) {
-				            Throwable t = ioreE.getCause();
-				            String msg = ioreE.getLocalizedMessage();
-				            if(t != null)
-				                msg = t.getLocalizedMessage();
-				            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out: " + msg + "; " + ioreE.getMessage());
-				        	throw ioreE;
-						}             
-		    		} else {
-			            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out with a failed future");
-		        		throw new Exception("Future.get() failed");
-		    		}
-//		    	}
-//	    	} else {
-//	            log.warn(simpleName + "waitComplete(), encountered null programState, internal error");
-//        		throw new Exception("null programState, internal error");
+	    		if (programState.getFutureRunnableProgram() != null) {
+	                try {
+	                	RunnableProgram runnableProgram = programState.getFutureRunnableProgram().get();
+	                	programState.setRunnableProgram(runnableProgram);
+						retList.add(programState);
+					} catch (InterruptedException | ExecutionException ioreE) {
+			            Throwable t = ioreE.getCause();
+			            String msg = ioreE.getLocalizedMessage();
+			            if(t != null)
+			                msg = t.getLocalizedMessage();
+			            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out: " + msg + "; " + ioreE.getMessage());
+			        	throw ioreE;
+					}             
+	    		} else {
+		            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out with a failed future");
+	        		throw new Exception("Future.get() failed");
+	    		}
 	    	}
         } // end for()		
         // Each entry in retList is a program that actually ran; the program may have returned zero or non-zero, but it ran.
