@@ -141,7 +141,8 @@ public class ToTarGz {
 		
 		try {
 			TarArchiveInputStream retTAIS = new TarArchiveInputStream(bufIS);
-			if (true) { // true: temporarily, use this independently created TAIS as a way to count how many tar entries are present, and to report their names
+			
+			if (false) { // true: temporarily, use this independently created TAIS as a way to count how many tar entries are present, and to report their names
 				// replicate the above without using retTAIS, which must remain pristine
 				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzFilename)))));
 				TarArchiveEntry taEntry;
@@ -153,6 +154,12 @@ public class ToTarGz {
 				log.debug(simpleName + tarArchiveEntries.size() + " TarArchiveEntry's found"); // I see count of 1 for top directory "attachments," another for file1, another for file2
 				testTAIS.close();
 			}
+			if (false) { // true: temporarily, use this independently created TAIS to write the archive's directories and files to disk
+				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzFilename)))));
+				this.writeFileStructure(testTAIS);
+				testTAIS.close();
+			}
+			
 			return retTAIS; // TODO: close this InputStream at the right time; cannot close it putStream until it is used by PersonProvider
 		} catch (Exception e) {
 			log.debug(simpleName + "getTarArchiveInputStream() sees exception : " + e.getMessage());
@@ -165,7 +172,7 @@ public class ToTarGz {
 	 * use as a unit test
 	 * @param tais
 	 */
-	void writeFileStructure(TarArchiveInputStream tais) throws IOException {
+	private void writeFileStructure(TarArchiveInputStream tais) throws IOException {
 		// delete the entire top level destination directory
 		String destTopDir = "recoveryDirectory";
 		File destTopPath = new File(destTopDir);
@@ -201,7 +208,7 @@ public class ToTarGz {
 	 * @param dummy
 	 * @throws IOException
 	 */
-	void writeFileStructure(InputStream inputStream, int dummy) throws IOException {
+	private void writeFileStructure(InputStream inputStream, int dummy) throws IOException {
 //		GZIPInputStream gzIS = new GZIPInputStream(inputStream); // EOF exception
 //		BufferedInputStream bufIS = new BufferedInputStream(gzIS);
 //		TarArchiveInputStream tais = new TarArchiveInputStream(bufIS);

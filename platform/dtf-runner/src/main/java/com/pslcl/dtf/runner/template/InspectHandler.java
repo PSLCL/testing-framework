@@ -1,8 +1,6 @@
 package com.pslcl.dtf.runner.template;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,7 +12,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.io.FileUtils;
@@ -34,6 +31,8 @@ public class InspectHandler {
     private final InstancedTemplate iT;
     private final List<String> setSteps;
     private List<InspectInfo> inspectInfos = null;
+//  private List<Future<? extends InspectInfo>> futuresOfInspectInfo = null;
+    
     private List<Future<? extends Void>> futuresOfInspects;
     private int iBeginSetOffset = -1;
     private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin
@@ -52,6 +51,8 @@ public class InspectHandler {
         this.simpleName = getClass().getSimpleName() + " ";
         this.iT = iT;
         this.setSteps = setSteps;
+        
+//        this.futuresOfInspectInfo = new ArrayList<Future<? extends InspectInfo>>();
         this.futuresOfInspects = new ArrayList<Future<? extends Void>>();
         this.done = false;
 
@@ -157,7 +158,9 @@ public class InspectHandler {
         try {
             QAPortalAccess qapa = this.iT.getQAPortalAccess();
             while (!done) {
-            	if (futuresOfInspects.isEmpty()) {
+//            	if (futuresOfInspectInfo.isEmpty())
+            	if (futuresOfInspects.isEmpty())
+            	{
             		if (this.indexNextInspectInfo < this.inspectInfos.size()) {
             			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
             			while (this.indexNextInspectInfo < this.inspectInfos.size()) {
@@ -196,18 +199,6 @@ public class InspectHandler {
                             toTarGz.CreateTarGz();
                             TarArchiveInputStream tais = toTarGz.getTarArchiveInputStream();
                             inspectInfo.setContentStream(tais);
-
-                            if (false) { // true: temporarily, which consumes tais and makes it useless to send to the inspect call, as a test, use tais to write a decoded file structure to disk
-                            	// from our actual TarArchiveInputStream
-                            	TarArchiveInputStream testTais = (inspectInfo.getContentStream());
-                            	toTarGz.writeFileStructure(testTais);
-                            } else if (false) { // true: temporarily, which consumes tais and makes it useless to send to the inspect call, as a test, use tais to write a decoded file structure to disk
-                                // from an InputStream; note: this path does not prove anything yet, need to create InputStream from scratch
-                            	InputStream is = InputStream.class.cast(inspectInfo.getContentStream()); // upcasting
-//                            	InputStream is = (InputStream)(inspectInfo.getContentStream());          // also upcasting, same behavior
-                            	toTarGz.writeFileStructure(is, 0);
-                            }
-                            
                             ++this.indexNextInspectInfo;
                 			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
             			} // end while()
@@ -223,6 +214,10 @@ public class InspectHandler {
             				
                         	// initiate person.inspect() for this one inspectInfo; fills futuresOfInspects
                             Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
+                            
+//                            inspectInfo.setFutureEntry(future);
+//                            futuresOfInspectInfo.add(inspectInfo);
+                            
                             futuresOfInspects.add(future);
                             // TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future
             			}
