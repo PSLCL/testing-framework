@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.net.URLEncoder;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -198,6 +199,7 @@ public class Core
                 binding.put("process", null);
                 binding.put("env", System.getenv());
                 binding.put("module", new NodeModule());
+		binding.put("home_dir", Paths.get("").toAbsolutePath().normalize().toString());
 
                 engine.eval(new FileReader(fs), binding);
                 this.db_host = (String) engine.eval("config.mysql.host;", binding);
