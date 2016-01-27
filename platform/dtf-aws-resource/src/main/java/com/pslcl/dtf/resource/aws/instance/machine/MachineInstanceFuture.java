@@ -116,7 +116,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             config.keyName = createKeyPair();
 
         Base64.Encoder encoder = Base64.getMimeEncoder();
-        String userData = encoder.encodeToString(config.userData.getBytes());
+        String userData = encoder.encodeToString(config.linuxUserData.getBytes());
+        if(config.windows)
+            userData = encoder.encodeToString(config.winUserData.getBytes());
         //@formatter:off
         Placement placement = new Placement().withAvailabilityZone(config.subnetConfigData.availabilityZone);
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
@@ -129,14 +131,14 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             .withUserData(userData)
 //            .withSecurityGroupIds(sgGroupId)
             .withPlacement(placement);
-        //@formatter:off
+        //@formatter:on
 
-        if(config.iamArn != null && config.iamName != null)
+        if (config.iamArn != null && config.iamName != null)
         {
             IamInstanceProfileSpecification profile = new IamInstanceProfileSpecification().withArn(config.iamArn).withName(config.iamName);
             runInstancesRequest.setIamInstanceProfile(profile);
         }
-        
+
         RunInstancesResult runResult = null;
         pdelayData.maxDelay = config.ec2MaxDelay;
         pdelayData.maxRetries = config.ec2MaxRetries;
@@ -154,47 +156,50 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 {
                     runResult = ec2Client.runInstances(runInstancesRequest);
                     break;
-                }catch (Exception e)
+                } catch (Exception e)
                 {
                     FatalResourceException fre = pdelay.handleException(msg, e);
-                    if(fre instanceof FatalException)
+                    if (fre instanceof FatalException)
                         throw fre;
                 }
-            }while(true);
-            
-            if(runResult != null) // get rid of possible null warning
+            } while (true);
+
+            if (runResult != null) // get rid of possible null warning
                 reservedResource.ec2Instance = runResult.getReservation().getInstances().get(0);
-            pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
-            List<GroupIdentifier> sgs = reservedResource.ec2Instance.getSecurityGroups();
-            reservedResource.groupId = sgs.get(0).getGroupId();
-            pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
-    //        setSgPermissions(reservedResource.groupId);
-            DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(reservedResource.ec2Instance.getInstanceId());
-            pdelay.reset();
-            msg = pdelayData.getHumanName(Ec2MidStr, "describeInstances");
-            do
+        }
+        pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
+        List<GroupIdentifier> sgs = reservedResource.ec2Instance.getSecurityGroups();
+        reservedResource.groupId = sgs.get(0).getGroupId();
+        pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
+        //        setSgPermissions(reservedResource.groupId);
+        DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(reservedResource.ec2Instance.getInstanceId());
+        pdelay.reset();
+        msg = pdelayData.getHumanName(Ec2MidStr, "describeInstances");
+        do
+        {
+            checkFutureCanceled();
+            try
             {
-                checkFutureCanceled();
-                try
+                DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
+                Instance inst = diResult.getReservations().get(0).getInstances().get(0);
+                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
                 {
-                    DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
-                    Instance inst = diResult.getReservations().get(0).getInstances().get(0);
-                    if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
+                    synchronized (reservedResource)
                     {
                         reservedResource.ec2Instance = inst; // this picks up the running information i.e. public ip addresses
                         break;
                     }
-                    pdelay.retry(pdelayData.getHumanName(Ec2MidStr, "describeInstances"));
-                } catch (Exception e)
-                {
-                    FatalResourceException fre = pdelay.handleException(msg, e);
-                    if(fre instanceof FatalException)
-                        throw fre;
                 }
-            }while(true);
-        } // synch reservedResource
+                pdelay.retry(pdelayData.getHumanName(Ec2MidStr, "describeInstances"));
+            } catch (Exception e)
+            {
+                FatalResourceException fre = pdelay.handleException(msg, e);
+                if (fre instanceof FatalException)
+                    throw fre;
+            }
+        } while (true);
     }
-  
+
     private String createKeyPair() throws FatalResourceException
     {
         synchronized (pdelayData.provider)
@@ -210,20 +215,20 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 {
                     keyPairsResult = ec2Client.describeKeyPairs(dkpr);
                     break;
-                }catch (Exception e)
+                } catch (Exception e)
                 {
                     FatalResourceException fre = pdelay.handleException(msg, e);
-                    if(fre instanceof FatalException)
+                    if (fre instanceof FatalException)
                         throw fre;
                 }
-            }while(true);
-            
+            } while (true);
+
             for (KeyPairInfo pair : keyPairsResult.getKeyPairs())
             {
                 name.equals(pair.getKeyName());
                 return name;
             }
-            
+
             CreateKeyPairRequest ckpr = new CreateKeyPairRequest().withKeyName(name);
             CreateKeyPairResult keypairResult = null;
             pdelay.reset();
@@ -234,15 +239,15 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 {
                     keypairResult = ec2Client.createKeyPair(ckpr);
                     break;
-                }catch (Exception e)
+                } catch (Exception e)
                 {
                     FatalResourceException fre = pdelay.handleException(msg, e);
-                    if(fre instanceof FatalException)
+                    if (fre instanceof FatalException)
                         throw fre;
                 }
-            }while(true);
+            } while (true);
             KeyPair keypair = keypairResult.getKeyPair();
-            
+
             return keypair.getKeyName();
         }
     }

@@ -130,9 +130,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 releasePossiblePendings(templateId, isReusable);
                 for (Entry<Long, AwsMachineInstance> entry : boundInstances.entrySet())
                 {
+                    coordinates = entry.getValue().getCoordinates();
                     if (coordinates.templateId.equals(templateId))
                     {
-                        coordinates = entry.getValue().getCoordinates();
                         prefixTestName = entry.getValue().mconfig.resoucePrefixName;
                         releaseList.add(entry.getKey());
                     }
@@ -146,6 +146,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 }
             }
         }
+        
         // make sure all the release futures are complete before deleting the key-pair
         for (Future<Void> future : futures)
         {

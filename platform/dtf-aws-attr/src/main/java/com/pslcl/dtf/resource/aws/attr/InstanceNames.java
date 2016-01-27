@@ -28,9 +28,13 @@ public class InstanceNames
     public static final String AvailabilityZoneKey = InstanceKeyBase + ".avail-zone";
     public static final String AvailabilityZoneDefault = "us-west-2a";
     
-    public static final String Ec2UserDataKey = InstanceKeyBase + ".user-data";
+    public static final String Ec2WindowsKey = InstanceKeyBase + ".windows";
+    public static final String Ec2LinuxUserDataKey = InstanceKeyBase + ".linux-user-data";
+    public static final String Ec2WinUserDataKey = InstanceKeyBase + ".win-user-data";
 //    public static final String Ec2UserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh $(curl http://169.254.169.254/latest/meta-data/instance-id)";
-    public static final String Ec2UserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh";
+    public static final String Ec2LinuxUserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh";
+    public static final String Ec2WinUserDataDefault = "<script>\\STAF\\startSTAFProc.bat</script>";
+    public static final String Ec2WindowsDefault = "false";
     
     /* ****************************************************************************
      * AWS Machine Provider bind declarations
@@ -158,7 +162,8 @@ public class InstanceNames
        keys.add(Ec2IamArnKey);
        keys.add(Ec2IamNameKey);
        keys.add(Ec2KeyPairNameKey);
-       keys.add(Ec2UserDataKey);
+       keys.add(Ec2LinuxUserDataKey);
+       keys.add(Ec2WinUserDataKey);
        keys.add(ClientNames.TestShortNameKey);
        return keys;
     }

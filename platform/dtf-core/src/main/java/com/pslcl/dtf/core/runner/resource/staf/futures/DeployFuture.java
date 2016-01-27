@@ -91,27 +91,33 @@ public class DeployFuture implements Callable<Void>
                             .append(" ")
                             .append(sourceUrl);
             cmdData.setCommand(cmd.toString());
-            executeStafProcess(cmdData, true);
+            executeStafProcess(cmdData, true, true);
             
             cmdData = new ProcessCommandData(cmdData);
             cmdData.setCommand("ren " + urlFile + " " + cmdData.getFileName());
-            executeStafProcess(cmdData, false);
+            executeStafProcess(cmdData, false, true);
             return null;
         }
         // linux
         cmdData.setCommand("sudo mkdir -p " + cmdData.getBasePath());
-        executeStafProcess(cmdData, false);
+        executeStafProcess(cmdData, false, true);
+        
         cmdData = new ProcessCommandData(cmdData);
         cmdData.setUseWorkingDir(true);
         cmdData.setCommand("sudo wget -O " + urlFile + " " + sourceUrl);
-        executeStafProcess(cmdData, false);
+        executeStafProcess(cmdData, false, false);
+        
+        cmdData = new ProcessCommandData(cmdData);
+        cmdData.setCommand("sudo mv " + urlFile + " " + cmdData.getFileName());
+        executeStafProcess(cmdData, false, true);
+        
         cmdData = new ProcessCommandData(cmdData);
         cmdData.setCommand("sudo chmod 777 " + cmdData.getFileName());
-        executeStafProcess(cmdData, false);
+        executeStafProcess(cmdData, false, true);
         return null;
     }
 
-    private void executeStafProcess(ProcessCommandData cmdData, boolean powershell) throws Exception
+    private void executeStafProcess(ProcessCommandData cmdData, boolean powershell, boolean failOnServiceError) throws Exception
     {
         StafRunnableProgram runnableProgram = null;
         if(powershell)
@@ -119,7 +125,11 @@ public class DeployFuture implements Callable<Void>
         else
             runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
         if(runnableProgram.getRunResult() != 0)
-            throw new Exception("Staf requested process failed: " + runnableProgram.result.getCompletionSysErr());
+        {
+            if(failOnServiceError)
+                throw new Exception("Staf requested process failed: " + runnableProgram.result.getCompletionSysErr());
+            log.warn("Staf requested process failed: " + runnableProgram.result.getCompletionSysErr());
+        }
     }
     
     public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows) throws Exception
