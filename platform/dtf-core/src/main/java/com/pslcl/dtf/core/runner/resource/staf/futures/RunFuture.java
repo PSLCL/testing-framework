@@ -77,13 +77,21 @@ public class RunFuture implements Callable<RunnableProgram>
     public RunnableProgram call() throws Exception
     {
         ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
-        String sudo = "sudo ";
-        if (windows)
-            sudo = "";
         cmdData.setHost(host);
         cmdData.setWait(executor == null);
         cmdData.setContext(context);
-        cmdData.setCommand(sudo + cmdData.getFileName());
+        cmdData.setUseWorkingDir(true);
+        if (windows)
+        {
+            cmdData.setCommand(cmdData.getFileName());
+            StafRunnableProgram runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
+            runnableProgram.setExecutorService(executor);
+            if (executor != null)
+                return runnableProgram;
+            return runnableProgram;
+        }
+        // linux
+        cmdData.setCommand("./" + cmdData.getFileName());
         StafRunnableProgram runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
         runnableProgram.setExecutorService(executor);
         if (executor != null)

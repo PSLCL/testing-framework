@@ -111,10 +111,10 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                 List<Long> releaseList = new ArrayList<Long>();
                 for (Entry<Long, AwsNetworkInstance> entry : boundNetworks.entrySet())
                 {
+                    coordinates = entry.getValue().getCoordinates();
                     if (coordinates.templateId.equals(templateId))
                     {
                         releaseList.add(entry.getKey());
-                        coordinates = entry.getValue().getCoordinates();
                         prefixTestName = entry.getValue().reservedResource.subnetConfig.resoucePrefixName;
                     }
                 }
@@ -138,6 +138,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
             }
         }
 
+        //TODO: this should not be nuking keypair, but vpc?
         if (coordinates != null)
         {
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
