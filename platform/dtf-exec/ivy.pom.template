@@ -11,6 +11,20 @@ ${ivy.pom.header}
   <name>${name}</name>
   <description>${ivy.pom.description}</description>
   <url>${ivy.pom.url}</url>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.3</version>
+        <configuration>
+          <source>${ant.build.javac.source}</source>
+          <target>${ant.build.javac.target}</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <licenses>
     <license>
