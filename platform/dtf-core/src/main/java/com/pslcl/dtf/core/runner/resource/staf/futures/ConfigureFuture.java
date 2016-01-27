@@ -66,10 +66,13 @@ public class ConfigureFuture implements Callable<RunnableProgram>
         cmdData.setHost(host);
         cmdData.setWait(true);
         cmdData.setContext(context);
-        String sudo = "sudo ";
+        cmdData.setUseWorkingDir(true);
         if (windows)
-            sudo = "";
-        cmdData.setCommand(sudo + cmdData.getFileName());
+        {
+            cmdData.setCommand(cmdData.getFileName());
+            return  StafSupport.issueProcessShellRequest(cmdData);
+        }
+        cmdData.setCommand("sudo ./" + cmdData.getFileName());
         return  StafSupport.issueProcessShellRequest(cmdData);
     }
 }
