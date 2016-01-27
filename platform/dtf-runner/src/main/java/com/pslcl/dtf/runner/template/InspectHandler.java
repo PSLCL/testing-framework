@@ -1,6 +1,7 @@
 package com.pslcl.dtf.runner.template;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -172,7 +173,7 @@ public class InspectHandler {
                             
                             // TODO: Add async behavior here. It is setup for that, to involve futures in the two QA Portal data accesses.
                             
-                			// for this one inspectInfo, get inspect information from QA Portal web server
+                			// for this one inspectInfo . . .
                             InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
                             
                             // obtain instructions for this.inspectInfo
@@ -180,7 +181,7 @@ public class InspectHandler {
                             String instructions = qapa.getContentAsString(instructionsHash); // TODO: needs to be asynchronous
                             inspectInfo.setInstruction(instructions);
 
-                            // into local temp directory, place n filename/contents and place
+                            // into local temp directory, place n filename/content combinations
                             for (Entry<String, String> artifact: inspectInfo.getArtifacts().entrySet()) {
                                 String contentFilename = artifact.getKey();
                                 File contentFile = new File(contentFilename); // empty File
@@ -189,16 +190,19 @@ public class InspectHandler {
                                 String contentHash = artifact.getValue();
                                 InputStream streamContent = qapa.getContentAsStream(contentHash);
                                 Path dest = Paths.get(fileTempArtifactDirectory.getPath() + File.separator + contentFile.getPath());
-                                // It should never happen that a file is copied over a file of the same filenmaem, bbecause:
+                                // It should never happen that a file is copied over a file of the same filename, because:
                                 //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.   
                                 Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
                             }
 
                             // from local temp directory, place the tarGz file in local temp directory
                             ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename, fileTempArtifactDirectory.getName());
-                            toTarGz.CreateTarGz();
-                            TarArchiveInputStream tais = toTarGz.getTarArchiveInputStream();
-                            inspectInfo.setContentStream(tais);
+                            File fileTarGz = toTarGz.CreateTarGz();
+                            // fileTarGz (attachments.tar.gz) is placed and filled, using GzipCompressorOutputStream and TarArchiveOutputStream
+                            
+                            FileInputStream fis = new FileInputStream(fileTarGz);
+                            inspectInfo.setContentStream(fis);
+
                             ++this.indexNextInspectInfo;
                 			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
             			} // end while()
@@ -215,8 +219,8 @@ public class InspectHandler {
                         	// initiate person.inspect() for this one inspectInfo; fills futuresOfInspects
                             Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
                             
-//                            inspectInfo.setFutureEntry(future);
-//                            futuresOfInspectInfo.add(inspectInfo);
+//                          inspectInfo.setFutureEntry(future);
+//                          futuresOfInspectInfo.add(inspectInfo);
                             
                             futuresOfInspects.add(future);
                             // TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future

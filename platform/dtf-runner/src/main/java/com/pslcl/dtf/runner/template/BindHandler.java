@@ -138,10 +138,6 @@ public class BindHandler {
 			    	}
 			    	
 			    	long resourceid = ResourceDescription.resourceIdMaster.incrementAndGet();
-			    	
-			    	if (false) // true: add randomness, temporarily
-			    		resourceid += (new Random().nextInt() & 0xff);
-			    	
 			        ResourceCoordinates coord = new ResourceCoordinates(templateId, resourceid, runId);
 			        this.iT.markStepReference(coord, bindStepReference);
 			        ResourceDescription rd = new ResourceDescImpl(resourceName, // resourceName comes from the bind step, as string "machine", "person" or "network"
@@ -216,10 +212,7 @@ public class BindHandler {
 			    		            		
 			    		            		// Notify iT that it should inform the Resource Provider system that this template is closing. InstancedTemplate iT may have past templateCleanup info, but just in case, supply it with what we have here.
 			    		            		iT.informResourceProviders(rc);
-			    		            		
-			    		            		if (true) { // false: temporarily allow a not-requested resource type to pass through, in order to let deploys and inspects see it and error out		    		            		
-			    		            			throw new Exception("proceed() finds mismatched ReservedResource.provider name and ResourceProvider names");
-			    		            		}
+		    		            			throw new Exception("proceed() finds mismatched ReservedResource.provider name and ResourceProvider names");
 			    		            	}
 			    		            	
 			    		            	// Successful reserve: set templateCleanup info
@@ -326,12 +319,10 @@ public class BindHandler {
         }
 
         if (!allBindsSucceeded) {
-        	if (true) { // false; temporarily allow code to proceed without an actual resource
-                // We will cleanup our template. The resource providers will cleanup the resources that we allocated for this template.
-                if (exception != null)
-                    throw new Exception(exception);
-                throw new Exception("bind attempt could not create and return a Future");
-        	}    
+            // We will cleanup our template. The resource providers will cleanup the resources that we allocated for this template.
+            if (exception != null)
+                throw new Exception(exception);
+            throw new Exception("bind attempt could not create and return a Future");
         }
 	}
 	

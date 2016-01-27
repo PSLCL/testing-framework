@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -29,7 +28,7 @@ public class ToTarGz {
     private final String simpleName;
 
 	/**
-	 * Add given file to given output stream, with directory nesting
+	 * Add given file to given output stream, with directory nesting (a recursive method)
 	 * @param placementBase Must not be null
 	 * @throws IOException 
 	 * 
@@ -68,19 +67,21 @@ public class ToTarGz {
 	}
 	
 	/**
-	 * 
+	 * Write a tarGz file to disk, with directory and file entries from a given source directory
 	 * @param tarGzFilename
+	 * @return
 	 * @throws IOException
 	 */
-	private void CreateTarGz(String tarGzFilename, String sourceDirectory) throws IOException {
+	private File CreateTarGz(String tarGzFilename, String sourceDirectory) throws IOException {
 		// get absolute path of where this application resides
 		//String tarGzAbsoluteFilePath = new File("").getAbsolutePath(); // does not supply the trailing '\' that we need
 		String tarGzAbsoluteFilePath = new File(".").getAbsolutePath(); // add the '.' then delete it: final result has our needed trailing '\' 
 		if (tarGzAbsoluteFilePath.endsWith("."))
 			tarGzAbsoluteFilePath = tarGzAbsoluteFilePath.substring(0, tarGzAbsoluteFilePath.length()-1);
 
-		// place empty file tarGzFilename.tar.gz at . 
-		FileOutputStream fOut = new FileOutputStream(new File(tarGzFilename)); // if this is the same name as a previous directory or file, then, when this is eventually written, it will blow away the previous
+		// place empty file tarGzFilename.tar.gz at .
+		File retFileTarGz = new File(tarGzFilename);
+		FileOutputStream fOut = new FileOutputStream(retFileTarGz); // if this is the same name as a previous directory or file, then, when this is eventually written, it will blow away the previous
 		log.debug(simpleName + "created new file " + tarGzFilename + " at directory " + tarGzAbsoluteFilePath);
 		
 		// add to file tarGzFilename.tar.gz whatever directories and files exist at sourceDirectory, with full directory nesting  
@@ -104,6 +105,14 @@ public class ToTarGz {
 				fOut.close();
 			}
 		}
+		
+		if (false) { // true: temporarily, write retFileTarGz's directories and files to disk, at a temporary location
+			FileInputStream fis = new FileInputStream(new File(this.tarGzFilename));
+			this.writeFileStructure(fis);
+			fis.close();
+		}
+		
+		return retFileTarGz;
 	}
 
 	/**
@@ -121,12 +130,12 @@ public class ToTarGz {
 	 * 
 	 * @throws IOException 
 	 */
-	void CreateTarGz() throws IOException {
-		CreateTarGz(this.tarGzFilename, this.sourceDirectory); // this.tarGzFilename: attachments; this.sourceDirectory: tempArtifactDirectory  
+	File CreateTarGz() throws IOException {
+		return this.CreateTarGz(this.tarGzFilename, this.sourceDirectory); // this.tarGzFilename: attachments; this.sourceDirectory: tempArtifactDirectory  
 	}
-	
+
 	/**
-	 * 
+	 * From the tarGz file of this class, return its TarArchiveOutputStream
 	 * @return An input stream that holds a tar archive
 	 * @throws IOException
 	 */
@@ -160,16 +169,28 @@ public class ToTarGz {
 				testTAIS.close();
 			}
 			
-			return retTAIS; // TODO: close this InputStream at the right time; cannot close it putStream until it is used by PersonProvider
+			return retTAIS;
 		} catch (Exception e) {
 			log.debug(simpleName + "getTarArchiveInputStream() sees exception : " + e.getMessage());
 			bufIS.close();
 			throw e;
 		}
 	}
+
+	/**
+	 * Write a file stream to disk.
+	 * (use as a unit test)
+	 * @param fis
+	 * @throws IOException
+	 */
+	private void writeFileStructure(FileInputStream fis) throws IOException {
+        TarArchiveInputStream tais = new TarArchiveInputStream(new GZIPInputStream(fis));
+        this.writeFileStructure(tais);
+	}
 	
 	/**
-	 * use as a unit test
+	 * Write a TarArchiveinputStream to disk.
+	 * (use as a unit test)
 	 * @param tais
 	 */
 	private void writeFileStructure(TarArchiveInputStream tais) throws IOException {
@@ -202,18 +223,4 @@ public class ToTarGz {
 		} // end while()
 	}
 
-	/**
-	 * use as a unit test
-	 * @param inputStream
-	 * @param dummy
-	 * @throws IOException
-	 */
-	private void writeFileStructure(InputStream inputStream, int dummy) throws IOException {
-//		GZIPInputStream gzIS = new GZIPInputStream(inputStream); // EOF exception
-//		BufferedInputStream bufIS = new BufferedInputStream(gzIS);
-//		TarArchiveInputStream tais = new TarArchiveInputStream(bufIS);
-		TarArchiveInputStream tais = (TarArchiveInputStream)inputStream; // this is downcasting: would fail at run time, but only if param inputStream was NOT REALLY a TarArchiveInputStream
-		this.writeFileStructure(tais);
-	}
-	
 }
