@@ -275,7 +275,7 @@ public class TemplateProvider implements ResourceStatusListener {
 //                                    resourceInfo.setArtifactInfo(artifactInfo);
 //                                    resourceInfo.setRunParams(strRunParams);
 //                                    
-//                                    // TODO: set iT with more gathered info and instantiations and similar
+//                                    // set iT with more gathered info and instantiations and similar
 //
 //                                    success = true;
 //                                    System.out.println("TemplateProvider.getInstancedTemplate() runs to bound resource " + stepRef + ": artifactInfo: " + strArtifactName);

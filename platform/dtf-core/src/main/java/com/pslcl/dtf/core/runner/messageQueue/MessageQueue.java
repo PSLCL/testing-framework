@@ -37,13 +37,6 @@ public interface MessageQueue
      * 
      *  @throws JMSException
      */
-    //TODO: don't need anymore?
-    void connect() throws JMSException;
-
-    /**
-     * 
-     *  @throws JMSException
-     */
     boolean queueStoreExists() throws JMSException;
 
     /**

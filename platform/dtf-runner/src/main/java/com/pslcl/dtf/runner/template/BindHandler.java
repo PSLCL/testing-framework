@@ -223,7 +223,7 @@ public class BindHandler {
 			    		            	
 			    		            	// record this newly reserved resource to a list of ReservedResource's
 				    					ResourceDescription inputRD = rrd.getInputResourceDescription();
-				    					ReservedResource rr = new ReservedResource(inputRD.getCoordinates(), inputRD.getAttributes(), 1000*60 * 1); // 1 minute timeout; TODO: this needs to come from ResourceProvider
+				    					ReservedResource rr = new ReservedResource(inputRD.getCoordinates(), inputRD.getAttributes(), 1000*60 * 10); // 10 minute timeout; ResourceProvider may return earlier, from its own timeout
 					    				this.reservedResources.add(rr);
 					    				// successful reservation: remove input resource description from this.reserveResourceRequests
 					    				this.reserveResourceRequests.remove(inputRD);

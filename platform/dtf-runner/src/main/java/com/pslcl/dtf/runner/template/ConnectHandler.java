@@ -12,6 +12,7 @@ import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class ConnectHandler {
@@ -175,7 +176,7 @@ public class ConnectHandler {
             		//        throws an exception on connect failure
 
                     // complete work by blocking until all the futures complete
-			        retList = this.waitComplete(); // TODO: fill this.connectInfos
+			        retList = this.waitComplete();
 			        this.done = true;
             	}
 			} // end while(!done)
@@ -203,7 +204,6 @@ public class ConnectHandler {
         //       We expect full connect success, and otherwise we back out and disconnect whatever other connections had been put in place, along the way.
 		
 		// Gather all results from futuresOfConnects, a list of Futures. This thread yields, in waiting for each of the multiple asynch connect calls to complete.
-		Exception exception = null;
 		List<CableInstance> retList = new ArrayList<>();
     	ConnectInfo.markAllConnectedSuccess(true); // this required setup allow negation by any pass through the loop 
         for (Future<? extends CableInstance> future : this.futuresOfConnects) {
@@ -211,24 +211,21 @@ public class ConnectHandler {
                 try {
 					CableInstance cableInstance = future.get(); // blocks until asynch answer comes, or exception, or timeout
 					retList.add(cableInstance);
-				} catch (InterruptedException ee) {
-					exception = ee;
-                    Throwable t = ee.getCause();
-                    String msg = ee.getLocalizedMessage();
+				} catch (InterruptedException | ExecutionException ioreE) {
+                    Throwable t = ioreE.getCause();
+                    String msg = ioreE.getLocalizedMessage();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                	log.warn(simpleName + "waitComplete(), connect failed: " + msg, ee);
-                    ConnectInfo.markAllConnectedSuccess(false);
-				} catch (ExecutionException e) {
-					exception = e;
-                	log.warn(simpleName + "waitComplete() Executor pool shutdown"); // TODO: need new msg
+                	log.warn(simpleName + "waitComplete(), connect failed: " + msg, ioreE);
                     ConnectInfo.markAllConnectedSuccess(false);
 				}
         	} else {
         		ConnectInfo.markAllConnectedSuccess(false);
+	            log.warn(simpleName + "waitComplete(), connect errored out with a failed future");
+        		throw new Exception("Future.get() failed");
         	}
         }
-
+        
 //      boolean allConnected = (retList.size() == this.futuresOfConnects.size()); // this catches the case of future==null
 //      if (!allConnected) {
 //      	// disconnect all machines that did connect

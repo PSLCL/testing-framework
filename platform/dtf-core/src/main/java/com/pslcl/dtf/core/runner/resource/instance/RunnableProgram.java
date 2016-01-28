@@ -27,7 +27,6 @@ public interface RunnableProgram
     /**
 	 * Stop the program command on a machine and return a Future with the {@link Future<Integer>} result of the corresponding stop command, or the exit code of
 	 * the stop script, being set once the stop script has completed.
-     * @return TODO
      * 
      * @return a Future with the {@link Future<Integer>} result of the corresponding stop command, or the exit code of
 	 * the stop script, being set once the stop script has completed.

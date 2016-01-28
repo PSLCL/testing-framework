@@ -71,8 +71,6 @@ public class InstancedTemplate {
     private List<ResourceInstance> boundResourceInstances;
     private List<DeployInfo> deployedInfos;
 	private List<CableInstance> cableInstances;
-//	private List<StartState> startProgramStates;
-//	private List<RunState> runProgramStates;
 
     private List<ResourceInfo> orderedResourceInfos = null;
     

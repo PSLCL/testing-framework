@@ -173,7 +173,7 @@ public class InspectHandler {
                             
                             // obtain instructions for this.inspectInfo
                             String instructionsHash = inspectInfo.getInstructionsHash();
-                            String instructions = qapa.getContentAsString(instructionsHash); // TODO: needs to be asynchronous
+                            String instructions = qapa.getContentAsString(instructionsHash); // TODO: can be asynchronous
                             inspectInfo.setInstruction(instructions);
 
                             // into local temp directory, place n filename/content combinations
@@ -181,7 +181,7 @@ public class InspectHandler {
                                 String contentFilename = artifact.getKey();
                                 File contentFile = new File(contentFilename); // empty File
 
-                                // TODO: asynch, gather in .waitComplete()
+                                // asynch, gather in .waitComplete()
                                 String contentHash = artifact.getValue();
                                 InputStream streamContent = qapa.getContentAsStream(contentHash);
                                 Path dest = Paths.get(fileTempArtifactDirectory.getPath() + File.separator + contentFile.getPath());
@@ -255,17 +255,14 @@ public class InspectHandler {
             if (future != null) {
                 try {
                     future.get(); // blocks until asynch answer comes, or exception, or timeout
-                } catch (InterruptedException ee) {
-                    Throwable t = ee.getCause();
-                    String msg = ee.getLocalizedMessage();
+				} catch (InterruptedException | ExecutionException ioreE) {
+                    Throwable t = ioreE.getCause();
+                    String msg = ioreE.getLocalizedMessage();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    log.debug(simpleName + "waitComplete(), inspect failed: " + msg, ee);
+                	log.warn(simpleName + "waitComplete(), inspect failed: " + msg, ioreE);
                     allInspects = false;
-                } catch (ExecutionException e) {
-                    log.info(simpleName + "Executor pool shutdown"); // TODO: need new msg
-                    allInspects = false;
-                }
+				}                    
             } else {
                 allInspects = false;
             }

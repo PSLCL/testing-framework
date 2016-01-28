@@ -165,7 +165,7 @@ public class DeployHandler {
 					//        throws an exception on deploy failure
 			    	
                     // complete work by blocking until all the futures complete
-			        this.waitComplete(); // TODO: fill this.deployInfos
+			        this.waitComplete();
 			        this.done = true;
 				}
 			} // end while(!done)
