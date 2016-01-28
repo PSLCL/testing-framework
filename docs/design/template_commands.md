@@ -25,7 +25,7 @@ Deploy commands are considered completed once the artifact is fully deployed to 
 ##Inspect
 
 The inspect command requests that a [Person](resources.md) follow a set of HTML formatted instructions sent generally via email. 
-Relevant [Artifacts](artifacts.md) may also be included in an archive named attachments.tar.gz and attached to the email. 
+Relevant [Artifacts](artifacts.md) may also be included in an archive named attachments.tar.gzip and attached to the email. 
 The format of the line following the command is the person [Resource Reference](templates.md#resource-references), followed by a space, 
 followed by the Hash of the instructions, followed by [Artifact References](templates.md#artifact-references) to be included as attachments 
 also separated by spaces. The person performing the inspection must manually enter the results. Inspect commands are considered completed
