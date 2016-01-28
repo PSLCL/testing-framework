@@ -68,7 +68,7 @@ public class InspectWithAttachmentFuture implements Callable<Void>
                     AmazonSimpleEmailServiceClient client, 
                     PersonConfigData config, 
                     String recipient, 
-                    String includeFileName,
+                    String attachmentFileName,
                     InputStream fileStream,
                     String bodyText,
                     ProgressiveDelayData pdelayData)
@@ -76,7 +76,7 @@ public class InspectWithAttachmentFuture implements Callable<Void>
     {
         this.client = client;
         this.config = config;
-        this.attachmentFileName = includeFileName;
+        this.attachmentFileName = attachmentFileName;
         this.attachmentFileStream = fileStream;
         this.recipient = recipient;
         this.bodyText = bodyText;
@@ -92,22 +92,22 @@ public class InspectWithAttachmentFuture implements Callable<Void>
         format.ttl("recipient = ", recipient);
     }
 
-    private File getTmpFile(String fileName, InputStream inputStream) throws IOException
+    private File getLocalFile(String fileName, InputStream inputStream) throws IOException
     {
-        int idx = fileName.lastIndexOf('.');
-        String postfix = null;
-        if (idx != -1)
-        {
-            postfix = fileName.substring(idx);
-            fileName = fileName.substring(0, idx);
-        }
-        File tmpFile = File.createTempFile(pdelayData.preFixMostName + "-" + fileName, postfix);
-//        String tmpPath = System.getProperty("java.io.tmpdir");
-//        tmpPath = tmpPath.replace('\\', '/');
-//        if(!tmpPath.endsWith("/"))
-//            tmpPath += "/";
-//        tmpPath += fileName;
-//        File tmpFile = new File(tmpPath);
+//        int idx = fileName.lastIndexOf('.');
+//        String postfix = null;
+//        if (idx != -1)
+//        {
+//            postfix = fileName.substring(idx);
+//            fileName = fileName.substring(0, idx);
+//        }
+//        File tmpFile = File.createTempFile(pdelayData.preFixMostName + "-" + fileName, postfix);
+        String tmpPath = System.getProperty("java.io.tmpdir");
+        tmpPath = tmpPath.replace('\\', '/');
+        if(!tmpPath.endsWith("/"))
+            tmpPath += "/";
+        tmpPath += fileName;
+        File tmpFile = new File(tmpPath);
         if(tmpFile.exists())
         {
             tmpFile.delete();
@@ -172,14 +172,14 @@ public class InspectWithAttachmentFuture implements Callable<Void>
             message.setContent(content);
             content.addBodyPart(wrap);
 
-            File attachmentFile = getTmpFile(attachmentFileName, attachmentFileStream);
+            File attachmentFile = getLocalFile(attachmentFileName, attachmentFileStream);
             String id = UUID.randomUUID().toString();
             MimeBodyPart attachment = new MimeBodyPart();
             DataSource fds = new FileDataSource(attachmentFile.getAbsolutePath());
+            
             attachment.setDataHandler(new DataHandler(fds));
             attachment.setHeader("Content-ID", "<" + id + ">");
             attachment.setFileName(fds.getName());
-
             content.addBodyPart(attachment);            
             html.setContent("<html><body>" + bodyText + "</body></html>", "text/html");
 
