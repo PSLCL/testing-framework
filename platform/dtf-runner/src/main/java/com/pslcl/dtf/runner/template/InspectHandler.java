@@ -14,7 +14,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +25,14 @@ import com.pslcl.dtf.runner.QAPortalAccess;
 
 public class InspectHandler {
     static String tempArtifactDirectory = new String("tempArtifactDirectory");
-    static String archiveFilename = new String("attachments.tar.gz"); // hard coded per design docs for PersonInstance
+    static String archiveFilename = new String("attachments.tar.gzip"); // hard coded per design docs for PersonInstance
     static String archiveTopDirectory = new String("attachments");    // implied by design docs; impl chooses "attachments" anyway, when archiveTopDirectory is an empty string
 
     private final InstancedTemplate iT;
     private final List<String> setSteps;
     private List<InspectInfo> inspectInfos = null;
-//  private List<Future<? extends InspectInfo>> futuresOfInspectInfo = null;
+    private List<InspectInfo> resultInspectInfos = null;
     
-    private List<Future<? extends Void>> futuresOfInspects;
     private int iBeginSetOffset = -1;
     private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin
     private int indexNextInspectInfo = 0;
@@ -52,9 +50,7 @@ public class InspectHandler {
         this.simpleName = getClass().getSimpleName() + " ";
         this.iT = iT;
         this.setSteps = setSteps;
-        
-//        this.futuresOfInspectInfo = new ArrayList<Future<? extends InspectInfo>>();
-        this.futuresOfInspects = new ArrayList<Future<? extends Void>>();
+        this.resultInspectInfos = new ArrayList<InspectInfo>();
         this.done = false;
 
 		int iTempFinalSetOffset = 0;
@@ -159,8 +155,7 @@ public class InspectHandler {
         try {
             QAPortalAccess qapa = this.iT.getQAPortalAccess();
             while (!done) {
-//            	if (futuresOfInspectInfo.isEmpty())
-            	if (futuresOfInspects.isEmpty())
+            	if (this.resultInspectInfos.isEmpty())
             	{
             		if (this.indexNextInspectInfo < this.inspectInfos.size()) {
             			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
@@ -200,7 +195,7 @@ public class InspectHandler {
                             File fileTarGz = toTarGz.CreateTarGz();
                             // fileTarGz (attachments.tar.gz) is placed and filled, using GzipCompressorOutputStream and TarArchiveOutputStream
                             
-                            FileInputStream fis = new FileInputStream(fileTarGz);
+                            FileInputStream fis = toTarGz.getFileInputStream(fileTarGz);
                             inspectInfo.setContentStream(fis);
 
                             ++this.indexNextInspectInfo;
@@ -216,14 +211,10 @@ public class InspectHandler {
                                 throw new Exception("Specified inspect target is not a PersonInstance");
                             PersonInstance pi = PersonInstance.class.cast(resourceInstance);
             				
-                        	// initiate person.inspect() for this one inspectInfo; fills futuresOfInspects
+                        	// for this one inspectInfo, initiate person.inspect() and store the returned future
                             Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
-                            
-//                          inspectInfo.setFutureEntry(future);
-//                          futuresOfInspectInfo.add(inspectInfo);
-                            
-                            futuresOfInspects.add(future);
-                            // TODO: close this Stream when the Future<Void> comes back; will have to track stream is against each future
+                            inspectInfo.setInspectFuture(future);
+                            this.resultInspectInfos.add(inspectInfo);
             			}
                         // List futuresOfInspects is now full
                         // Each list element:
@@ -259,7 +250,8 @@ public class InspectHandler {
 
         // Gather all results from futuresOfInspects, a list of Futures. This thread yields, in waiting for each of the multiple asynch inspect calls to complete.
         boolean allInspects = true;
-        for (Future<? extends Void> future : this.futuresOfInspects) {
+        for (InspectInfo inspectInfo : this.resultInspectInfos) {
+        	Future<? extends Void> future = inspectInfo.getInspectFuture();
             if (future != null) {
                 try {
                     future.get(); // blocks until asynch answer comes, or exception, or timeout
@@ -277,6 +269,7 @@ public class InspectHandler {
             } else {
                 allInspects = false;
             }
+            inspectInfo.getContentStream().close(); // cleanup original InputStream, regardless of success or failure
         }
 
         if (!allInspects) {

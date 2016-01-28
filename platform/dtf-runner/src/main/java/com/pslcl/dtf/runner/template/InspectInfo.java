@@ -2,6 +2,7 @@ package com.pslcl.dtf.runner.template;
 
 import java.io.InputStream;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
@@ -11,6 +12,7 @@ public class InspectInfo {
 	private Map<String, String> artifacts; // from template include step: {filename, hash}; hash to access content of a file
 	private String instructions;
 	private InputStream contentStream;
+	private Future<? extends Void> future;
 	
 	/**
 	 * 
@@ -23,6 +25,8 @@ public class InspectInfo {
 		this.strInstructionsHash = strInstructionsHash;
 		this.artifacts = artifacts;
 		this.instructions = null;
+		this.contentStream = null;
+		this.future = null;
 	}
 	
 	/**
@@ -70,5 +74,16 @@ public class InspectInfo {
 	void setContentStream(InputStream contentStream) {
 		this.contentStream = contentStream;
 	}
-
+	
+	/**
+	 * 
+	 * @return
+	 */
+	Future<? extends Void> getInspectFuture() {
+		return this.future;
+	}
+	void setInspectFuture(Future<? extends Void> future) {
+		this.future = future;
+	}
+	
 }

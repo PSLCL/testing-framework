@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -133,18 +134,28 @@ public class ToTarGz {
 	File CreateTarGz() throws IOException {
 		return this.CreateTarGz(this.tarGzFilename, this.sourceDirectory); // this.tarGzFilename: attachments; this.sourceDirectory: tempArtifactDirectory  
 	}
+	
+	/**
+	 * From the given tarGz File, return its FileInputStream.
+	 * @param fileTarGz
+	 * @return
+	 * @throws FileNotFoundException
+	 */
+	FileInputStream getFileInputStream(File fileTarGz) throws FileNotFoundException {
+		return new FileInputStream(fileTarGz);
+	}
 
 	/**
-	 * From the tarGz file of this class, return its TarArchiveOutputStream
+	 * From the given tarGz File, return its TarArchiveOutputStream.
+	 * @param fileTarGz
 	 * @return An input stream that holds a tar archive
 	 * @throws IOException
 	 */
-	TarArchiveInputStream getTarArchiveInputStream() throws IOException {
+	TarArchiveInputStream getTarArchiveInputStream(File fileTarGz) throws IOException {
 		// Based on example 3: http://www.programcreek.com/java-api-examples/index.php?api=org.apache.commons.compress.archivers.tar.TarArchiveInputStream . Many other examples are shown there to handle many use cases.
 		
 //		BufferedInputStream bufIS = new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzFilename))));
-		File tarGz = new File(this.tarGzFilename);
-		FileInputStream fIS = new FileInputStream(tarGz);
+		FileInputStream fIS = new FileInputStream(fileTarGz);
 		GZIPInputStream gzIS = new GZIPInputStream(fIS);
 		BufferedInputStream bufIS = new BufferedInputStream(gzIS);
 		
