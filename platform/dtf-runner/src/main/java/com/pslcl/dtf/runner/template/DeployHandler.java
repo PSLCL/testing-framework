@@ -1,5 +1,6 @@
 package com.pslcl.dtf.runner.template;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -15,6 +16,7 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 public class DeployHandler {
 	private InstancedTemplate iT;
 	private List<String> setSteps;
+    private List<DeployInfo> deployInfos = null;
     private List<DeployInfo> futuresOfDeploys;
 	private int iBeginSetOffset = -1;
 	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
@@ -27,7 +29,7 @@ public class DeployHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public DeployHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+	public DeployHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -35,16 +37,47 @@ public class DeployHandler {
 		this.futuresOfDeploys = new ArrayList<DeployInfo>();
 		this.done = false;
 		
-		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
-			SetStep setStep = new SetStep(setSteps.get(i));
+		int iTempFinalSetOffset = 0;
+		int iSetOffset = 0;
+		while (true) {
+			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
 			if (!setStep.getCommand().equals("deploy"))
 				break;
-			if (this.iBeginSetOffset == -1)
-				this.iBeginSetOffset = iBeginSetOffset;
-			this.iFinalSetOffset = i;
-		}
+			this.iBeginSetOffset = 0;
+			this.iFinalSetOffset = iTempFinalSetOffset;
+			if (++iTempFinalSetOffset >= setSteps.size())
+				break;
+			iSetOffset = iTempFinalSetOffset; // there is another step in this set
+		}		
 	}
 
+	
+	/**
+	 * 
+	 * @return
+	 */
+	List<DeployInfo> getDeployInfos() {
+		return this.deployInfos;
+	}
+	
+    /**
+     * 
+     * @return
+     * @throws Exception
+     */
+    int getDeployRequestCount() throws Exception {
+        if (this.deployInfos != null) {
+            int retCount = this.deployInfos.size();
+            if (retCount > 0)
+                return retCount;
+        }
+        throw new Exception("DeployHandler unexpectedly finds no deploy requests");
+    }
+
+    /**
+     * 
+     * @return
+     */
 	public boolean isDone() {
 		return done;
 	}
@@ -53,20 +86,21 @@ public class DeployHandler {
 	 * 
 	 * @return
 	 */
-	List<DeployInfo> computeDeployRequests() throws Exception {
-    	List<DeployInfo> retList = new ArrayList<>();
+	int computeDeployRequests() throws Exception {
+    	this.deployInfos = new ArrayList<>();
         if (this.iBeginSetOffset != -1) {
             for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
-            	String deployStep = setSteps.get(i);
-            	SetStep parsedSetStep = new SetStep(deployStep); // setID deploy 0-based-machine-ref artifact-name artifactHash
-                                                                 // 7 deploy 0 lib%2Fslf4j-api-1.7.6.jar A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
-                log.warn(simpleName + "computeDeployRequests() finds deploy in stepSet " + parsedSetStep.getSetID() + ": " + deployStep);
-                
-            	ResourceInstance resourceInstance = null;
-            	String strArtifactName = null;
-            	String strArtifactHash = null;
             	try {
-            		String strMachineReference = parsedSetStep.getParameter(0);
+                	String deployStep = setSteps.get(i);
+                	SetStep parsedSetStep = new SetStep(deployStep); // setID deploy 0-based-machine-ref artifact-name artifactHash
+                                                                     // 7 deploy 0 lib%2Fslf4j-api-1.7.6.jar A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
+                    log.warn(simpleName + "computeDeployRequests() finds deploy in stepSet " + parsedSetStep.getSetID() + ": " + deployStep);
+                    
+                	ResourceInstance resourceInstance = null;
+                	String strArtifactName = null;
+                	String strArtifactHash = null;
+                	
+                	String strMachineReference = parsedSetStep.getParameter(0);
 	            	int machineRef = Integer.valueOf(strMachineReference).intValue();
 	            	resourceInstance = iT.getResourceInstance(machineRef);
 	            	if (resourceInstance != null) {
@@ -80,44 +114,66 @@ public class DeployHandler {
 	            		
 	            		strArtifactName = parsedSetStep.getParameter(1);
 	            		strArtifactHash = parsedSetStep.getParameter(2);
-	                	retList.add(new DeployInfo(resourceInstance, strArtifactName, strArtifactHash));
+	                	this.deployInfos.add(new DeployInfo(resourceInstance, strArtifactName, strArtifactHash));
 	            	} else {
 	            		throw new Exception("DeployHandler.computeDeployRequests() finds null bound ResourceInstance at reference " + strMachineReference);
 	            	}
 				} catch (IndexOutOfBoundsException e) {
                     log.warn(simpleName + "deploy step does not specify machine reference, artifact name, or artifact hash");
+                    done = true;
 					throw e;
 				}
             }
 		}
-		return retList;
+        return this.deployInfos.size();
 	}
 	
-	/**
-	 * 
-	 * @param deployInfos
-	 * @throws Exception 
-	 */
-	void initiateDeploy(List<DeployInfo> deployInfos) throws Exception {
-		
-        // start multiple asynch deploys
-		for (DeployInfo deployInfo : deployInfos) {
-			ResourceInstance resourceInstance = deployInfo.getResourceInstance();
-			// We know resourceInstance is a MachineInstance, because a deploy step must never direct its work to anything except a MachineInstance.
-			//     Still, check that condition to avoid problems that arise when template steps are improper. 
-			if (!MachineInstance.class.isAssignableFrom(resourceInstance.getClass()))
-				throw new Exception("Specified deploy target is not a MachineInstance"); // futuresOfDeploys may have entries filled; at this moment they are benign
-			MachineInstance mi = MachineInstance.class.cast(resourceInstance);
-			Future<Void> future = mi.deploy(deployInfo.getFilename(), deployInfo.getArtifactHash());
-			deployInfo.setFuture(future);
-			futuresOfDeploys.add(deployInfo);
+    /**
+     * Proceed to obtain inspect instructions and files to inspect, then issue inspect command(s), as far as possible, then return. Set done only when inspects complete or error out.
+     *
+     * @throws Exception
+     */
+    void proceed() throws Exception {
+        if (this.deployInfos==null || this.deployInfos.isEmpty()) {
+        	this.done = true;
+            throw new Exception("DeployHandler processing has no deployInfo");
+        }
+        
+        try {
+			while (!done) {
+				if (this.futuresOfDeploys.isEmpty()) {
+	    			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+					//     initiate multiple asynch deploys, this must add to this.futuresOfDeploys: it will because this.deployInfos is NOT empty
+					for (DeployInfo deployInfo : this.deployInfos) {
+						ResourceInstance resourceInstance = deployInfo.getResourceInstance();
+						// We know resourceInstance is a MachineInstance, because a deploy step must never direct its work to anything except a MachineInstance.
+						//     Still, check that condition to avoid problems that arise when template steps are improper. 
+						if (!MachineInstance.class.isAssignableFrom(resourceInstance.getClass()))
+							throw new Exception("Specified deploy target is not a MachineInstance"); // futuresOfDeploys may have entries filled; at this moment they are benign
+						MachineInstance mi = MachineInstance.class.cast(resourceInstance);
+						URL artifactURL = this.iT.getQAPortalAccess().formArtifactHashSpecifiedURL(deployInfo.getArtifactHash());
+						Future<Void> future = mi.deploy(deployInfo.getFilename(), artifactURL.toString());
+						deployInfo.setFuture(future);
+						futuresOfDeploys.add(deployInfo);
+					}
+        			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
+				} else {
+					// For each list element of futuresOfDeploys, .getFuture():
+					//     can be a null (deploy failed while in the act of creating a Future), or
+					//     can be a Future<Void>, for which future.get():
+					//        returns a Void on deploy success, or
+					//        throws an exception on deploy failure
+			    	
+                    // complete work by blocking until all the futures complete
+			        this.waitComplete();
+			        this.done = true;
+				}
+			} // end while(!done)
+		} catch (Exception e) {
+			this.done = true;
+			throw e;
 		}
-		// Each list element of futuresOfDeploys.getFuture():
-		//     can be a null (deploy failed while in the act of creating a Future), or
-		//     can be a Future<Void>, for which future.get():
-		//        returns a Void on deploy success, or
-		//        throws an exception on deploy failure
-	}
+    }
 	
 	/**
 	 * Wait for all deploys to complete, for the single setID that is being processed.
@@ -143,16 +199,14 @@ public class DeployHandler {
 			    if (future != null) {
 			        try {
 						future.get(); // blocks until asynch answer comes, or exception, or timeout
-					} catch (InterruptedException ee) {
-			            Throwable t = ee.getCause();
-			            String msg = ee.getLocalizedMessage();
+					} catch (InterruptedException | ExecutionException ioreE) {
+			            Throwable t = ioreE.getCause();
+			            String msg = ioreE.getLocalizedMessage();
 			            if(t != null)
 			                msg = t.getLocalizedMessage();
-			            log.warn(simpleName + "waitComplete(), deploy failed: " + msg, ee);
+			            log.warn(simpleName + "waitComplete(), deploy failed: " + msg + "; " + ioreE.getMessage());
 			        	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
-					} catch (ExecutionException e) {
-			            log.warn(simpleName + "Executor pool shutdown"); // TODO: new message
-			        	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
+			        	throw ioreE;
 					}
 			    } else {
 			    	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
@@ -160,8 +214,6 @@ public class DeployHandler {
 			}
 		} catch (Exception e) {
 			throw e;
-		} finally {
-			this.done = true;
 		}
         	
         return this.futuresOfDeploys;

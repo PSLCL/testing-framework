@@ -35,7 +35,7 @@ public class NestedTemplateHandler {
         	String includeText = StepsParser.peekNextSubString(includeStep, 0) + " "; // move past include hash parameter, past "include" substring and its trailing space
             String templateHashText = StepsParser.peekNextSubString(includeStep, (includeText.length()));
             DBTemplate nestedDBTemplate = new DBTemplate(null); // null: a nested template has no reNum (run entry number)
-            // use reCore to fill nestedDBTemplate. todo: nestedDBTemplate can be truncated
+            // use reCore to fill nestedDBTemplate. TODO: nestedDBTemplate can be truncated
 
             // TODO: db code
 
@@ -62,15 +62,13 @@ public class NestedTemplateHandler {
                 	this.iT.markNestedTemplate(rnt.nestedStepReference, rnt.instancedTemplate);
                     fail = false;
                 }
-            } catch (InterruptedException ee) {
-                Throwable t = ee.getCause();
-                String msg = ee.getLocalizedMessage();
+			} catch (InterruptedException | ExecutionException ioreE) {
+                Throwable t = ioreE.getCause();
+                String msg = ioreE.getLocalizedMessage();
                 if(t != null)
                     msg = t.getLocalizedMessage();
-                //LoggerFactory.getLogger(getClass()).info(ResourceInstance.class.getSimpleName() + " bind failed: " + msg, ee);
-            } catch (ExecutionException e) {
-                LoggerFactory.getLogger(getClass()).info("Executor pool shutdown");
-            }
+                LoggerFactory.getLogger(getClass()).warn("waitComplete(), nested template failed: " + msg, ioreE);
+			} 
 
             if (fail) {
                 // cleanup

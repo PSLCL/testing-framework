@@ -54,7 +54,7 @@ public class BindHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public BindHandler(InstancedTemplate iT, List<String> setSteps, int iBeginSetOffset) throws NumberFormatException {
+	public BindHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -71,25 +71,24 @@ public class BindHandler {
 		this.futuresOfResourceInstances = null;
 		this.resourceInstances = new ArrayList<>();
 		
-		for (int i=iBeginSetOffset; i<setSteps.size(); i++) {
-			SetStep setStep = new SetStep(setSteps.get(i));
+		int iTempFinalSetOffset = 0;
+		int iSetOffset = 0;
+		while (true) {
+			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
 			if (!setStep.getCommand().equals("bind"))
 				break;
-			if (this.iBeginSetOffset == -1)
-				this.iBeginSetOffset = iBeginSetOffset;
-			this.iFinalSetOffset = i;
+			this.iBeginSetOffset = 0;
+			this.iFinalSetOffset = iTempFinalSetOffset;
+			if (++iTempFinalSetOffset >= setSteps.size())
+				break;
+			iSetOffset = iTempFinalSetOffset; // there is another step in this set
 		}
 	}
 
-    int getReserveResourceRequestCount() throws Exception {
-    	if (this.reserveResourceRequests != null) {
-    		int retCount = this.reserveResourceRequests.size();
-    		if (retCount > 0)
-    			return retCount;
-    	}
-    	throw new Exception("BindHandler unexpectedly finds no inpect requests");
-    }
-	
+	/**
+	 * 
+	 * @return
+	 */
     List<ResourceInstance> getResourceInstances() {
     	return this.resourceInstances;
     }
@@ -104,7 +103,7 @@ public class BindHandler {
      * 
      * @return
      */
-    void computeReserveRequests(int currentStepReference, String templateId, long runId) throws Exception {
+    int computeReserveRequests(int currentStepReference, String templateId, long runId) throws Exception {
         try {
 			reserveResourceRequests = new ArrayList<>();
 			if (this.iBeginSetOffset != -1) {
@@ -139,10 +138,6 @@ public class BindHandler {
 			    	}
 			    	
 			    	long resourceid = ResourceDescription.resourceIdMaster.incrementAndGet();
-			    	
-			    	if (false) // true: add randomness, temporarily
-			    		resourceid += (new Random().nextInt() & 0xff);
-			    	
 			        ResourceCoordinates coord = new ResourceCoordinates(templateId, resourceid, runId);
 			        this.iT.markStepReference(coord, bindStepReference);
 			        ResourceDescription rd = new ResourceDescImpl(resourceName, // resourceName comes from the bind step, as string "machine", "person" or "network"
@@ -159,6 +154,7 @@ public class BindHandler {
 			done = true; // as a just in case, we set this even on exception, even though throwing e is thought to close out the entire test run
 			throw e;
 		}
+        return this.reserveResourceRequests.size();
     }
     
     /**
@@ -172,7 +168,8 @@ public class BindHandler {
     	try {
     		while (!done) {
 	    		if (this.reserveInProgress) { // once cleared, .reserveInProgress is not set again
-	    			// reserve loop
+        			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+	    			//     reserve loop
 	    			if (!this.reserveResourceRequests.isEmpty()) {
 	    				if (this.currentRPFutureListOfRRD == null) {
 		    				// ask next-in-line ResourceProvider to reserve the resources in reserveResourceRequests
@@ -188,7 +185,7 @@ public class BindHandler {
 		    				// note: each element of reserveReseourceRequests is a ResourceDescriptionImpl
 		    				// initiate reserving of each resource specified by each ResourceDescription, with 6 minute timeout for each reservation
 		    				this.currentRPFutureListOfRRD = this.currentRP.reserve(this.reserveResourceRequests, 60 * 6);
-		    				return; // come back later to check this future
+                			return;	// Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks. 
 	    				} else {
 	    					try {
 		    					// for currentRP, obtain our resolved future and process its result list
@@ -215,10 +212,7 @@ public class BindHandler {
 			    		            		
 			    		            		// Notify iT that it should inform the Resource Provider system that this template is closing. InstancedTemplate iT may have past templateCleanup info, but just in case, supply it with what we have here.
 			    		            		iT.informResourceProviders(rc);
-			    		            		
-			    		            		if (true) { // false: temporarily allow a not-requested resource type to pass through, in order to let deploys and inspects see it and error out		    		            		
-			    		            			throw new Exception("proceed() finds mismatched ReservedResource.provider name and ResourceProvider names");
-			    		            		}
+		    		            			throw new Exception("proceed() finds mismatched ReservedResource.provider name and ResourceProvider names");
 			    		            	}
 			    		            	
 			    		            	// Successful reserve: set templateCleanup info
@@ -229,7 +223,7 @@ public class BindHandler {
 			    		            	
 			    		            	// record this newly reserved resource to a list of ReservedResource's
 				    					ResourceDescription inputRD = rrd.getInputResourceDescription();
-				    					ReservedResource rr = new ReservedResource(inputRD.getCoordinates(), inputRD.getAttributes(), 1000*60 * 1); // 1 minute timeout; TODO: this needs to come from ResourceProvider
+				    					ReservedResource rr = new ReservedResource(inputRD.getCoordinates(), inputRD.getAttributes(), 1000*60 * 10); // 10 minute timeout; ResourceProvider may return earlier, from its own timeout
 					    				this.reservedResources.add(rr);
 					    				// successful reservation: remove input resource description from this.reserveResourceRequests
 					    				this.reserveResourceRequests.remove(inputRD);
@@ -253,11 +247,13 @@ public class BindHandler {
 	    				//      can be a Future, for which future.get():
 	    				//          returns a ResourceInstance on bind success
 	    				//          throws an exception on bind failure
-	    				return; // come back later to check this future, in code just below: this.waitComplete()
+	    				
+            			return; // allow time for futures to resolve
 	    			}
 	    		} // end if (reserveInProgress)
 	    		
-				this.waitBindsComplete();
+                // complete work by blocking until all the futures complete
+				this.waitComplete();
 				done = true;
     		} //end while()
 		} catch (Exception e) {
@@ -271,7 +267,7 @@ public class BindHandler {
 	/**
 	 * thread blocks
 	 */
-	private void waitBindsComplete() throws Exception {
+	private void waitComplete() throws Exception {
 		// At this moment, this.futuresOfResourceInstances is filled. It's Future's each give us a bound ResourceInstance. Our API is to return a list of each of these extracted ResourceInstance's.
 		//     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
 		
@@ -323,12 +319,10 @@ public class BindHandler {
         }
 
         if (!allBindsSucceeded) {
-        	if (true) { // false; temporarily allow code to proceed without an actual resource
-                // We will cleanup our template. The resource providers will cleanup the resources that we allocated for this template.
-                if (exception != null)
-                    throw new Exception(exception);
-                throw new Exception("bind attempt could not create and return a Future");
-        	}    
+            // We will cleanup our template. The resource providers will cleanup the resources that we allocated for this template.
+            if (exception != null)
+                throw new Exception(exception);
+            throw new Exception("bind attempt could not create and return a Future");
         }
 	}
 	

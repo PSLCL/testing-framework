@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
@@ -36,6 +37,11 @@ public class MachineConfigData
     public volatile int ec2MaxDelay;
     public volatile int ec2MaxRetries;
     public volatile String resoucePrefixName;
+    public volatile boolean windows;
+    public volatile String linuxUserData;
+    public volatile String winUserData;
+    public volatile String linuxSandboxPath;
+    public volatile String winSandboxPath;
     
     private MachineConfigData()
     {
@@ -46,6 +52,12 @@ public class MachineConfigData
         MachineConfigData data = new MachineConfigData();
         format.ttl(MachineConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
+
+        format.ttl("Test name prefix:");
+        format.level.incrementAndGet();
+        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
+        LoggerFactory.getLogger(MachineConfigData.class).debug(format.sb.toString());
+        format.level.decrementAndGet();
         
         format.ttl("\nEc2 Instance:");
         format.level.incrementAndGet();
@@ -54,15 +66,15 @@ public class MachineConfigData
         data.ec2MaxRetries = Integer.parseInt(getAttribute(InstanceNames.Ec2MaxRetriesKey, ""+defaultData.ec2MaxRetries, resource, format));
         data.iamArn = getAttribute(InstanceNames.Ec2IamArnKey, null, resource, format);
         data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, null, resource, format);
-        data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, null, resource, format);
+        data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, defaultData.keyName, resource, format);
+        data.windows = Boolean.parseBoolean(getAttribute(InstanceNames.Ec2WindowsKey, ""+defaultData.windows, resource, format));
+        data.linuxUserData = getAttribute(InstanceNames.Ec2LinuxUserDataKey, defaultData.linuxUserData, resource, format);
+        data.winUserData = getAttribute(InstanceNames.Ec2WinUserDataKey, defaultData.winUserData, resource, format);
+        data.linuxSandboxPath = getAttribute(ResourceNames.DeployLinuxSandboxKey, defaultData.linuxSandboxPath, resource, format);
+        data.winSandboxPath = getAttribute(ResourceNames.DeployWinSandboxKey, defaultData.winSandboxPath, resource, format);
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
-        
-        format.ttl("Test name prefix:");
-        format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
-        LoggerFactory.getLogger(MachineConfigData.class).debug(format.sb.toString());
         return data;
     }
     
@@ -79,6 +91,12 @@ public class MachineConfigData
         data.iamArn = getAttribute(config, InstanceNames.Ec2IamArnKey, null);
         data.iamName = getAttribute(config, InstanceNames.Ec2IamNameKey, null);
         data.keyName = getAttribute(config, InstanceNames.Ec2KeyPairNameKey, null);
+        data.windows = Boolean.parseBoolean(getAttribute(config, InstanceNames.Ec2WindowsKey, InstanceNames.Ec2WindowsDefault));
+        data.linuxUserData = getAttribute(config, InstanceNames.Ec2LinuxUserDataKey, InstanceNames.Ec2LinuxUserDataDefault);
+        data.winUserData = getAttribute(config, InstanceNames.Ec2WinUserDataKey, InstanceNames.Ec2WinUserDataDefault);
+        data.linuxSandboxPath = getAttribute(config, ResourceNames.DeployLinuxSandboxKey, ResourceNames.DeployLinuxSandboxDefault);
+        data.winSandboxPath = getAttribute(config, ResourceNames.DeployWinSandboxKey, ResourceNames.DeployWinSandboxDefault);
+        
         config.initsb.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(config);

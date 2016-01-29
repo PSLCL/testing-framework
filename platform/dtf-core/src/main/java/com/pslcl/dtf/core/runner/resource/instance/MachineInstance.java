@@ -17,34 +17,42 @@ package com.pslcl.dtf.core.runner.resource.instance;
 
 import java.util.concurrent.Future;
 
-import com.pslcl.dtf.core.runner.resource.exception.IncompatibleResourceException;
-
 /**
  * Represents a Machine Resource instance.
  */
 public interface MachineInstance extends ResourceInstance
 {
     /**
-     * Place an artifact on a machine.
+     * Place a file on a machine.
+     * <p>An example of use would be 
+     * <code>partialDestPath = "lib/dof-oal.jar", url = "http://someqaportalhost/content/somehash"</code>
+     * <p>A destination sandbox url is a configurable value.  It's key and default values are declared in
+     * ResourceNames.  If the sandbox url is /opt/dtf/sandbox, then the whole path would be 
+     * /opt/dtf/sandbox/lib/dof-oal.jar 
+     *  
+     * @param partialDestPath
+     *            The partial destination path to be copied to the destination sandbox.
+     * @param url
+     *            The URL of the artifact.
      * 
-     * @param filename
-     *            The target filename for the artifact.
-     * @param artifactHash
-     *            The hash of the artifact.
-     * 
-     * @return A Future<Void> which returns once the deploy is complete. The Future will throw an exception if the deploy fails. 
+     * @return A Future<Void> which returns once the deploy is complete. The Future will throw an exception if the deploy fails.
+     * @see com.pslcl.dtf.core.runner.resource#DeployDestSandboxKey 
      */
-    Future<Void> deploy(String filename, String artifactHash);
+    Future<Void> deploy(String partialDestPath, String url);
 
     /**
-     * Delete an artifact from a machine.
-     * 
-     * @param filename
-     *            The filename of the artifact to delete.
-     *            
+     * Delete a file from a machine.
+     * <p>An example of use would be 
+     * <code>partialDestPath = "lib/dof-oal.jar"</code>
+     * <p>A destination sandbox url is a configurable value.  It's key and default values are declared in
+     * ResourceNames.  If the sandbox url is /opt/dtf/sandbox, then the file to be deleted would be 
+     * /opt/dtf/sandbox/lib/dof-oal.jar
+     *  
+     * @param partialDestPath
+     *            The partial destination file to be deleted from to the destination sandbox.
      * @return A Future<Void> which returns once the delete is complete. The Future will throw an exception if the delete fails. 
      */
-    Future<Void> delete(String filename);
+    Future<Void> delete(String partialDestPath);
 
     /**
      * Connect a machine to a network.
@@ -53,9 +61,8 @@ public interface MachineInstance extends ResourceInstance
      *            The NetworkInstance to which the machine should connect.
      *            
      * @return A Future<CableInstance> which returns once the machine is connected to the network.
-     * 
      */
-    Future<CableInstance> connect(NetworkInstance network) throws IncompatibleResourceException;
+    Future<CableInstance> connect(NetworkInstance network);// throws IncompatibleResourceException;
 
     /**
      * Disconnect a machine from a network. 
@@ -89,9 +96,9 @@ public interface MachineInstance extends ResourceInstance
      * @param command
      *            An executable command, including arguments, to be run on the machine.
      *
-     * @return A future containing the result of the command once execution has completed. 
+     * @return A {@link RunnableProgram} containing the information about the command once execution has completed.
      */
-    Future<Integer> configure(String command);
+    Future<RunnableProgram> configure(String command);
 
     /**
      * Start an executable command on a machine and return a Future with the {@link RunnableProgram} set once the program
@@ -102,7 +109,7 @@ public interface MachineInstance extends ResourceInstance
      * @param command
      *            An executable command, including arguments, to be run on the machine.
      *
-     * @return A {@link Future<Integer>} containing the result of the command once execution has completed.
+     * @return A {@link RunnableProgram} containing the information about the command once execution has completed.
      */
     Future<RunnableProgram> start(String command);
 

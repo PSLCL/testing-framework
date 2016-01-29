@@ -41,21 +41,14 @@ public abstract class MessageQueueBase implements MessageQueue
     }
 
     /**
-     * @note if return true, must eventually call ack. TODO: how to call ack through this abstract class? Or is that appropriate, since we have an interface?
+     * @note if return true, must eventually call ack.
      * @param strQueueStoreEntryNumber
      * @param message
      * @return
      */
-    public boolean submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Exception
+    public void submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Exception
     {
-        try
-        {
-            config.runnerService.submitQueueStoreNumber(strQueueStoreEntryNumber, message);
-            return true;
-        } catch (Exception e)
-        {
-            return false;
-        }
+        config.runnerService.submitQueueStoreNumber(strQueueStoreEntryNumber, message);
     }
 
     @Override

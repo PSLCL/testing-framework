@@ -27,10 +27,12 @@ import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
@@ -201,6 +203,9 @@ public class AwsResourcesManager implements ResourcesManager
         personProvider.init(config);
         networkProvider.init(config);
         
+        if(Boolean.parseBoolean(config.properties.getProperty(ResourceNames.DeployStafPingKey, "true")))
+            StafSupport.ping("local");
+        
         config.initsb.level.decrementAndGet();
     }
 
@@ -209,6 +214,7 @@ public class AwsResourcesManager implements ResourcesManager
     {
         try
         {
+            StafSupport.destroy();
             int size = resourceProviders.size();
             for (int i = 0; i < size; i++)
                 resourceProviders.get(i).destroy();

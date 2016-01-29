@@ -41,7 +41,6 @@ import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
@@ -102,6 +101,8 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     {
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
+        String prefixTestName = null;
+        
         synchronized (boundNetworks)
         {
             synchronized (reservedNetworks)
@@ -112,7 +113,10 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                 {
                     coordinates = entry.getValue().getCoordinates();
                     if (coordinates.templateId.equals(templateId))
+                    {
                         releaseList.add(entry.getKey());
+                        prefixTestName = entry.getValue().reservedResource.subnetConfig.resoucePrefixName;
+                    }
                 }
                 for (Long key : releaseList)
                 {
@@ -134,10 +138,11 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
             }
         }
 
+        //TODO: this should not be nuking keypair, but vpc?
         if (coordinates != null)
         {
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
-            pdelayData.preFixMostName = config.properties.getProperty(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+            pdelayData.preFixMostName = prefixTestName;
             String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
             DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);

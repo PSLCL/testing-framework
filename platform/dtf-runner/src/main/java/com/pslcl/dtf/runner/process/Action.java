@@ -76,10 +76,9 @@ public enum Action implements Actions {
     DO {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
-            long reNum = reState.getRunEntryNumber();
             try {
                 // initiate a test run, then block until the test run completes, its result is gathered, and its result is stored
-                boolean result = reCore.testRun(new Long(reNum), runnerService.runnerMachine);
+                boolean result = reCore.testRun(runnerService.runnerMachine);
             } catch (Exception e) {
                 System.out.println("Action.DO() sees testRun() exception: " + e);
             }

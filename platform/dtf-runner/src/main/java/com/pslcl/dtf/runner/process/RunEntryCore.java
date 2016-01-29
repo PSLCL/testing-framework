@@ -216,7 +216,6 @@ public class RunEntryCore {
      *
      */
     private void storeResultRunEntryData() throws Exception {
-        // Calling this with null for topDBTemplate.result makes no sense. It may be an error. TODO: check that and log it, and maybe reject it entirely.
         topDBTemplate.end_time = new Date(); // now
         try {
             writeRunEntryData();
@@ -234,8 +233,8 @@ public class RunEntryCore {
      */
     private void writeRunEntryData() throws Exception {
     	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, reNum);
-    	if (false || // true: temporarily allow overwriting of a past result
-    		previousResultIsStored == null) { // this check is a fail-safe
+    	if(false || // true: temporarily allow overwriting of a past result
+    	   previousResultIsStored == null) { // this check is a fail-safe
     		if (!this.dbConnPool.getReadOnly()) {
                 Connection connection = null;
     	        Statement statement = null;
@@ -255,9 +254,9 @@ public class RunEntryCore {
     	            String owner = "null";
     	            if (topDBTemplate.owner != null)
     	                owner = "'" + topDBTemplate.owner + "'";
-    	            Boolean result = null;
-    	            if (topDBTemplate.result != null)
-    	                result = topDBTemplate.result;
+    	            if (topDBTemplate.result == null)
+    	            	log.warn(this.simpleName + "writeRunEntryData() unexpectedly encounters null result");
+   	                Boolean result = topDBTemplate.result;
     	            byte [] artifacts = null;
     	            if (topDBTemplate.artifacts != null)
     	                artifacts = topDBTemplate.artifacts;
@@ -323,9 +322,7 @@ public class RunEntryCore {
      * Execute the test run specified by the run entry number.
      * @return the result of this test run; result is stored already
      */
-    public boolean testRun(Long reNum, RunnerMachine runnerMachine) throws Exception {
-        // TODO: remove reNum parameter; it is built into RunEntryCore and is present in this.topDBTemplate
-
+    public boolean testRun(RunnerMachine runnerMachine) throws Exception {
         // We are an independent process in our own thread. We have access
         //   to an Artifact Provider
         //   to a Resource Provider
@@ -377,7 +374,7 @@ public class RunEntryCore {
 //        try {
 //            qbap.init();
 //        } catch (Exception e) {
-//            // TODO Auto-generated catch block
+//            // Auto-generated catch block
 //            e.printStackTrace();
 //        }
 //        ArtifactNotifier artifactFoundCallback = new ArtifactFoundCallback();
@@ -395,7 +392,7 @@ public class RunEntryCore {
 //
 //        @Override
 //        public void artifact(String project, String component, String version, String platform, String internal_build, String name, Hash hash, Content content) {
-//            // TODO Auto-generated method stub
+//            // Auto-generated method stub
 //
 //        }
 //

@@ -27,6 +27,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
+import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.runner.QAPortalAccess;
 import com.pslcl.dtf.runner.process.DBTemplate;
 import com.pslcl.dtf.runner.process.RunEntryCore;
@@ -70,8 +71,6 @@ public class InstancedTemplate {
     private List<ResourceInstance> boundResourceInstances;
     private List<DeployInfo> deployedInfos;
 	private List<CableInstance> cableInstances;
-	private List<StartState> startProgramStates;
-	private List<RunState> runProgramStates;
 
     private List<ResourceInfo> orderedResourceInfos = null;
     
@@ -219,8 +218,8 @@ public class InstancedTemplate {
 			}
 			int currentStepReference = this.mapStepReferenceToNestedTemplate.size();
 
-			// second, process step sets (steps in the same set)
-			// process each step set in sequential order (starting at setID 0, with no missing setID)
+			// second, process each step set, in sequence (starting at setID 0, with no missing setID)
+			//     do this by fully processing steps of the same set, before moving on to the next set
 			// any error terminates step handling
 			for (int setID=0; ; setID++) {
 				String strSetID = Integer.toString(setID) + ' '; // trailing space required for a legal setID
@@ -231,20 +230,19 @@ public class InstancedTemplate {
 				    // Decision: Exit step processing. If there exist follow-on steps, we don't know about them.
 			    	break; // step handling now complete
 			    }
-			    
+
+			    // algorithm for each setID: initiate step processing in sequence, as supplied by the template, while also allowing parallel processing; within a setID, order of step completion is uncertain
 				BindHandler bindHandler = null;
-				DeployHandler deployHandler = null;
-				List<DeployInfo> deployInfos = null;
-				InspectHandler inspectHandler = null; // Inspect purposely has no overall list of InspectInfo
+				ProgramHandler configureHandler = null;
 				ConnectHandler connectHandler = null;
-				List<ConnectInfo> connectInfos = null;
-				ConfigureHandler configureHandler = null;
-				List<ProgramInfo> configureInfos = null;
-				StartHandler startHandler = null;
+				DeployHandler deployHandler = null;
+				InspectHandler inspectHandler = null;
+				ProgramHandler runHandler = null;
+				ProgramHandler startHandler = null;
+
 				List<ProgramInfo> startInfos = null;
-				RunHandler runHandler = null;
-				List<ProgramInfo> runInfos = null;
-			    // algorithm for each setID: initiate step processing in sequence, as supplied, while also allowing parallel processing; order of step completion is uncertain
+				
+				// this for() loop: initiate all step commands for same setID
 			    for (int setStepCount=0; setStepCount<stepsOfSet.size(); setStepCount++) {
 			    	// from the first step of a possible group of same-command steps, get its command and act on it
 			    	String commandString = null;
@@ -252,73 +250,98 @@ public class InstancedTemplate {
 			    	try {
 						commandString = firstLikeStep.getCommand();
 						switch(commandString) {
+							// NOTE: In a pattern, none of these cases accomplish their final work. That work is accomplished in the do/while loop that follows our for loop.
 						case "bind":
 							if (bindHandler == null) {
-								bindHandler = new BindHandler(this, stepsOfSet, setStepCount);
-								bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
+								bindHandler = new BindHandler(this, stepsOfSet);
+								int consumedStepReferences = bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
+								setStepCount += consumedStepReferences;
+								currentStepReference += consumedStepReferences;
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for() loop that initiates all step commands for same setID. This first call will not block. 
 								bindHandler.proceed();
-								// bind processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
-
-								int consumedStepReferences = bindHandler.getReserveResourceRequestCount(); // the number of step lines processed, regardless of the outcome of eventual reserve and bind activity
-								setStepCount += consumedStepReferences;
-								currentStepReference += consumedStepReferences;
+								// bind processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
 							} else {
-								// TODO: warn log to report improper ordering of steps within a step set
+								log.debug(this.simpleName + "bind steps not all contiguous, for step set " + setStepCount);
+								throw new Exception("Improper step order");
 							}
 							break;
-						case "deploy":
-							// We track MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to the machine of a nested template
-							if (deployHandler == null) {
-								deployHandler = new DeployHandler(this, stepsOfSet, setStepCount);
-								deployInfos = deployHandler.computeDeployRequests(); // setID deploy 0-based-machine-ref artifact-name artifactHash
-								deployHandler.initiateDeploy(deployInfos);
-								int consumedStepReferences = deployInfos.size();
+						case "configure":
+							if (configureHandler == null) {
+								configureHandler = new ProgramHandler(this, stepsOfSet);
+							    int consumedStepReferences = configureHandler.computeProgramRequests(); // setID configure 0-based-machine-ref program-name [param param ...]
 								setStepCount += consumedStepReferences;
 								currentStepReference += consumedStepReferences;
-								// deploy(s) are being processed; notification comes to us asynchronously, below, where we receive deploy notification after we have initiated the processing of other steps of this step set
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for() loop that initiates all step commands for same setID. This first call will not block.
+								configureHandler.proceed(); // ignore the empty return list for this first time caller
+								// configure processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
 							} else {
-								// TODO: warn log to report improper ordering of steps within a step set
-							}
-							break;
-						case "inspect":
-							if (inspectHandler == null) {
-								inspectHandler = new InspectHandler(this, stepsOfSet, setStepCount);
-								inspectHandler.computeInspectRequests(); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
-								inspectHandler.proceed();
-								// inspect processing has advanced and requires waiting for Future(s); notification of current progress comes to us asynchronously, below, after we have initiated the processing of other steps of this step set
-
-								int consumedStepReferences = inspectHandler.getInspectRequestCount();    // the number of step lines processed, regardless of the outcome of eventual inspect activity
-								setStepCount += consumedStepReferences;
-								currentStepReference += consumedStepReferences;
-							} else {
-								// TODO: warn log to report improper ordering of steps within a step set
+								log.debug(this.simpleName + "configure steps not all contiguous, for step set " + setStepCount);
+								throw new Exception("Improper step order");
 							}
 							break;
 						case "connect":
 							// We track CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
 							if (connectHandler == null) {
-								connectHandler = new ConnectHandler(this, stepsOfSet, setStepCount);
-								connectInfos = connectHandler.computeConnectRequests(); // setID connect 0-based-machine-ref 0-based-network-reference
-								connectHandler.initiateConnect(connectInfos);
-								int consumedStepReferences = connectInfos.size();
+								connectHandler = new ConnectHandler(this, stepsOfSet);
+								int consumedStepReferences = connectHandler.computeConnectRequests(); // setID connect 0-based-machine-ref 0-based-network-reference
 								setStepCount += consumedStepReferences;
 								currentStepReference += consumedStepReferences;
-								// connect(s) are being processed; notification comes to us asynchronously, below, where we receive connect notification after we have initiated the processing of other steps of this step set
+
+								// Pattern for all .proceed() calls. Call it (first) in this for() loop that initiates all step commands for same setID. This first call will not block.
+								connectHandler.proceed(); // ignore the empty return list for this first time caller
+								// connect processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
 							} else {
-								// TODO: warn log to report improper ordering of steps within a step set
+								log.debug(this.simpleName + "connect steps not all contiguous, for step set " + setStepCount);
+								throw new Exception("Improper step order");
 							}
 							break;
-						case "configure":
-							if (configureHandler == null) {
-								configureHandler = new ConfigureHandler(this, stepsOfSet, setStepCount);
-								configureInfos = configureHandler.computeConfigureRequests(); // setID configure 0-based-machine-ref program-name [param param ...]
-								configureHandler.initiateConfigure(configureInfos);
-								int consumedStepReferences = configureInfos.size();
+						case "deploy":
+							// We track MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to the machine of a nested template
+							if (deployHandler == null) {
+								deployHandler = new DeployHandler(this, stepsOfSet);
+								int consumedStepReferences = deployHandler.computeDeployRequests(); // setID deploy 0-based-machine-ref artifact-name artifactHash
 								setStepCount += consumedStepReferences;
 								currentStepReference += consumedStepReferences;
-								// configure(s) are being processed; notification comes to us asynchronously, below, where we receive configure notification after we have initiated the processing of other steps of this step set
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for() loop that initiates all step commands for same setID. This first call will not block.
+								deployHandler.proceed();
+								// deploy processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
 							} else {
-								// TODO: warn log to report improper ordering of steps within a step set
+								log.debug(this.simpleName + "deploy steps not all contiguous, for step set " + setStepCount);
+								throw new Exception("Improper step order");
+							}
+							break;
+						case "inspect":
+							if (inspectHandler == null) {
+								inspectHandler = new InspectHandler(this, stepsOfSet);
+								int consumedStepReferences = inspectHandler.computeInspectRequests(); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
+								setStepCount += consumedStepReferences;
+								currentStepReference += consumedStepReferences;
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for() loop that initiates all step commands for same setID. This first call will not block.
+								inspectHandler.proceed();
+								// inspect processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
+							} else {
+								log.debug(this.simpleName + "inspect steps not all contiguous, for step set " + setStepCount);
+								throw new Exception("Improper step order");
+							}
+							break;
+						case "run":
+							// We track MachineInstance's of each run, even though (probably) only needed for cleaning up the case where a parent template "runs" to the machine instance of a nested template
+							if (runHandler == null) {
+								runHandler = new ProgramHandler(this, stepsOfSet);
+							    int consumedStepReferences = runHandler.computeProgramRequests(); // setID run 0-based-machine-ref program-name [param param ...]
+								setStepCount += consumedStepReferences;
+								currentStepReference += consumedStepReferences;
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for() loop that initiates all step commands for same setID. This first call will not block.
+								runHandler.proceed(); // ignore the empty return list for this first time caller
+								// run processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
+							} else {
+								log.debug(this.simpleName + "run steps not all contiguous, for step set " + setStepCount);
+								throw new Exception("Improper step order");
 							}
 							break;
 						case "start":
@@ -326,27 +349,17 @@ public class InstancedTemplate {
 							if (startHandler == null) {
 								// A generator is encouraged to divide templates into nested templates, such that a single start step appears in a template, and only in a nested template.
 								// Even so, we process whatever start step arrangement comes to us.
-								startHandler = new StartHandler(this, stepsOfSet, setStepCount);
-								startInfos = startHandler.computeStartRequests(); // setID start 0-based-machine-ref program-name [param param ...]
-								startHandler.initiateStart(startInfos);
-								int consumedStepReferences = configureInfos.size();
+								startHandler = new ProgramHandler(this, stepsOfSet);
+							    int consumedStepReferences = startHandler.computeProgramRequests(); // setID start 0-based-machine-ref program-name [param param ...]
 								setStepCount += consumedStepReferences;
 								currentStepReference += consumedStepReferences;
-								// start(s) are being processed; notification comes to us asynchronously, below, where we receive start notification after we have initiated the processing of other steps of this step set							
+								
+								// Pattern for all .proceed() calls. Call it (first) in this for() loop that initiates all step commands for same setID. This first call will not block.
+								startHandler.proceed(); // ignore the empty return list for this first time caller
+								// start processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
 							} else {
-								// TODO: warn log to report improper ordering of steps within a step set
-							}
-							break;
-						case "run":
-							// We track MachineInstance's of each run, even though (probably) only needed for cleaning up the case where a parent template "runs" to the machine instance of a nested template
-							if (runHandler == null) {
-								runHandler = new RunHandler(this, stepsOfSet, setStepCount);
-								runInfos = runHandler.computeRunRequests(); // setID start 0-based-machine-ref program-name [param param ...]
-								runHandler.initiateRun(runInfos);
-								int consumedStepReferences = configureInfos.size();
-								setStepCount += consumedStepReferences;
-								currentStepReference += consumedStepReferences;
-								// run(s) are being processed; notification comes to us asynchronously, below, where we receive run notification after we have initiated the processing of other steps of this step set							
+								log.debug(this.simpleName + "start steps not all contiguous, for step set " + setStepCount);
+								throw new Exception("Improper step order");
 							}
 							break;
 						default:
@@ -357,119 +370,206 @@ public class InstancedTemplate {
 					    log.error(simpleName + "malformed step");
 					    throw ae;
 					} catch (Exception e) {
-					    log.debug(simpleName + "runSteps(): " + commandString + " executing step fails");
+					    log.debug(simpleName + "runSteps(): " + commandString + " executing step fails: " + e.getMessage());
 						throw e;
 					}
-			    } // end for() same setID command initiating
+			    } // end for(): initiate all step commands for same setID
+
+
+			    // TODO: move things like this to here
+				List<ProgramInfo> runInfos = null;
+//				List<ProgramInfo> startInfos = null;
+
 			    
+				// this do/while loop: process all step commands for same setID
+			    boolean allStepsCompleteForThisStepSet;
 			    do {
-			        // block, in turn, until all steps of this set have concluded their processing
+		    		allStepsCompleteForThisStepSet = true;
+			    	
+			        // These individual .proceed() calls may potentially each block for a while, then return. At each return, they mark themselves as done, or not.
+			    	//     Eventually, by cycling through this loop multiple times, all steps of this step set will be found to have concluded their processing.
+			    	//     The loop exits at that time.
 			    	if (bindHandler!=null && !bindHandler.isDone()) {
+			    		allStepsCompleteForThisStepSet = false;
 			    		bindHandler.proceed();
 			    		if (bindHandler.isDone()) {
 			    			List<ResourceInstance> localRI = bindHandler.getResourceInstances();
 			    			this.boundResourceInstances.addAll(localRI);
-			    			log.debug(simpleName + "bindHandler() completes " + localRI.size() + " bind(s) for one setID");
+			    			log.debug(simpleName + "bindHandler() completes " + localRI.size() + " bind(s) for setID " + setID);
 			    		}
 			    	}
-			        if (deployHandler!=null && !deployHandler.isDone()) {
-						// we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
-			        	boolean allDeploysSucceeded = false;
-			            try {
-							List<DeployInfo> localDeployInfos = deployHandler.waitComplete();
-							deployedInfos.addAll(localDeployInfos);
-							if (DeployInfo.getAllDeployedSuccess() && localDeployInfos.size()==deployInfos.size()) // check success further
-								allDeploysSucceeded = true;
-							else {
-								// TODO: log and notify
-							}
-						} catch (Exception e) {
-							// e is an unchecked exception; respond by throwing a new exception to cause this template run to error out
-							// TODO: log and notify
-						}
+			        if (configureHandler!=null && !configureHandler.isDone()) {
+			    		allStepsCompleteForThisStepSet = false;
 
-			            if (!allDeploysSucceeded) {
-							// one or more deploy steps errored out; this template is errored out
-							throw new Exception("InstancedTemplate.runSteps() deploy handling has incomplete successful deployed list, for setID " + setID);
-							// initiate cleanup/destroy of this template run; deployedInfos holds all information
-			            }
+			        	List<ProgramState> localProgramStates = configureHandler.proceed();
+			    		if (configureHandler.isDone()) {
+			    			boolean fail = true;
+			    			if (localProgramStates.size() == configureHandler.getConsecutiveSameStepCount()) {
+					        	boolean configureStepErroredOut= false;
+					        	for (ProgramState ps : localProgramStates) {
+					        		RunnableProgram runnableProgram = ps.getRunnableProgram(); 
+					        		if (runnableProgram == null) {
+					        			configureStepErroredOut = true;
+					        			log.debug(this.simpleName + "A configure program returned null RunnableProgram");
+					        			break;
+					        		}
+					        		
+					        		Integer programRunResult = runnableProgram.getRunResult();
+					        		if (programRunResult==null || programRunResult!=0) {
+					        			configureStepErroredOut = true;
+					        			log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
+					        			break;
+					        		}
+					        	}
+					        	if (!configureStepErroredOut)
+					        		fail = false;
+			    			} else {
+			    				log.debug(this.simpleName + "Configure program results are missing");
+			    			}
+			    			if (fail)
+				        		throw new Exception("Configure step(s) errored out");
+			    			log.debug(simpleName + "configureHandler() completes " + configureHandler.getConsecutiveSameStepCount() + " configure program(s) for setID " + setID);
+			    		}
+//			        	List<ProgramState> localProgramStates = configureHandler.proceed();
+//			    		if (configureHandler.isDone()) {
+//			    			boolean fail = true;
+//			    			if (localProgramStates.size() == configureHandler.getConsecutiveSameStepCount()) {
+//					        	boolean configStepErroredOut= false;
+//					        	for (ProgramState ps : localProgramStates) {
+//					        		Integer programRunResult = ps.getProgramRunResult(); 
+//					        		if (programRunResult==null || programRunResult!=0) {
+//					        			configStepErroredOut = true;
+//					        			log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
+//					        			break;
+//					        		}
+//					        	}
+//					        	if (!configStepErroredOut)
+//					        		fail = false;
+//			    			} else {
+//			    				log.debug(this.simpleName + "Configure program results are missing");
+//			    			}
+//			    			if (fail)
+//				        		throw new Exception("Configure step(s) errored out");
+//			    			log.debug(simpleName + "configureHandler() completes " + configureHandler.getConsecutiveSameStepCount() + " configure program(s) for setID " + setID);
+//			    		}
 			        }
-			        if (inspectHandler!=null && !inspectHandler.isDone()) {
-			        	inspectHandler.proceed();
-			    		if (inspectHandler.isDone()) {
-			    			log.debug(simpleName + "inspectHandler() completes " + " inspect(s) for one setID");
+			        if (connectHandler!=null && !connectHandler.isDone()) {
+			    		allStepsCompleteForThisStepSet = false;
+
+						// we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
+			        	List<CableInstance> localCableInstances = connectHandler.proceed();
+			    		if (connectHandler.isDone()) {
+							this.cableInstances.addAll(localCableInstances);
+							if (ConnectInfo.getAllConnectedSuccess() && localCableInstances.size()==connectHandler.getConnectRequestCount()) {
+				    			log.debug(simpleName + "connectHandler() completes " + connectHandler.getConnectRequestCount() + " connect(s) for setID " + setID);
+							} else {
+								// one or more connect steps errored out; this template is errored out
+								throw new Exception("InstancedTemplate.runSteps() connect handling has incomplete successful connect list, for setID " + setID);
+								// initiate cleanup/destroy of this template run; this.cableInstances holds all information
+							}
 			    		}
 			        }
-			        if (connectHandler != null) {
-						// we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
-			        	boolean allConnectsSucceeded = false;
-						try {
-			            	List<CableInstance> localCableInstances = connectHandler.waitComplete();
-							if (ConnectInfo.getAllConnectedSuccess() && localCableInstances.size()==connectInfos.size()) {
-								allConnectsSucceeded = true;
-								cableInstances.addAll(localCableInstances);
-							} else {
-								// TODO: log and notify
-							}					
-						} catch (Exception e) {
-							// e is an unchecked exception; respond by throwing a new exception to cause this template run to error out
-							// TODO: log and notify
-						}
-			        	
-			            if (!allConnectsSucceeded) {
-							// one or more connect steps errored out; this template is errored out
-							throw new Exception("InstancedTemplate.runSteps() connect handling has incomplete successful connect list, for setID " + setID);
-							// initiate cleanup/destroy of this template run; cableInstances holds all information
-			            }
-			        }
-			        if (configureHandler != null) {
-			        	// success is that no exception is thrown by .waitComplete() or the asynch configure process(es) behind it
-			        	List<ConfigureState> localConfigureStates = configureHandler.waitComplete();
-			        	boolean configStepErroredOut= false;
-			        	for (ConfigureState cs : localConfigureStates) {
-			        		// TODO: Because Configures do not need to be cleaned up, storing MachineInstance is not needed
-			        		// this.configuredProgramState.addAll(localConfigureStates);
+			        if (deployHandler!=null && !deployHandler.isDone()) {
+			    		allStepsCompleteForThisStepSet = false;
 
-			        		if (cs.getProgramRunResult()==null || cs.getProgramRunResult()!=0)
-			        			configStepErroredOut = true;
-			        	}
-			        	if (configStepErroredOut || ConfigureState.getAllProgramsRan()==false || localConfigureStates.size()!=configureInfos.size())
-			        		throw new Exception("Configure step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
+			    		// we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
+			    		deployHandler.proceed();
+			    		if (deployHandler.isDone()) {
+			    			List<DeployInfo> localDeployInfos = deployHandler.getDeployInfos();
+							this.deployedInfos.addAll(localDeployInfos);
+							if (DeployInfo.getAllDeployedSuccess() && localDeployInfos.size()==deployHandler.getDeployRequestCount()) {
+				    			log.debug(simpleName + "deployHandler() completes " + deployHandler.getDeployRequestCount() + " deploys(s) for setID " + setID);
+							} else {
+								// one or more deploy steps errored out; this template is errored out
+								throw new Exception("InstancedTemplate.runSteps() deploy handling has incomplete successful deployed list, for setID " + setID);
+								// initiate cleanup/destroy of this template run; this.deployedInfos holds all information
+							}
+			    		}
 			        }
-			        if (startHandler != null) {
-			        	// success is that no exception is thrown by .waitComplete() or the asynch start process(es) behind it
-			        	List<StartState> localStartStates = startHandler.waitComplete();
-			    	    this.startProgramStates.addAll(localStartStates);
-			        	boolean startStepErroredOut = false;
-			        	for (StartState ss : localStartStates) {
-			        		if (ss.getRunnableProgram() == null)
-			        			startStepErroredOut = true;
-			        	}
-			        	if (startStepErroredOut || StartState.getAllProgramsRan()==false || localStartStates.size()!=startInfos.size())
-			        		throw new Exception("Start step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
+			        if (inspectHandler!=null && !inspectHandler.isDone()) {
+			    		allStepsCompleteForThisStepSet = false;
+
+			        	inspectHandler.proceed();
+			    		if (inspectHandler.isDone()) {
+			    			log.debug(simpleName + "inspectHandler() completes " + inspectHandler.getInspectRequestCount() + " inspect(s) for setID " + setID);
+			    		}
 			        }
-			        if (runHandler != null) {
-			        	// success is that no exception is thrown by .waitComplete() or the asynch run process(es) behind it
-			        	List<RunState> localRunStates = runHandler.waitComplete();
-			        	this.runProgramStates.addAll(localRunStates);
-			        	boolean runStepErroredOut = false;
-			        	for (RunState rs: localRunStates) {
-			        		if (rs.getProgramRunResult()==null || rs.getProgramRunResult()!=0) {
-			        			runStepErroredOut = true;
-			        		}
-			            	if (runStepErroredOut || RunState.getAllProgramsRan()==false || localRunStates.size()!=runInfos.size())
-			            		throw new Exception("Run step(s) errored out"); // cleanup/destroy this template run; this.mapStepReferenceToResourceInstance holds all bound resources
-			        	}
+			        if (runHandler!=null && !runHandler.isDone()) {
+			    		allStepsCompleteForThisStepSet = false;
+			    		
+			        	List<ProgramState> localProgramStates = runHandler.proceed();
+			    		if (runHandler.isDone()) {
+			    			boolean fail = true;
+			    			if (localProgramStates.size() == runHandler.getConsecutiveSameStepCount()) {
+					        	boolean runStepErroredOut= false;
+					        	for (ProgramState ps : localProgramStates) {
+					        		RunnableProgram runnableProgram = ps.getRunnableProgram(); 
+					        		if (runnableProgram == null) {
+					        			runStepErroredOut = true;
+					        			log.debug(this.simpleName + "A run program returned null RunnableProgram");
+					        			break;
+					        		}
+					        		
+					        		Integer programRunResult = runnableProgram.getRunResult();
+					        		if (programRunResult==null || programRunResult!=0) {
+					        			runStepErroredOut = true;
+					        			log.debug(this.simpleName + "A program run returned non-zero, or failed to run at all");
+					        			break;
+					        		}
+					        	}
+					        	if (!runStepErroredOut)
+					        		fail = false;
+			    			} else {
+			    				log.debug(this.simpleName + "Run program results are missing");
+			    			}
+			    			if (fail)
+				        		throw new Exception("Run step(s) errored out");
+			    			log.debug(simpleName + "runHandler() completes " + runHandler.getConsecutiveSameStepCount() + " run program(s) for setID " + setID);
+			    		}
 			        }
-			    } while (bindHandler!=null  && !bindHandler.isDone() ||
-			    		 deployHandler!=null && !deployHandler.isDone() ||
-			    		 inspectHandler!=null && !inspectHandler.isDone());
-			}
-		} catch (Exception e) {
+			        
+			        if (startHandler!=null && !startHandler.isDone()) {
+			    		allStepsCompleteForThisStepSet = false;
+			    		
+			        	List<ProgramState> localProgramStates = startHandler.proceed();
+			    		if (startHandler.isDone()) {
+			    			boolean fail = true;
+			    			if (localProgramStates.size() == startHandler.getConsecutiveSameStepCount()) {
+					        	boolean startStepErroredOut= false;
+					        	for (ProgramState ps : localProgramStates) {
+					        		RunnableProgram runnableProgram = ps.getRunnableProgram(); 
+					        		if (runnableProgram == null) {
+					        			startStepErroredOut = true;
+					        			log.debug(this.simpleName + "A program start returned null RunnableProgram");
+					        			break;
+					        		}
+					        		
+					        		Integer programStartResult = runnableProgram.getRunResult();
+					        		if (programStartResult==null || programStartResult!=0) {
+					        			startStepErroredOut = true;
+					        			log.debug(this.simpleName + "A program start returned non-zero, or failed to run at all");
+					        			break;
+					        		}
+					        	}
+					        	if (!startStepErroredOut)
+					        		fail = false;
+			    			} else {
+			    				log.debug(this.simpleName + "Start program results are missing");
+			    			}
+			    			if (fail)
+				        		throw new Exception("Start step(s) errored out");
+			    			log.debug(simpleName + "startHandler() completes " + startHandler.getConsecutiveSameStepCount() + " start program(s) for setID " + setID);
+			    		}
+			        }
+			    } while (!allStepsCompleteForThisStepSet); // end do/while loop: process all step commands for same setID
+			} // end for(): process each step set, in sequence
+    	} catch (Exception e) {
 			log.debug(this.simpleName + "runSteps() errors out for runID " + this.getRunID() + ", templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());
 			this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
 			throw e;
 		}
+    	
+    	log.debug(this.simpleName + "runSteps() completes without error");
     }
 
     void setTemplateCleanupInfo(ResourceCoordinates resourceCoordinates) {
@@ -487,14 +587,17 @@ public class InstancedTemplate {
 	    	// Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant templateID). 
 	    	ResourcesManager rm = this.templateCleanupInfo.getManager();
 	    	templateID = this.templateCleanupInfo.templateId;
+	    	
+	    	log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
 	    	rm.release(templateID, false);
-	    	log.debug(simpleName + "informResourceProviders() informed the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+	    	log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+	    	
     	} else
-    		log.debug(simpleName + "informResourceProviders() did NOT inform the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+    		log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
     }
     
     public void destroy() {
-    	// this is intended to be called only by tempProv.releaseTemplate(iT)
+    	// this is intended to be called only by TemplateProvider.releaseTemplate(iT)
     	this.informResourceProviders();
     	// maybe other cleanup related to iT only, but not .releaseTemplate() again - it called us
     }

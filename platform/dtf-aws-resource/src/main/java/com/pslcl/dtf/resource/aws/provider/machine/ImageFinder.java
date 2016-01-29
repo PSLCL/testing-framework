@@ -92,7 +92,7 @@ public class ImageFinder
     {
         String value = config.properties.getProperty(key, defaultValue);
         config.initsb.ttl(key, " = ", value);
-        if(value == null)
+        if(value == null || value.length() == 0)
             return;
         defaultImageFilters.setProperty(key, value);
     }
@@ -113,8 +113,11 @@ public class ImageFinder
         for(int i=0; i < size; i++)
         {
             Entry<String,String> entry = list.get(i);
-            config.initsb.ttl(entry.getKey(), " = ", entry.getValue());
-            defaultLocationFilters.add(entry.getValue());
+            String value = entry.getValue();
+            if(value == null || value.length() == 0)
+                continue;
+            config.initsb.ttl(entry.getKey(), " = ", value);
+            defaultLocationFilters.add(value);
         }
     }
     
@@ -154,6 +157,8 @@ public class ImageFinder
                 String loc = image.getImageLocation();
                 loc = StrH.getAtomicName(loc, '/');
                 String[] frags = loc.split("\\.");
+                if(images.size() == 1)
+                    latestImage = image;
                 if(frags.length > 3)
                 {
                     int index = frags[0].lastIndexOf('-');
@@ -215,11 +220,13 @@ public class ImageFinder
                     }// if year delimiter found
                 } // if 4 or more frags
             } // outer for loop
-            if(locations.size() == 0)
+            // images.size() == 1 on given image-id
+            if(images.size() != 1 && locations.size() == 0)
                 throw new ResourceNotFoundException();
             int size = locations.size();
-            log.debug(getClass().getSimpleName() + ".findImage, " + size + " images found");
+            log.debug(getClass().getSimpleName() + ".findImage, " + size + " images found by location");
 //            if(locations.size() == 1)
+//                latestImage = image;
 //                return locations.get(0).getImageId();
             log.debug(getClass().getSimpleName() + ".findImage: " + latestImage.toString());
             return latestImage.getImageId();

@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Properties;
 import java.util.UUID;
@@ -51,7 +50,7 @@ import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 
 @SuppressWarnings("javadoc")
-public class InspectWithAttachmentFuture implements Callable<Void>, DataSource
+public class InspectWithAttachmentFuture implements Callable<Void>
 {
     public static final String SesMidStr = "ses";
     private final AmazonSimpleEmailServiceClient client;
@@ -69,7 +68,7 @@ public class InspectWithAttachmentFuture implements Callable<Void>, DataSource
                     AmazonSimpleEmailServiceClient client, 
                     PersonConfigData config, 
                     String recipient, 
-                    String includeFileName,
+                    String attachmentFileName,
                     InputStream fileStream,
                     String bodyText,
                     ProgressiveDelayData pdelayData)
@@ -77,7 +76,7 @@ public class InspectWithAttachmentFuture implements Callable<Void>, DataSource
     {
         this.client = client;
         this.config = config;
-        this.attachmentFileName = includeFileName;
+        this.attachmentFileName = attachmentFileName;
         this.attachmentFileStream = fileStream;
         this.recipient = recipient;
         this.bodyText = bodyText;
@@ -93,22 +92,22 @@ public class InspectWithAttachmentFuture implements Callable<Void>, DataSource
         format.ttl("recipient = ", recipient);
     }
 
-    private File getTmpFile(String fileName, InputStream inputStream) throws IOException
+    private File getLocalFile(String fileName, InputStream inputStream) throws IOException
     {
-        int idx = fileName.lastIndexOf('.');
-        String postfix = null;
-        if (idx != -1)
-        {
-            postfix = fileName.substring(idx);
-            fileName = fileName.substring(0, idx);
-        }
-        File tmpFile = File.createTempFile(pdelayData.preFixMostName + "-" + fileName, postfix);
-//        String tmpPath = System.getProperty("java.io.tmpdir");
-//        tmpPath = tmpPath.replace('\\', '/');
-//        if(!tmpPath.endsWith("/"))
-//            tmpPath += "/";
-//        tmpPath += fileName;
-//        File tmpFile = new File(tmpPath);
+//        int idx = fileName.lastIndexOf('.');
+//        String postfix = null;
+//        if (idx != -1)
+//        {
+//            postfix = fileName.substring(idx);
+//            fileName = fileName.substring(0, idx);
+//        }
+//        File tmpFile = File.createTempFile(pdelayData.preFixMostName + "-" + fileName, postfix);
+        String tmpPath = System.getProperty("java.io.tmpdir");
+        tmpPath = tmpPath.replace('\\', '/');
+        if(!tmpPath.endsWith("/"))
+            tmpPath += "/";
+        tmpPath += fileName;
+        File tmpFile = new File(tmpPath);
         if(tmpFile.exists())
         {
             tmpFile.delete();
@@ -173,11 +172,15 @@ public class InspectWithAttachmentFuture implements Callable<Void>, DataSource
             message.setContent(content);
             content.addBodyPart(wrap);
 
-            File attachmentFile = getTmpFile(attachmentFileName, attachmentFileStream);
+            File attachmentFile = getLocalFile(attachmentFileName, attachmentFileStream);
             String id = UUID.randomUUID().toString();
             MimeBodyPart attachment = new MimeBodyPart();
             DataSource fds = new FileDataSource(attachmentFile.getAbsolutePath());
             
+            attachment.setDataHandler(new DataHandler(fds));
+            attachment.setHeader("Content-ID", "<" + id + ">");
+            attachment.setFileName(fds.getName());
+            content.addBodyPart(attachment);            
             html.setContent("<html><body>" + bodyText + "</body></html>", "text/html");
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -220,35 +223,5 @@ public class InspectWithAttachmentFuture implements Callable<Void>, DataSource
         message.writeTo(baos);
         String msg = new String(baos.toByteArray());
         LoggerFactory.getLogger(getClass()).debug("\n"+msg);
-    }
-    
-    @Override
-    public String getContentType()
-    {
-        return "application/octet-stream";
-    }
-
-    @Override
-    public InputStream getInputStream() throws IOException
-    {
-        attachmentFileStream.reset();
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        
-//        
-//        attachmentFileStream.reset();
-        return attachmentFileStream;
-    }
-
-    @Override
-    public String getName()
-    {
-        return attachmentFileName;
-    }
-
-    @Override
-    public OutputStream getOutputStream() throws IOException
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 }

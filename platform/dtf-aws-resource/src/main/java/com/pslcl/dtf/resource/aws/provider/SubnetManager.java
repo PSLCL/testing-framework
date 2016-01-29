@@ -104,11 +104,14 @@ public class SubnetManager
     @SuppressWarnings("null")
     public Vpc getVpc(ProgressiveDelayData pdelayData, SubnetConfigData config) throws FatalResourceException
     {
-        if (vpcMap.size() == 0) // not been called yet 
+        synchronized(vpcMap)
         {
-            discoverExistingVpcs(pdelayData, config);
-            discoverExistingSubnets(pdelayData, config);
-            cleanupExistingSecureGroups(pdelayData, config);
+            if (vpcMap.size() == 0) // not been called yet 
+            {
+                discoverExistingVpcs(pdelayData, config);
+                discoverExistingSubnets(pdelayData, config);
+                cleanupExistingSecureGroups(pdelayData, config);
+            }
         }
 
         if (config.vpcName == null)

@@ -218,7 +218,7 @@ public class SubnetConfigData
             protocols[i] = entry.getValue();
         }
 
-        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermIpRangeKey, resource.getAttributes());
+        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermIpRangeKey, attrs);
         if (list.size() != size)
             throw new Exception("Permissions, number of IpRanges does not match number of Protocols, exp: " + size + " rec: " + list.size());
         for (int i = 0; i < size; i++)
@@ -227,7 +227,7 @@ public class SubnetConfigData
             ipRanges[i] = entry.getValue();
         }
 
-        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermPortKey, resource.getAttributes());
+        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermPortKey, attrs);
         if (list.size() != size)
             throw new Exception("Permissions, number of ports does not match number of Protocols, exp: " + size + " rec: " + list.size());
         for (int i = 0; i < size; i++)

@@ -174,7 +174,7 @@ public class TemplateProvider implements ResourceStatusListener {
     public void resourceStatusChanged(ResourceStatusEvent status)
     {
 //        int templateStepNumber = StepsParser.resourceToLineMap.get(status.coordinate);  
-        LoggerFactory.getLogger(getClass()).debug("\n" + getClass().getSimpleName() + ".resourceStatusChanged hit: " + status.toString());
+//        LoggerFactory.getLogger(getClass()).debug("\n" + getClass().getSimpleName() + ".resourceStatusChanged hit: " + status.toString());
         switch(status.status)
         {
             case Error:
@@ -275,7 +275,7 @@ public class TemplateProvider implements ResourceStatusListener {
 //                                    resourceInfo.setArtifactInfo(artifactInfo);
 //                                    resourceInfo.setRunParams(strRunParams);
 //                                    
-//                                    // TODO: set iT with more gathered info and instantiations and similar
+//                                    // set iT with more gathered info and instantiations and similar
 //
 //                                    success = true;
 //                                    System.out.println("TemplateProvider.getInstancedTemplate() runs to bound resource " + stepRef + ": artifactInfo: " + strArtifactName);

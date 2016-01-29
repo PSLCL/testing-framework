@@ -26,7 +26,7 @@ public class ArtifactInfo {
      */
     public static String getContent(String strInstructionsHash) {
         String retString = new String("");
-        retString = strInstructionsHash; // TODO: go instead to Artifact provider to retrieve file contents 
+        retString = strInstructionsHash; // REVIEW: go instead to Artifact provider to retrieve file contents 
         return retString;
     }
 
