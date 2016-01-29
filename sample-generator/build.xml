@@ -1,0 +1,250 @@
+<!--
+**  Copyright (c) 2015, Panasonic Corporation.
+**
+**  Permission to use, copy, modify, and/or distribute this software for any
+**  purpose with or without fee is hereby granted, provided that the above
+**  copyright notice and this permission notice appear in all copies.
+**
+**  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+**  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+**  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+**  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+**  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+**  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+**  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+-->
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="javabuild" default="dist" basedir=".">
+  <!-- set global properties for this build -->
+  <property name="name" value="Distributed Testing Framework Sample Module"/>
+  <property name="copyright.firstyear" value="2016"/>
+  <property name="ant.build.javac.source" value="1.8"/>
+  <property name="ant.build.javac.target" value="1.8"/>
+
+  <!-- these properties typically are set as part of the build environment -->
+  <property name="scm.host" value="https://github.com/PSLCL/"/>
+  <property name="scm.repository" value="testing-framework"/>
+  <property name="scm.group" value="dtf"/>
+  <property name="configurations" value="compile"/>
+  <property name="scm.branch" value="unknown"/>
+  <property name="scm.path" value="unknown"/>
+  <property name="scm.revision" value="unknown"/>
+
+  <!-- these properties typically don't change -->
+  <property name="src.dir" location="src/main/java"/>
+  <property name="lib.dir" value="lib"/>
+  <property name="build.dir" location=".build"/>
+  <property name="class.dir" value="${build.dir}/classes"/>
+  <property name="class.gen.dir" value="${build.dir}/classes-gen"/>
+  <property name="doc.dir" value="${build.dir}/docs"/>
+  <property name="dist.dir" value="${build.dir}/dist"/>
+  <property name="bin.dir" value="${dist.dir}/bin"/>
+  <property name="unjar.dir" value="${build.dir}/unjar"/>
+  <property name="javadoc.defaultexcludes" value="true"/>
+  <property name="vendor.name" value="Panasonic Salt Lake City Laboratory"/>
+  <property name="vendor.email" value=""/>
+  <property name="vendor.url" value="https://pslcl.com/"/>
+  <property name="copyright.owner" value="Panasonic Corporation"/>
+  <property name="ivy.resolver.default.check.modified" value="true"/>
+
+  <target name="init">
+    <tstamp>
+      <format property="TODAY" pattern="yyyy-MM-dd" timezone="GMT"/>
+    </tstamp>
+    <mkdir dir="${lib.dir}"/>
+  </target>
+
+  <target name="resolve" depends="init" description="resolve and retrieve dependencies with ivy">
+    <!-- Use Apache Ivy to resolve & retrieve dependencies -->
+    <ivy:retrieve conf="*"/>
+  </target>
+
+  <target name="versions" depends="resolve" description="determine versions">
+    <script language="javascript">
+      <![CDATA[
+        var revision = "" + project.getProperty("ivy.revision");
+        var official = project.getProperty("version.official");
+        var version = revision.split("-")[0];
+        var versions = version.split(".");
+        var major = "0";
+        var minor = "0";
+        var patch = "0";
+        var build = "0";
+        var org = "" + project.getProperty("ivy.organisation");
+        var mgroups = org.split(".");
+        var mgroup = mgroups[mgroups.length-1];
+        var repo = mgroup;
+        var pos = mgroup.lastIndexOf("-internal");
+
+        if (versions.length > 0) {
+          major = versions[0];
+        }
+        if (versions.length > 1) {
+          minor = versions[1];
+        }
+        if (versions.length > 2) {
+          patch = versions[2];
+        }
+        if (official != null ) {
+          var officials = official.split(".");
+          if (officials.length != 4 || !officials[0].equals(major) || !officials[1].equals(minor) || !officials[2].equals(patch) || officials[3].equals("0")) {
+            project.setProperty("version.invalid","true");
+          } else {
+            build = officials[3];
+            project.setProperty("version.simple",version);
+          }
+        } else {
+          project.setProperty("version.simple",revision);
+        }
+        if (pos > 0) {
+          repo = mgroup.slice(0,pos);
+        }
+        project.setProperty("version.major",major);
+        project.setProperty("version.minor",minor);
+        project.setProperty("version.patch",patch);
+        project.setProperty("version.build",build);
+        project.setProperty("scm.repository",repo);
+        project.setProperty("ivy.module.group",mgroup);
+      ]]>
+    </script>
+    <fail message="Invalid official version (Ivy revision mismatch?)">
+      <condition>
+        <isset property="version.invalid"/>
+      </condition>
+    </fail>
+    <property name="version.api" value="${version.major}.${version.minor}"/>
+    <property name="version.dotted" value="${version.major}.${version.minor}.${version.patch}.${version.build}"/>
+    <property name="tar.name" value="${ivy.module.group}-${ivy.module}"/>
+    <property name="jar.name" value="testing-${ivy.module}"/>
+    <xmlproperty file="ivy.xml" prefix="ivyfile" keepRoot="false" collapseAttributes="true"/>
+    <property name="url" value="${ivyfile.info.description.homepage}"/>
+    <property name="description" value="${ivyfile.info.description}"/>
+	<condition property="resolver" value="${com.pslcl.dtf.local.resolver.name}">
+      <isset property="com.pslcl.dtf.local.resolver.name"/>
+    </condition>
+    <property name="resolver" value="local"/>
+    <property name="scm.url" value="https://${scm.host}/scm/${scm.group}/${scm.repository}.git"/>
+    <property name="scm.connection" value="scm:git:${scm.url}"/>
+    <property name="scm.devconnection" value="scm:git:ssh://${scm.host}/${scm.group}/${scm.repository}.git"/>
+	<!-- Generate build info in MD files. -->
+    <copy todir="." overwrite="true" flatten="true">
+      <fileset dir="." includes="*.md.in"/>
+      <filterset>
+        <filter token="PACKAGE_NAME" value="${name}"/>
+        <filter token="PACKAGE_DESC" value="${description}"/>
+        <filter token="PACKAGE_TARNAME" value="${tar.name}"/>
+        <filter token="PACKAGE_VERSION" value="${version.simple}"/>
+        <filter token="PACKAGE_VERSION_FULL" value="${version.dotted}"/>
+        <filter token="PACKAGE_URL" value="${url}"/>
+        <filter token="BUILD_DATE" value="${TODAY}"/>
+        <filter token="BUILD_REPOSITORY" value="${scm.repository}"/>
+        <filter token="BUILD_BRANCH" value="${scm.branch}"/>
+        <filter token="BUILD_PATH" value="${scm.path}"/>
+        <filter token="BUILD_REVISION" value="${scm.revision}"/>
+      </filterset>
+      <globmapper from="*.in" to="*"/>
+    </copy>
+  </target>
+
+  <target name="javac" depends="versions" description="compile the source">
+    <!-- Compile the java code from ${src.dir} into ${build.dir} -->
+    <mkdir dir="${class.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${class.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}">
+      <classpath id="javac-classpath">
+        <fileset dir="${lib.dir}" includes="*.jar" excludes="*-javadoc.jar"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="unjar" depends="versions">
+    <mkdir dir="${unjar.dir}"/>
+    <unjar dest="${unjar.dir}">
+      <fileset dir="${lib.dir}" includes="${includelibs}"/>
+    </unjar>
+  </target>
+
+  <target name="dist-src" depends="clean,versions" description="generate the source distribution">
+    <tar destfile="${tar.name}-${version.simple}.src.tar.gz" compression="gzip" longfile="gnu" basedir="." excludes="${build.dir}/**,**/.*,.*/**,${lib.dir}/**,*.tar.gz,ivy-*.xml,*.jar"/>
+  </target>
+
+  <target name="javac-gen">
+    <mkdir dir="${class.gen.dir}"/>
+    <javac srcdir="src/main/java" destdir="${class.gen.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}">
+      <classpath>
+        <fileset dir="${lib.dir}" includes="*.jar" excludes="*-javadoc.jar"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="dist" depends="javac,unjar,javac-gen" description="generate the distribution">
+    <!-- Create the distribution directory -->
+    <mkdir dir="${dist.dir}"/>
+    <mkdir dir="${bin.dir}"/>
+
+    <!-- Use Apache Ivy to report dependencies -->
+    <ivy:report todir="${dist.dir}" conf="*" graph="false"/>
+
+	<!-- Copy MD files (.in files with text replacements based on build info) -->
+    <copy todir="${doc.dir}/" overwrite="true" flatten="true">
+      <fileset dir="." includes="*.md"/>
+    </copy>
+
+    <!-- Generate a jar file for the library and javadocs -->
+    <jar jarfile="${dist.dir}/lib/${jar.name}-${version.simple}.jar" basedir="${class.dir}">
+      <fileset dir="${unjar.dir}" includes="**"/>
+      <manifest>
+        <attribute name="Specification-Title" value="${tar.name}"/>
+        <attribute name="Specification-Version" value="${version.api}"/>
+        <attribute name="Specification-Vendor" value="${vendor.name}"/>
+        <attribute name="Implementation-Title" value="${tar.name}"/>
+        <attribute name="Implementation-Version" value="${version.dotted}"/> 
+        <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        <attribute name="Build-Date" value="${TODAY}"/>
+        <attribute name="Sealed" value="${jar.sealed}"/>
+      </manifest>
+      <metainf dir="${dist.dir}" includes="COPYING.md"/>
+      <!--service type="path.to.interface" provider="path.to.class"/-->
+    </jar>
+	
+	<ivy:makepom ivyfile="ivy.xml" pomfile="${ivy.module}.pom" conf="dtf_test_generator" artifactPackaging="jar" description="${description}" templatefile="ivy.pom.template"/>
+
+    <tar destfile="${tar.name}-${version.simple}.noarch.tar.gz" compression="gzip" longfile="gnu">
+      <tarfileset dir="${dist.dir}" excludes="bin/*"/>
+    </tar>
+
+    <mkdir dir="${dist.dir}/gen"/>
+    <jar jarfile="${dist.dir}/gen/${jar.name}-${version.simple}.gen.jar" basedir="${class.gen.dir}"/>
+    <tar destfile="${tar.name}-${version.simple}.gen.noarch.tar.gz" compression="gzip" longfile="gnu">
+      <tarfileset dir="${dist.dir}/gen" prefix="lib"/>
+    </tar>
+  </target>
+
+  <target name="clean" description="clean up">
+    <!-- Delete the ${build.dir} and ${dist.dir} directory trees -->
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+    <delete dir="${bin.dir}"/>
+    <delete dir="${lib.dir}"/>
+    <delete>
+      <fileset dir="." includes="*.src.tar.gz,*.noarch.tar.gz,ivy-*.xml,*-sources.jar,*.pom"/>
+    </delete>
+  </target>
+
+  <target name="deliver" depends="versions">
+    <ivy:deliver pubrevision="${version.simple}" deliverpattern="[artifact]-[revision].[ext]" conf="*(public)"/>
+  </target>
+
+  <target name="publish-src" depends="deliver" description="publish the source distribution">
+    <ivy:publish artifactspattern="[artifact].[ext]" resolver="${resolver}" haltonmissing="true" overwrite="true" pubrevision="${version.simple}" srcivypattern="[artifact]-[revision].[ext]" conf="sources">
+      <artifacts pattern="${dist.dir}/[artifact].[ext]"/>
+    </ivy:publish>
+  </target>
+  
+  <target name="dist-sync" depends="versions" if="dist.sync.dir" description="create a folder for files synchronized to the web">
+  </target>
+
+  <target name="publish" depends="deliver" description="publish the binary distribution">
+    <ivy:publish artifactspattern="[artifact].[ext]" resolver="${resolver}" haltonmissing="true" overwrite="true" pubrevision="${version.simple}" srcivypattern="[artifact]-[revision].[ext]" conf="*">
+      <artifacts pattern="${dist.dir}/[artifact].[ext]"/>
+    </ivy:publish>
+  </target>
+</project>

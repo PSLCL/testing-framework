@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+**  Copyright (c) 2015, Panasonic Corporation.
+**
+**  Permission to use, copy, modify, and/or distribute this software for any
+**  purpose with or without fee is hereby granted, provided that the above
+**  copyright notice and this permission notice appear in all copies.
+**
+**  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+**  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+**  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+**  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+**  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+**  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+**  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+-->
+<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd" xmlns:e="http://com.pslcl/dtf-ivy">
+  <info organisation="com.pslcl.dtf" module="sample-generator" revision="1.0">
+    <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
+    <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
+    <description homepage="https://github.com/PSLCL/testing-framework/">
+		Sample generator for the Distributed Test Framework.
+    </description>
+    <e:dtf-merge-info e:merge-to="com.pslcl.dtf#sample-module;1.0"/>
+  </info>
+  <configurations>
+    <conf name="master" visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
+    <conf name="sources" visibility="public" description="this configuration contains the source artifact of this module, if any."/>
+    <conf name="dtf_test_generator" visibility="public" description="test generators"/>
+  </configurations>
+  <publications>
+    <artifact conf="master" name="${ivy.module.group}-${ivy.module}-${version.simple}.noarch" type="dist" ext="tar.gz"/>
+    <artifact conf="sources" name="${ivy.module.group}-${ivy.module}-${version.simple}.src" type="source" ext="tar.gz"/> 
+    <artifact conf="dtf_test_generator" name="${ivy.module.group}-${ivy.module}-${version.simple}.gen.noarch" type="dist" ext="tar.gz"/>
+  </publications>
+  <dependencies>   
+	<dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="1.0" conf="dtf_test_generator->master"/>
+	<dependency org="com.pslcl.dtf" name="dtf-core" rev="1.0" conf="dtf_test_generator->master"/>
+  </dependencies>
+</ivy-module>
