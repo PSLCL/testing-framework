@@ -15,7 +15,7 @@
 -->
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="javabuild" default="dist" basedir=".">
   <!-- set global properties for this build -->
-  <property name="name" value="Distributed Testing Framework Sample Module"/>
+  <property name="name" value="Distributed Testing Framework Sample Test"/>
   <property name="copyright.firstyear" value="2016"/>
   <property name="ant.build.javac.source" value="1.8"/>
   <property name="ant.build.javac.target" value="1.8"/>
@@ -145,14 +145,8 @@
     </copy>
   </target>
 
-  <target name="javac" depends="versions" description="compile the source">
-    <!-- Compile the java code from ${src.dir} into ${build.dir} -->
-    <mkdir dir="${class.dir}"/>
-    <javac srcdir="${src.dir}" destdir="${class.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}">
-      <classpath id="javac-classpath">
-        <fileset dir="${lib.dir}" includes="*.jar" excludes="*-javadoc.jar"/>
-      </classpath>
-    </javac>
+  <target name="show" depends="versions">
+    <echoproperties/>
   </target>
 
   <target name="unjar" depends="versions">
@@ -168,14 +162,14 @@
 
   <target name="javac-gen">
     <mkdir dir="${class.gen.dir}"/>
-    <javac srcdir="src/main/java" destdir="${class.gen.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}">
+    <javac srcdir="generators/src/main/java" destdir="${class.gen.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}">
       <classpath>
         <fileset dir="${lib.dir}" includes="*.jar" excludes="*-javadoc.jar"/>
       </classpath>
     </javac>
   </target>
 
-  <target name="dist" depends="javac,unjar,javac-gen" description="generate the distribution">
+  <target name="dist" depends="unjar,javac-gen" description="generate the distribution">
     <!-- Create the distribution directory -->
     <mkdir dir="${dist.dir}"/>
     <mkdir dir="${bin.dir}"/>
@@ -186,6 +180,11 @@
 	<!-- Copy MD files (.in files with text replacements based on build info) -->
     <copy todir="${doc.dir}/" overwrite="true" flatten="true">
       <fileset dir="." includes="*.md"/>
+    </copy>
+	
+	<!-- Copy test scripts files -->
+    <copy todir="${bin.dir}" overwrite="true" flatten="true">
+      <fileset dir="bin" includes="*"/>
     </copy>
 
     <!-- Generate a jar file for the library and javadocs -->
@@ -205,16 +204,18 @@
       <!--service type="path.to.interface" provider="path.to.class"/-->
     </jar>
 	
-	<ivy:makepom ivyfile="ivy.xml" pomfile="${ivy.module}.pom" conf="dtf_test_generator" artifactPackaging="jar" description="${description}" templatefile="ivy.pom.template"/>
+	<ivy:makepom ivyfile="ivy.${version.simple}.xml" pomfile="${ivy.module}.pom" conf="dtf_test_generator" artifactPackaging="jar" description="${description}" templatefile="ivy.pom.template"/>
 
     <tar destfile="${tar.name}-${version.simple}.noarch.tar.gz" compression="gzip" longfile="gnu">
       <tarfileset dir="${dist.dir}" excludes="bin/*"/>
+      <tarfileset dir="${dist.dir}/bin" prefix="bin" filemode="755"/>
     </tar>
 
     <mkdir dir="${dist.dir}/gen"/>
     <jar jarfile="${dist.dir}/gen/${jar.name}-${version.simple}.gen.jar" basedir="${class.gen.dir}"/>
     <tar destfile="${tar.name}-${version.simple}.gen.noarch.tar.gz" compression="gzip" longfile="gnu">
       <tarfileset dir="${dist.dir}/gen" prefix="lib"/>
+      <tarfileset dir="generators/scripts" prefix="bin" filemode="755"/>
     </tar>
   </target>
 

@@ -1,2 +1,2 @@
-Sample Module
+Sample Test
 ===
