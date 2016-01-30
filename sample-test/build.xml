@@ -186,25 +186,8 @@
     <copy todir="${bin.dir}" overwrite="true" flatten="true">
       <fileset dir="bin" includes="*"/>
     </copy>
-
-    <!-- Generate a jar file for the library and javadocs -->
-    <jar jarfile="${dist.dir}/lib/${jar.name}-${version.simple}.jar" basedir="${class.dir}">
-      <fileset dir="${unjar.dir}" includes="**"/>
-      <manifest>
-        <attribute name="Specification-Title" value="${tar.name}"/>
-        <attribute name="Specification-Version" value="${version.api}"/>
-        <attribute name="Specification-Vendor" value="${vendor.name}"/>
-        <attribute name="Implementation-Title" value="${tar.name}"/>
-        <attribute name="Implementation-Version" value="${version.dotted}"/> 
-        <attribute name="Implementation-Vendor" value="${vendor.name}"/>
-        <attribute name="Build-Date" value="${TODAY}"/>
-        <attribute name="Sealed" value="${jar.sealed}"/>
-      </manifest>
-      <metainf dir="${dist.dir}" includes="COPYING.md"/>
-      <!--service type="path.to.interface" provider="path.to.class"/-->
-    </jar>
 	
-	<ivy:makepom ivyfile="ivy.${version.simple}.xml" pomfile="${ivy.module}.pom" conf="dtf_test_generator" artifactPackaging="jar" description="${description}" templatefile="ivy.pom.template"/>
+	<ivy:makepom ivyfile="ivy.xml" pomfile="${ivy.module}.pom" conf="dtf_test_generator" artifactPackaging="jar" description="${description}" templatefile="ivy.pom.template"/>
 
     <tar destfile="${tar.name}-${version.simple}.noarch.tar.gz" compression="gzip" longfile="gnu">
       <tarfileset dir="${dist.dir}" excludes="bin/*"/>
