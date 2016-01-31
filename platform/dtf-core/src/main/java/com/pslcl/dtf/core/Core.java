@@ -2859,6 +2859,57 @@ public class Core
         return pk;
     }
 
+    public void createInstanceRun(long testInstanceNumber)
+    {
+    	PreparedStatement runStatement = null;
+        Statement templateStatement = null;
+        
+        if (read_only)
+            return;
+        
+        String hash; 
+        ResultSet resultSet = null;
+        try
+        {
+        	templateStatement = connect.createStatement();
+            resultSet = templateStatement.executeQuery("SELECT hash FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance = " + testInstanceNumber);
+            if(resultSet.next()){
+            	hash = new Hash(resultSet.getBytes("hash")).toString();
+            }
+            else{
+            	System.err.println("Cannot find template for test instance " + testInstanceNumber);
+            	return;
+            }
+        } catch(Exception e)
+        {
+            System.err.println(e.getMessage());
+            return;
+        } finally
+        {
+            safeClose(templateStatement);
+        }
+
+        try
+        {
+        	runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
+        	runStatement.setString(1, hash);
+           	runStatement.setNull(2, Types.BOOLEAN);
+           	runStatement.setNull(3, Types.VARCHAR);
+            runStatement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
+            runStatement.setNull(5, Types.TIMESTAMP);
+            runStatement.setNull(6, Types.TIMESTAMP);
+            runStatement.execute();
+        } catch (Exception e)
+        {
+            // TODO: handle
+            System.err.println(e.getMessage());
+        } finally
+        {
+            safeClose(runStatement);
+            runStatement = null;
+        }
+    }
+
     public void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)
     {
         PreparedStatement statement = null;
