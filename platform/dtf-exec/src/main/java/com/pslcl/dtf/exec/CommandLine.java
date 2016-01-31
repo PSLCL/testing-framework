@@ -684,6 +684,12 @@ public class CommandLine
             {
                 manualTestNumber = Long.parseLong(args[2]);                
             	Core core = new Core(manualTestNumber);
+            	String accessKeyID = core.getConfig().sqsAccessKeyID();
+            	String secretKey = core.getConfig().sqsSecretAccessKey();
+            	if(accessKeyID != null && !accessKeyID.isEmpty()){
+	            	System.setProperty("aws.accessKeyId", accessKeyID);
+	            	System.setProperty("aws.secretKey", secretKey);
+	            }
             	SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
             	sqs.init();
             	List<Long> testRuns = new ArrayList<Long>();

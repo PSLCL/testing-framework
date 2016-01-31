@@ -189,6 +189,8 @@ public class Core
         private String shell;
         private String sqs_endpoint;
         private String sqs_queue_name;
+        private String sqs_access_key_id;
+        private String sqs_secret_access_key;
 
         Config()
         {
@@ -214,6 +216,8 @@ public class Core
                 this.shell = (String) engine.eval("config.shell;", binding);
                 this.sqs_endpoint = (String) engine.eval("config.sqs.endpoint;", binding);
                 this.sqs_queue_name = (String) engine.eval("config.sqs.queue_name;", binding);
+                this.sqs_access_key_id = (String) engine.eval("config.sqs.access_key_id;", binding);
+                this.sqs_secret_access_key = (String) engine.eval("config.sqs.secret_access_key;", binding);
             } catch (Exception e)
             {
                 System.err.println("ERROR: Config exception: " + e.getMessage());
@@ -266,6 +270,14 @@ public class Core
 
         public String sqsQueueName(){
         	return sqs_queue_name;
+        }
+        
+        public String sqsAccessKeyID(){
+        	return sqs_access_key_id;
+        }
+
+        public String sqsSecretAccessKey(){
+        	return sqs_secret_access_key;
         }
     }
 

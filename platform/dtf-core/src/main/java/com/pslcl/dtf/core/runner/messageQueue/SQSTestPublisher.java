@@ -9,7 +9,7 @@ import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
 public class SQSTestPublisher {
-	
+
 	private String awsEndpointURL;
 	private AWSCredentialsProvider credentialsProvider;
 	private ClientConfiguration clientConfig;
@@ -20,10 +20,13 @@ public class SQSTestPublisher {
 	/**
 	 * Create a SQSTestPublisher.
 	 * 
-	 * @param awsEndpointURL Specifies the sqs endpoint url
-	 * @param credentialsProvider The def
+	 * @param awsEndpointURL
+	 *            Specifies the sqs endpoint url
+	 * @param credentialsProvider
+	 *            The def
 	 * @param clientConfig
-	 * @param queueName The name of the queue. Must not be null.
+	 * @param queueName
+	 *            The name of the queue. Must not be null.
 	 */
 	public SQSTestPublisher(String awsEndpointURL, AWSCredentialsProvider credentialsProvider, ClientConfiguration clientConfig, String queueName) {
 		this.awsEndpointURL = awsEndpointURL;
@@ -31,26 +34,25 @@ public class SQSTestPublisher {
 		this.clientConfig = clientConfig;
 		this.queueName = queueName;
 	}
-	
+
 	/**
 	 * Initialize the AmazonSQSClient.
 	 */
-	public void init(){
-		if(credentialsProvider == null){
+	public void init() {
+		if (credentialsProvider == null) {
 			credentialsProvider = new DefaultAWSCredentialsProviderChain();
 		}
-		
-		if(clientConfig == null){
+
+		if (clientConfig == null) {
 			client = new AmazonSQSClient(credentialsProvider);
 		} else {
 			client = new AmazonSQSClient(credentialsProvider, clientConfig);
 		}
 		client.setEndpoint(awsEndpointURL);
-		GetQueueUrlRequest urlRequest = new GetQueueUrlRequest()
-		      .withQueueName(queueName);
+		GetQueueUrlRequest urlRequest = new GetQueueUrlRequest().withQueueName(queueName);
 		queueUrl = client.getQueueUrl(urlRequest).getQueueUrl();
 	}
-	
+
 	/**
 	 * Request that a test run be executed by the Test Runner Service.
 	 */
