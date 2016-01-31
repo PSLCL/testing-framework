@@ -13,9 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-/**
- * OpenDOF friendly <code>ExecutorService</code> and <code>ScheduledExecutorService</code> interfaces.
- */
+
 //@Version("1.0")
 //@Export(optional = "provide:=true")
 package com.pslcl.dtf.core.util.executor;

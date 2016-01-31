@@ -37,9 +37,7 @@ import com.pslcl.dtf.core.util.StrH;
 
 /**
  * Command line Interface Base.
- * <p>Provides a base class that command line applications can extend to meet 
- * proposed OpenDOF.org tools work group standards of command structure and help 
- * presentation.  
+ * <p>Provides a base class that command line applications can extend.
  * <p>Apache commmons-cli is used for command line switch handling and switch help
  * presentation.  An optional command structure leading to leaf switches is 
  * supported.  The following switches are reserved for all extending applications
@@ -88,14 +86,14 @@ import com.pslcl.dtf.core.util.StrH;
 public class CliBase extends Thread
 {
     /**  LogFilePathKey. <p>Environment key used to obtain the output log file path. */
-    public static final String LogFilePathKey = "opendof.tools.log-file-path";
+    public static final String LogFilePathKey = "pslcl.dtf.log-file-path";
     /**  LogFileBaseKey. <p>Environment key used to obtain the output log file base path/name to use for rolling appender. */
-    public static final String LogFileBaseKey = "opendof.tools.log-file-base";
+    public static final String LogFileBaseKey = "pslcl.dtf.log-file-base";
     /**  ConfigPathKey. <p>Environment key used to obtain the configuration file. */
-    public static final String ConfigPathKey = "opendof.tools.cli.config";
+    public static final String ConfigPathKey = "pslcl.dtf.cli.config";
     
     /**  DefaultLogPath. <p>Default value used if logging is enabled and <code>LogFilePathKey</code> is not specified. */
-    public static final String DefaultLogPath = "/var/opt/opendof/tools/log/cli.log";
+    public static final String DefaultLogPath = "/var/opt/pslcl/dtf/log/cli.log";
     /**  DefaultMaxHelpWidth. <p>Default commons-cli maxium help width used if not specified. */
     public static final int DefaultMaxHelpWidth = 80;
 

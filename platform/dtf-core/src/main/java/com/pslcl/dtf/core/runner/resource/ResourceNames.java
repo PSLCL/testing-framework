@@ -25,7 +25,6 @@ public class ResourceNames
     ******************************************************************************/    
     public static final String PortalKeyBase = PslclKeyBase + ".portal";
     public static final String PortalHostKey = PortalKeyBase + ".host";
-    public static final String PortalHostDefault = "https://testing.opendof.org";
     
     public static final String PortalContentDirKey = PortalKeyBase + ".content-dir";
     public static final String PortalContentDirDefault = "content";
