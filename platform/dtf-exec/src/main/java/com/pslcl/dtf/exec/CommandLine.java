@@ -655,8 +655,6 @@ public class CommandLine
             }
         }
 
-        System.err.println("WARN: Running tests not supported.");
-
         int runCount = -1;
         boolean manual = false;
         long manualTestNumber = -1;
@@ -664,6 +662,8 @@ public class CommandLine
         boolean help = true;
         if (args[1].compareTo("--manual") != 0)
         {
+
+            System.err.println("WARN: Only manual tests supported. Use the --manual option instead.");
             // not manual mode
             if (args.length == 2)
             {
@@ -681,13 +681,25 @@ public class CommandLine
             manual = true;
             try
             {
-                manualTestNumber = Long.parseLong(args[2]);
-                if (args.length == 4)
+                manualTestNumber = Long.parseLong(args[2]);                
+            	Core core = new Core(manualTestNumber);
+            	List<Long> testRuns = new ArrayList<Long>();
+            	
+                if (args.length == 4){
                     manualTestInstanceNumber = Long.parseLong(args[3]);
+                	testRuns.add(core.createInstanceRun(manualTestInstanceNumber));
+                } else {
+                	for(long testInstance: core.getTestInstances(manualTestNumber)){
+                		testRuns.add(core.createInstanceRun(testInstance));
+                	}                	
+                }            	
+            	
                 help = false;
             } catch (NumberFormatException e)
             {
-                // help true
+                help = true;
+            } catch(Exception e){
+            	System.err.println("Failed to run test " + manualTestNumber + " - " + e);
             }
         }
 
