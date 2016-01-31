@@ -687,12 +687,22 @@ public class CommandLine
             	
                 if (args.length == 4){
                     manualTestInstanceNumber = Long.parseLong(args[3]);
-                	testRuns.add(core.createInstanceRun(manualTestInstanceNumber));
+                    Long existingRun = core.getInstanceRun(manualTestInstanceNumber);
+                    if(existingRun == null){
+                    	testRuns.add(core.createInstanceRun(manualTestInstanceNumber));
+                    } else{
+                    	testRuns.add(existingRun);
+                    }
                 } else {
                 	for(long testInstance: core.getTestInstances(manualTestNumber)){
-                		testRuns.add(core.createInstanceRun(testInstance));
-                	}                	
-                }            	
+                		Long existingRun = core.getInstanceRun(testInstance);
+                        if(existingRun == null){
+                        	testRuns.add(core.createInstanceRun(testInstance));
+                        } else{
+                        	testRuns.add(existingRun);
+                        }
+                	}
+                }
             	
                 help = false;
             } catch (NumberFormatException e)
