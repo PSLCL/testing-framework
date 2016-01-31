@@ -27,6 +27,14 @@ var all = {
     db: env.DTF_TEST_DB_SCHEMA || 'qa_portal'
   },
   
+  // AWS SQS configuration
+  sqs: {
+    endpoint: env.DTF_SQS_ENDPONT || 'https://sqs.us-east-1.amazonaws.com',
+	queue_name: env.DTF_SQS_QUEUE_NAME || '',
+	access_key_id: env.AWS_ACCESS_KEY_ID || '',
+	secret_access_key: env.AWS_SECRET_ACCESS_KEY || ''
+  },
+  
   home_dir: home_dir,
   artifacts_dir: env.DTF_TEST_ARTIFACTS || home_dir + '/artifacts',
   generators_dir: env.DTF_TEST_GENERATORS || home_dir + '/generators',
@@ -62,6 +70,7 @@ var configs = {
   development: {
     enable_livereload: true,
     mysql: all.mysql,
+	sqs: all.sqs,
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
     'synchronize_schedule': all.synchronize_schedule,
@@ -79,6 +88,7 @@ var configs = {
   production: {
     enable_livereload: false,
     mysql: all.mysql,
+	sqs: all.sqs,
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
     'synchronize_schedule': all.synchronize_schedule,
