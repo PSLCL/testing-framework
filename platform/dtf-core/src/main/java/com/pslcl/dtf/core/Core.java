@@ -2673,6 +2673,30 @@ public class Core
             statement = null;
         }
     }
+    
+    private List<Long> getTestInstances(long pk_test) throws Exception{
+        Statement find_test_instance = null;
+        ResultSet test_instances = null;
+        List<Long> testInstanceList = new ArrayList<Long>();
+        
+        try
+        {
+        	find_test_instance = connect.createStatement();
+        	test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test);
+        	while (test_instances.next())
+            {
+        		testInstanceList.add(test_instances.getLong("pk_test_instance"));
+            }
+        } catch(Exception e)
+        {
+            System.err.println(e.getMessage());
+            throw e;
+        } finally
+        {
+            safeClose(find_test_instance);
+        }
+        return testInstanceList;
+    }
 
     private long findTestInstance(TestInstance sync, long pk_test)
     {
@@ -2859,13 +2883,13 @@ public class Core
         return pk;
     }
 
-    public void createInstanceRun(long testInstanceNumber)
+    public long createInstanceRun(long testInstanceNumber) throws Exception
     {
     	PreparedStatement runStatement = null;
         Statement templateStatement = null;
         
         if (read_only)
-            return;
+            throw new Exception("Database connection is read only.");
         
         String hash; 
         ResultSet resultSet = null;
@@ -2878,12 +2902,12 @@ public class Core
             }
             else{
             	System.err.println("Cannot find template for test instance " + testInstanceNumber);
-            	return;
+            	throw new Exception("Cannot find template for test instance " + testInstanceNumber);
             }
         } catch(Exception e)
         {
             System.err.println(e.getMessage());
-            return;
+            throw e;
         } finally
         {
             safeClose(templateStatement);
@@ -2898,16 +2922,23 @@ public class Core
             runStatement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
             runStatement.setNull(5, Types.TIMESTAMP);
             runStatement.setNull(6, Types.TIMESTAMP);
-            runStatement.execute();
+            if(runStatement.execute()){
+            	resultSet = runStatement.getResultSet();
+            	if(resultSet.next()){
+                	return resultSet.getLong("pk_run");
+                }
+            }
         } catch (Exception e)
         {
             // TODO: handle
             System.err.println(e.getMessage());
+            throw e;
         } finally
         {
             safeClose(runStatement);
             runStatement = null;
         }
+        throw new Exception("Failed to add new run for test instance " + testInstanceNumber); 
     }
 
     public void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)
