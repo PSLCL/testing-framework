@@ -2674,7 +2674,7 @@ public class Core
         }
     }
     
-    private List<Long> getTestInstances(long pk_test) throws Exception{
+    public List<Long> getTestInstances(long pk_test) throws Exception{
         Statement find_test_instance = null;
         ResultSet test_instances = null;
         List<Long> testInstanceList = new ArrayList<Long>();
