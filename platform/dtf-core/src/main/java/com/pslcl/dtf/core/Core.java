@@ -2882,6 +2882,28 @@ public class Core
 
         return pk;
     }
+    
+    public Long getInstanceRun(long testInstanceNumber) throws Exception
+    {
+        Statement statement = null; 
+        ResultSet resultSet = null;
+        try
+        {
+        	statement = connect.createStatement();
+            resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
+            if(resultSet.next()){
+            	return resultSet.getLong("fk_run");
+            }
+            return null;
+        } catch(Exception e)
+        {
+            System.err.println(e.getMessage());
+            throw e;
+        } finally
+        {
+            safeClose(statement);
+        }
+    }
 
     public long createInstanceRun(long testInstanceNumber) throws Exception
     {
