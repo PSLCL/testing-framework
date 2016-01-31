@@ -55,8 +55,12 @@ public class QAPortalAccess {
 	 * 
 	 * @param runnerConfig
 	 */
-	void init(RunnerConfig runnerConfig) {
-		this.hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey, "https://testing.opendof.org");
+	void init(RunnerConfig runnerConfig) throws Exception {
+		this.hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey);
+		if(hostQAPortal == null){
+			this.log.error("Missing required property: " + RunnerQAPortalHostKey);
+			throw new Exception("Missing required property: " + RunnerQAPortalHostKey);
+		}
 	}
 	
 	/**
