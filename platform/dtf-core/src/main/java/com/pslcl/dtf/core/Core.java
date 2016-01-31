@@ -187,6 +187,8 @@ public class Core
         private String artifacts_dir;
         private String generators_dir;
         private String shell;
+        private String sqs_endpoint;
+        private String sqs_queue_name;
 
         Config()
         {
@@ -210,6 +212,8 @@ public class Core
                 this.artifacts_dir = (String) engine.eval("config.artifacts_dir;", binding);
                 this.generators_dir = (String) engine.eval("config.generators_dir;", binding);
                 this.shell = (String) engine.eval("config.shell;", binding);
+                this.sqs_endpoint = (String) engine.eval("config.sqs.endpoint;", binding);
+                this.sqs_queue_name = (String) engine.eval("config.sqs.queue_name;", binding);
             } catch (Exception e)
             {
                 System.err.println("ERROR: Config exception: " + e.getMessage());
@@ -220,7 +224,7 @@ public class Core
         {
             return db_host;
         }
-
+        
         public Integer dbPort()
         {
             return db_port;
@@ -254,6 +258,14 @@ public class Core
         public String shell()
         {
             return shell;
+        }
+        
+        public String sqsEndpoint(){
+        	return sqs_endpoint;
+        }
+
+        public String sqsQueueName(){
+        	return sqs_queue_name;
         }
     }
 
