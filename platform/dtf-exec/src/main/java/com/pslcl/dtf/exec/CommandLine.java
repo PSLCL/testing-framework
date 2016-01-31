@@ -56,6 +56,7 @@ import com.pslcl.dtf.core.generator.Generator;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.resource.Machine;
 import com.pslcl.dtf.core.generator.template.Template;
+import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
 
 public class CommandLine
 {
@@ -653,7 +654,7 @@ public class CommandLine
             {
                 runHelp(); // exits app
             }
-        }
+        }        
 
         int runCount = -1;
         boolean manual = false;
@@ -683,6 +684,8 @@ public class CommandLine
             {
                 manualTestNumber = Long.parseLong(args[2]);                
             	Core core = new Core(manualTestNumber);
+            	SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
+            	sqs.init();
             	List<Long> testRuns = new ArrayList<Long>();
             	
                 if (args.length == 4){
@@ -702,6 +705,10 @@ public class CommandLine
                         	testRuns.add(existingRun);
                         }
                 	}
+                }
+                
+                for(Long runID: testRuns){
+                	sqs.publishTestRunRequest(runID);
                 }
             	
                 help = false;

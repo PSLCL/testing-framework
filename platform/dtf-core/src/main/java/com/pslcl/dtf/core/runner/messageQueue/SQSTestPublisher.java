@@ -54,8 +54,8 @@ public class SQSTestPublisher {
 	/**
 	 * Request that a test run be executed by the Test Runner Service.
 	 */
-	public void publishTestRunRequest(long runid) throws AmazonClientException {
-		SendMessageRequest sendRequest = new SendMessageRequest(queueUrl, Long.toString(runid));
+	public void publishTestRunRequest(long runID) throws AmazonClientException {
+		SendMessageRequest sendRequest = new SendMessageRequest(queueUrl, Long.toString(runID));
 		client.sendMessage(sendRequest);
 	}
 }
