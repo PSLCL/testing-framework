@@ -45,7 +45,8 @@ in 'server/config/config.js'.
  - MYSQL_PASS =
  - MYSQL_DB   = qa_portal
 
-These can be added to the command line call to run the server, or added to `~/.bash_profile`.
+These can be added to the command line call to run the server, or added to `~/.bash_profile`. A sample config.js
+may be copied from 'example-config/config.js'.
 
 ## Running the server
 Windows does not fully support npm scripts, and so the process to launch a development server differ
