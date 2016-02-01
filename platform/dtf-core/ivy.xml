@@ -39,6 +39,7 @@ The Distributed Test Framework common interfaces and core implementation.
     <artifact conf="dist" name="${ivy.module.group}-${ivy.module}-${version.simple}.noarch" type="dist" ext="tar.gz"/>
     <artifact conf="master" name="${jar.name}-${version.simple}"/>
     <artifact conf="javadoc" name="${jar.name}-${version.simple}-javadoc"/>
+    <dependency org="org.apache.commons" name="commons-compress" rev="1.10"/>
   </publications>
   <dependencies>
     <dependency org="commons-daemon" name="commons-daemon" rev="[1.0.15,2)" conf="compile->master,compile;javadoc"/>
