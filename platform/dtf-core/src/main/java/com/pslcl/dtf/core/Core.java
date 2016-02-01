@@ -2916,7 +2916,10 @@ public class Core
         	statement = connect.createStatement();
             resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
             if(resultSet.next()){
-            	return resultSet.getLong("fk_run");
+            	
+            	long result = resultSet.getLong("fk_run");
+            	if(!resultSet.wasNull())
+            		return result;
             }
             return null;
         } catch(Exception e)
