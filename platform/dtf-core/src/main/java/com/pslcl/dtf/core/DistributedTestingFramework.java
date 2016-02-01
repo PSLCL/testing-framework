@@ -694,24 +694,15 @@ public class DistributedTestingFramework
             	
                 if (args.length == 4){
                     manualTestInstanceNumber = Long.parseLong(args[3]);
-                    Long existingRun = core.getInstanceRun(manualTestInstanceNumber);
-                    if(existingRun == null){
-                    	testRuns.add(core.createInstanceRun(manualTestInstanceNumber));
-                    } else{
-                    	testRuns.add(existingRun);
-                    }
+                	testRuns.add(core.createInstanceRun(manualTestInstanceNumber));
                 } else {
                 	for(long testInstance: core.getTestInstances(manualTestNumber)){
-                		Long existingRun = core.getInstanceRun(testInstance);
-                        if(existingRun == null){
-                        	testRuns.add(core.createInstanceRun(testInstance));
-                        } else{
-                        	testRuns.add(existingRun);
-                        }
+                    	testRuns.add(core.createInstanceRun(testInstance));
                 	}
                 }
                 
                 for(Long runID: testRuns){
+                	System.out.println("Queueing test run: " + runID);
                 	sqs.publishTestRunRequest(runID);
                 }
             	
