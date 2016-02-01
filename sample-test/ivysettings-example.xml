@@ -1,0 +1,13 @@
+<ivysettings>
+  <property name="com.pslcl.dtf.url" override="false" value="http://localhost/repo"/>
+  <settings defaultResolver="default" />
+  <include file="${com.pslcl.dtf.url}/ivysettings.pslcl-dtf.xml"/>
+  <include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>
+  <resolvers>
+    <chain name="default" returnFirst="true">
+      <resolver ref="com.pslcl.dtf"/>
+      <resolver ref="public"/>
+    </chain>
+  </resolvers>
+
+</ivysettings>
