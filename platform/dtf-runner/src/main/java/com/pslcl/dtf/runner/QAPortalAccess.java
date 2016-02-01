@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
-public class QAPortalAccess {
+public class QAPortalAccess { 
 
     private static final String RunnerQAPortalHostKey = "pslcl.dtf.runner.qa.portal.host";
 
