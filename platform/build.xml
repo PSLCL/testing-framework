@@ -34,12 +34,6 @@
 				<target name="publish-src"/>
 				<target name="publish"/>
 			</subant>
-			<subant inheritall="true" inheritrefs="true" buildpath="dtf-exec">
-				<target name="dist-src"/>
-				<target name="dist"/>
-				<target name="publish-src"/>
-				<target name="publish"/>
-			</subant>
 			<subant inheritall="true" inheritrefs="true" buildpath="dtf-ivy-artifact">
 				<target name="dist-src"/>
 				<target name="dist"/>
