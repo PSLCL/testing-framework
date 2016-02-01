@@ -131,7 +131,7 @@ public class Sqs extends MessageQueueBase {
             SQSConnectionFactory connectionFactory =  SQSConnectionFactory.builder()
                     .withClientConfiguration(awsClientConfig.clientConfig)
                     .withAWSCredentialsProvider(awsClientConfig.providerChain)
-                    .withRegion(Region.getRegion(Regions.US_WEST_2)) // REVIEW: hard coding
+                    .withRegion(awsClientConfig.region)
                     .build();
             connection = connectionFactory.createConnection();
             
