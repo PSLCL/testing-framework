@@ -1,0 +1,23 @@
+<ivysettings>
+  <property name="com.pslcl.dtf.ivy.url" override="false" value="${com.pslcl.dtf.url}"/>
+  <property name="com.pslcl.dtf.ivy.pattern" override="false" value="[organisation]/[module]/[revision]/ivy.xml"/>
+  <property name="com.pslcl.dtf.artifact.url" override="false" value="${com.pslcl.dtf.url}"/>
+  <property name="com.pslcl.dtf.artifact.pattern" override="false" value="[organisation]/[module]/[revision](/[type]s)/[artifact]-[revision](-[classifier]).[ext]"/>
+  <property name="com.pslcl.dtf.artifact.pattern.old" override="false" value="[organisation]/[module]/[revision]/[type]s/[artifact].[ext]"/>
+  <property name="com.pslcl.dtf.cache.ttl" override="false" value="15m"/>
+  <caches>
+    <cache name="com.pslcl.dtf.cache" ivyPattern="${com.pslcl.dtf.ivy.pattern}" artifactPattern="${com.pslcl.dtf.artifact.pattern}">
+      <ttl duration="${com.pslcl.dtf.cache.ttl}"/>
+    </cache>
+  </caches>
+  <resolvers>
+    <url name="com.pslcl.dtf" descriptor="required" checksums="sha1,md5" cache="com.pslcl.dtf.cache">
+      <ivy pattern="${com.pslcl.dtf.ivy.url}/${com.pslcl.dtf.ivy.pattern}"/>
+      <artifact pattern="${com.pslcl.dtf.artifact.url}/${com.pslcl.dtf.artifact.pattern}"/>
+      <artifact pattern="${com.pslcl.dtf.artifact.url}/${com.pslcl.dtf.artifact.pattern.old}"/>
+    </url>
+  </resolvers>
+  <modules>
+    <module organisation="com.pslcl.dtf" name="*" resolver="com.pslcl.dtf" conflict-manager="latest-compatible" resolveMode="dynamic"/>
+  </modules>
+</ivysettings>
