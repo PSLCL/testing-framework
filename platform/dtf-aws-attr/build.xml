@@ -39,10 +39,11 @@
   <property name="dist.dir" value="${build.dir}/dist"/>
   <property name="unjar.dir" value="${build.dir}/unjar"/>
   <property name="javadoc.defaultexcludes" value="true"/>
-  <property name="vendor.name" value="OpenDOF Project, Inc."/>
-  <property name="vendor.email" value="admin@opendof.org"/>
-  <property name="vendor.url" value="https://opendof.org/"/>
-  <property name="copyright" value="Copyright (c) ${vendor.name}"/>
+  <property name="vendor.name" value="Panasonic Salt Lake City Laboratory"/>
+  <property name="vendor.email" value=""/>
+  <property name="vendor.url" value="https://pslcl.com/"/>
+  <property name="copyright.owner" value="Panasonic Corporation"/>
+  <property name="copyright" value="Copyright (c) ${copyright.owner}"/>
 
   <target name="init">
     <tstamp>

@@ -18,7 +18,7 @@
   <info organisation="com.pslcl.dtf" module="dtf-aws-resource" revision="1.0">
     <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
     <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
-    <description homepage="https://opendof.org/">
+    <description homepage="https://github.com/PSLCL/testing-framework/">
 The Distributed Test Framework AWS Resources implementation.
     </description>
   </info>
