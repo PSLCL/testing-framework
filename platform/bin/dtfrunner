@@ -1,0 +1,16 @@
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $DIR/..
+
+CP="lib/*:config"
+CONFIG=config/runner.properties
+
+if [[ `uname` =~ ^CYGWIN.* ]]; then
+    CP=`cygpath -w -p $CP`
+fi
+
+if [[ `uname` =~ ^MINGW.* ]]; then
+    CP=${CP//:/;}
+fi
+
+
+/usr/bin/jsvc -cp "$CP" com.pslcl.dtf.runner.RunnerService -c $CONFIG $@ 
