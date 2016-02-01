@@ -23,7 +23,7 @@ var env = process.env.NODE_ENV || 'production';
 if ( env == 'production' ) {
     var job = new CronJob(config.synchronize_schedule, function() {
         console.log('Synchronize starting...');
-        var parameters = ['-cp', path.join('platform','lib','*'), 'com.pslcl.dtf.exec.CommandLine', 'synchronize' ];
+        var parameters = ['-cp', path.join('platform','lib','*'), 'com.pslcl.dtf.core.DistributedTestingFramework', 'synchronize' ];
         if ( config.prune != null ) {
             parameters.push( '--prune' );
             parameters.push( '' + config.prune );
