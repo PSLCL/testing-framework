@@ -184,7 +184,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             {
                 DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
-                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.ShuttingDown)
+                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
                 {
                     synchronized (reservedResource)
                     {
