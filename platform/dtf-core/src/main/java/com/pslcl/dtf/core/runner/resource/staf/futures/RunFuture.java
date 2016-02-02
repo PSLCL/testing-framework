@@ -152,25 +152,32 @@ public class RunFuture implements Callable<RunnableProgram>
          * @param maxDelayUnit
          * @return
          */
-        public static TimeoutData getTimeoutData(long targetValue, TimeUnit targetUnit, int targetMaxDelay, TimeUnit targetMaxDelayUnit)
+        public static TimeoutData getTimeoutData(long targetValue, TimeUnit targetUnit, int targetMaxDelay, TimeUnit targetMaxDelayUnit, long minMs)
         {
             long targetMs = TimeUnit.MILLISECONDS.convert(targetValue, targetUnit);
             if (targetMs < 1401)
                 return new TimeoutData(3, 1, 1400);
             long targetMaxDelayMs = TimeUnit.MILLISECONDS.convert(targetMaxDelay, targetMaxDelayUnit);
             long totalTime = 0;
-            int count = 0;
+            int count = -1;
+            boolean done = false;
             do
             {
                 ++count;
-                double power = Math.pow(2, count);
-                power *= 100; 
-                if (power > Long.MAX_VALUE)
-                    power = Long.MAX_VALUE;
-                long delay = (long) power;
-//                long delay = ((long) Math.pow(2, count) * 100L);
-                long nextDelay = ((long) Math.pow(2, count + 1) * 100L);
-                delay = Math.min(delay, targetMaxDelayMs);
+                long delay = targetMaxDelayMs;
+                long nextDelay = 0;
+                if(!done)
+                {
+                    delay = ((long) Math.pow(2, count) * minMs);
+                    nextDelay = ((long) Math.pow(2, count + 1) * minMs);
+                    if(delay > targetMaxDelayMs)
+                    {
+                        delay = targetMaxDelayMs;
+                        done = true;
+                    }
+                }
+//                long nextDelay = ((long) Math.pow(2, count + 1) * 100L);
+//                delay = Math.min(delay, targetMaxDelayMs);
                 totalTime += delay;
                 long nextTotalTime = totalTime + nextDelay; 
                 if(nextTotalTime >= targetMs -1)
@@ -179,7 +186,7 @@ public class RunFuture implements Callable<RunnableProgram>
                         targetMaxDelayMs = (int)delay;
                 }
                 if (totalTime >= targetMs - 1)
-                    return new TimeoutData(count+1, (int) delay, totalTime);
+                    return new TimeoutData(count, (int) delay, totalTime);
             } while (true);
         }
 
@@ -189,55 +196,9 @@ public class RunFuture implements Callable<RunnableProgram>
             format.ttl("\n",getClass().getSimpleName(), ":");
             format.level.incrementAndGet();
             format.ttl("maxRetries: ", maxRetries);
-            format.ttl("maxDelay: ", maxDelay, " (", scaleMilliSeconds(maxDelay), ")");
-            format.ttl("totalTime: ", totalTime, " (",scaleMilliSeconds(totalTime), ")");
+            format.ttl("maxDelay: ", maxDelay, " (", StrH.scaleMilliSeconds(maxDelay), ")");
+            format.ttl("totalTime: ", totalTime, " (",StrH.scaleMilliSeconds(totalTime), ")");
             return format.toString();
-        }
-        
-        public static String scaleMilliSeconds(long value)
-        {
-    /*
-                    about max               about min
-    ns:              999                            1
-    mico:         999222                         1222
-    ms:        999111222                      1111222
-    sec:     59000111222                   1000111222
-    min:   3633000111222                  60000111222
-    hr:   86400000000000                3600000111222
-    */
-            value *= 1000000;
-            if(value < 0)
-                return "0";
-            
-            if(value < 1000)
-            {// nano seconds
-                return "" + value + "ns";
-            }
-            if(value < 1000000)
-            {// micro seconds
-                return "" + (value / 1000.0) + "micos";
-            }
-            
-            if(value < 1000000000)
-            {// milli seconds
-                return "" + (value / 1000000.0) + "ms";
-            }
-            
-            if(value < 60000000000L)
-            {// seconds
-                return "" + (value / 1000000000.0) + "sec";
-            }
-            
-            if(value < 3600000000000L)
-            {// minutes
-                return "" + (value / 60000000000.0) + "min";
-            }
-            
-            if(value < 86400000000000L)
-            {// hours
-                return "" + (value / 3600000000000.0) + "hr";
-            }
-            return "" + (value / 3600000000000.0) + "hr";
         }
     }
 }

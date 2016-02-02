@@ -15,6 +15,7 @@
  */
 package com.pslcl.dtf.resource.aws;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,14 +43,17 @@ public class ProgressiveDelay
     private final Logger log;
     private final AtomicInteger count;
     private final AtomicLong totalTime;
+    private final AtomicBoolean maxDelayHit;
     private final ProgressiveDelayData pdelayData;
     
     public ProgressiveDelay(ProgressiveDelayData pdelayData)
     {
         log = LoggerFactory.getLogger(getClass());
         this.pdelayData = pdelayData;
-        this.count = new AtomicInteger(-1);
-        this.totalTime = new AtomicLong(0);
+        count = new AtomicInteger(-1);
+        totalTime = new AtomicLong(0);
+        maxDelayHit = new AtomicBoolean(false);
+        
     }
     
     public void reset()
@@ -62,13 +66,16 @@ public class ProgressiveDelay
         int cnt = count.incrementAndGet();
         if(cnt >= pdelayData.maxRetries)
             return;  // called by handleException
-        double power = Math.pow(2, cnt);
-        power *= 100; 
-        if (power > Long.MAX_VALUE)
-            power = Long.MAX_VALUE;
-        long delay = (long) power;
-//        long delay = ((long) Math.pow(2, cnt) * 100L);
-        delay = Math.min(delay, pdelayData.maxDelay);
+        long delay = pdelayData.maxDelay;
+        if(!maxDelayHit.get())
+        {
+            delay = ((long) Math.pow(2, cnt) * 100L);
+            if(delay > pdelayData.maxDelay)
+            {
+                delay = pdelayData.maxDelay;
+                maxDelayHit.set(true);
+            }
+        }
         log.debug("count: " + cnt + " delay: " + delay + " totalwait: " + StrH.scaleMilliSeconds(totalTime.get()));
         try
         {
