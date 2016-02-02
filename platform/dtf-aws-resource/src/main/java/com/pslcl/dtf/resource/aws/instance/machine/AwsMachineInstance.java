@@ -17,12 +17,13 @@ package com.pslcl.dtf.resource.aws.instance.machine;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 
 import com.amazonaws.services.ec2.model.Instance;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
-import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.exception.FatalServerTimeoutException;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
@@ -35,15 +36,16 @@ import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.PingFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.RunFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
+import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
+import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 
 @SuppressWarnings("javadoc")
 public class AwsMachineInstance implements MachineInstance
 {
     private final MachineReservedResource reservedResource;
-    public final ResourceDescription resource;
     public final Instance ec2Instance;
     public final MachineConfigData mconfig;
     public final RunnerConfig rconfig;
@@ -51,7 +53,6 @@ public class AwsMachineInstance implements MachineInstance
     public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
         this.reservedResource = reservedResource;
-        this.resource = reservedResource.resource; 
         this.mconfig = mconfig;
         this.rconfig = rconfig;
         ec2Instance = reservedResource.ec2Instance;
@@ -60,13 +61,13 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public String getName()
     {
-        return resource.getName();
+        return reservedResource.resource.getName();
     }
 
     @Override
     public Map<String, String> getAttributes()
     {
-        Map<String, String> map = resource.getAttributes();
+        Map<String, String> map = reservedResource.resource.getAttributes();
         synchronized (map)
         {
             return new HashMap<String, String>(map);
@@ -76,7 +77,7 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public void addAttribute(String key, String value)
     {
-        Map<String, String> map = resource.getAttributes();
+        Map<String, String> map = reservedResource.resource.getAttributes();
         synchronized (map)
         {
             map.put(key, value);
@@ -86,20 +87,20 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public ResourceProvider getResourceProvider()
     {
-        return resource.getCoordinates().getProvider();
+        return reservedResource.resource.getCoordinates().getProvider();
     }
 
     @Override
     public ResourceCoordinates getCoordinates()
     {
-        return resource.getCoordinates();
+        return reservedResource.resource.getCoordinates();
     }
 
     @Override
     public Future<CableInstance> connect(NetworkInstance network)// throws IncompatibleResourceException
     {
         AwsNetworkInstance instance = (AwsNetworkInstance) network;
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, resource.getCoordinates());
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
         return  instance.runnerConfig.blockingExecutor.submit(new ConnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
 
@@ -149,10 +150,42 @@ public class AwsMachineInstance implements MachineInstance
         cmdData.setHost(ec2Instance.getPublicIpAddress());
         cmdData.setWait(true);
         
-        PingFuture pingFuture = new PingFuture(runnableProgram);
-        Integer rc = reservedResource.provider.config.blockingExecutor.submit(pingFuture).get();
-        if(rc == null || rc != 0)
-            throw new Exception();
+        //@formatter:off
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(
+                        (AwsResourceProvider)reservedResource.resource.getCoordinates().getProvider(), 
+                        reservedResource.resource.getCoordinates());
+        //@formatter:on
+        pdelayData.maxDelay = mconfig.ec2MaxDelay;
+        pdelayData.maxRetries = mconfig.ec2MaxRetries;
+        pdelayData.preFixMostName = mconfig.resoucePrefixName;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "stafPing");
+        do
+        {
+            if (reservedResource.bindFutureCanceled.get())
+                throw new CancellationException();
+            try
+            {
+                PingFuture pingFuture = new PingFuture(runnableProgram);
+                Integer rc = reservedResource.provider.config.blockingExecutor.submit(pingFuture).get();
+                if(rc != null && rc == 0)
+                    break;
+                pdelay.retry(msg);
+            }catch(FatalServerTimeoutException fstoe)
+            {
+                throw fstoe;
+            }
+            catch (Exception e)
+            {
+                try
+                {
+                    pdelay.retry(msg);
+                }catch(FatalServerTimeoutException fstoe)
+                {
+                    throw fstoe;
+                }
+            }
+        } while (true);
         DeployFuture deployFuture = new DeployFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, partialDestPath, url, windows);
         return reservedResource.provider.config.blockingExecutor.submit(deployFuture);
     }
