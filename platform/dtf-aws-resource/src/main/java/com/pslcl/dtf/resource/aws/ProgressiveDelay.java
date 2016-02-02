@@ -59,6 +59,8 @@ public class ProgressiveDelay
     public void reset()
     {
         count.set(-1);
+        totalTime.set(0);
+        maxDelayHit.set(false);
     }
     
     public void retry(String message) throws FatalResourceException

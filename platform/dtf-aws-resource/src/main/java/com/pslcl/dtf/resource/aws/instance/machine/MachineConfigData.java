@@ -42,6 +42,7 @@ public class MachineConfigData
     public volatile String winUserData;
     public volatile String linuxSandboxPath;
     public volatile String winSandboxPath;
+    public volatile int stallReleaseMinutes;   
     
     private MachineConfigData()
     {
@@ -64,6 +65,7 @@ public class MachineConfigData
         format.ttl(pdelayData.coord.toString(format));
         data.ec2MaxDelay = Integer.parseInt(getAttribute(InstanceNames.Ec2MaxDelayKey, ""+defaultData.ec2MaxDelay, resource, format));
         data.ec2MaxRetries = Integer.parseInt(getAttribute(InstanceNames.Ec2MaxRetriesKey, ""+defaultData.ec2MaxRetries, resource, format));
+        data.stallReleaseMinutes = Integer.parseInt(getAttribute(InstanceNames.Ec2StallReleaseKey, ""+defaultData.stallReleaseMinutes, resource, format));
         data.iamArn = getAttribute(InstanceNames.Ec2IamArnKey, null, resource, format);
         data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, null, resource, format);
         data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, defaultData.keyName, resource, format);
@@ -88,6 +90,7 @@ public class MachineConfigData
         config.initsb.level.incrementAndGet();
         data.ec2MaxDelay = Integer.parseInt(getAttribute(config, InstanceNames.Ec2MaxDelayKey, InstanceNames.Ec2MaxDelayDefault));
         data.ec2MaxRetries = Integer.parseInt(getAttribute(config, InstanceNames.Ec2MaxRetriesKey, InstanceNames.Ec2MaxRetriesDefault));
+        data.stallReleaseMinutes = Integer.parseInt(getAttribute(config, InstanceNames.Ec2StallReleaseKey, InstanceNames.Ec2StallReleaseDefault));
         data.iamArn = getAttribute(config, InstanceNames.Ec2IamArnKey, null);
         data.iamName = getAttribute(config, InstanceNames.Ec2IamNameKey, null);
         data.keyName = getAttribute(config, InstanceNames.Ec2KeyPairNameKey, null);

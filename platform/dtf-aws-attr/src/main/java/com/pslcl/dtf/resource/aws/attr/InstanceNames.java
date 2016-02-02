@@ -120,8 +120,11 @@ public class InstanceNames
     public static final String Ec2IamNameKey = InstanceKeyBase + ".max-retries";
     public static final String Ec2KeyPairNameKey = InstanceKeyBase + ".keypair-name";
     
+    public static final String Ec2StallReleaseKey = InstanceKeyBase + ".stall-release";
+    
     public static final String Ec2MaxDelayDefault = longMaxDelay;
     public static final String Ec2MaxRetriesDefault = longMaxRetries;
+    public static final String Ec2StallReleaseDefault = "50"; // in minutes
     
     public static List<String> getKeys()
     {
