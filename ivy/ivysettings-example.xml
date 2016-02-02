@@ -1,19 +1,11 @@
 <ivysettings>
   <property name="dtf.dir" value="${ivy.settings.dir}/.."/>
-  <property name="com.pslcl.dtf.url" override="false" value="http://localhost/repo"/>
-  <settings defaultResolver="default" />
-  <include file="${com.pslcl.dtf.url}/ivysettings.pslcl-dtf.xml"/>
-  <include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>
+  <settings defaultResolver="local" />
+  <caches  defaultCacheDir="${dtf.dir}/ivy/repo" checkUpToDate="false" ivyPattern="[organisation]/[module]/[revision]/ivy(.[platform]).xml" artifactPattern="[organisation]/[module]/[revision](/[platform])/[type]s/[artifact].[ext]"/>
   <resolvers>
     <filesystem name="local" descriptor="required">
       <ivy pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision]/ivy(.[platform]).xml"/>
       <artifact pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision](/[platform])/[type]s/[artifact].[ext]"/>
     </filesystem>
-
-    <chain name="default" returnFirst="true">
-      <resolver ref="com.pslcl.dtf"/>
-      <resolver ref="public"/>
-    </chain>
   </resolvers>
-
 </ivysettings>
