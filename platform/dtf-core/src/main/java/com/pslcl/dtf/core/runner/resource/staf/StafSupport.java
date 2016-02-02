@@ -29,6 +29,7 @@ public class StafSupport
 {
     public final static String StafHandleName = "dtf-staf-handle";
     public final static String ProcessService = "process";
+    public final static String PingService = "ping";
     public final static String ProcessRequest = "start shell command ";
     public final static String ServiceReturnCode = "Return Code:";
 
@@ -73,9 +74,11 @@ public class StafSupport
                     log.debug(stopResult.toString(format).toString());
                 else
                 {
-                    if(resultParse)
+                    if(resultParse && format != null)
+                    {
                         format.ttl("\nStafRunnableProgram failed to parse the result");
-                    log.debug(format.toString());
+                        log.debug(format.toString());
+                    }
                 }
             }
         }
@@ -114,9 +117,11 @@ public class StafSupport
                     log.debug(freeResult.toString(format).toString());
                 else
                 {
-                    if(resultParse)
+                    if(resultParse && format != null)
+                    {
                         format.ttl("\nStafRunnableProgram failed to parse the result");
-                    log.debug(format.toString());
+                        log.debug(format.toString());
+                    }
                 }
             }
         }
@@ -151,13 +156,46 @@ public class StafSupport
                     log.debug(queryResult.toString(format).toString());
                 else
                 {
-                    if(resultParse)
+                    if(resultParse && format != null)
+                    {
                         format.ttl("\nStafRunnableProgram failed to parse the result");
-                    log.debug(format.toString());
+                        log.debug(format.toString());
+                    }
                 }
             }
         }
         return queryResult;
+    }
+    
+    public static STAFResult processPing(StafRunnableProgram runnableProg) throws Exception
+    {
+        TabToLevel format = null;
+        if (log.isDebugEnabled())
+        {
+            format = new TabToLevel();
+            format.ttl("\n", StafSupport.class.getSimpleName(), ".processPing:");
+            format.level.incrementAndGet();
+            format.ttl("stafCmd = ", PingService + " " + PingService);
+        }
+        
+        STAFResult result = null;
+        try
+        {
+           result = StafSupport.request(runnableProg.getCommandData().getHost(), PingService, PingService, format);
+        }finally
+        {
+            if (log.isDebugEnabled())
+            {
+                if(result != null)
+                    log.debug(result.toString());
+                else
+                {
+                    format.ttl("\nPing Ping failed");
+                    log.debug(format.toString());
+                }
+            }
+        }
+        return result;
     }
     
     public static StafRunnableProgram issueProcessShellRequest(ProcessCommandData commandData) throws Exception

@@ -135,13 +135,13 @@ public class DeployFuture implements Callable<Void>
     public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows) throws Exception
     {
         // where partialDestPath is one of these three
-        // 1. lib/someApp.jar
-        // 2. topLevelFile
-        // 3. fdn given don't prepend sandbox
+        // 1. lib/someApp.jar arg1 arg2
+        // 2. topLevelFile arg1 arg2
+        // 3. fdn given don't prepend sandbox arg1 arg2
         
         // deal with partialDestPath as if linux for now
         String path = partialDestPath;                                  // lib/someApp.jar, topLevelFile, /opt/dtf/sandbox/doit.sh or c:\opt\dtf\sandbox\doit.sh
-        String penultimate = partialDestPath.replace('\\', '/');        // lib/someApp.jar, topLevelFile, /opt/dtf/sandbox/doit.sh 
+        String penultimate = partialDestPath.replace('\\', '/');        // lib/someApp.jar, topLevelFile, /opt/dtf/sandbox/doit.sh arg1 arg2
         String fileName = StrH.getAtomicName(penultimate, '/');         // someApp.jar, topLevelFile, doit.sh
         boolean fileOnly = penultimate.equals(fileName);                // false, true, false
         boolean fdn = penultimate.contains(":");                        // false, false, true windows - false linux

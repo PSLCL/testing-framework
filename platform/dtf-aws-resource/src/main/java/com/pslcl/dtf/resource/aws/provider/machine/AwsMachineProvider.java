@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.amazonaws.services.ec2.model.InstanceType;
@@ -53,6 +54,7 @@ import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 @SuppressWarnings("javadoc")
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
+    private final HashMap<Long, AwsMachineInstance> stalledRelease; // key is templateId
     private final HashMap<Long, AwsMachineInstance> boundInstances; // key is templateId
     private final HashMap<Long, MachineReservedResource> reservedMachines; // key is resourceId
     private final InstanceFinder instanceFinder;
@@ -64,6 +66,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         super(manager);
         reservedMachines = new HashMap<Long, MachineReservedResource>();
         boundInstances = new HashMap<Long, AwsMachineInstance>();
+        stalledRelease = new HashMap<Long, AwsMachineInstance>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
     }
@@ -267,6 +270,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         config.initsb.indentedOk();
         defaultMachineConfigData = MachineConfigData.init(config);
         config.initsb.level.decrementAndGet();
+        config.scheduledExecutor.schedule(new StalledReleaseTask(), 1, TimeUnit.MINUTES);
     }
 
     @Override
@@ -338,5 +342,18 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     public List<String> getAttributes()
     {
         return ProviderNames.getAllMachineProviderKeys();
+    }
+    
+    private class StalledReleaseTask implements Runnable
+    {
+        private StalledReleaseTask()
+        {
+            
+        }
+        
+        @Override
+        public void run()
+        {
+        }
     }
 }

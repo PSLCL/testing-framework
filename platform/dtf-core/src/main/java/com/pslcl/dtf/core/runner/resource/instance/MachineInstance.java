@@ -36,9 +36,10 @@ public interface MachineInstance extends ResourceInstance
      *            The URL of the artifact.
      * 
      * @return A Future<Void> which returns once the deploy is complete. The Future will throw an exception if the deploy fails.
+     * @throws Exception  if deploy fails
      * @see com.pslcl.dtf.core.runner.resource#DeployDestSandboxKey 
      */
-    Future<Void> deploy(String partialDestPath, String url);
+    Future<Void> deploy(String partialDestPath, String url) throws Exception;
 
     /**
      * Delete a file from a machine.
@@ -50,9 +51,10 @@ public interface MachineInstance extends ResourceInstance
      *  
      * @param partialDestPath
      *            The partial destination file to be deleted from to the destination sandbox.
+     * @throws Exception  if delete fails
      * @return A Future<Void> which returns once the delete is complete. The Future will throw an exception if the delete fails. 
      */
-    Future<Void> delete(String partialDestPath);
+    Future<Void> delete(String partialDestPath) throws Exception;
 
     /**
      * Connect a machine to a network.
@@ -83,9 +85,10 @@ public interface MachineInstance extends ResourceInstance
      * @param command
      *            An executable command, including arguments, to be run on the machine.
      *
+     * @throws Exception  if run fails
      * @return A {@link RunnableProgram} containing the information about the command once execution has completed.
      */
-    Future<RunnableProgram> run(String command);
+    Future<RunnableProgram> run(String command) throws Exception;
 
     /**
      * Run an executable command on a machine that modifies the machine in some way. Returns a Future with the result of
@@ -96,9 +99,10 @@ public interface MachineInstance extends ResourceInstance
      * @param command
      *            An executable command, including arguments, to be run on the machine.
      *
+     * @throws Exception  if configure fails
      * @return A {@link RunnableProgram} containing the information about the command once execution has completed.
      */
-    Future<RunnableProgram> configure(String command);
+    Future<RunnableProgram> configure(String command) throws Exception;
 
     /**
      * Start an executable command on a machine and return a Future with the {@link RunnableProgram} set once the program
@@ -109,8 +113,9 @@ public interface MachineInstance extends ResourceInstance
      * @param command
      *            An executable command, including arguments, to be run on the machine.
      *
+     * @throws Exception  if start fails
      * @return A {@link RunnableProgram} containing the information about the command once execution has completed.
      */
-    Future<RunnableProgram> start(String command);
+    Future<RunnableProgram> start(String command) throws Exception;
 
 }

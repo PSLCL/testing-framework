@@ -173,6 +173,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
         //        setSgPermissions(reservedResource.groupId);
         DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(reservedResource.ec2Instance.getInstanceId());
+        pdelayData.maxDelay = config.ec2MaxDelay;
+        pdelayData.maxRetries = config.ec2MaxRetries;
         pdelay.reset();
         msg = pdelayData.getHumanName(Ec2MidStr, "describeInstances");
         do
@@ -182,7 +184,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             {
                 DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
-                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
+                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.ShuttingDown)
                 {
                     synchronized (reservedResource)
                     {

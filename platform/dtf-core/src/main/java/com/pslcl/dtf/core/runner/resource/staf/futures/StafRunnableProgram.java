@@ -40,7 +40,10 @@ public class StafRunnableProgram implements RunnableProgram
     public StafRunnableProgram(STAFResult result, ProcessCommandData commandData) throws Exception
     {
         this.commandData = commandData;
-        this.result = new ProcessResult(result, commandData.isWait());
+        if(result == null)
+            this.result = null;
+        else
+            this.result = new ProcessResult(result, commandData.isWait());
     }
     
     public synchronized boolean isStopped()
@@ -141,7 +144,8 @@ public class StafRunnableProgram implements RunnableProgram
         format.ttl(getClass().getSimpleName() + ":");
         format.level.incrementAndGet();
         format.ttl("running = ", isRunning());
-        result.toString(format);
+        if(result != null)
+            result.toString(format);
         commandData.toString(format);
         format.level.decrementAndGet();
         return format;
