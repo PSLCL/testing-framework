@@ -1,5 +1,6 @@
 package com.pslcl.dtf.runner.template;
 
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -122,9 +123,9 @@ public class ProgramHandler {
 	            		String resourceType = ResourceProvider.getTypeName(riRP);
 	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
 	            			throw new Exception("ProgramHandler processing asked to run a program on a non 'machine' resource");	
-	            		strProgramName = parsedSetStep.getParameter(1);
+	            		strProgramName = URLDecoder.decode(parsedSetStep.getParameter(1), "UTF-8");
 	            		for (int j=2; j<(parsedSetStep.getParameterCount()); j++)
-	            			parameters.add(parsedSetStep.getParameter(j));
+	            			parameters.add(URLDecoder.decode(parsedSetStep.getParameter(j), "UTF-8"));
 	                	this.programInfos.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
 					} else {
 	            		throw new Exception("ProgramHandler.computeProgramRequests() finds null ResourceInstance at reference " + strMachineReference);
