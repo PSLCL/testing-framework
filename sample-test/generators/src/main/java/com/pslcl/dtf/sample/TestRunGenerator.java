@@ -17,7 +17,7 @@ public class TestRunGenerator {
 		Attributes attributes = new Attributes();
 		attributes.put(ProviderNames.InstanceTypeKey, "t2.micro");
 		
-		Iterable<Artifact[]> versions = generator.createArtifactSet(null, null, "bin/test.sh");
+		Iterable<Artifact[]> versions = generator.createArtifactSet(null, null, "bin/testrun.sh");
 		
 		for(Artifact[] nodeArtifacts : versions)
 		{
