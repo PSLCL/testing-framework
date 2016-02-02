@@ -44,9 +44,9 @@ public class InstanceNames
      * EC2 Instance declarations    
     ******************************************************************************/    
     
-    public static final String shortMaxDelay = "5000";  // 5000 seconds
+    public static final String shortMaxDelay = "5000";  // 5 seconds
     public static final String shortMaxRetries = "17"; // roughly 1 minute
-    public static final String longMaxDelay = "15000";  // roughly 6.4 seconds
+    public static final String longMaxDelay = "15000";  // 15 seconds
     public static final String longMaxRetries = "67"; // roughly 15 minutes
     
     /* ****************************************************************************
