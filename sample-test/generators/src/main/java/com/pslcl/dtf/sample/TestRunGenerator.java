@@ -8,7 +8,7 @@ import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.resource.Machine;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
-public class SampleGenerator {
+public class TestRunGenerator {
 	public static void main(String[] args) throws Exception
 	{
 		String DTF_TEST_ID = System.getenv("DTF_TEST_ID");
