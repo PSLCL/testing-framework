@@ -62,7 +62,12 @@ public class ProgressiveDelay
         int cnt = count.incrementAndGet();
         if(cnt >= pdelayData.maxRetries)
             return;  // called by handleException
-        long delay = ((long) Math.pow(2, cnt) * 100L);
+        double power = Math.pow(2, cnt);
+        power *= 100; 
+        if (power > Long.MAX_VALUE)
+            power = Long.MAX_VALUE;
+        long delay = (long) power;
+//        long delay = ((long) Math.pow(2, cnt) * 100L);
         delay = Math.min(delay, pdelayData.maxDelay);
         log.debug("count: " + cnt + " delay: " + delay + " totalwait: " + StrH.scaleMilliSeconds(totalTime.get()));
         try

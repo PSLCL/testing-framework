@@ -163,7 +163,12 @@ public class RunFuture implements Callable<RunnableProgram>
             do
             {
                 ++count;
-                long delay = ((long) Math.pow(2, count) * 100L);
+                double power = Math.pow(2, count);
+                power *= 100; 
+                if (power > Long.MAX_VALUE)
+                    power = Long.MAX_VALUE;
+                long delay = (long) power;
+//                long delay = ((long) Math.pow(2, count) * 100L);
                 long nextDelay = ((long) Math.pow(2, count + 1) * 100L);
                 delay = Math.min(delay, targetMaxDelayMs);
                 totalTime += delay;

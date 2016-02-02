@@ -44,30 +44,10 @@ public class InstanceNames
      * EC2 Instance declarations    
     ******************************************************************************/    
     
-    /*
-        Note on max-delay and max-retry counts
-        
-                                   delay        total       if delay then max count = timeout
-        count: 0 delay: 100                     100ms
-        count: 1 delay: 200                     300ms
-        count: 2 delay: 400                     700ms
-        count: 3 delay: 800         0.8 sec     1.5sec      20 = 15+ sec    39 = 30s    76 = 1min   150 = 2min
-        count: 4 delay: 1600        1.6 sec     3.1sec      21 = 30+ sec    40 = 1min   77 = 2min   150 = 4min
-        count: 5 delay: 3200        3.2 sec     6.3sec      22 = 1+ min
-        count: 6 delay: 6400        6.4 sec     12.7sec     23 = 2+ min     42 = 2min   79 = 8min   152 = 16 min
-        count: 7 delay: 12800       12.8 sec    25.5sec     24 = 4+ min
-        count: 8 delay: 25600       25.6 sec    0.85min     25 = 8+ min     43 = 16min  81 = 32min  153 = 64min
-        count: 9 delay: 51200       51.2 sec    1.7min      26 = 16+ min    45 = 32min  83 = 64min  155 = 2.1hrs
-        count: 10 delay: 102400     1.7 min     3.4min      27 = 32+ min
-        count: 11 delay: 204800     3.4 min     6.8min      28 = 64+ min
-        count: 12 delay: 409600     6.8 min     13.6min     29 = 2.1 hrs
-        count: 13 delay: 819200     13.6 min    27.3min     30 = 4.2 hrs    49 = 8.4hrs 86 = 16.8h  160 = 33.6hrs
-                                                                            19,56,130
-*/
-    public static final String shortMaxDelay = "800";  // 0.8 seconds
-    public static final String shortMaxRetries = "76"; // roughly 1 minute
-    public static final String longMaxDelay = "6400";  // roughly 6.4 seconds
-    public static final String longMaxRetries = "152"; // roughly 16 minutes
+    public static final String shortMaxDelay = "5000";  // 5000 seconds
+    public static final String shortMaxRetries = "16"; // roughly 1 minute
+    public static final String longMaxDelay = "15000";  // roughly 6.4 seconds
+    public static final String longMaxRetries = "66"; // roughly 15 minutes
     
     /* ****************************************************************************
      * VPC declarations
