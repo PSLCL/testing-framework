@@ -97,13 +97,13 @@ public class ProcessResult
     {
         if(fileList == null || fileList.size() < 2)
             return result.rc;
-        ReturnFileStreams sysErr = fileList.get(1);
-        if(sysErr != null)
-        {
-            if(sysErr.data != null && sysErr.data.length() > 0)
-                return 1;
-        }
-        return 0;
+//        ReturnFileStreams sysErr = fileList.get(1);
+//        if(sysErr != null)
+//        {
+//            if(sysErr.data != null && sysErr.data.length() > 0)
+//                return 1;
+//        }
+        return rc;
     }
     
     public String getServiceHandle()
