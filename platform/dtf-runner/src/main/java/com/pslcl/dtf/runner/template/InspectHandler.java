@@ -179,18 +179,27 @@ public class InspectHandler {
                             // into local temp directory, place n filename/content combinations
                             for (Entry<String, String> artifact: inspectInfo.getArtifacts().entrySet()) {
                                 String contentFilename = artifact.getKey();
+                                int indexLastBackSlash = contentFilename.lastIndexOf('\\');
+                                int indexLastForwardSlash = contentFilename.lastIndexOf('/');
+                                int indexLastPathSeparator = indexLastBackSlash>indexLastForwardSlash ? indexLastBackSlash : indexLastForwardSlash;
+                                if (indexLastPathSeparator > -1) {
+                                	String contentFileDirs = contentFilename.substring(0, indexLastPathSeparator);
+                                	File newDirs = new File(fileTempArtifactDirectory.getPath() + File.separator + contentFileDirs);
+                                	newDirs.mkdirs();
+                                }
                                 File contentFile = new File(contentFilename); // empty File
-
+                                
                                 // asynch, gather in .waitComplete()
                                 String contentHash = artifact.getValue();
                                 InputStream streamContent = qapa.getContentAsStream(contentHash);
+                                
                                 Path dest = Paths.get(fileTempArtifactDirectory.getPath() + File.separator + contentFile.getPath());
                                 // It should never happen that a file is copied over a file of the same filename, because:
                                 //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.   
                                 Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
                             }
 
-                            // from local temp directory, place the tarGz file in local temp directory
+                            // from local temp directory, place the tarGzip file in local temp directory
                             ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename, fileTempArtifactDirectory.getName());
                             File fileTarGz = toTarGz.CreateTarGz();
                             // fileTarGz (attachments.tar.gz) is placed and filled, using GzipCompressorOutputStream and TarArchiveOutputStream
