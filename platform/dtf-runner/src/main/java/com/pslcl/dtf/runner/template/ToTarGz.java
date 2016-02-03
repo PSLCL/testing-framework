@@ -121,7 +121,7 @@ public class ToTarGz {
 	private void addFileToTaos(TarArchiveOutputStream taos, File addFile, String parentDir) throws IOException {
 		String entryName;
 		if (parentDir.equals("."))
-			entryName = "attachments"; // does not exist anywhere in actuality, but in taos, place this as a "reference" directory
+			entryName = InspectHandler.archiveTopDirectory; // "attachments": does not exist anywhere in actuality, but in taos, place this as the reference "top" directory
 		else
 			entryName = parentDir + File.separator + addFile.getName();
 		log.trace(this.simpleName + "addFileToTaos() sees parentDir '" + parentDir + "'; submits file " + addFile + ", of entryName " + entryName);
