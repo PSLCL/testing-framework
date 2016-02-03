@@ -8,13 +8,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -22,106 +23,138 @@ import org.slf4j.LoggerFactory;
 
 public class ToTarGz {
 	
-	private String tarGzFilename;
+	private String tarGzipFilename;
 	private String sourceDirectory;
 
     private final Logger log;
     private final String simpleName;
 
 	/**
-	 * Add given file to given output stream, with directory nesting (a recursive method)
-	 * @param placementBase Must not be null
-	 * @throws IOException 
-	 * 
+	 * Write a tarGzip file to disk, with directory and file entries from a given source directory
+     *
+	 * @param tarGzipFilename
+	 * @return
+	 * @throws IOException
 	 */
-	private void addFileToTarGz(TarArchiveOutputStream tOut,                  // OutputStream
-			                    String addPath,                               // C:\gitdtf\ws\apps\tempArtifactDirectory\
-			                    String placementBase) throws IOException {    // attachments
-		File f = new File(addPath);
-		log.debug(simpleName + "Adds to tarGz/" + placementBase + " the file or folder " + f.getAbsolutePath());
-		String placementName = placementBase;
-		if (f.isFile())
-			placementName += f.getName();
-		TarArchiveEntry tarEntry = new TarArchiveEntry(f,              // the directory or file that the tarEntry represents
-				                                       placementName); // the destination directory name, or destination directory structure, with trailing filename)
-		tOut.putArchiveEntry(tarEntry);
+	private File CreateTarGz(String tarGzipFilename, String sourceDirectory) throws IOException {
+		// place empty file tarGzFilename.tar.gzip at .
 		
-		if (f.isFile()) {
-			// note: if file placement name is already written to disk, this section overwrites it, without log message
-			FileInputStream is = new FileInputStream(f);
-			IOUtils.copy(is, tOut);
-			is.close();
-			tOut.closeArchiveEntry();
-		} else {
-			// empty attachments.tar.gz is "not a file" and comes here
-			tOut.closeArchiveEntry();
+		// get absolute path of where this application resides
+		//String tarGzipAbsoluteFilePath = new File("").getAbsolutePath(); // does not supply the trailing '\' that we need
+		String tarGzipAbsoluteFilePath = new File(".").getAbsolutePath(); // add the '.' then delete it: final result has our needed trailing '\' 
+		if (tarGzipAbsoluteFilePath.endsWith("."))
+			tarGzipAbsoluteFilePath = tarGzipAbsoluteFilePath.substring(0, tarGzipAbsoluteFilePath.length()-1);
+		File retFileTarGzip = new File(tarGzipFilename);
+		log.trace(simpleName + "created new empty file " + tarGzipFilename + " at directory " + tarGzipAbsoluteFilePath);
+		
+		// tar and compress sourceDirectory to tarGzip file
+		sourceDirectory = tarGzipAbsoluteFilePath + sourceDirectory;
+		File sourceFile = new File(sourceDirectory);
+		this.tarCompressFile(sourceFile, retFileTarGzip);
+		return retFileTarGzip;
+	}
+	
+	/**
+	 * Tar and compress one submitted directory or file.
+	 * 
+	 * @param singleFile The one directory or file to tar and compress
+	 * @param tarGzipOut The output tarGzip file
+	 * @throws IOException
+	 */
+	private void tarCompressFile(File singleFile, File tarGzipOut) throws IOException {
+		List<File> listOneFile = new ArrayList<File>(1); // convert file to one entry list of files
+		listOneFile.add(singleFile);
+		this.tarGzipCompress(listOneFile, tarGzipOut);
+	}
+	
+	/**
+	 * Tar and compress submitted list of directories and files
+	 * 
+	 * @param files The list of directories and files to tar and compress
+	 * @param tarGzipOut The output tarGzip file
+	 * @throws IOException 
+	 */
+	private void tarGzipCompress(Collection<File> files, File tarGzipOut) throws IOException {
+		FileOutputStream fos = null;
+		GZIPOutputStream gzipOS = null;
+		TarArchiveOutputStream taos = null;
+		try {
+			// add to file tarGzipOut whatever directories and files exist in param files, with full directory nesting  
+			log.trace(this.simpleName + "tarGzipCompress() adds " + files.size() + " directory or file to " + tarGzipOut.getName());
+			fos = new FileOutputStream(tarGzipOut); // if this is the same name as a previous directory or file, then, when this is eventually written, it will blow away the previous
+			gzipOS = new GZIPOutputStream(fos); // wrap fos gzip behavior
+			taos = new TarArchiveOutputStream(gzipOS); // wrap fos with tar behavior
 			
-			// add available directories or files
-			File [] children = f.listFiles();
-			if (children != null) {
-				for (File child : children) {
-					log.debug(simpleName + "Adding file or directory " + child.getName());
-					this.addFileToTarGz(tOut, child.getAbsolutePath(), placementName+"/");
-				}
+			// put each file in taos
+			for (File file : files) {
+				this.addFileToTaos(taos, file, ".");
 			}
+		} catch (Exception e) {
+			throw e;
+		} finally {
+			if (taos != null) {
+				taos.finish(); // ends the archive without closing the underlying OutputStream; can probably use close() alone
+				taos.close();  // also closes gzipOS and fos
+			} else if (gzipOS != null) {
+				gzipOS.close(); // also closes fos
+			} else if (fos != null) {
+				fos.close();
+			}
+		}
+		
+		if (true) { // true: temporarily, write tarGzipOut's directories and files to disk, at a temporary location
+			FileInputStream fis = new FileInputStream(tarGzipOut);
+			this.writeFileStructure(fis);
+			fis.close();
 		}
 	}
 	
 	/**
-	 * Write a tarGz file to disk, with directory and file entries from a given source directory
-	 * @param tarGzFilename
-	 * @return
+	 * Add a file or directory to the TarArchiveOutputStream
+	 * 
+	 * @note params must not be null
+	 * @param taos The tar archive output stream to hold the submitted directory or file
+	 * @param addFile the directory or file to add
+	 * @param parentDir Within taos, the name of the directory to hold the submitted directory or file, such as "."
 	 * @throws IOException
 	 */
-	private File CreateTarGz(String tarGzFilename, String sourceDirectory) throws IOException {
-		// get absolute path of where this application resides
-		//String tarGzAbsoluteFilePath = new File("").getAbsolutePath(); // does not supply the trailing '\' that we need
-		String tarGzAbsoluteFilePath = new File(".").getAbsolutePath(); // add the '.' then delete it: final result has our needed trailing '\' 
-		if (tarGzAbsoluteFilePath.endsWith("."))
-			tarGzAbsoluteFilePath = tarGzAbsoluteFilePath.substring(0, tarGzAbsoluteFilePath.length()-1);
-
-		// place empty file tarGzFilename.tar.gz at .
-		File retFileTarGz = new File(tarGzFilename);
-		FileOutputStream fOut = new FileOutputStream(retFileTarGz); // if this is the same name as a previous directory or file, then, when this is eventually written, it will blow away the previous
-		log.debug(simpleName + "created new file " + tarGzFilename + " at directory " + tarGzAbsoluteFilePath);
-		
-		// add to file tarGzFilename.tar.gz whatever directories and files exist at sourceDirectory, with full directory nesting  
-		BufferedOutputStream bOut = new BufferedOutputStream(fOut);
-		GzipCompressorOutputStream gzOut = new GzipCompressorOutputStream(bOut);
-		TarArchiveOutputStream tOut = new TarArchiveOutputStream(gzOut);
-		try {
-			String addPath = tarGzAbsoluteFilePath + sourceDirectory;
-			this.addFileToTarGz(tOut,                                // empty OutputStream
-					            addPath,                             // C:\gitdtf\ws\apps\tempArtifactDirectory\
-					            InspectHandler.archiveTopDirectory); // attachments 
-		} finally {
-			if (tOut != null) {
-				tOut.finish(); // write file-populated tOut to disk
-				tOut.close(); // also closes gzOut, bOut, fOut
-			} else if (gzOut != null) {
-				gzOut.close(); // also closes bOut, fOut
-			} else if (bOut != null) {
-				bOut.close(); // also closes fOut
-			} else if (fOut != null) {
-				fOut.close();
+	private void addFileToTaos(TarArchiveOutputStream taos, File addFile, String parentDir) throws IOException {
+		String entryName;
+		if (parentDir.equals("."))
+			entryName = InspectHandler.archiveTopDirectory; // "attachments": does not exist anywhere in actuality, but in taos, place this as the reference "top" directory
+		else
+			entryName = parentDir + File.separator + addFile.getName();
+		log.trace(this.simpleName + "addFileToTaos() sees parentDir '" + parentDir + "'; submits file " + addFile + ", of entryName " + entryName);
+		TarArchiveEntry taEntry = new TarArchiveEntry(addFile, entryName);
+		taos.putArchiveEntry(taEntry);
+		if (addFile.isFile()) {
+			// copy addFile to taos
+			log.trace(this.simpleName + "addFileToTaos() adds file " + addFile + " under directory " + parentDir);
+			FileInputStream addFIS = new FileInputStream(addFile);
+			BufferedInputStream bufIS = new BufferedInputStream(addFIS);
+			IOUtils.copy(bufIS, taos);
+			taos.closeArchiveEntry();
+			bufIS.close();
+		} else {
+			// our newly formed directory taEntry was added to taos, but is now complete
+			taos.closeArchiveEntry();
+			
+			// recursively add child files (or directories) to the parent entry that was passed in as params
+			String parentName = entryName;
+			File [] childFiles = addFile.listFiles();
+			for (File childFile : childFiles) {
+				log.trace(this.simpleName + "addFileToTaos() recursively adds childFile " + childFile + " under directory " + parentName);
+				this.addFileToTaos(taos, childFile, parentName);
 			}
 		}
-		
-		if (false) { // true: temporarily, write retFileTarGz's directories and files to disk, at a temporary location
-			FileInputStream fis = new FileInputStream(new File(this.tarGzFilename));
-			this.writeFileStructure(fis);
-			fis.close();
-		}
-		
-		return retFileTarGz;
 	}
 
 	/**
 	 * Constructor
-	 * @param tarGzFilename name of tarGz file to create, e.g. attachments.tar.gz
+	 * @param tarGzipFilename name of tarGzip file to create, e.g. attachments.tar.gzip
 	 */
-	ToTarGz(String tarGzFilename, String sourceDirectory) {
-		this.tarGzFilename = tarGzFilename;
+	ToTarGz(String tarGzipFilename, String sourceDirectory) {
+		this.tarGzipFilename = tarGzipFilename;
 		this.sourceDirectory = sourceDirectory;
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
@@ -132,11 +165,12 @@ public class ToTarGz {
 	 * @throws IOException 
 	 */
 	File CreateTarGz() throws IOException {
-		return this.CreateTarGz(this.tarGzFilename, this.sourceDirectory); // this.tarGzFilename: attachments; this.sourceDirectory: tempArtifactDirectory  
+		return this.CreateTarGz(this.tarGzipFilename, this.sourceDirectory);  
 	}
 	
 	/**
 	 * From the given tarGz File, return its FileInputStream.
+	 * 
 	 * @param fileTarGz
 	 * @return
 	 * @throws FileNotFoundException
@@ -152,6 +186,8 @@ public class ToTarGz {
 	 * @throws IOException
 	 */
 	TarArchiveInputStream getTarArchiveInputStream(File fileTarGz) throws IOException {
+		// this is an alternative that can be used
+		
 		// Based on example 3: http://www.programcreek.com/java-api-examples/index.php?api=org.apache.commons.compress.archivers.tar.TarArchiveInputStream . Many other examples are shown there to handle many use cases.
 		
 //		BufferedInputStream bufIS = new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzFilename))));
@@ -164,18 +200,18 @@ public class ToTarGz {
 			
 			if (false) { // true: temporarily, use this independently created TAIS as a way to count how many tar entries are present, and to report their names
 				// replicate the above without using retTAIS, which must remain pristine
-				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzFilename)))));
+				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzipFilename)))));
 				TarArchiveEntry taEntry;
 				List<TarArchiveEntry> tarArchiveEntries = new ArrayList<TarArchiveEntry>();
 				while ((taEntry = testTAIS.getNextTarEntry()) != null) {
 					log.debug(this.simpleName + "tais entry found: " + taEntry.getName());
 					tarArchiveEntries.add(taEntry);
 				}
-				log.debug(simpleName + tarArchiveEntries.size() + " TarArchiveEntry's found"); // I see count of 1 for top directory "attachments," another for file1, another for file2
+				log.debug(simpleName + tarArchiveEntries.size() + " TarArchiveEntry's found");
 				testTAIS.close();
 			}
 			if (false) { // true: temporarily, use this independently created TAIS to write the archive's directories and files to disk
-				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzFilename)))));
+				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzipFilename)))));
 				this.writeFileStructure(testTAIS);
 				testTAIS.close();
 			}
@@ -188,6 +224,9 @@ public class ToTarGz {
 		}
 	}
 
+	
+	// Usable as unit tests
+		
 	/**
 	 * Write a file stream to disk.
 	 * (use as a unit test)
@@ -212,22 +251,22 @@ public class ToTarGz {
         
 		TarArchiveEntry taEntry;
 		while ((taEntry = tais.getNextTarEntry()) != null) {
-			File destPath = new File(destTopDir, taEntry.getName()); // appends a path of directories to the top directory
-			log.debug(this.simpleName + "writeFileStructure() forming taEntry for writing to disk: " + destPath.getCanonicalPath());
+			File newFile = new File(destTopDir, taEntry.getName()); // appends a path of directories to the top directory
+			log.trace(this.simpleName + "writeFileStructure() forming taEntry for writing to disk: " + newFile.getCanonicalPath());
 			if (taEntry.isDirectory()) {
-				destPath.mkdirs();
+				newFile.mkdirs();
 			} else {
-				destPath.createNewFile(); // empty file
+                newFile.createNewFile(); // empty file
 				long fileSize = taEntry.getSize();
 				byte [] readBuf = new byte[(int)fileSize];
-				FileOutputStream fos = new FileOutputStream(destPath);
+				FileOutputStream fos = new FileOutputStream(newFile);
 				BufferedOutputStream bfos = new BufferedOutputStream(fos);
 				while (true) {
 					int len = tais.read(readBuf); // this read is defined to occur only on the taEntry received by the last tais.getNextTarEntry() call
 					if (len == -1)
 						break;
 					bfos.write(readBuf, 0, len);
-					log.debug(this.simpleName + "writeFileStructure() wrote " + len + " bytes to file " + destPath.getCanonicalPath());
+					log.trace(this.simpleName + "writeFileStructure() wrote " + len + " bytes to file " + newFile.getCanonicalPath());
 				}
 				bfos.close();
 			}
