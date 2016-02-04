@@ -17,6 +17,7 @@ package com.pslcl.dtf.runner.process;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -147,11 +148,24 @@ public class RunEntryCore {
                     topDBTemplate.enabled = resultSet.getBoolean("enabled");
                     topDBTemplate.steps = resultSet.getString("steps");
                     topDBTemplate.artifacts = resultSet.getBytes("artifacts");
-                    topDBTemplate.start_time = resultSet.getDate("start_time");
-                    topDBTemplate.ready_time = resultSet.getDate("ready_time");
-                    topDBTemplate.end_time = resultSet.getDate("end_time");
                     topDBTemplate.result = (resultSet.getObject("result") != null) ? resultSet.getBoolean("result") : null;
                     topDBTemplate.owner = resultSet.getString("owner");
+                    
+                    topDBTemplate.start_time = resultSet.getDate("start_time");
+                    Timestamp timestamp = resultSet.getTimestamp("start_time");
+                    if (timestamp != null)
+                    	topDBTemplate.start_time = new Date(timestamp.getTime());
+                    
+                    topDBTemplate.ready_time = resultSet.getDate("ready_time");
+                    timestamp = resultSet.getTimestamp("ready_time");
+                    if (timestamp != null)
+                    	topDBTemplate.ready_time = new Date(timestamp.getTime());
+                    
+                    topDBTemplate.end_time = resultSet.getDate("end_time");
+                    timestamp = resultSet.getTimestamp("end_time");
+                    if (timestamp != null)
+                    	topDBTemplate.end_time = new Date(timestamp.getTime());
+                    
                     log.debug(simpleName + "<internal> loadRunEntryData() loads data from run-template matched records for reNum " + this.reNum + ", pk_template " + topDBTemplate.pk_template);
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
@@ -254,8 +268,6 @@ public class RunEntryCore {
     	            String owner = "null";
     	            if (topDBTemplate.owner != null)
     	                owner = "'" + topDBTemplate.owner + "'";
-    	            if (topDBTemplate.result == null)
-    	            	log.warn(this.simpleName + "writeRunEntryData() unexpectedly encounters null result");
    	                Boolean result = topDBTemplate.result;
     	            byte [] artifacts = null;
     	            if (topDBTemplate.artifacts != null)
@@ -349,22 +361,24 @@ public class RunEntryCore {
         // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
 
         this.topDBTemplate.result = new Boolean(false);
+        boolean testRunSuccess = false;
         InstancedTemplate iT = null;
-        boolean result;
         try {
+        	// this executes all the template steps
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
-            this.topDBTemplate.result = new Boolean(true); // no exception means success
+            this.topDBTemplate.result = !iT.getForceNullResult() ? new Boolean(true) : // no exception means success, but for the case where
+              	                                                   null;               // the test run was successful but the result should be marked null
+            testRunSuccess = true;
             runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
         } catch (Exception e) {
-        	// the template has already cleaned itself up (required because we don't have iT in hand, and cannot clean it up)
+        	// the template has already cleaned itself up (it was handled internally, by exception processing code, because we can't do it- we don't have iT in hand)
         	log.debug(simpleName + "testRun errors out, reNum : " + this.topDBTemplate.reNum);
             throw e;
         } finally {
-            result = this.topDBTemplate.result.booleanValue();
-            log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stores to database this result: " + result);
+            log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stores to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
            	storeResultRunEntryData();
         }
-        return result; // always true, for exception not thrown
+        return testRunSuccess; // always true, for exception not thrown
     }
 
         // unneeded- our real approach involves an api to come to us soon

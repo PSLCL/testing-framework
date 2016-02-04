@@ -29,7 +29,7 @@ public class DeployHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public DeployHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
+	public DeployHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -37,13 +37,13 @@ public class DeployHandler {
 		this.futuresOfDeploys = new ArrayList<DeployInfo>();
 		this.done = false;
 		
-		int iTempFinalSetOffset = 0;
-		int iSetOffset = 0;
+		int iTempFinalSetOffset = initialSetStepCount;
+		int iSetOffset = initialSetStepCount;
 		while (true) {
 			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
 			if (!setStep.getCommand().equals("deploy"))
 				break;
-			this.iBeginSetOffset = 0;
+			this.iBeginSetOffset = initialSetStepCount;
 			this.iFinalSetOffset = iTempFinalSetOffset;
 			if (++iTempFinalSetOffset >= setSteps.size())
 				break;

@@ -137,9 +137,9 @@ public class StepsParser {
         List<String> retList = new ArrayList<String>(); // empty list; // capacity grows as elements are added; null elements are permitted
         if (steps == null) {
         	// supposedly not possible because table template requires column step to be filled
-            log.debug(simpleName + "getNextSteps() finds null steps member variable");
+            log.warn(simpleName + "getNextSteps() finds null steps member variable");
         } else if (this.offset >= 0) {
-            // process any one step with this rule: stepTag is the first characters leading up and including the first space char
+            // process any one step with this rule: stepTag is the first characters leading up to and including the first space char
         	int offsetNewLine = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
         	if (offsetNewLine >= 0) {
                 for (int i=0;
@@ -159,6 +159,14 @@ public class StepsParser {
         	}
         }
         return retList;
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    boolean isExhausted() {
+    	return (this.offset < 0) ? true : false; 
     }
   
     

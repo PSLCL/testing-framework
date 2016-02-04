@@ -33,7 +33,7 @@ public class ConnectHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public ConnectHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
+	public ConnectHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -43,13 +43,13 @@ public class ConnectHandler {
         this.done = false;
 //		this.mapFuturesToMachineInstance = new HashMap<Future<? extends CableInstance>, MachineInstance>();
 		
-		int iTempFinalSetOffset = 0;
-		int iSetOffset = 0;
+		int iTempFinalSetOffset = initialSetStepCount;
+		int iSetOffset = initialSetStepCount;
 		while (true) {
 			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
 			if (!setStep.getCommand().equals("connect"))
 				break;
-			this.iBeginSetOffset = 0;
+			this.iBeginSetOffset = initialSetStepCount;
 			this.iFinalSetOffset = iTempFinalSetOffset;
 			if (++iTempFinalSetOffset >= setSteps.size())
 				break;

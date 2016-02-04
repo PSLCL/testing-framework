@@ -49,6 +49,7 @@ public class InspectHandler {
     private List<InspectInfo> resultInspectInfos;
     private List<InspectInfo> inspectInfos = null;
     
+//    private StepSetOffsets stepSetOffsets; 
     private int iBeginSetOffset = -1;
     private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin
     private int indexNextInspectInfo = 0;
@@ -61,7 +62,7 @@ public class InspectHandler {
      * @param iT
      * @param setSteps
      */
-    InspectHandler(InstancedTemplate iT, RunnerMachine runnerMachine, List<String> setSteps) throws NumberFormatException {
+    InspectHandler(InstancedTemplate iT, RunnerMachine runnerMachine, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
         this.iT = iT;
@@ -75,14 +76,16 @@ public class InspectHandler {
         this.currArtifact = null;
         this.resultInspectInfos = new ArrayList<InspectInfo>();
         this.done = false;
+        
+        
 
-        int iTempFinalSetOffset = 0;
-        int iSetOffset = 0;
+        int iTempFinalSetOffset = initialSetStepCount;
+        int iSetOffset = initialSetStepCount;
         while (true) {
             SetStep setStep = new SetStep(setSteps.get(iSetOffset));
             if (!setStep.getCommand().equals("inspect"))
                 break;
-            this.iBeginSetOffset = 0;
+            this.iBeginSetOffset = initialSetStepCount;
             this.iFinalSetOffset = iTempFinalSetOffset;
             if (++iTempFinalSetOffset >= setSteps.size())
                 break;

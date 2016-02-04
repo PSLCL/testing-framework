@@ -25,8 +25,7 @@ public class NestedTemplateHandler {
      *
      * @throws Exception
      */
-    void instanceNestedTemplates(RunEntryCore reCore) throws Exception {
-        StepsParser stepsParser = iT.getStepsParser();
+    void instanceNestedTemplates(RunEntryCore reCore, StepsParser stepsParser) throws Exception {
         int localStepReference = stepsParser.getStepReference(); // 0, because template includes are always first
         // instance them in parallel, each in their own thread
         List<String> includeSteps = stepsParser.getNextSteps("include "); // trailing space is required

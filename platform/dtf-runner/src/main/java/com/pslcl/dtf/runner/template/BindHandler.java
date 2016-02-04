@@ -54,7 +54,7 @@ public class BindHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public BindHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
+	public BindHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -71,13 +71,13 @@ public class BindHandler {
 		this.futuresOfResourceInstances = null;
 		this.resourceInstances = new ArrayList<>();
 		
-		int iTempFinalSetOffset = 0;
-		int iSetOffset = 0;
+		int iTempFinalSetOffset = initialSetStepCount;
+		int iSetOffset = initialSetStepCount;
 		while (true) {
 			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
 			if (!setStep.getCommand().equals("bind"))
 				break;
-			this.iBeginSetOffset = 0;
+			this.iBeginSetOffset = initialSetStepCount;
 			this.iFinalSetOffset = iTempFinalSetOffset;
 			if (++iTempFinalSetOffset >= setSteps.size())
 				break;
