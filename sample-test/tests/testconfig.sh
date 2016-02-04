@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Running testrun script"
+echo "Running testconfig script"
 sleep 2
 if [ "$1" = "pass" ]
 then
