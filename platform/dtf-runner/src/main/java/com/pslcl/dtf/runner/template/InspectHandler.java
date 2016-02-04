@@ -15,7 +15,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,6 @@ public class InspectHandler {
     private final InstancedTemplate iT;
     private final RunnerMachine runnerMachine;
     private final List<String> setSteps;
-    private File fileArchiveTopDirectory;
 
     private boolean qapaResponseLaunched;
     private QAPaResponse qapaResponse; // as a flag, this starts out instantiated, but empty
@@ -64,7 +62,6 @@ public class InspectHandler {
         this.iT = iT;
         this.runnerMachine = runnerMachine;
         this.setSteps = setSteps;
-        this.fileArchiveTopDirectory = null;
         this.qapaResponseLaunched = false;
         this.qapaResponse = new QAPaResponse();
         this.artifactEntriesIterator = null;
@@ -186,15 +183,9 @@ public class InspectHandler {
                     if (this.indexNextInspectInfo < this.inspectInfos.size()) {
                         // The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
                         while (this.indexNextInspectInfo < this.inspectInfos.size()) {
-                            if (this.fileArchiveTopDirectory == null) {
-                                // place new empty temp directory for this particular inspectInfo, with delete if needed, to hold all specified artifacts to inspect
-                                this.fileArchiveTopDirectory = new File(InspectHandler.tempArtifactDirectory);
-                                FileUtils.deleteDirectory(this.fileArchiveTopDirectory); // whether directory is present, or not, this operates without exception
-                                this.fileArchiveTopDirectory.mkdirs();
-                            }
-                            
                             // for this one inspectInfo . . .
                             InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
+                            inspectInfo.setupArchiveTopDirectory(this.indexNextInspectInfo);
                             
                             if (inspectInfo.getInstructions() == null) {
                                 if (!this.qapaResponseLaunched) {
@@ -218,6 +209,7 @@ public class InspectHandler {
                                 }
                                 if (this.currArtifact==null && this.artifactEntriesIterator.hasNext())
                                         this.currArtifact = this.artifactEntriesIterator.next();
+                                File fileArchiveTopDirectory = inspectInfo.getFileArchiveTopDirectory();
                                 if (this.currArtifact != null) {
                                     if (!this.qapaResponseLaunched) {
                                         // request file content of currArtifact
@@ -238,13 +230,13 @@ public class InspectHandler {
                                         int finalSlash = (finalBackSlash > finalForwardSlash) ? finalBackSlash : finalForwardSlash;
                                         if (finalSlash >= 0) {
                                             String dirString = contentFilename.substring(0, finalSlash);
-                                            File destPath = new File((this.fileArchiveTopDirectory.getPath() + File.separator), dirString); // appends a path of directories to the top directory
+                                            File destPath = new File((fileArchiveTopDirectory.getPath() + File.separator), dirString); // appends a path of directories to the top directory
                                             destPath.mkdirs(); // does not blow away existing content in these directories
                                         }
                                         
-                                        // 
+                                        // copy actual content to the content file
                                         File contentFile = new File(contentFilename); // empty File
-                                        Path dest = Paths.get(this.fileArchiveTopDirectory.getPath() + File.separator + contentFile.getPath());
+                                        Path dest = Paths.get(fileArchiveTopDirectory.getPath() + File.separator + contentFile.getPath());
                                         // It should never happen that a file is copied over a file of the same filename, because:
                                         //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.   
                                         Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
@@ -256,7 +248,7 @@ public class InspectHandler {
                                     // setContentStream
                                     
                                     // create a tarGz of .archiveFilename, place it in dtf-runner's local directory, then fill it with the directory structure under the local temp directory (just filled) 
-                                    ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename, this.fileArchiveTopDirectory.getName());
+                                    ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename+this.indexNextInspectInfo, fileArchiveTopDirectory.getName());
                                     File fileTarGz = toTarGz.CreateTarGz();
                                     // fileTarGz (attachments.tar.gzip) is placed and filled, using GzipCompressorOutputStream and TarArchiveOutputStream
                                   
@@ -264,7 +256,6 @@ public class InspectHandler {
                                     inspectInfo.setContentStream(fis);
                                     
                                     ++this.indexNextInspectInfo;
-                                    this.fileArchiveTopDirectory = null; // for next inspectInfo
                                     this.artifactEntriesIterator = null;
                                 }
                             } else {

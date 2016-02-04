@@ -104,7 +104,8 @@ public class ToTarGz {
 		
 		if (false) { // true: temporarily, write tarGzipOut's directories and files to disk, at a temporary location
 			FileInputStream fis = new FileInputStream(tarGzipOut);
-			this.writeFileStructure(fis);
+			String destTopDirectory = "recovered_" + this.sourceDirectory;
+			this.writeFileStructure(fis, destTopDirectory);
 			fis.close();
 		}
 	}
@@ -212,7 +213,8 @@ public class ToTarGz {
 			}
 			if (false) { // true: temporarily, use this independently created TAIS to write the archive's directories and files to disk
 				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzipFilename)))));
-				this.writeFileStructure(testTAIS);
+				String destTopDirectory = "recovered_" + this.sourceDirectory;
+				this.writeFileStructure(testTAIS, destTopDirectory);
 				testTAIS.close();
 			}
 			
@@ -233,9 +235,9 @@ public class ToTarGz {
 	 * @param fis
 	 * @throws IOException
 	 */
-	private void writeFileStructure(FileInputStream fis) throws IOException {
+	private void writeFileStructure(FileInputStream fis, String destTopDirectory) throws IOException {
         TarArchiveInputStream tais = new TarArchiveInputStream(new GZIPInputStream(fis));
-        this.writeFileStructure(tais);
+        this.writeFileStructure(tais, destTopDirectory);
 	}
 	
 	/**
@@ -243,15 +245,14 @@ public class ToTarGz {
 	 * (use as a unit test)
 	 * @param tais
 	 */
-	private void writeFileStructure(TarArchiveInputStream tais) throws IOException {
+	private void writeFileStructure(TarArchiveInputStream tais, String destTopDirectory) throws IOException {
 		// delete the entire top level destination directory
-		String destTopDir = "recoveryDirectory";
-		File destTopPath = new File(destTopDir);
+		File destTopPath = new File(destTopDirectory);
         FileUtils.deleteDirectory(destTopPath); // Whether directory is present, or not, this operates without exception. note: windows file explorer cannot be into this directory
         
 		TarArchiveEntry taEntry;
 		while ((taEntry = tais.getNextTarEntry()) != null) {
-			File newFile = new File(destTopDir, taEntry.getName()); // appends a path of directories to the top directory
+			File newFile = new File(destTopDirectory, taEntry.getName()); // appends a path of directories to the top directory
 			log.trace(this.simpleName + "writeFileStructure() forming taEntry for writing to disk: " + newFile.getCanonicalPath());
 			if (taEntry.isDirectory()) {
 				newFile.mkdirs();
