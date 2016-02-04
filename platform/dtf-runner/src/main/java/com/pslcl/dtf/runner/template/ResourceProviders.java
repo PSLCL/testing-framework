@@ -38,8 +38,8 @@ import com.pslcl.dtf.core.util.StrH.StringPair;
 public class ResourceProviders
 {
 
-    public static final String ManagerClassKey = "pslcl.dtf.runner.template.resource-manager-class"; 
-    public static final String ManagerClassDefault = "com.pslcl.dtf.resource.aws.AwsResourcesManager";
+    private static final String ManagerClassKey = "pslcl.dtf.runner.template.resource-manager-class"; 
+    private static final String ManagerClassDefault = "com.pslcl.dtf.resource.aws.AwsResourcesManager";
     
     private final List<ResourcesManager> resourceManagers;
     private final List<ResourceProvider> resourceProviders;

@@ -38,7 +38,6 @@ public class InspectHandler {
     private final InstancedTemplate iT;
     private final RunnerMachine runnerMachine;
     private final List<String> setSteps;
-    private File fileTempArtifactDirectory;
     private File fileArchiveTopDirectory;
 
     private boolean qapaResponseLaunched;
@@ -65,7 +64,6 @@ public class InspectHandler {
         this.iT = iT;
         this.runnerMachine = runnerMachine;
         this.setSteps = setSteps;
-        this.fileTempArtifactDirectory = null;
         this.fileArchiveTopDirectory = null;
         this.qapaResponseLaunched = false;
         this.qapaResponse = new QAPaResponse();
@@ -190,11 +188,8 @@ public class InspectHandler {
                         while (this.indexNextInspectInfo < this.inspectInfos.size()) {
                             if (this.fileArchiveTopDirectory == null) {
                                 // place new empty temp directory for this particular inspectInfo, with delete if needed, to hold all specified artifacts to inspect
-                                this.fileTempArtifactDirectory = new File(InspectHandler.tempArtifactDirectory);
-                                FileUtils.deleteDirectory(fileTempArtifactDirectory); // whether directory is present, or not, this operates without exception
-                                
-                                // add subdirectory "attachments"
-                                this.fileArchiveTopDirectory = new File(fileTempArtifactDirectory.getName() + File.separator + InspectHandler.archiveTopDirectory);
+                                this.fileArchiveTopDirectory = new File(InspectHandler.tempArtifactDirectory);
+                                FileUtils.deleteDirectory(this.fileArchiveTopDirectory); // whether directory is present, or not, this operates without exception
                                 this.fileArchiveTopDirectory.mkdirs();
                             }
                             
@@ -261,7 +256,7 @@ public class InspectHandler {
                                     // setContentStream
                                     
                                     // create a tarGz of .archiveFilename, place it in dtf-runner's local directory, then fill it with the directory structure under the local temp directory (just filled) 
-                                    ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename, this.fileTempArtifactDirectory.getName());
+                                    ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename, this.fileArchiveTopDirectory.getName());
                                     File fileTarGz = toTarGz.CreateTarGz();
                                     // fileTarGz (attachments.tar.gzip) is placed and filled, using GzipCompressorOutputStream and TarArchiveOutputStream
                                   

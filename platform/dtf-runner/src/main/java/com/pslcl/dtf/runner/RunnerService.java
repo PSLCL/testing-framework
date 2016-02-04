@@ -44,8 +44,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
 {
     // static declarations
 
-    public static final String QueueStoreDaoClassKey = "pslcl.dtf.resource.mq-class";
-    public static final String QueueStoreDaoClassDefault = "com.pslcl.dtf.resource.aws.Sqs";
+    private static final String QueueStoreDaoClassKey = "pslcl.dtf.resource.mq-class";
+    private static final String QueueStoreDaoClassDefault = "com.pslcl.dtf.resource.aws.Sqs";
 
     
     // instance declarations 

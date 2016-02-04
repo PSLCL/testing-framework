@@ -13,10 +13,10 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
 public class DBConnPool {
 	
-    public static final String RunnerDBHostKey = "pslcl.dtf.runner.dbconn.host";
-    public static final String RunnerDBUserKey = "pslcl.dtf.runner.dbconn.user";
-    public static final String RunnerDBPasswordKey = "pslcl.dtf.runner.dbconn.password";
-    public static final String RunnerDBPasswordDefault = "";
+    private static final String RunnerDBHostKey = "pslcl.dtf.runner.dbconn.host";
+    private static final String RunnerDBUserKey = "pslcl.dtf.runner.dbconn.user";
+    private static final String RunnerDBPasswordKey = "pslcl.dtf.runner.dbconn.password";
+    private static final String RunnerDBPasswordDefault = "";
     
     private volatile String host;
     private volatile String user;

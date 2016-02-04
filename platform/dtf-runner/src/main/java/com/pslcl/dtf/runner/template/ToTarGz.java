@@ -180,7 +180,7 @@ public class ToTarGz {
 	}
 
 	/**
-	 * From the given tarGz File, return its TarArchiveOutputStream.
+	 * From the given tarGz File, return its TarArchiveInputStream.
 	 * @param fileTarGz
 	 * @return An input stream that holds a tar archive
 	 * @throws IOException
