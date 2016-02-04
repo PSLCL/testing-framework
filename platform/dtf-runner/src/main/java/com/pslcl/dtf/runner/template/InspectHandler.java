@@ -12,7 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -49,9 +48,7 @@ public class InspectHandler {
     private List<InspectInfo> resultInspectInfos;
     private List<InspectInfo> inspectInfos = null;
     
-//    private StepSetOffsets stepSetOffsets; 
-    private int iBeginSetOffset = -1;
-    private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin
+    private StepSetOffsets stepSetOffsets; 
     private int indexNextInspectInfo = 0;
     private boolean done;
     private final Logger log;
@@ -76,21 +73,7 @@ public class InspectHandler {
         this.currArtifact = null;
         this.resultInspectInfos = new ArrayList<InspectInfo>();
         this.done = false;
-        
-        
-
-        int iTempFinalSetOffset = initialSetStepCount;
-        int iSetOffset = initialSetStepCount;
-        while (true) {
-            SetStep setStep = new SetStep(setSteps.get(iSetOffset));
-            if (!setStep.getCommand().equals("inspect"))
-                break;
-            this.iBeginSetOffset = initialSetStepCount;
-            this.iFinalSetOffset = iTempFinalSetOffset;
-            if (++iTempFinalSetOffset >= setSteps.size())
-                break;
-            iSetOffset = iTempFinalSetOffset; // there is another step in this set
-        }
+        this.stepSetOffsets = new StepSetOffsets("inspect", setSteps, initialSetStepCount);
     }
     
     /**
@@ -133,8 +116,9 @@ public class InspectHandler {
     
     int computeInspectRequests() throws Exception { // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
         this.inspectInfos = new ArrayList<>();
-        if (this.iBeginSetOffset != -1) {
-            for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
+        int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
+        if (beginSetOffset >= 0) {
+            for (int i=beginSetOffset; i<=this.stepSetOffsets.getFinalSetOffset(); i++) {
                 try {
                     ResourceInstance resourceInstance = null;
                     String strInstructionsHash = null;

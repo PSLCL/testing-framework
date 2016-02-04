@@ -19,8 +19,7 @@ public class ConnectHandler {
 	private InstancedTemplate iT;
 	private List<String> setSteps;
     private boolean done;
-	private int iBeginSetOffset = -1;
-	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private StepSetOffsets stepSetOffsets; 
 	private List<ConnectInfo> connectInfos;
     private List<Future<? extends CableInstance>> futuresOfConnects;
     private final Logger log;
@@ -41,20 +40,8 @@ public class ConnectHandler {
 		this.connectInfos = null;
 		this.futuresOfConnects = new ArrayList<>();
         this.done = false;
+        this.stepSetOffsets = new StepSetOffsets("connect", setSteps, initialSetStepCount);
 //		this.mapFuturesToMachineInstance = new HashMap<Future<? extends CableInstance>, MachineInstance>();
-		
-		int iTempFinalSetOffset = initialSetStepCount;
-		int iSetOffset = initialSetStepCount;
-		while (true) {
-			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
-			if (!setStep.getCommand().equals("connect"))
-				break;
-			this.iBeginSetOffset = initialSetStepCount;
-			this.iFinalSetOffset = iTempFinalSetOffset;
-			if (++iTempFinalSetOffset >= setSteps.size())
-				break;
-			iSetOffset = iTempFinalSetOffset; // there is another step in this set
-		}
 	}
 	
     /**
@@ -81,8 +68,9 @@ public class ConnectHandler {
 
 	public int computeConnectRequests() throws Exception {
 		this.connectInfos = new ArrayList<>();
-        if (this.iBeginSetOffset != -1) {
-            for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
+        int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
+        if (beginSetOffset >= 0) {
+            for (int i=beginSetOffset; i<=this.stepSetOffsets.getFinalSetOffset(); i++) {
             	String connectStep = setSteps.get(i);
             	SetStep parsedSetStep = new SetStep(connectStep); // setID connect 0-based-machine-ref 0-based-network-reference
                                                                   // 9 connect 0 1

@@ -102,7 +102,7 @@ public class ToTarGz {
 			}
 		}
 		
-		if (true) { // true: temporarily, write tarGzipOut's directories and files to disk, at a temporary location
+		if (false) { // true: temporarily, write tarGzipOut's directories and files to disk, at a temporary location
 			FileInputStream fis = new FileInputStream(tarGzipOut);
 			this.writeFileStructure(fis);
 			fis.close();

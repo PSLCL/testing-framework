@@ -28,8 +28,7 @@ public class BindHandler {
 	
 	private InstancedTemplate iT;
 	private List<String> setSteps;
-	private int iBeginSetOffset = -1;
-	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private StepSetOffsets stepSetOffsets; 
 	private boolean reserveInProgress;
 	private final ResourceProviders resourceProviders;
 	private List<ResourceProvider> listResourceProviders;
@@ -70,19 +69,7 @@ public class BindHandler {
 		this.reservedResources = new ArrayList<>();
 		this.futuresOfResourceInstances = null;
 		this.resourceInstances = new ArrayList<>();
-		
-		int iTempFinalSetOffset = initialSetStepCount;
-		int iSetOffset = initialSetStepCount;
-		while (true) {
-			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
-			if (!setStep.getCommand().equals("bind"))
-				break;
-			this.iBeginSetOffset = initialSetStepCount;
-			this.iFinalSetOffset = iTempFinalSetOffset;
-			if (++iTempFinalSetOffset >= setSteps.size())
-				break;
-			iSetOffset = iTempFinalSetOffset; // there is another step in this set
-		}
+        this.stepSetOffsets = new StepSetOffsets("bind", setSteps, initialSetStepCount);		
 	}
 
 	/**
@@ -106,8 +93,9 @@ public class BindHandler {
     int computeReserveRequests(int currentStepReference, String templateId, long runId) throws Exception {
         try {
 			reserveResourceRequests = new ArrayList<>();
-			if (this.iBeginSetOffset != -1) {
-			    for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
+	        int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
+	        if (beginSetOffset >= 0) {
+	            for (int i=beginSetOffset; i<=this.stepSetOffsets.getFinalSetOffset(); i++) {
 			    	String bindStep = setSteps.get(i);
 			    	int bindStepReference = currentStepReference + i;
 			    	SetStep parsedSetStep = new SetStep(bindStep); // setID bind resourceName attributeKVPs 
