@@ -19,22 +19,11 @@ package com.pslcl.dtf.resource.aws.attr;
 public class ClientNames
 {
     /* ****************************************************************************
-     * Global declarations    
-    ******************************************************************************/    
-    public static final String AwsKeyBase = "amazonaws";
-    public static final String GroupIdKey = AwsKeyBase + ".group-id";
-    public static final String PslclKeyBase = "pslcl.dtf";
-    public static final String TestKeyBase = PslclKeyBase + ".test";
-    
-    public static final String TestShortNameKey = PslclKeyBase + ".short-name";
-    
-    public static final String TestShortNameDefault = "dtf";
-    
-    /* ****************************************************************************
      * AWS Client Configuration declarations    
      * see com.pslcl.dtf.resource.aws.AwsClientConfiguration     
     ******************************************************************************/    
-    public static final String ClientKeyBase = AwsKeyBase + ".client";
+    public static final String ClientKeyBase = InstanceNames.AwsKeyBase + ".client";
+    public static final String GroupIdKey = InstanceNames.AwsKeyBase + ".group-id";
     
     public static final String ConfiKey = ClientKeyBase + ".client-config"; // only used internally to cache the AWSClientConfiguration
     public static final String RegionKey = ClientKeyBase + ".region";

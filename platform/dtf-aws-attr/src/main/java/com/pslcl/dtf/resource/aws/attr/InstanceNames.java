@@ -24,7 +24,15 @@ public class InstanceNames
     /* ****************************************************************************
      * Global declarations    
     ******************************************************************************/
-    public static final String InstanceKeyBase = ClientNames.AwsKeyBase + ".ec2instance";
+    public static final String AwsKeyBase = "amazonaws";
+    public static final String PslclKeyBase = "pslcl.dtf";
+    public static final String TestKeyBase = PslclKeyBase + ".test";
+    
+    public static final String TestShortNameKey = PslclKeyBase + ".short-name";
+    
+    public static final String TestShortNameDefault = "dtf";
+    
+    public static final String InstanceKeyBase = AwsKeyBase + ".ec2instance";
     public static final String AvailabilityZoneKey = InstanceKeyBase + ".avail-zone";
     public static final String AvailabilityZoneDefault = "us-west-2a";
     
@@ -35,6 +43,8 @@ public class InstanceNames
     public static final String Ec2LinuxUserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh";
     public static final String Ec2WinUserDataDefault = "<script>\\STAF\\startSTAFProc.bat</script>";
     public static final String Ec2WindowsDefault = "false";
+    
+    
     
     /* ****************************************************************************
      * AWS Machine Provider bind declarations
@@ -77,7 +87,7 @@ public class InstanceNames
     public static final String SubnetVpcIdKey = SubnetKeyBase + ".vpc-name";
 
     public static final String SubnetCidrDefault = "10.0.0.0/28";
-    public static final String SubnetNameDefault = ClientNames.TestShortNameDefault + "-" + SubnetCidrDefault;
+    public static final String SubnetNameDefault = TestShortNameDefault + "-" + SubnetCidrDefault;
     public static final String SubnetSizeDefault = "16";  // nibble /28 cidr
     public static final String SubnetVpcNameDefault = VpcNameDefault;
     
@@ -91,7 +101,7 @@ public class InstanceNames
     public static final String SgMaxDelayKey = SgKeyBase + ".max-delay";       
     public static final String SgMaxRetriesKey = SgKeyBase + ".max-retries";   
     
-    public static final String SgNameDefault = ClientNames.TestShortNameDefault;
+    public static final String SgNameDefault = TestShortNameDefault;
     public static final String SgIdDefault = null;
     public static final String SgMaxDelayDefault = shortMaxDelay;      
     public static final String SgMaxRetriesDefault = shortMaxRetries;  // about 1 min timeout
@@ -117,9 +127,8 @@ public class InstanceNames
     public static final String Ec2MaxDelayKey = InstanceKeyBase + ".max-delay";
     public static final String Ec2MaxRetriesKey = InstanceKeyBase + ".max-retries";
     public static final String Ec2IamArnKey = InstanceKeyBase + ".iam-arn";
-    public static final String Ec2IamNameKey = InstanceKeyBase + ".max-retries";
+    public static final String Ec2IamNameKey = InstanceKeyBase + ".iam-name";
     public static final String Ec2KeyPairNameKey = InstanceKeyBase + ".keypair-name";
-    
     public static final String Ec2StallReleaseKey = InstanceKeyBase + ".stall-release";
     
     public static final String Ec2MaxDelayDefault = longMaxDelay;
@@ -147,7 +156,7 @@ public class InstanceNames
        keys.add(Ec2KeyPairNameKey);
        keys.add(Ec2LinuxUserDataKey);
        keys.add(Ec2WinUserDataKey);
-       keys.add(ClientNames.TestShortNameKey);
+       keys.add(TestShortNameKey);
        return keys;
     }
 }

@@ -27,7 +27,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
+import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 
@@ -90,7 +90,7 @@ public class PersonConfigData
         format.level.decrementAndGet();
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
+        data.resoucePrefixName = getAttribute(InstanceNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
         LoggerFactory.getLogger(PersonConfigData.class).debug(format.sb.toString());
         return data;
     }
@@ -120,7 +120,7 @@ public class PersonConfigData
         data.givenInspector = null;
         config.initsb.ttl("Test name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+        data.resoucePrefixName = getAttribute(config, InstanceNames.TestShortNameKey, InstanceNames.TestShortNameDefault);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;

@@ -121,6 +121,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             userData = encoder.encodeToString(config.winUserData.getBytes());
         //@formatter:off
         Placement placement = new Placement().withAvailabilityZone(config.subnetConfigData.availabilityZone);
+        
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
             .withImageId(reservedResource.imageId)
             .withInstanceType(reservedResource.instanceType)
@@ -133,9 +134,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             .withPlacement(placement);
         //@formatter:on
 
-        if (config.iamArn != null && config.iamName != null)
+        if (config.iamArn != null)// && config.iamName != null)
         {
-            IamInstanceProfileSpecification profile = new IamInstanceProfileSpecification().withArn(config.iamArn).withName(config.iamName);
+            IamInstanceProfileSpecification profile = new IamInstanceProfileSpecification().withArn(config.iamArn); //.withName(config.iamName);
             runInstancesRequest.setIamInstanceProfile(profile);
         }
 

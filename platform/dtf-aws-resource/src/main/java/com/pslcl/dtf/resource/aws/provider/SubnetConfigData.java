@@ -26,7 +26,6 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.TabToLevel;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 
 @SuppressWarnings("javadoc")
@@ -93,7 +92,7 @@ public class SubnetConfigData
         
         format.ttl("Resource name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault, resource, format);
+        data.resoucePrefixName = getAttribute(InstanceNames.TestShortNameKey, InstanceNames.TestShortNameDefault, resource, format);
         return data;
     }
 
@@ -132,7 +131,7 @@ public class SubnetConfigData
         
         config.initsb.ttl("Resource name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+        data.resoucePrefixName = getAttribute(config, InstanceNames.TestShortNameKey, InstanceNames.TestShortNameDefault);
         return data;
     }
 

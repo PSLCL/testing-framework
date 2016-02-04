@@ -31,7 +31,7 @@ public class ProviderNames
      * 
      * Instance type declarations    
     ******************************************************************************/    
-    public static final String InstanceKeyBase = ClientNames.AwsKeyBase + ".instance";
+    public static final String InstanceKeyBase = InstanceNames.AwsKeyBase + ".instance";
     public static final String InstanceTypeKeyBase = InstanceKeyBase + ".type";
     public static final String InstanceTypeLimit = "-limit";
     
@@ -64,7 +64,7 @@ public class ProviderNames
     ******************************************************************************/  
     
     // These are not all the possible filters but the ones thought of possible interest to generators and building defaults
-    public static final String ImageKeyBase = ClientNames.AwsKeyBase + ".image";
+    public static final String ImageKeyBase = InstanceNames.AwsKeyBase + ".image";
     
     public static final String ImageArchitectureKey = ImageKeyBase + ".architecture";
     public static final String ImageHypervisorKey = ImageKeyBase + ".hypervisor";
@@ -216,7 +216,7 @@ public class ProviderNames
     /* ****************************************************************************
      * PersonProvider declarations    
     ******************************************************************************/
-    public static final String PersonKeyBase = ClientNames.AwsKeyBase + ".ses";
+    public static final String PersonKeyBase = InstanceNames.AwsKeyBase + ".ses";
     
     // note that inspector is a base key and can be numbered from 0 on up, to add as many inspectors as desired
     public static final String SesSenderKey = PersonKeyBase + ".sender";
@@ -257,7 +257,7 @@ public class ProviderNames
        keys.add(LocationMonthKey);
        keys.add(LocationDotKey);
        keys.add(LocationFeatureKey);
-       keys.add(ClientNames.TestShortNameKey);
+       keys.add(InstanceNames.TestShortNameKey);
        return keys;
     }
     
@@ -290,7 +290,7 @@ public class ProviderNames
         keys.add(InstanceNames.PermProtocolKey);    // these are base#
         keys.add(InstanceNames.PermIpRangeKey);
         keys.add(InstanceNames.PermPortKey);
-        keys.add(ClientNames.TestShortNameKey);
+        keys.add(InstanceNames.TestShortNameKey);
         return keys;
     }
     public static List<String> getAllPersonProviderKeys()
