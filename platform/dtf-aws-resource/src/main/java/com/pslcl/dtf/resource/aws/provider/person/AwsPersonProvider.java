@@ -27,6 +27,7 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.PersonInstance;
@@ -36,7 +37,6 @@ import com.pslcl.dtf.core.util.RequestThrottle;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.instance.person.AwsPersonInstance;
 import com.pslcl.dtf.resource.aws.instance.person.PersonConfigData;
 import com.pslcl.dtf.resource.aws.instance.person.PersonInstanceFuture;
@@ -256,6 +256,6 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     @Override
     public List<String> getAttributes()
     {
-        return ProviderNames.getAllPersonProviderKeys();
+        return ResourceNames.getAllPersonProviderKeys();
     }
 }

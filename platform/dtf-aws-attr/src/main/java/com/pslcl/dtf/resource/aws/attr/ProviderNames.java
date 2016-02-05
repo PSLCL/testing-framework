@@ -22,12 +22,21 @@ import org.slf4j.Logger;
 
 import com.amazonaws.services.ec2.model.ImageAttributeName;
 import com.amazonaws.services.ec2.model.InstanceType;
-import com.pslcl.dtf.core.runner.resource.ResourceNames;
 
 @SuppressWarnings("javadoc")
 public class ProviderNames
 {
-    public static final String AwsKeyBase = ResourceNames.PslclKeyBase + ".aws";
+    // see dtf-core ResourceNames.PslclKeyBase, ResourceKeyBase and ResourceShortNameDefault.
+    // Did not want to depend on dtf-core
+    public static final String PslclKeyBase = "pslcl.dtf";  
+    public static final String ResourceKeyBase = PslclKeyBase + ".resource";    
+    public static final String ResourceShortNameDefault = "dtf";
+    
+    public static final String AwsKeyBase = PslclKeyBase + ".aws";
+    public static final String ShortMaxDelayDefault = "5000"; // 5 seconds
+    public static final String ShortMaxRetriesDefault = "17"; // roughly 1 minute
+    public static final String LongMaxDelayDefault = "15000"; // 15 seconds
+    public static final String LongMaxRetriesDefault = "67";  // roughly 15 minutes
     
     /* ****************************************************************************
      * AWS Machine Provider declarations
@@ -241,7 +250,6 @@ public class ProviderNames
        keys.add(LocationMonthKey);
        keys.add(LocationDotKey);
        keys.add(LocationFeatureKey);
-       keys.add(ResourceNames.ResourceShortNameKey);
        return keys;
     }
     
@@ -271,18 +279,6 @@ public class ProviderNames
         keys.add(InstanceNames.PermProtocolKey);
         keys.add(InstanceNames.PermIpRangeKey);
         keys.add(InstanceNames.PermPortKey);
-        return keys;
-    }
-    
-    public static List<String> getAllPersonProviderKeys()
-    {
-        List<String> keys = new ArrayList<String>();
-        keys.add(ResourceNames.InspectSenderKey);
-        keys.add(ResourceNames.InspectReplyKey);
-        keys.add(ResourceNames.InspectSubjectKey);
-        keys.add(ResourceNames.InspectInspectorKey);
-        keys.add(ResourceNames.InspectMaxDelayKey);
-        keys.add(ResourceNames.InspectMaxRetriesKey);
         return keys;
     }
 }

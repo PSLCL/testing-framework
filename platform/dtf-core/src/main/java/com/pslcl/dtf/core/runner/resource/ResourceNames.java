@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.core.runner.resource;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @SuppressWarnings("javadoc")
 public class ResourceNames
 {
@@ -127,4 +130,16 @@ public class ResourceNames
     public static final String InspectInspectorDefault = null;  // valid email address
     public static final String InspectMaxDelayDefault = ShortMaxDelayDefault;      
     public static final String InspectMaxRetriesDefault = ShortMaxRetriesDefault;  // about 1 min timeout
+    
+    public static List<String> getAllPersonProviderKeys()
+    {
+        List<String> keys = new ArrayList<String>();
+        keys.add(InspectSenderKey);
+        keys.add(InspectReplyKey);
+        keys.add(InspectSubjectKey);
+        keys.add(InspectInspectorKey);
+        keys.add(InspectMaxDelayKey);
+        keys.add(InspectMaxRetriesKey);
+        return keys;
+    }
 }

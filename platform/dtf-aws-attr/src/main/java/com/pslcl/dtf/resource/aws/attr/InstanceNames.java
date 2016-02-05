@@ -18,8 +18,6 @@ package com.pslcl.dtf.resource.aws.attr;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.pslcl.dtf.core.runner.resource.ResourceNames;
-
 @SuppressWarnings("javadoc")
 public class InstanceNames
 {
@@ -56,8 +54,8 @@ public class InstanceNames
     public static final String VpcNameAwsDefault = "aws-vpc-default";   
     public static final String VpcNameDefault = null;   // installation/site default
     public static final String VpcTenancyDefault = "default";
-    public static final String VpcMaxDelayDefault = ResourceNames.ShortMaxDelayDefault; 
-    public static final String VpcMaxRetriesDefault = ResourceNames.ShortMaxRetriesDefault;
+    public static final String VpcMaxDelayDefault = ProviderNames.ShortMaxDelayDefault; 
+    public static final String VpcMaxRetriesDefault = ProviderNames.ShortMaxRetriesDefault;
 
     /* ****************************************************************************
      * Subnet declarations
@@ -69,7 +67,7 @@ public class InstanceNames
     public static final String SubnetVpcIdKey = SubnetKeyBase + ".vpc-name";
 
     public static final String SubnetCidrDefault = "10.0.0.0/28";
-    public static final String SubnetNameDefault = ResourceNames.ResourceShortNameDefault + "-" + SubnetCidrDefault;
+    public static final String SubnetNameDefault = ProviderNames.ResourceShortNameDefault + "-" + SubnetCidrDefault;
     public static final String SubnetSizeDefault = "16";  // nibble /28 cidr
     public static final String SubnetVpcNameDefault = VpcNameDefault;
     
@@ -83,10 +81,10 @@ public class InstanceNames
     public static final String SgMaxDelayKey = SgKeyBase + ".max-delay";       
     public static final String SgMaxRetriesKey = SgKeyBase + ".max-retries";   
     
-    public static final String SgNameDefault = ResourceNames.ResourceShortNameDefault;
+    public static final String SgNameDefault = ProviderNames.ResourceShortNameDefault;
     public static final String SgIdDefault = null;
-    public static final String SgMaxDelayDefault = ResourceNames.ShortMaxDelayDefault;      
-    public static final String SgMaxRetriesDefault = ResourceNames.ShortMaxRetriesDefault;  // about 1 min timeout
+    public static final String SgMaxDelayDefault = ProviderNames.ShortMaxDelayDefault;      
+    public static final String SgMaxRetriesDefault = ProviderNames.ShortMaxRetriesDefault;  // about 1 min timeout
     
     /* ****************************************************************************
      * VPC Permissions
@@ -113,8 +111,8 @@ public class InstanceNames
     public static final String Ec2KeyPairNameKey = InstanceKeyBase + ".keypair-name";
     public static final String Ec2StallReleaseKey = InstanceKeyBase + ".stall-release";
     
-    public static final String Ec2MaxDelayDefault = ResourceNames.LongMaxDelayDefault;
-    public static final String Ec2MaxRetriesDefault = ResourceNames.LongMaxRetriesDefault;
+    public static final String Ec2MaxDelayDefault = ProviderNames.LongMaxDelayDefault;
+    public static final String Ec2MaxRetriesDefault = ProviderNames.LongMaxRetriesDefault;
     public static final String Ec2StallReleaseDefault = "50"; // in minutes
     
     public static List<String> getKeys()
