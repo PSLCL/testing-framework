@@ -153,7 +153,7 @@ public class InspectWithAttachmentFuture implements Callable<Void>
             // temp file creation/rename and delete as well as the call to RequestThrottle
             Session session = Session.getDefaultInstance(new Properties());
             MimeMessage message = new MimeMessage(session);
-            message.setSubject(config.subject, "UTF-8");
+            message.setSubject(config.subject + "runId: " + pdelayData.coord.getRunId() , "UTF-8");
 
             message.setFrom(new InternetAddress(config.sender));
             message.setReplyTo(new Address[] { new InternetAddress(config.reply) });
@@ -181,7 +181,8 @@ public class InspectWithAttachmentFuture implements Callable<Void>
             attachment.setHeader("Content-ID", "<" + id + ">");
             attachment.setFileName(fds.getName());
             content.addBodyPart(attachment);            
-            html.setContent("<html><body>" + bodyText + "</body></html>", "text/html");
+//            html.setContent("<html><body>" + bodyText + "</body></html>", "text/html");
+            html.setContent(bodyText, "text/html");
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             message.writeTo(outputStream);

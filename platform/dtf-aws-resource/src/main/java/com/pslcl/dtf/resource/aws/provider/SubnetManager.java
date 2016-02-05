@@ -163,14 +163,14 @@ public class SubnetManager
             List<Subnet> list = subnetMap.get(vpcId);
             for (Subnet subnet : list)
             {
-                if (subnet.getAvailabilityZone().equals(config.availabilityZone))
+                if (subnet.getAvailabilityZone().equals(manager.ec2cconfig.availabilityZone))
                     return subnet;
             }
         }
 
         CreateSubnetRequest request = new CreateSubnetRequest()
             .withVpcId(vpcId).withCidrBlock(config.vpcCidr)
-            .withAvailabilityZone(config.availabilityZone);
+            .withAvailabilityZone(manager.ec2cconfig.availabilityZone);
         
         pdelayData.maxDelay = config.sgMaxDelay;
         pdelayData.maxRetries = config.sgMaxRetries;

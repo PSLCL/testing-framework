@@ -22,7 +22,6 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetConfigData;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
@@ -56,7 +55,7 @@ public class MachineConfigData
 
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
+        data.resoucePrefixName = getAttribute(ResourceNames.ResourceShortNameKey, defaultData.resoucePrefixName, resource, format);
         LoggerFactory.getLogger(MachineConfigData.class).debug(format.sb.toString());
         format.level.decrementAndGet();
         
@@ -66,8 +65,8 @@ public class MachineConfigData
         data.ec2MaxDelay = Integer.parseInt(getAttribute(InstanceNames.Ec2MaxDelayKey, ""+defaultData.ec2MaxDelay, resource, format));
         data.ec2MaxRetries = Integer.parseInt(getAttribute(InstanceNames.Ec2MaxRetriesKey, ""+defaultData.ec2MaxRetries, resource, format));
         data.stallReleaseMinutes = Integer.parseInt(getAttribute(InstanceNames.Ec2StallReleaseKey, ""+defaultData.stallReleaseMinutes, resource, format));
-        data.iamArn = getAttribute(InstanceNames.Ec2IamArnKey, null, resource, format);
-        data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, null, resource, format);
+        data.iamArn = getAttribute(InstanceNames.Ec2IamArnKey, defaultData.iamArn, resource, format);
+        data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, defaultData.iamName, resource, format);
         data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, defaultData.keyName, resource, format);
         data.windows = Boolean.parseBoolean(getAttribute(InstanceNames.Ec2WindowsKey, ""+defaultData.windows, resource, format));
         data.linuxUserData = getAttribute(InstanceNames.Ec2LinuxUserDataKey, defaultData.linuxUserData, resource, format);
@@ -106,7 +105,7 @@ public class MachineConfigData
         
         config.initsb.ttl("Test name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+        data.resoucePrefixName = getAttribute(config, ResourceNames.ResourceShortNameKey, ResourceNames.ResourceShortNameDefault);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;

@@ -19,26 +19,33 @@ package com.pslcl.dtf.resource.aws.attr;
 public class ClientNames
 {
     /* ****************************************************************************
-     * Global declarations    
-    ******************************************************************************/    
-    public static final String AwsKeyBase = "amazonaws";
-    public static final String GroupIdKey = AwsKeyBase + ".group-id";
-    public static final String PslclKeyBase = "pslcl.dtf";
-    public static final String TestKeyBase = PslclKeyBase + ".test";
-    
-    public static final String TestShortNameKey = PslclKeyBase + ".short-name";
-    
-    public static final String TestShortNameDefault = "dtf";
-    
-    /* ****************************************************************************
      * AWS Client Configuration declarations    
      * see com.pslcl.dtf.resource.aws.AwsClientConfiguration     
     ******************************************************************************/    
-    public static final String ClientKeyBase = AwsKeyBase + ".client";
+    public static final String ClientKeyBase = ProviderNames.AwsKeyBase + ".client";
+    public static final String SqsClientKeyBase = ClientKeyBase + ".sqs";
+    public static final String Ec2ClientKeyBase = ClientKeyBase + ".ec2";
+    public static final String SesClientKeyBase = ClientKeyBase + ".ses";
+
+    public static final String AvailabilityZoneName = ".avail-zone";
+    public static final String RegionName = ".region";
+    public static final String EndpointName = ".endpoint";
     
-    public static final String ConfiKey = ClientKeyBase + ".client-config"; // only used internally to cache the AWSClientConfiguration
-    public static final String RegionKey = ClientKeyBase + ".region";
-    public static final String EndpointKey = ClientKeyBase + ".endpoint";
+    public static final String SqsAvailabilityZoneDefault = "us-west-2a";
+    public static final String SqsRegionDefault = "us-west-2a";
+    public static final String SqsEndpointDefault = "us-west-2a";
+
+    public static final String Ec2AvailabilityZoneDefault = "us-west-2a";
+    public static final String Ec2RegionDefault = "us-west-2a";
+    public static final String Ec2EndpointDefault = "us-west-2a";
+
+    public static final String SesAvailabilityZoneDefault = "us-west-2a";
+    public static final String SesRegionDefault = "us-west-2a";
+    public static final String SesEndpointDefault = "us-west-2a";
+
+    public static final String GroupIdKey = ClientKeyBase + ".group-id";
+    
+//    public static final String ConfiKey = ClientKeyBase + ".client-config"; // only used internally to cache the AWSClientConfiguration
 
     public static final String ConnectionTimeoutKey = ClientKeyBase + ".connection-timeout";
     public static final String MaxConnectionsKey = ClientKeyBase + ".max-connections";
@@ -63,8 +70,8 @@ public class ClientNames
     public static final String ConnectionTtlKey = ClientKeyBase + ".connection-ttl";
     
     public static final String GroupIdDefault = "AwsTestResource";
-    public static final String RegionDefault = "us-west-1";
-    public static final String EndpointDefault = "ec2.us-west-2.amazonaws.com";
+//    public static final String RegionDefault = "us-west-1";
+//    public static final String EndpointDefault = "ec2.us-west-2.amazonaws.com";
     public static final String ConnectionTimeoutDefault = "50000";
     public static final String MaxConnectionsDefault = "50";
     public static final String MaxErrorRetryDefault = "-1";
@@ -87,3 +94,28 @@ public class ClientNames
     public static final String SignerOverrideDefault = null;
     public static final String ConnectionTtlDefault = "-1";
 }
+/*
+amazonaws.client
+amazonaws.group-id
+amazonaws.client.client-config
+amazonaws.client.region
+amazonaws.client.endpoint
+amazonaws.client.retry-policy
+amazonaws.client.local-address
+amazonaws.client.protocol
+amazonaws.client.proxy-domain
+amazonaws.client.proxy-host
+amazonaws.client.proxy-password
+amazonaws.client.proxy-port
+amazonaws.client.proxy-user-name
+amazonaws.client.proxy-workstation
+amazonaws.client.preemptive-proxy-auth
+amazonaws.client.socket-timeout
+amazonaws.client.user-agent
+amazonaws.client.use-reaper
+amazonaws.client.use-gzip
+amazonaws.client.socket-receive-buff-size-hint
+amazonaws.client.socket-send-buff-size-hint
+amazonaws.client.signer-override
+amazonaws.client.connection-ttl
+*/

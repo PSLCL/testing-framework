@@ -62,6 +62,30 @@ a nohup.out log file is created at /home/ec2-user
 
 Setup your machine to auto start STAF on reboot (i.e. /etc/rc.local)
 
+#### Create AWS AMI's
+Linux
+1. Launch an EC2 instance with the desired public or private AMI 
+	a. if windows add this to user data without quotes: "<script>\\STAF\\startSTAFProc.bat</script>" 
+2. Install STAF
+3. If windows do Sysprep outlined below.
+4. Save this EC2 instance as AMI
+5. Modify the Test Runner Service Configuration and modify the amazonaws.image.image-id with the ami-id if this is to be the default image.
+	a. for example: amazonaws.image.image-id=ami-315b7e5b
+	b. test-scripts can also set the above key/ami-id to specify which image to be used.
+
+Windows SysPrep:
+For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ami-create-standard.html before saving the image.
+1. Bring up a remote desktop client to the EC2 image establish in the above steps.
+2. Run the "EC2ConfigService Settings" application
+3. In the "General" tab
+	a. select "Set Computer Name" check box.
+	b. select "User Data" check box.
+	c. select "Event Log" check box.
+	d. select "Wallpaper Information" check box.
+4. In the "Image" tab
+	a. create another user and assign that user administrator rights.
+	b. select "Keep Existing" radio button.
+	c. click the "Shutdown with Sysprep" button.
 
 ###Test Runner Service Configuration
 

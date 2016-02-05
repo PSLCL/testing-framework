@@ -24,15 +24,15 @@ import java.util.Map.Entry;
 import com.amazonaws.services.ec2.model.IpPermission;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.TabToLevel;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 
 @SuppressWarnings("javadoc")
 public class SubnetConfigData
 {
-    public volatile String availabilityZone;
+//    public volatile String availabilityZone;
     public volatile String vpcName;
     public volatile String vpcCidr;
     public volatile String vpcTenancy;
@@ -66,7 +66,7 @@ public class SubnetConfigData
         format.level.incrementAndGet();
         format.ttl("VPC/Subnet: ");
         format.level.incrementAndGet();
-        data.availabilityZone = getAttribute(InstanceNames.AvailabilityZoneKey, defaultData.availabilityZone, resource, format);
+//        data.availabilityZone = getAttribute(InstanceNames.AvailabilityZoneKey, defaultData.availabilityZone, resource, format);
         data.vpcName = getAttribute(InstanceNames.VpcNameKey, defaultData.vpcName, resource, format);
         data.vpcCidr = getAttribute(InstanceNames.VpcCidrKey, defaultData.vpcCidr, resource, format);
         data.vpcTenancy = getAttribute(InstanceNames.VpcTenancyKey, defaultData.vpcTenancy, resource, format);
@@ -93,7 +93,7 @@ public class SubnetConfigData
         
         format.ttl("Resource name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault, resource, format);
+        data.resoucePrefixName = getAttribute(ResourceNames.ResourceShortNameKey, ResourceNames.ResourceShortNameDefault, resource, format);
         return data;
     }
 
@@ -104,7 +104,6 @@ public class SubnetConfigData
         config.initsb.level.incrementAndGet();
         config.initsb.ttl("VPC/Subnet defaults init: ");
         config.initsb.level.incrementAndGet();
-        data.availabilityZone = getAttribute(config, InstanceNames.AvailabilityZoneKey, InstanceNames.AvailabilityZoneDefault);
         data.vpcName = getAttribute(config, InstanceNames.VpcNameKey, InstanceNames.VpcNameDefault);
         data.vpcCidr = getAttribute(config, InstanceNames.VpcCidrKey, InstanceNames.VpcCidrDefault);
         data.vpcTenancy = getAttribute(config, InstanceNames.VpcTenancyKey, InstanceNames.VpcTenancyDefault);
@@ -113,7 +112,7 @@ public class SubnetConfigData
         data.subnetCidr = getAttribute(config, InstanceNames.SubnetCidrKey, InstanceNames.SubnetCidrDefault);
         data.subnetName = getAttribute(config, InstanceNames.SubnetNameKey, InstanceNames.SubnetNameDefault);
         data.subnetSize = Integer.parseInt(getAttribute(config, InstanceNames.SubnetSizeKey, InstanceNames.SubnetSizeDefault));
-        data.subnetVpcId = getAttribute(config, InstanceNames.AvailabilityZoneKey, InstanceNames.AvailabilityZoneDefault);
+//        data.subnetVpcId = getAttribute(config, InstanceNames.AvailabilityZoneKey, InstanceNames.AvailabilityZoneDefault);
         config.initsb.level.decrementAndGet();
 
         config.initsb.ttl("SecurityGroup defaults init:");
@@ -132,7 +131,7 @@ public class SubnetConfigData
         
         config.initsb.ttl("Resource name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+        data.resoucePrefixName = getAttribute(config, ResourceNames.ResourceShortNameKey, ResourceNames.ResourceShortNameDefault);
         return data;
     }
 
