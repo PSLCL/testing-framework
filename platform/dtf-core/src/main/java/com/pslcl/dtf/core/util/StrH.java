@@ -345,5 +345,33 @@ public class StrH
             value = value.trim();
             maximum = Double.parseDouble(value);
         }
+        
+        /**
+         *  Inclusive in range check
+         * @param value given
+         * @return if given range fits within this/my range return true.
+         */
+        public boolean inRange(double value)
+        {
+            if(value < minimum)
+                return false;
+            if(value > maximum)
+                return false;
+            return true;
+        }
+
+        /**
+         *  Inclusive in range check
+         * @param range given
+         * @return if given range fits within this/my range return true.
+         */
+        public boolean inRange(DoubleRange range)
+        {
+            if(minimum < range.minimum)
+                return false;
+            if(maximum > range.maximum)
+                return false;
+            return true;
+        }
     }
 }

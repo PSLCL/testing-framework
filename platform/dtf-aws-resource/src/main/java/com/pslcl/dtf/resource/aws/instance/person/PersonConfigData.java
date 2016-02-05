@@ -46,7 +46,7 @@ public class PersonConfigData
     
 //    private final String sender;
 //    private final String reply;
-//  private final String subject;
+//    private final String subject;
 //    private final String recipient;
 //    private final Region region;
     
