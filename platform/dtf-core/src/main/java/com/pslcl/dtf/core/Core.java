@@ -2931,6 +2931,29 @@ public class Core
             safeClose(statement);
         }
     }
+    
+    public void addResultToRun(long runID, boolean result) throws Exception {
+        Statement statement = null; 
+        
+        if (read_only)
+            return;
+        
+        try
+        {
+        	statement = connect.createStatement();
+            int rowsUpdated = statement.executeUpdate("Update run SET result = " + result + ", end_time = " + System.currentTimeMillis() + " WHERE pk_run = " + runID);
+            if(rowsUpdated == 0){
+            	throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
+            }
+        } catch(Exception e)
+        {
+            System.err.println(e.getMessage());
+            throw e;
+        } finally
+        {
+            safeClose(statement);
+        }
+    }
 
     public long createInstanceRun(long testInstanceNumber) throws Exception
     {

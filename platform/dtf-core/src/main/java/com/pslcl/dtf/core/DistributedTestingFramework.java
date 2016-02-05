@@ -110,7 +110,8 @@ public class DistributedTestingFramework
         System.out.println("[program] result <arguments> <result>");
         System.out.println("  <result> - either 'pass' or 'fail'");
         System.out.println("arguments are:");
-        System.out.println("  --template <hash> - required - the template to apply the result to.");
+        System.out.println("  --hash <hash> - required unless --run is specified - the template(identifed by its hash) to apply the result to. This argument creates a new test run.");
+        System.out.println("  --run <run-id> - required unless --hash is specified - the test run to apply the result to.");
         System.exit(1);
     }
 
@@ -723,19 +724,28 @@ public class DistributedTestingFramework
     private static void result(String[] args)
     {
         String hash = null;
+        Long run = null;
         Boolean result = null;
 
         if (args.length != 2 || args[1].compareTo("--help") == 0)
             resultHelp();
+                
 
         for (int i = 1; i < args.length; i++)
         {
             if (args[i].compareTo("--hash") == 0 && args.length > i)
             {
-                if (hash != null)
+                if (hash != null || run != null)
                     resultHelp();
 
                 hash = args[i + 1];
+                i += 1;
+            } else if (args[i].compareTo("--run") == 0 && args.length > i)
+            {
+                if (hash != null || run != null)
+                    resultHelp();
+
+                run = Long.getLong(args[i + 1]);
                 i += 1;
             } else if (args[i].compareTo("pass") == 0 && args.length == i + 1)
             {
@@ -747,12 +757,23 @@ public class DistributedTestingFramework
                 resultHelp();
         }
 
-        if (result == null || hash == null)
+        if (result == null || (hash == null && run == null)){
+        	System.err.println("Missing required argument");
             resultHelp();
+        }
 
         Core core = new Core(0);
-        core.reportResult(hash, result, null, null, null, null);
-        core.close();
+        try{
+        	if(hash != null){
+        		core.reportResult(hash, result, null, null, null, null);
+        	} else{
+        		core.addResultToRun(run, result);
+        	}
+        } catch(Exception e){
+        	System.err.println("Failed to add result: " + e);
+        } finally{
+        	core.close();
+        }
     }
 
     private static class PopulateArtifact implements Artifact
