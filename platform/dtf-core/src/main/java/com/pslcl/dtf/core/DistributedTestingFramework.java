@@ -727,7 +727,7 @@ public class DistributedTestingFramework
         Long run = null;
         Boolean result = null;
 
-        if (args.length != 2 || args[1].compareTo("--help") == 0)
+        if (args.length < 2 || args[1].compareTo("--help") == 0)
             resultHelp();
                 
 
