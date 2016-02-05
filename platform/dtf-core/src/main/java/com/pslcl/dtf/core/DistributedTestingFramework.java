@@ -706,10 +706,10 @@ public class DistributedTestingFramework
 	    	sqs.init();
 	    	List<Long> testRuns = new ArrayList<Long>();
 	    	if(manualTestInstanceNumber > -1){
-	            	testRuns.add(core.createInstanceRun(manualTestInstanceNumber));
+	            	testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
 	        } else if(manualTestNumber > -1){
 	        	for(long testInstance: core.getTestInstances(manualTestNumber)){
-	            	testRuns.add(core.createInstanceRun(testInstance));
+	            	testRuns.add(core.createInstanceRun(testInstance, owner));
 	        	}
 	        }
 	            
