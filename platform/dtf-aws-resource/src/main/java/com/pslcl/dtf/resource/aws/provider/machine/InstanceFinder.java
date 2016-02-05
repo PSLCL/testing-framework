@@ -16,13 +16,17 @@
 package com.pslcl.dtf.resource.aws.provider.machine;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.dtf.core.util.PropertiesFile;
+import com.pslcl.dtf.core.util.StrH.DoubleRange;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
 @SuppressWarnings("javadoc")
@@ -30,6 +34,7 @@ public class InstanceFinder
 {
     private final Map<String, AtomicInteger> limits;
     private volatile String instanceType;
+    private volatile GlobalAttrMapData[] defaultGlobalAttrMapData; 
 
     public InstanceFinder()
     {
@@ -54,6 +59,16 @@ public class InstanceFinder
             limits.put(ProviderNames.instanceTypes[i].toString(), new AtomicInteger(limit));
         }
         config.initsb.level.decrementAndGet();
+        config.initsb.ttl("Global to AWS mapping configuration:");
+        config.initsb.level.incrementAndGet();
+        List<Entry<String,String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.InstanceGlobalMapKey, config.properties);
+        for(Entry<String, String> entry : list)
+        {
+            entry.getKey();
+        }
+        instanceType = config.properties.getProperty(ProviderNames.InstanceTypeKey, ProviderNames.InstanceTypeDefault);
+        config.initsb.level.decrementAndGet();
+        
     }        
 
     public InstanceType findInstance(ResourceDescription resource) throws ResourceNotFoundException
@@ -105,5 +120,30 @@ public class InstanceFinder
         if(count.get() == -1)
             return;
         count.incrementAndGet();
+    }
+    
+    private class GlobalAttrMapData
+    {
+        private String amiId; 
+        private final int cores;
+        private final DoubleRange memory;
+        private final DoubleRange diskSpace;
+        
+        private GlobalAttrMapData(int cores, String memoryRange, String diskRange)
+        {
+            this.cores = cores;
+            memory = new DoubleRange(memoryRange);
+            diskSpace = new DoubleRange(diskRange);
+        }
+
+        public synchronized String getAmiId()
+        {
+            return amiId;
+        }
+
+        public synchronized void setAmiId(String amiId)
+        {
+            this.amiId = amiId;
+        }
     }
 }

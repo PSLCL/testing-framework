@@ -80,6 +80,7 @@ public class ResourceNames
     public static final String ResourceKeyBase = PslclKeyBase + ".resource";    
     public static final String ResourceShortNameKey = ResourceKeyBase + ".short-name";
     public static final String ResourceManagerClassKey = ResourceKeyBase + ".resource-manager-class";
+    public static final String ResourcePersonEmailKey = ResourceKeyBase + ".person.email";
     
     public static final String ResourceShortNameDefault = "dtf";
     public static final String ResourceManagerClassDefault = "com.pslcl.dtf.resource.aws.AwsResourcesManager";
@@ -92,12 +93,12 @@ public class ResourceNames
     public static final String MachineCoresKey = MachineKeyBase + ".cores";
     public static final String MachineMemoryKey = MachineKeyBase + ".memory-size";
     public static final String MachineDiskKey = MachineKeyBase + ".disk-size";
-    public static final String ImageImageIdKey = ImageBase + ".id";
+    public static final String ImageImageIdKey = MachineKeyBase + ".image-id";
     public static final String ImageConfigKey = ImageBase + ".image";
     
-    public static final String MachineCoresDefault = "2";
-    public static final String MachineMemoryDefault = "4g";
-    public static final String MachineDiskDefault = "10g";
+    public static final String MachineCoresDefault = "1";
+    public static final String MachineMemoryDefault = "2.0";
+    public static final String MachineDiskDefault = "4.0";
     public static final String ImageImageIdDefault = null;
     public static final String ImageConfigDefault = null;
 

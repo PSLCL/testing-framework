@@ -49,8 +49,10 @@ public class ProviderNames
     public static final String InstanceTypeLimit = "-limit";
     
     public static final String InstanceTypeKey = InstanceKeyBase + ".type";
+    public static final String InstanceGlobalMapKey = InstanceKeyBase + ".map";
 
     public static final String InstanceTypeDefault = InstanceType.M3Medium.toString();
+    public static final String InstanceGlobalMapDefault = null; // always pick InstanceTypeDefault
     
     // use the toString() method of the aws's InstanceType for the desired Attribute String.
     // for example attributes.put(AwsNames.AwsInstanceTypeKey, InstanceType.C1Medium.toString());

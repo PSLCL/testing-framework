@@ -64,9 +64,9 @@ public class PersonConfigData
         format.level.incrementAndGet();
         data.sesMaxDelay = Integer.parseInt(getAttribute(ResourceNames.InspectMaxDelayKey, "" + defaultData.sesMaxDelay, resource, format));
         data.sesMaxRetries = Integer.parseInt(getAttribute(ResourceNames.InspectMaxRetriesKey, "" + defaultData.sesMaxRetries, resource, format));
-        data.sender = getAttribute(ResourceNames.InspectSenderKey, "" + defaultData.sender, resource, format);
-        data.reply = getAttribute(ResourceNames.InspectReplyKey, "" + defaultData.reply, resource, format);
-        data.subject = getAttribute(ResourceNames.InspectSubjectKey, "" + defaultData.subject, resource, format);
+        data.sender = getAttribute(ResourceNames.InspectSenderKey, defaultData.sender, resource, format);
+        data.reply = getAttribute(ResourceNames.InspectReplyKey, defaultData.reply, resource, format);
+        data.subject = getAttribute(ResourceNames.InspectSubjectKey, defaultData.subject, resource, format);
         format.ttl(PersonConfigData.class.getSimpleName() + " inspectors:");
         format.level.incrementAndGet();
         List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ResourceNames.InspectInspectorKey, resource.getAttributes());
@@ -83,7 +83,7 @@ public class PersonConfigData
             }
         }else
         {
-            data.givenInspector = list.get(0).getValue();   // only accepting the first given
+            data.givenInspector = getAttribute(ResourceNames.ResourcePersonEmailKey, defaultData.givenInspector, resource, format);
             format.ttl(ResourceNames.InspectInspectorKey, " = ", data.givenInspector);
         }
         format.level.decrementAndGet();
@@ -109,6 +109,7 @@ public class PersonConfigData
         config.initsb.level.incrementAndGet();
         List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ResourceNames.InspectInspectorKey, config.properties);
         // if there are no site configured inspectors, there is no possible default.
+        
         if(list.size() == 0)
             throw new Exception("at least one " + ResourceNames.InspectInspectorKey + " must be specified in the site configuration properties file");
         for (Entry<String, String> entry : list)
