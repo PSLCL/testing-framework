@@ -2941,7 +2941,7 @@ public class Core
         try
         {
         	statement = connect.createStatement();
-            int rowsUpdated = statement.executeUpdate("Update run SET result = " + result + ", end_time = " + System.currentTimeMillis() + " WHERE pk_run = " + runID);
+            int rowsUpdated = statement.executeUpdate("Update run SET result = " + result + ", end_time = NOW() WHERE pk_run = " + runID);
             if(rowsUpdated == 0){
             	throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
             }
