@@ -2955,7 +2955,7 @@ public class Core
         }
     }
 
-    public long createInstanceRun(long testInstanceNumber) throws Exception
+    public long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {
     	PreparedStatement runStatement = null;
         Statement templateStatement = null;
@@ -2990,7 +2990,12 @@ public class Core
         	runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
         	runStatement.setString(1, hash);
            	runStatement.setNull(2, Types.BOOLEAN);
-           	runStatement.setNull(3, Types.VARCHAR);
+           	
+            if (owner != null)
+            	runStatement.setString(3, owner);
+            else
+            	runStatement.setNull(3, Types.VARCHAR);
+            
             runStatement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
             runStatement.setNull(5, Types.TIMESTAMP);
             runStatement.setNull(6, Types.TIMESTAMP);
