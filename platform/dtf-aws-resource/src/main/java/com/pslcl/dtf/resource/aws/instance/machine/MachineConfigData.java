@@ -55,7 +55,7 @@ public class MachineConfigData
 
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(InstanceNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
+        data.resoucePrefixName = getAttribute(ResourceNames.ResourceShortNameKey, defaultData.resoucePrefixName, resource, format);
         LoggerFactory.getLogger(MachineConfigData.class).debug(format.sb.toString());
         format.level.decrementAndGet();
         
@@ -105,7 +105,7 @@ public class MachineConfigData
         
         config.initsb.ttl("Test name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, InstanceNames.TestShortNameKey, InstanceNames.TestShortNameDefault);
+        data.resoucePrefixName = getAttribute(config, ResourceNames.ResourceShortNameKey, ResourceNames.ResourceShortNameDefault);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;

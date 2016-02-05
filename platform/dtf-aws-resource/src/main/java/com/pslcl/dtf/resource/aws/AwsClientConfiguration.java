@@ -43,27 +43,51 @@ public class AwsClientConfiguration
      * 
      * @throws JMSException 
      */
-    public static AwsClientConfig getClientConfiguration(RunnerConfig config) throws Exception
+    public static AwsClientConfig getClientConfiguration(RunnerConfig config, ClientType type) throws Exception
     {
-        AwsClientConfig awsClientConfig = (AwsClientConfig) config.properties.get(ClientNames.ConfiKey);
-        if (awsClientConfig != null)
-            return awsClientConfig;
-
-        config.initsb.ttl("AWS Client Configuration:");
-        config.initsb.level.incrementAndGet();
-
-        String value = config.properties.getProperty(ClientNames.RegionKey, ClientNames.RegionDefault);
-        config.initsb.ttl(ClientNames.RegionKey, " = ", value);
+        String locationKey = ClientNames.ClientKeyBase; 
+        String availDefault = null;
+        String regionDefault = null;
+        String endpointDefault = null;
+        switch(type)
+        {
+            case Ec2:
+                locationKey = ClientNames.Ec2ClientKeyBase;
+                availDefault = ClientNames.Ec2AvailabilityZoneDefault;
+                regionDefault = ClientNames.Ec2RegionDefault;
+                endpointDefault = ClientNames.Ec2EndpointDefault;
+                break;
+            case Ses:
+                locationKey = ClientNames.SesClientKeyBase;
+                availDefault = ClientNames.SesAvailabilityZoneDefault;
+                regionDefault = ClientNames.SesRegionDefault;
+                endpointDefault = ClientNames.SesEndpointDefault;
+                break;
+            case Sqs:
+                locationKey = ClientNames.SqsClientKeyBase;
+                availDefault = ClientNames.SqsAvailabilityZoneDefault;
+                regionDefault = ClientNames.SqsRegionDefault;
+                endpointDefault = ClientNames.SqsEndpointDefault;
+                break;
+            default:
+                break;
+        }
+        
+        String value = config.properties.getProperty(locationKey + ClientNames.RegionName, regionDefault);
+        config.initsb.ttl(locationKey+ ClientNames.RegionName, " = ", value);
         Region region = RegionUtils.getRegion(value);
         
-        value = config.properties.getProperty(ClientNames.EndpointKey, ClientNames.EndpointDefault);
-        config.initsb.ttl(ClientNames.EndpointKey, " = ", value);
+        value = config.properties.getProperty(locationKey + ClientNames.EndpointName, endpointDefault);
+        config.initsb.ttl(locationKey + ClientNames.EndpointName, " = ", value);
         String endpoint = value;
+        
+        value = config.properties.getProperty(locationKey + ClientNames.AvailabilityZoneName, availDefault);
+        config.initsb.ttl(locationKey + ClientNames.AvailabilityZoneName, " = ", value);
+        String availabilityZone = value;
         
         value = config.properties.getProperty(ClientNames.GroupIdKey, ClientNames.GroupIdDefault);
         config.initsb.ttl(ClientNames.GroupIdKey, " = ", value);
         String groupId = value;
-        
         
         value = config.properties.getProperty(ClientNames.ConnectionTimeoutKey, ClientNames.ConnectionTimeoutDefault);
         config.initsb.ttl(ClientNames.ConnectionTimeoutKey, " = ", value);
@@ -188,9 +212,9 @@ public class AwsClientConfiguration
             clientConfig.setRetryPolicy(rpolicy);
         }
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain(); // finds available aws creds
-        awsClientConfig = new AwsClientConfig(clientConfig, providerChain, region, endpoint, groupId);
-        config.properties.put(ClientNames.ConfiKey, awsClientConfig);
-        return awsClientConfig;
+        return new AwsClientConfig(clientConfig, providerChain, region, endpoint, availabilityZone, groupId);
+//        config.properties.put(ClientNames.ConfiKey, awsClientConfig);
+//        return awsClientConfig;
     }
 
     public static class AwsClientConfig
@@ -199,6 +223,7 @@ public class AwsClientConfiguration
         public final DefaultAWSCredentialsProviderChain providerChain;
         public final Region region;
         public final String endpoint;
+        public final String availabilityZone;
         public final String groupId;
 
         //@formatter:off
@@ -207,6 +232,7 @@ public class AwsClientConfiguration
                         DefaultAWSCredentialsProviderChain providerChain, 
                         Region region,
                         String endpoint, 
+                        String availabilityZone,
                         String groupId)
         //@formatter:on
         {
@@ -214,7 +240,13 @@ public class AwsClientConfiguration
             this.providerChain = providerChain;
             this.region = region;
             this.endpoint = endpoint;
+            this.availabilityZone = availabilityZone;
             this.groupId = groupId;
         }
+    }
+    
+    public enum ClientType
+    {
+        Ec2, Ses, Sqs;
     }
 }

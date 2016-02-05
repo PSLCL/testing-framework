@@ -24,7 +24,6 @@ import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.CreateTagsRequest;
 import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
-import com.amazonaws.services.sns.AmazonSNSClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
@@ -34,6 +33,7 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
+import com.pslcl.dtf.resource.aws.AwsClientConfiguration.ClientType;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
@@ -51,7 +51,7 @@ public class AwsResourcesManager implements ResourcesManager
     public final AwsPersonProvider personProvider;
     public volatile SubnetManager subnetManager;
     public volatile AmazonEC2Client ec2Client;
-    public volatile AmazonSNSClient snsClient;
+    public volatile AwsClientConfig ec2cconfig;
     public volatile AmazonSimpleEmailServiceClient sesClient;
     
     public AwsResourcesManager()
@@ -182,19 +182,22 @@ public class AwsResourcesManager implements ResourcesManager
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
         
-        AwsClientConfig cconfig = AwsClientConfiguration.getClientConfiguration(config);
-        ec2Client = new AmazonEC2Client(cconfig.clientConfig);
-        ec2Client.setEndpoint(cconfig.endpoint);
+        config.initsb.ttl("ec2Client:");
+        config.initsb.level.incrementAndGet();
+        ec2cconfig = AwsClientConfiguration.getClientConfiguration(config, ClientType.Ec2);
+        ec2Client = new AmazonEC2Client(ec2cconfig.clientConfig);
+        ec2Client.setEndpoint(ec2cconfig.endpoint);
         config.initsb.ttl("obtained ec2Client");
+        config.initsb.level.decrementAndGet();
         
-        snsClient = new AmazonSNSClient(cconfig.clientConfig);
-        snsClient.setEndpoint(cconfig.endpoint);
-        config.initsb.ttl("obtained snsClient");
-        
-        sesClient = new AmazonSimpleEmailServiceClient(cconfig.clientConfig);
-        sesClient.setRegion(cconfig.region);
-//        sesClient.setEndpoint(cconfig.endpoint);
+        config.initsb.ttl("sesClient:");
+        config.initsb.level.incrementAndGet();
+        AwsClientConfig sescconfig = AwsClientConfiguration.getClientConfiguration(config, ClientType.Ses);
+        sesClient = new AmazonSimpleEmailServiceClient(sescconfig.clientConfig);
+        sesClient.setRegion(sescconfig.region);
+//        sesClient.setEndpoint(cconfig.endpoint); do not set this on the ses client, it will not work
         config.initsb.ttl("obtained sesClient");
+        config.initsb.level.decrementAndGet();
         
         subnetManager = new SubnetManager(this);
         subnetManager.init(config);
@@ -203,7 +206,7 @@ public class AwsResourcesManager implements ResourcesManager
         personProvider.init(config);
         networkProvider.init(config);
         
-        if(Boolean.parseBoolean(config.properties.getProperty(ResourceNames.DeployStafPingKey, "true")))
+        if(Boolean.parseBoolean(config.properties.getProperty(ResourceNames.StafLocalPingKey, ResourceNames.StafLocalPingDefault)))
             StafSupport.ping("local");
         
         config.initsb.level.decrementAndGet();

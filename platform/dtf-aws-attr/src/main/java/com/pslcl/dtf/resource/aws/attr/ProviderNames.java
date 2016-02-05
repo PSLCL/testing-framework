@@ -17,21 +17,25 @@ package com.pslcl.dtf.resource.aws.attr;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
 
 import com.amazonaws.services.ec2.model.ImageAttributeName;
 import com.amazonaws.services.ec2.model.InstanceType;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 
 @SuppressWarnings("javadoc")
 public class ProviderNames
 {
+    public static final String AwsKeyBase = ResourceNames.PslclKeyBase + ".aws";
+    
     /* ****************************************************************************
      * AWS Machine Provider declarations
      * see com.pslcl.dtf.resource.aws.provider.AwsMachineProvider     
      * 
      * Instance type declarations    
     ******************************************************************************/    
-    public static final String InstanceKeyBase = InstanceNames.AwsKeyBase + ".instance";
+    public static final String InstanceKeyBase = AwsKeyBase + ".instance";
     public static final String InstanceTypeKeyBase = InstanceKeyBase + ".type";
     public static final String InstanceTypeLimit = "-limit";
     
@@ -64,7 +68,7 @@ public class ProviderNames
     ******************************************************************************/  
     
     // These are not all the possible filters but the ones thought of possible interest to generators and building defaults
-    public static final String ImageKeyBase = InstanceNames.AwsKeyBase + ".image";
+    public static final String ImageKeyBase = AwsKeyBase + ".image";
     
     public static final String ImageArchitectureKey = ImageKeyBase + ".architecture";
     public static final String ImageHypervisorKey = ImageKeyBase + ".hypervisor";
@@ -170,7 +174,7 @@ public class ProviderNames
     public static final String BlockingDeviceVolumeSizeDefault = BlockingDeviceVolumeSize8;
     
     public static final String BlockingDeviceVolumeSizeFilter = "block-device-mapping.volume-size"; 
-    public static final String BlockingDeviceDeleteOnTerminationDefault = "true";
+    public static final String BlockingDeviceDeleteOnTerminationDefault = "false";
     public static final String BlockingDeviceDeleteOnTerminationFilter = "block-device-mapping.delete-on-termination";
     
     /* ****************************************************************************
@@ -214,26 +218,6 @@ public class ProviderNames
     public static final String LocationDotDefault = null;
     
     /* ****************************************************************************
-     * PersonProvider declarations    
-    ******************************************************************************/
-    public static final String PersonKeyBase = InstanceNames.AwsKeyBase + ".ses";
-    
-    // note that inspector is a base key and can be numbered from 0 on up, to add as many inspectors as desired
-    public static final String SesSenderKey = PersonKeyBase + ".sender";
-    public static final String SesReplyKey = PersonKeyBase + ".reply";
-    public static final String SesSubjectKey = PersonKeyBase + ".subject";
-    public static final String SesInspectorKey = PersonKeyBase + ".inspector";
-    public static final String SesMaxDelayKey = PersonKeyBase + ".max-delay";
-    public static final String SesMaxRetriesKey = PersonKeyBase + ".max-retries";
-    
-    public static final String SesSenderDefault = null; // valid email address
-    public static final String SesReplyDefault = null; // valid email address
-    public static final String SesSubjectDefault = "dtf-runner inspect";
-    public static final String SesInspectorDefault = null;  // valid email address
-    public static final String SesMaxDelayDefault = InstanceNames.shortMaxDelay;      
-    public static final String SesMaxRetriesDefault = InstanceNames.shortMaxRetries;  // about 1 min timeout
-    
-    /* ****************************************************************************
      * Various helper key lists    
     ******************************************************************************/
     public static List<String> getMachineKeys()
@@ -257,7 +241,7 @@ public class ProviderNames
        keys.add(LocationMonthKey);
        keys.add(LocationDotKey);
        keys.add(LocationFeatureKey);
-       keys.add(InstanceNames.TestShortNameKey);
+       keys.add(ResourceNames.ResourceShortNameKey);
        return keys;
     }
     
@@ -271,34 +255,34 @@ public class ProviderNames
     public static List<String> getAllNetworkProviderKeys()
     {
         List<String> keys = new ArrayList<String>();
-        keys.add(InstanceNames.AvailabilityZoneKey);
-        keys.add(InstanceNames.VpcNameKey);
+        keys.add(InstanceNames.VpcNameKey);  
         keys.add(InstanceNames.VpcCidrKey);
         keys.add(InstanceNames.VpcTenancyKey);
-        keys.add(InstanceNames.VpcMaxDelayKey);
-        keys.add(InstanceNames.VpcMaxRetriesKey);
-        keys.add(InstanceNames.SubnetCidrKey);
-        keys.add(InstanceNames.SubnetNameKey);
+        keys.add(InstanceNames.VpcMaxDelayKey);       
+        keys.add(InstanceNames.VpcMaxRetriesKey);   
         keys.add(InstanceNames.SubnetSizeKey);
-        keys.add(InstanceNames.AvailabilityZoneKey);
-        
+        keys.add(InstanceNames.SubnetNameKey);
+        keys.add(InstanceNames.SubnetCidrKey);
+        keys.add(InstanceNames.SubnetVpcIdKey);
         keys.add(InstanceNames.SgNameKey);
         keys.add(InstanceNames.SgIdKey);
-        keys.add(InstanceNames.SgMaxDelayKey);       
-        keys.add(InstanceNames.SgMaxRetriesKey);   
-        
-        keys.add(InstanceNames.PermProtocolKey);    // these are base#
+        keys.add(InstanceNames.SgMaxDelayKey);
+        keys.add(InstanceNames.SgMaxRetriesKey);
+        keys.add(InstanceNames.PermProtocolKey);
         keys.add(InstanceNames.PermIpRangeKey);
         keys.add(InstanceNames.PermPortKey);
-        keys.add(InstanceNames.TestShortNameKey);
         return keys;
     }
+    
     public static List<String> getAllPersonProviderKeys()
     {
         List<String> keys = new ArrayList<String>();
-        keys.add(SesInspectorKey);
-        keys.add(SesMaxDelayKey);
-        keys.add(SesMaxRetriesKey);
+        keys.add(ResourceNames.InspectSenderKey);
+        keys.add(ResourceNames.InspectReplyKey);
+        keys.add(ResourceNames.InspectSubjectKey);
+        keys.add(ResourceNames.InspectInspectorKey);
+        keys.add(ResourceNames.InspectMaxDelayKey);
+        keys.add(ResourceNames.InspectMaxRetriesKey);
         return keys;
     }
 }

@@ -120,7 +120,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         if(config.windows)
             userData = encoder.encodeToString(config.winUserData.getBytes());
         //@formatter:off
-        Placement placement = new Placement().withAvailabilityZone(config.subnetConfigData.availabilityZone);
+        Placement placement = new Placement().withAvailabilityZone(pdelayData.provider.manager.ec2cconfig.availabilityZone);
         
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
             .withImageId(reservedResource.imageId)
@@ -203,6 +203,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         } while (true);
     }
 
+    @SuppressWarnings("null")
     private String createKeyPair() throws FatalResourceException
     {
         synchronized (pdelayData.provider)
@@ -210,7 +211,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             String name = pdelayData.getFullTemplateIdName(KeyPairMidStr, null);
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
             String msg = pdelayData.getHumanName(KeyPairMidStr, "describeKeyPairs");
-            DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest().withKeyNames(name);
+            DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest();//.withKeyNames(name);
             DescribeKeyPairsResult keyPairsResult = null;
             do
             {
@@ -228,8 +229,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 
             for (KeyPairInfo pair : keyPairsResult.getKeyPairs())
             {
-                name.equals(pair.getKeyName());
-                return name;
+                if(name.equals(pair.getKeyName()))
+                    return name;
             }
 
             CreateKeyPairRequest ckpr = new CreateKeyPairRequest().withKeyName(name);

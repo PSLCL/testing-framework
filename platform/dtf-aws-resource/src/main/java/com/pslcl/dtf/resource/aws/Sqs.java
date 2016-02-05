@@ -15,11 +15,11 @@ import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazon.sqs.javamessaging.SQSSession;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueueBase;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
+import com.pslcl.dtf.resource.aws.AwsClientConfiguration.ClientType;
 
 /**
  * Access AWS SQS via JMS
@@ -29,8 +29,6 @@ import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 @SuppressWarnings("javadoc")
 public class Sqs extends MessageQueueBase {
     
-    public static final String QueueStoreNameKey = "pslcl.dtf.runner.store.instance.queue-name";
-    public static final String QueueStoreNameDefault = "q";
     // Note: Whether hard-coded or not, this queue is identified here as being unique. So multiple RunnerService and Sqs class objects may exist, but there is only one QueueStore message queue.
     
     private volatile String queueStoreName;
@@ -50,9 +48,14 @@ public class Sqs extends MessageQueueBase {
         super.init(config);
         config.initsb.ttl("Message Queue initialization");
         config.initsb.level.incrementAndGet();
-        queueStoreName = config.properties.getProperty(QueueStoreNameKey, QueueStoreNameDefault);
-        config.initsb.ttl(QueueStoreNameKey, " = ", queueStoreName);
-        awsClientConfig = AwsClientConfiguration.getClientConfiguration(config);
+        queueStoreName = config.properties.getProperty(ResourceNames.MsgQueNameKey, ResourceNames.MsgQueClassDefault);
+        config.initsb.ttl(ResourceNames.MsgQueNameKey, " = ", queueStoreName);
+        if(queueStoreName == null)
+            throw new Exception(ResourceNames.MsgQueNameKey + " must be specified in configuration properties file");
+        config.initsb.ttl("sqsClient:");
+        config.initsb.level.incrementAndGet();
+        awsClientConfig = AwsClientConfiguration.getClientConfiguration(config, ClientType.Sqs);
+        config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         connect(awsClientConfig);
     }
@@ -95,9 +98,8 @@ public class Sqs extends MessageQueueBase {
                         sqs.submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
                         log.debug(prependString + "Submitted to RunnerService");
                         return;
-                    } else {
-                        log.debug(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");
-                    }
+                    } 
+                    log.debug(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");
                 } catch (JMSException jmse) {
                     log.debug(prependString + "Drop - JMS message could not be examined " + jmse);
                 } catch (Exception e) {

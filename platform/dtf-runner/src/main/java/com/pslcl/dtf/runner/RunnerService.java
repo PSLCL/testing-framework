@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.Runner;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueue;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.runner.process.ProcessTracker;
 import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
@@ -42,12 +43,6 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
  */
 public class RunnerService implements Runner, RunnerServiceMBean
 {
-    // static declarations
-
-    public static final String QueueStoreDaoClassKey = "pslcl.dtf.resource.mq-class";
-    public static final String QueueStoreDaoClassDefault = "com.pslcl.dtf.resource.aws.Sqs";
-
-    
     // instance declarations 
     
     private volatile MessageQueue mq = null;
@@ -102,8 +97,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config.initsb.indentedOk();
             config.initsb.ttl("Initialize QueueStoreDao:");
             config.initsb.level.incrementAndGet(); // l2
-            String daoClass = config.properties.getProperty(QueueStoreDaoClassKey, QueueStoreDaoClassDefault);
-            config.initsb.ttl(QueueStoreDaoClassKey, " = ", daoClass);
+            String daoClass = config.properties.getProperty(ResourceNames.MsgQueClassKey, ResourceNames.MsgQueClassDefault);
+            config.initsb.ttl(ResourceNames.MsgQueClassKey, " = ", daoClass);
             this.mq = (MessageQueue) Class.forName(daoClass).newInstance();
             this.mq.init(config);
                 
