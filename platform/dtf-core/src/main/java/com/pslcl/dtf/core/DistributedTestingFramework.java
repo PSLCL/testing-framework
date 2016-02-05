@@ -745,7 +745,7 @@ public class DistributedTestingFramework
                 if (hash != null || run != null)
                     resultHelp();
 
-                run = Long.getLong(args[i + 1]);
+                run = Long.parseLong(args[i + 1]);
                 i += 1;
             } else if (args[i].compareTo("pass") == 0 && args.length == i + 1)
             {
