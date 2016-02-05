@@ -5,7 +5,7 @@ Resource attributes may be specified as part of the [Bind](template_commands.md#
 ##Machine Attributes
  
 * `pslcl.dtf.resource.machine.cores=2` - Requests that the returned machine instance has at least 2 CPU cores. A range(inclusive) may also be specified(`2-4`) to request that the returned machine instance has at least 2 CPU cores but no more than 4.
-* `pslcl.dtf.resource.machine.memory-size=2.0` - Request that the returned machine instance has at least 2.0 GB of system memory. A range(inclusive) may also be specified(`1.0-3.0`) to request that the returned machine instance has at least 1.0 GB of system memory but no more than 4.0 GB.
+* `pslcl.dtf.resource.machine.memory-size=2.0` - Request that the returned machine instance has at least 2.0 GB of system memory. A range(inclusive) may also be specified(`1.0-3.0`) to request that the returned machine instance has at least 1.0 GB of system memory but no more than 3.0 GB.
 * `pslcl.dtf.resource.machine.disk-size=8.0` - Request that the returned machine instance has at least 8.0 GB of disk space. A range(inclusive) may also be specified(`8.0-16.0`) to request that the returned machine instance has at least 8.0 GB of system memory but no more than 16.0 GB.
 * `pslcl.dtf.resource.machine.image-id=`- Request a specific image id. For example, this attribute could be used to request a specific ec2 AMI or Docker image.
 
