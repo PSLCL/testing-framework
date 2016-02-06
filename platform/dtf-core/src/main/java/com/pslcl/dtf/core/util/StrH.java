@@ -334,8 +334,8 @@ public class StrH
             int idx = range.indexOf('-');
             if(idx == -1)
             {
-                minimum = Double.parseDouble(range);
-                maximum = minimum;
+                maximum = Double.parseDouble(range);
+                minimum = 0;
                 return;
             }
             String value = range.substring(0, idx);
@@ -349,15 +349,13 @@ public class StrH
         /**
          *  Inclusive in range check
          * @param value given
-         * @return if given range fits within this/my range return true.
+         * @return if given value fits within this/my range return true.
          */
         public boolean inRange(double value)
         {
-            if(value < minimum)
-                return false;
-            if(value > maximum)
-                return false;
-            return true;
+            if(value >= minimum && value <= maximum)
+                return true;
+            return false;
         }
 
         /**
@@ -367,9 +365,9 @@ public class StrH
          */
         public boolean inRange(DoubleRange range)
         {
-            if(minimum < range.minimum)
+            if(range.minimum > maximum)
                 return false;
-            if(maximum > range.maximum)
+            if(range.maximum > maximum)
                 return false;
             return true;
         }
