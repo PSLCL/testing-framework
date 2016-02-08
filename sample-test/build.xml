@@ -186,6 +186,16 @@
     <copy todir="${bin.dir}" overwrite="true" flatten="true">
       <fileset dir="tests" includes="*"/>
     </copy>
+  	
+	<!-- Copy test scripts files -->
+    <copy todir="${bin.dir}" overwrite="true" flatten="true">
+      <fileset dir="tests" includes="*"/>
+    </copy>
+  	
+	<!-- Copy test inspect instructions files -->
+    <copy todir="${dist.dir}/" overwrite="true" flatten="true">
+      <fileset dir="instructions" includes="*.html"/>
+    </copy>
 	
 	<ivy:makepom ivyfile="ivy.xml" pomfile="${ivy.module}.pom" conf="dtf_test_generator" artifactPackaging="jar" description="${description}" templatefile="ivy.pom.template"/>
 
