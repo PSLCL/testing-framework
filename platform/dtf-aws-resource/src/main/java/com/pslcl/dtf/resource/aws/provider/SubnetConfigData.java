@@ -26,6 +26,7 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.PropertiesFile;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 
@@ -138,6 +139,7 @@ public class SubnetConfigData
     private static String getAttribute(RunnerConfig config, String key, String defaultValue)
     {
         String value = config.properties.getProperty(key, defaultValue);
+        value = StrH.trim(value);
         config.initsb.ttl(key, " = ", value);
         return value;
     }

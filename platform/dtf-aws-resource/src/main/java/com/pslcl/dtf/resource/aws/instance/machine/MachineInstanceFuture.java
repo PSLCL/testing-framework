@@ -41,7 +41,6 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
-import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanceState;
@@ -72,12 +71,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     {
         try
         {
-            TabToLevel format = new TabToLevel();
-            format.ttl("\nEc2 Instance:");
-            format.level.incrementAndGet();
-            format.ttl(pdelayData.coord.toString(format));
+            reservedResource.format.ttl("preFixMostName = ", pdelayData.preFixMostName);
             checkFutureCanceled();
-            config = MachineConfigData.init(pdelayData, reservedResource.resource, format, pdelayData.provider.manager.machineProvider.defaultMachineConfigData);
+            config = MachineConfigData.init(pdelayData, reservedResource.resource, reservedResource.format, pdelayData.provider.manager.machineProvider.defaultMachineConfigData);
             checkFutureCanceled();
             pdelayData.preFixMostName = config.resoucePrefixName;
             reservedResource.vpc = pdelayData.provider.manager.subnetManager.getVpc(pdelayData, config.subnetConfigData);
@@ -88,6 +84,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             AwsMachineInstance retMachineInstance = new AwsMachineInstance(reservedResource, config, pdelayData.provider.config);
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, retMachineInstance);
+            LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "- bound: " + reservedResource.format.toString());
             return retMachineInstance;
         } catch (CancellationException ie)
         {

@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
@@ -50,7 +51,7 @@ public class MachineConfigData
     public static MachineConfigData init(ProgressiveDelayData pdelayData, ResourceDescription resource, TabToLevel format, MachineConfigData defaultData) throws Exception
     {
         MachineConfigData data = new MachineConfigData();
-        format.ttl(MachineConfigData.class.getSimpleName() + " init:");
+        format.ttl(MachineConfigData.class.getSimpleName() + ". bind init:");
         format.level.incrementAndGet();
 
         format.ttl("Test name prefix:");
@@ -68,7 +69,8 @@ public class MachineConfigData
         data.iamArn = getAttribute(InstanceNames.Ec2IamArnKey, defaultData.iamArn, resource, format);
         data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, defaultData.iamName, resource, format);
         data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, defaultData.keyName, resource, format);
-        data.windows = Boolean.parseBoolean(getAttribute(InstanceNames.Ec2WindowsKey, ""+defaultData.windows, resource, format));
+        String platform = getAttribute(ResourceNames.ImagePlatformKey, (defaultData.windows ? ResourceNames.ImagePlatformWindows : ResourceNames.ImagePlatformLinux), resource, format);
+        data.windows = platform.equals(ResourceNames.ImagePlatformWindows);
         data.linuxUserData = getAttribute(InstanceNames.Ec2LinuxUserDataKey, defaultData.linuxUserData, resource, format);
         data.winUserData = getAttribute(InstanceNames.Ec2WinUserDataKey, defaultData.winUserData, resource, format);
         data.linuxSandboxPath = getAttribute(ResourceNames.DeployLinuxSandboxKey, defaultData.linuxSandboxPath, resource, format);
@@ -93,7 +95,8 @@ public class MachineConfigData
         data.iamArn = getAttribute(config, InstanceNames.Ec2IamArnKey, null);
         data.iamName = getAttribute(config, InstanceNames.Ec2IamNameKey, null);
         data.keyName = getAttribute(config, InstanceNames.Ec2KeyPairNameKey, null);
-        data.windows = Boolean.parseBoolean(getAttribute(config, InstanceNames.Ec2WindowsKey, InstanceNames.Ec2WindowsDefault));
+        String platform = getAttribute(config, ResourceNames.ImagePlatformKey, ResourceNames.ImagePlatformDefault);
+        data.windows = platform.equals(ResourceNames.ImagePlatformWindows);
         data.linuxUserData = getAttribute(config, InstanceNames.Ec2LinuxUserDataKey, InstanceNames.Ec2LinuxUserDataDefault);
         data.winUserData = getAttribute(config, InstanceNames.Ec2WinUserDataKey, InstanceNames.Ec2WinUserDataDefault);
         data.linuxSandboxPath = getAttribute(config, ResourceNames.DeployLinuxSandboxKey, ResourceNames.DeployLinuxSandboxDefault);
@@ -127,6 +130,7 @@ public class MachineConfigData
     private static String getAttribute(RunnerConfig config, String key, String defaultValue)
     {
         String value = config.properties.getProperty(key, defaultValue);
+        value = StrH.trim(value);
         config.initsb.ttl(key, " = ", value);
         return value;
     }

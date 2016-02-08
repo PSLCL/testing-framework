@@ -30,6 +30,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.util.PropertiesFile;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.StrH.DoubleRange;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
@@ -51,6 +52,7 @@ public class InstanceFinder
         config.initsb.ttl("AWS Instance:");
         config.initsb.level.incrementAndGet();
         instanceType = config.properties.getProperty(ProviderNames.InstanceTypeKey, ProviderNames.InstanceTypeDefault);
+        instanceType = StrH.trim(instanceType);
         config.initsb.ttl(ProviderNames.InstanceTypeKey, " = ", instanceType);
         config.initsb.level.decrementAndGet();
         config.initsb.ttl("AWS Instance Type Limits:");
@@ -59,6 +61,7 @@ public class InstanceFinder
         {
             String key = ProviderNames.InstanceTypeKeyBase + "." + ProviderNames.instanceTypes[i].toString() + ProviderNames.InstanceTypeLimit;
             String value = config.properties.getProperty(key, "0");
+            value = StrH.trim(value);
             config.initsb.ttl(key, " = ", value);
             int limit = Integer.parseInt(value);
             limits.put(ProviderNames.instanceTypes[i].toString(), new AtomicInteger(limit));
@@ -74,7 +77,7 @@ public class InstanceFinder
             // =cores memory-range disk-range awsInstanceType
             // pslcl.dtf.aws.instance.map0=1 0.5-1.0 1.0 t2.micro
             String value = entry.getValue();
-            value = value.trim();
+            value = StrH.trim(value);
             String[] attrs = value.split(" ");
             try
             {
@@ -85,7 +88,7 @@ public class InstanceFinder
                 throw new Exception("invalid " + ProviderNames.InstanceGlobalMapKey + " format: " + value + " : " + e.getMessage());
             }
         }
-        instanceType = config.properties.getProperty(ProviderNames.InstanceTypeKey, ProviderNames.InstanceTypeDefault);
+//        instanceType = config.properties.getProperty(ProviderNames.InstanceTypeKey, ProviderNames.InstanceTypeDefault);
         config.initsb.level.decrementAndGet();
     }
 

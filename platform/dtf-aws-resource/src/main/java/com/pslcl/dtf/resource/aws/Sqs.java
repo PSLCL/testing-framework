@@ -18,6 +18,7 @@ import com.amazon.sqs.javamessaging.SQSSession;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueueBase;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.ClientType;
 
@@ -49,6 +50,7 @@ public class Sqs extends MessageQueueBase {
         config.initsb.ttl("Message Queue initialization");
         config.initsb.level.incrementAndGet();
         queueStoreName = config.properties.getProperty(ResourceNames.MsgQueNameKey, ResourceNames.MsgQueClassDefault);
+        queueStoreName = StrH.trim(queueStoreName);
         config.initsb.ttl(ResourceNames.MsgQueNameKey, " = ", queueStoreName);
         if(queueStoreName == null)
             throw new Exception(ResourceNames.MsgQueNameKey + " must be specified in configuration properties file");

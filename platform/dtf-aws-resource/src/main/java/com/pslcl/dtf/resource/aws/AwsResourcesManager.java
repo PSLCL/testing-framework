@@ -32,6 +32,7 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.ClientType;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
@@ -205,8 +206,9 @@ public class AwsResourcesManager implements ResourcesManager
         machineProvider.init(config);
         personProvider.init(config);
         networkProvider.init(config);
-        
-        if(Boolean.parseBoolean(config.properties.getProperty(ResourceNames.StafLocalPingKey, ResourceNames.StafLocalPingDefault)))
+        String value = config.properties.getProperty(ResourceNames.StafLocalPingKey, ResourceNames.StafLocalPingDefault);
+        value = StrH.trim(value);
+        if(Boolean.parseBoolean(value))
             StafSupport.ping("local");
         
         config.initsb.level.decrementAndGet();
