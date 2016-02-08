@@ -24,11 +24,11 @@ import java.util.Map.Entry;
 import com.amazonaws.services.ec2.model.IpPermission;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
-import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
+import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
 @SuppressWarnings("javadoc")
 public class SubnetConfigData
@@ -94,7 +94,7 @@ public class SubnetConfigData
         
         format.ttl("Resource name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ResourceNames.ResourceShortNameKey, ResourceNames.ResourceShortNameDefault, resource, format);
+        data.resoucePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, ProviderNames.ResourcePrefixNameDefault, resource, format);
         return data;
     }
 
@@ -132,7 +132,7 @@ public class SubnetConfigData
         
         config.initsb.ttl("Resource name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ResourceNames.ResourceShortNameKey, ResourceNames.ResourceShortNameDefault);
+        data.resoucePrefixName = getAttribute(config, ProviderNames.ResourcePrefixNameKey, ProviderNames.ResourcePrefixNameDefault);
         return data;
     }
 

@@ -6,7 +6,6 @@ import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.generator.Generator;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.resource.Machine;
-import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
 public class TestRunGenerator {
 	public static void main(String[] args) throws Exception
@@ -15,7 +14,6 @@ public class TestRunGenerator {
 		int qa_test_id = Integer.parseInt(DTF_TEST_ID);
 		Generator generator = new Generator(qa_test_id);
 		Attributes attributes = new Attributes();
-		attributes.put(ProviderNames.InstanceTypeKey, "t2.micro");
 		
 		Iterable<Artifact[]> versions = generator.createArtifactSet(null, null, "bin/testrun.sh");
 		
