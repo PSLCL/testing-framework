@@ -78,11 +78,9 @@ public class ResourceNames
      * Resource Providers    
     ******************************************************************************/
     public static final String ResourceKeyBase = PslclKeyBase + ".resource";    
-    public static final String ResourceShortNameKey = ResourceKeyBase + ".short-name";
     public static final String ResourceManagerClassKey = ResourceKeyBase + ".resource-manager-class";
     public static final String ResourcePersonEmailKey = ResourceKeyBase + ".person.email";
     
-    public static final String ResourceShortNameDefault = "dtf";
     public static final String ResourceManagerClassDefault = "com.pslcl.dtf.resource.aws.AwsResourcesManager";
 
     /* ****************************************************************************

@@ -16,12 +16,6 @@
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="base" default="dist" basedir=".">
 	<target name="build">
 		<sequential>
-			<subant inheritall="true" inheritrefs="true" buildpath="dtf-aws-attr">
-				<target name="dist-src"/>
-				<target name="dist"/>
-				<target name="publish-src"/>
-				<target name="publish"/>
-			</subant>
 			<subant inheritall="true" inheritrefs="true" buildpath="dtf-core">
 				<target name="dist-src"/>
 				<target name="dist"/>

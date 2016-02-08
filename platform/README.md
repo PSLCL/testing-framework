@@ -26,7 +26,26 @@ The following commands are supported:
 Execute `bin/dtfexec --help` for more information.
 
 ###dtfexec Configuration
-dtfexec utilizes the Portal's configuration found at testing-framework/portal/config/config.js. Ensure that this file exists and is in the correct relative path. 
+dtfexec utilizes the Portal's configuration found at testing-framework/portal/config/config.js. Ensure that this file exists and is in the correct relative path.
+
+### AWS IAM Policy
+
+dtfexec requires permission to publish messages to Amazon AWS Simple Queue Service(SQS). The following template should be used to create an IAM policy:
+
+    {
+        "Version": "2012-10-17",
+        "Statement":[{
+            "Effect":"Allow",
+            "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueUrl"
+            ],
+            "Resource":"<queue-arn>"
+            }
+        ]
+    }
+
+This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
 ##Test Runner Service  
 The platform includes the Test Runner Service which handles requests to start tests. Once the platform has been built, the Test Runner Service can be launched by executing the following command from the testing-framework/platform directory:
@@ -36,12 +55,39 @@ The platform includes the Test Runner Service which handles requests to start te
 The service is launched with jsvc.
 
 ### Runtime Requirements
-The following tools must be installed on production systems (or be accessible)
+The following must be installed or configured on production systems
 
 1. jsvc
 2. [STAF](http://prdownloads.sourceforge.net/staf/STAF3424-setup-linux-amd64-NoJVM.bin?download) version 'v3.4.24'.
+3. Amazon AWS IAM role
 
-#### Install STAF
+### AWS IAM Policy
+The Test Runner Service requires permission to several Amazon AWS APIs. The following template should be used to create an IAM policy:
+
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "ec2:*",
+                "Effect": "Allow",
+                "Resource": "*"
+            },
+            {
+                "Effect":"Allow",
+                "Action": "sqs:*",
+                "Resource":"<queue-arn>"
+            },
+            {
+                "Effect": "Allow",
+                "Action": ["ses:*"],
+                "Resource":"*"
+            }
+        ]
+    }
+
+This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
+
+### Install STAF
 STAF is installed via a STAF's InstallAnywhere installation application.
 
 `$ cd ~`
@@ -54,6 +100,7 @@ STAF is installed via a STAF's InstallAnywhere installation application.
 
 Take all the defaults (skip "Allow STAF to Register" with a 0 if desired).
 edit the configuration file /usr/local/staf/bin/STAF.cfg
+
 1. add "option ConnectTimeout=60000" to the end of both "interface ..." lines.
 2. add a new line with "trust level 5 default" 
 
@@ -62,32 +109,38 @@ a nohup.out log file is created at /home/ec2-user
 
 Setup your machine to auto start STAF on reboot (i.e. /etc/rc.local)
 
-#### Create AWS AMI's
-Linux
-1. Launch an EC2 instance with the desired public or private AMI 
-	a. if windows add this to user data without quotes: "<script>\\STAF\\startSTAFProc.bat</script>" 
-2. Install STAF
-3. If windows do Sysprep outlined below.
-4. Save this EC2 instance as AMI
-5. Modify the Test Runner Service Configuration and modify the amazonaws.image.image-id with the ami-id if this is to be the default image.
-	a. for example: amazonaws.image.image-id=ami-315b7e5b
-	b. test-scripts can also set the above key/ami-id to specify which image to be used.
+### Create AWS AMI's
 
-Windows SysPrep:
+Multiple images will likely need to be created depending on the needs of the tests running on the system. Requirements like system architecture, operating system, JRE version etc. may differ from test to test. Each needed unique combination of these requirements will need a separate AMI.
+
+**Linux/Windows**
+
+1. Launch an EC2 instance with the desired public or private AMI 
+	* if windows add this to user data without quotes: "<script\>\\STAF\\startSTAFProc.bat</script\>"
+2. Install STAF
+3. If windows, follow the Windows Sysprep steps outlined below
+4. Save this EC2 instance as AMI
+5. Modify the Test Runner Service Configuration to use the new AMI.
+
+**Windows Sysprep**
+
 For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ami-create-standard.html before saving the image.
+
 1. Bring up a remote desktop client to the EC2 image establish in the above steps.
 2. Run the "EC2ConfigService Settings" application
-3. In the "General" tab
-	a. select "Set Computer Name" check box.
-	b. select "User Data" check box.
-	c. select "Event Log" check box.
-	d. select "Wallpaper Information" check box.
-4. In the "Image" tab
-	a. create another user and assign that user administrator rights.
-	b. select "Keep Existing" radio button.
-	c. click the "Shutdown with Sysprep" button.
+3. In the "General" tab	
+	* select "Set Computer Name" check box.
+	* select "User Data" check box.
+	* select "Event Log" check box.
+	* select "Wallpaper Information" check box.
+
+4. In the "Image" tab:
+
+	* create another user and assign that user administrator rights.
+	* select "Keep Existing" radio button.
+	* click the "Shutdown with Sysprep" button.
 
 ###Test Runner Service Configuration
 
-The default configuration file path is testing-framework/platform/config/dtf.properties. Example configuration files may be found at testing-platform/platform/example-config/.
+The default configuration file path is testing-framework/platform/config/dtf.properties. Example configuration files may be found at testing-platform/platform/example-config/. See the example configuration for additional config documentation.
 

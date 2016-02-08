@@ -94,21 +94,21 @@ public class InspectWithAttachmentFuture implements Callable<Void>
 
     private File getLocalFile(String fileName, InputStream inputStream) throws IOException
     {
-//        int idx = fileName.lastIndexOf('.');
-//        String postfix = null;
-//        if (idx != -1)
-//        {
-//            postfix = fileName.substring(idx);
-//            fileName = fileName.substring(0, idx);
-//        }
-//        File tmpFile = File.createTempFile(pdelayData.preFixMostName + "-" + fileName, postfix);
+        //        int idx = fileName.lastIndexOf('.');
+        //        String postfix = null;
+        //        if (idx != -1)
+        //        {
+        //            postfix = fileName.substring(idx);
+        //            fileName = fileName.substring(0, idx);
+        //        }
+        //        File tmpFile = File.createTempFile(pdelayData.preFixMostName + "-" + fileName, postfix);
         String tmpPath = System.getProperty("java.io.tmpdir");
         tmpPath = tmpPath.replace('\\', '/');
-        if(!tmpPath.endsWith("/"))
+        if (!tmpPath.endsWith("/"))
             tmpPath += "/";
         tmpPath += fileName;
         File tmpFile = new File(tmpPath);
-        if(tmpFile.exists())
+        if (tmpFile.exists())
         {
             tmpFile.delete();
             // just a note that some previous inspect must have failed and not cleanup properly 
@@ -153,7 +153,7 @@ public class InspectWithAttachmentFuture implements Callable<Void>
             // temp file creation/rename and delete as well as the call to RequestThrottle
             Session session = Session.getDefaultInstance(new Properties());
             MimeMessage message = new MimeMessage(session);
-            message.setSubject(config.subject + "runId: " + pdelayData.coord.getRunId() , "UTF-8");
+            message.setSubject(config.subject + "runId: " + pdelayData.coord.getRunId(), "UTF-8");
 
             message.setFrom(new InternetAddress(config.sender));
             message.setReplyTo(new Address[] { new InternetAddress(config.reply) });
@@ -172,22 +172,25 @@ public class InspectWithAttachmentFuture implements Callable<Void>
             message.setContent(content);
             content.addBodyPart(wrap);
 
-            File attachmentFile = getLocalFile(attachmentFileName, attachmentFileStream);
-            String id = UUID.randomUUID().toString();
-            MimeBodyPart attachment = new MimeBodyPart();
-            DataSource fds = new FileDataSource(attachmentFile.getAbsolutePath());
-            
-            attachment.setDataHandler(new DataHandler(fds));
-            attachment.setHeader("Content-ID", "<" + id + ">");
-            attachment.setFileName(fds.getName());
-            content.addBodyPart(attachment);            
-//            html.setContent("<html><body>" + bodyText + "</body></html>", "text/html");
+            File attachmentFile = null;
+            if (attachmentFileStream != null)
+            {
+                attachmentFile = getLocalFile(attachmentFileName, attachmentFileStream);
+                MimeBodyPart attachment = new MimeBodyPart();
+                DataSource fds = new FileDataSource(attachmentFile.getAbsolutePath());
+                attachment.setDataHandler(new DataHandler(fds));
+                String id = UUID.randomUUID().toString();
+                attachment.setHeader("Content-ID", "<" + id + ">");
+                attachment.setFileName(fds.getName());
+                content.addBodyPart(attachment);
+            }
+            //            html.setContent("<html><body>" + bodyText + "</body></html>", "text/html");
             html.setContent(bodyText, "text/html");
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             message.writeTo(outputStream);
             RawMessage rawMessage = new RawMessage(ByteBuffer.wrap(outputStream.toByteArray()));
-//            rawMessageDump(message);
+            //            rawMessageDump(message);
 
             SendRawEmailRequest rawEmailRequest = new SendRawEmailRequest(rawMessage);
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
@@ -207,12 +210,14 @@ public class InspectWithAttachmentFuture implements Callable<Void>
                     {
                         format.ttl("messageId = failed to send");
                         LoggerFactory.getLogger(getClass()).debug(format.toString());
-                        attachmentFile.delete();
+                        if(attachmentFile != null)
+                            attachmentFile.delete();
                         throw fre;
                     }
                 }
             } while (true);
-            attachmentFile.delete();
+            if(attachmentFile != null)
+                attachmentFile.delete();
             return null;
         }
     }
@@ -223,6 +228,6 @@ public class InspectWithAttachmentFuture implements Callable<Void>
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         message.writeTo(baos);
         String msg = new String(baos.toByteArray());
-        LoggerFactory.getLogger(getClass()).debug("\n"+msg);
+        LoggerFactory.getLogger(getClass()).debug("\n" + msg);
     }
 }

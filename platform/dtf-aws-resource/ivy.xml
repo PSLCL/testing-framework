@@ -42,7 +42,6 @@ The Distributed Test Framework AWS Resources implementation.
   </publications>
   <dependencies>
     <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
-    <dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="[1,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="com.amazonaws" name="aws-java-sdk" rev="[1.10.23,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="com.amazonaws" name="amazon-sqs-java-messaging-lib" rev="[1,2)" conf="compile->master,compile;javadoc"/>
   </dependencies>

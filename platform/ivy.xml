@@ -28,7 +28,6 @@ The Distributed Test Framework Main.
   </configurations>
   <dependencies>
     <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile"/>
-    <dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="[1,2)" conf="compile->master,compile"/>
     <dependency org="com.pslcl.dtf" name="dtf-aws-resource" rev="[1,2)" conf="compile->master,compile"/>
     <dependency org="com.pslcl.dtf" name="dtf-ivy-artifact" rev="[1,2)" conf="compile->master,compile"/>
     <dependency org="com.pslcl.dtf" name="dtf-runner" rev="[1,2)" conf="compile->master,compile"/>

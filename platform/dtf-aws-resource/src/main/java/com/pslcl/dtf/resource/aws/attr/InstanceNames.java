@@ -67,7 +67,7 @@ public class InstanceNames
     public static final String SubnetVpcIdKey = SubnetKeyBase + ".vpc-name";
 
     public static final String SubnetCidrDefault = "10.0.0.0/28";
-    public static final String SubnetNameDefault = ProviderNames.ResourceShortNameDefault + "-" + SubnetCidrDefault;
+    public static final String SubnetNameDefault = ProviderNames.ResourcePrefixNameDefault + "-" + SubnetCidrDefault;
     public static final String SubnetSizeDefault = "16";  // nibble /28 cidr
     public static final String SubnetVpcNameDefault = VpcNameDefault;
     
@@ -81,7 +81,7 @@ public class InstanceNames
     public static final String SgMaxDelayKey = SgKeyBase + ".max-delay";       
     public static final String SgMaxRetriesKey = SgKeyBase + ".max-retries";   
     
-    public static final String SgNameDefault = ProviderNames.ResourceShortNameDefault;
+    public static final String SgNameDefault = ProviderNames.ResourcePrefixNameDefault;
     public static final String SgIdDefault = null;
     public static final String SgMaxDelayDefault = ProviderNames.ShortMaxDelayDefault;      
     public static final String SgMaxRetriesDefault = ProviderNames.ShortMaxRetriesDefault;  // about 1 min timeout
