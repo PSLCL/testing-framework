@@ -323,6 +323,13 @@ public class StrH
         return "" + (value / 3600000000000.0) + "hr";
     }
 
+    public static String trim(String value)
+    {
+        if(value == null)
+            return value;
+        return value.trim();
+    }
+    
     public static class DoubleRange
     {
         public final double minimum;

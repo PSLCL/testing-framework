@@ -83,7 +83,6 @@ public class ProviderNames
     
     public static final String ImageArchitectureKey = ImageKeyBase + ".architecture";
     public static final String ImageHypervisorKey = ImageKeyBase + ".hypervisor";
-    public static final String ImageImageIdKey = ImageKeyBase + ".image-id";
     public static final String ImageImageTypeKey = ImageKeyBase + ".image-type";
     public static final String ImageIsPublicKey = ImageKeyBase + ".public";
     public static final String ImageNameKey = ImageKeyBase + ".name";
@@ -237,7 +236,6 @@ public class ProviderNames
        keys.add(InstanceTypeKey);
        keys.add(ImageArchitectureKey);
        keys.add(ImageHypervisorKey);
-       keys.add(ImageImageIdKey);
        keys.add(ImageImageTypeKey);
        keys.add(ImageIsPublicKey);
        keys.add(ImageNameKey);
@@ -255,14 +253,14 @@ public class ProviderNames
        return keys;
     }
     
-    public static List<String> getAllMachineProviderKeys()
-    {
-        List<String> keys = InstanceNames.getKeys();
-        keys.addAll(getMachineKeys());
-        return keys;
-    }
+//    public static List<String> getAllMachineProviderKeys()
+//    {
+//        List<String> keys = InstanceNames.getInstanceKeys();
+//        keys.addAll(getMachineKeys());
+//        return keys;
+//    }
     
-    public static List<String> getAllNetworkProviderKeys()
+    public static List<String> getNetworkKeys()
     {
         List<String> keys = new ArrayList<String>();
         keys.add(InstanceNames.VpcNameKey);  

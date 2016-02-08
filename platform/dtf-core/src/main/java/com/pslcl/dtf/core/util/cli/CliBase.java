@@ -444,6 +444,7 @@ public class CliBase extends Thread
             if(gotConfig)
             {
                 logPath = properties.getProperty(LogFilePathKey);
+                logPath = StrH.trim(logPath);
                 StrH.ttl(initsb, 1, LogFilePathKey, " = ", logPath);
                 if(logPath != null)
                 {

@@ -29,6 +29,7 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
@@ -217,7 +218,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                         Within that synchronized block, the call method will have set the ec2Instance prior to our getting here and 
                         we can then execute the terminate command for it. 
                         */
-                        rresource.bindFutureCanceled.set(true);
+                        rresource.setBindFutureCanceled(true);
                         if (cancelResult)
                         {
                             try
@@ -341,7 +342,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     @Override
     public List<String> getAttributes()
     {
-        return ProviderNames.getAllMachineProviderKeys();
+        List<String> attrs = ResourceNames.getProviderKeys();
+        attrs.addAll(ProviderNames.getMachineKeys());
+        return attrs;
     }
     
     private class StalledReleaseTask implements Runnable

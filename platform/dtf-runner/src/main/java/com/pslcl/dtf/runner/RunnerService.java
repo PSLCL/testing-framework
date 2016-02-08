@@ -31,6 +31,7 @@ import com.pslcl.dtf.core.runner.Runner;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueue;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.runner.process.ProcessTracker;
 import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
@@ -98,6 +99,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config.initsb.ttl("Initialize QueueStoreDao:");
             config.initsb.level.incrementAndGet(); // l2
             String daoClass = config.properties.getProperty(ResourceNames.MsgQueClassKey, ResourceNames.MsgQueClassDefault);
+            daoClass = StrH.trim(daoClass);
             config.initsb.ttl(ResourceNames.MsgQueClassKey, " = ", daoClass);
             this.mq = (MessageQueue) Class.forName(daoClass).newInstance();
             this.mq.init(config);

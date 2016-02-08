@@ -26,6 +26,7 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.PropertiesFile;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
@@ -129,6 +130,7 @@ public class PersonConfigData
     private static String getAttribute(String key, String defaultValue, ResourceDescription resource, TabToLevel format)
     {
         String value = resource.getAttributes().get(key);
+        value = StrH.trim(value);
         if (value == null)
         {
             value = defaultValue;
@@ -142,6 +144,7 @@ public class PersonConfigData
     private static String getAttribute(RunnerConfig config, String key, String defaultValue)
     {
         String value = config.properties.getProperty(key, defaultValue);
+        value = StrH.trim(value);
         config.initsb.ttl(key, " = ", value);
         return value;
     }

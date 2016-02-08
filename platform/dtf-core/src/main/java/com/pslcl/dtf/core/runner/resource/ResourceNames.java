@@ -94,13 +94,17 @@ public class ResourceNames
     public static final String MachineMemoryKey = MachineKeyBase + ".memory-size";
     public static final String MachineDiskKey = MachineKeyBase + ".disk-size";
     public static final String ImageImageIdKey = MachineKeyBase + ".image-id";
-    public static final String ImageConfigKey = ImageBase + ".image";
+    public static final String ImagePlatformKey = MachineKeyBase + ".platform";
+    public static final String ImageConfigKey = MachineKeyBase + ".image.config";
     
     public static final String MachineCoresDefault = "1";
     public static final String MachineMemoryDefault = "2.0";
     public static final String MachineDiskDefault = "4.0";
     public static final String ImageImageIdDefault = null;
     public static final String ImageConfigDefault = null;
+    public static final String ImagePlatformDefault = "linux";
+    public static final String ImagePlatformLinux = "linux"; 
+    public static final String ImagePlatformWindows = "windows";
 
     /* ****************************************************************************
      * Deploy declarations    
@@ -131,6 +135,17 @@ public class ResourceNames
     public static final String InspectInspectorDefault = null;  // valid email address
     public static final String InspectMaxDelayDefault = ShortMaxDelayDefault;      
     public static final String InspectMaxRetriesDefault = ShortMaxRetriesDefault;  // about 1 min timeout
+
+    public static List<String> getProviderKeys()
+    {
+        List<String> keys = new ArrayList<String>();
+        keys.add(MachineCoresKey);
+        keys.add(ImageImageIdKey);
+        keys.add(MachineMemoryKey);
+        keys.add(MachineDiskKey);
+        keys.add(ImagePlatformKey);
+        return keys;
+    }
     
     public static List<String> getAllPersonProviderKeys()
     {

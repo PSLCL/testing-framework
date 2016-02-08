@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
+import com.pslcl.dtf.core.util.StrH;
 
 public class DBConnPool {
     private volatile String host;
@@ -52,8 +53,11 @@ public class DBConnPool {
 		if (properties != null) {
 			// config from file
 			host = properties.getProperty(ResourceNames.DbHostKey);
+            host = StrH.trim(host);
 			user = properties.getProperty(ResourceNames.DbUserKey);
+			user = StrH.trim(user);
 			password = properties.getProperty(ResourceNames.DbPassKey);
+			password = StrH.trim(password);
 			if(password == null)
 			    password = "";
 		}

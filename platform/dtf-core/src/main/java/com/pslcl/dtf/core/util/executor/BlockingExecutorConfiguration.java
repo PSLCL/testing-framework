@@ -17,6 +17,7 @@ package com.pslcl.dtf.core.util.executor;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.util.StrH;
 
 
 @SuppressWarnings("javadoc")
@@ -44,29 +45,36 @@ public class BlockingExecutorConfiguration
         try
         {
             String value = config.properties.getProperty(CorePoolSizeKey, CorePoolSizeDefault);
+            value = StrH.trim(value);
             config.initsb.ttl(CorePoolSizeKey, "=", value);
             msg = "invalid corePoolSize value";
             int corePoolSize = Integer.parseInt(value);
             value = config.properties.getProperty(MaximumQueueSizeKey, MaximumQueueSizeDefault);
+            value = StrH.trim(value);
             config.initsb.ttl(MaximumQueueSizeKey, "=", value);
             msg = "invalid maxQueueSize value";
             int maxQueueSize = Integer.parseInt(value);
             value = config.properties.getProperty(MaxBlockingTimeKey, MaxBlockingTimeDefault);
+            value = StrH.trim(value);
             config.initsb.ttl(MaxBlockingTimeKey, "=", value);
             msg = "invalid maxBlockingTime value";
             int maxBlockingTime = Integer.parseInt(value);
             String threadName = config.properties.getProperty(ThreadNamePrefixKey, ThreadNamePrefixDefault);
+            threadName = StrH.trim(threadName);
             config.initsb.ttl(ThreadNamePrefixKey, "=", value);
             value = config.properties.getProperty(KeepAliveDelayKey, KeepAliveDelayDefault);
+            value = StrH.trim(value);
             config.initsb.ttl(KeepAliveDelayKey, "=", value);
             msg = "invalid keepAliveDelay value";
             int keepAliveDelay = Integer.parseInt(value);
             value = config.properties.getProperty(AllowCoreThreadTimeoutKey, AllowCoreThreadTimeoutDefault);
+            value = StrH.trim(value);
             config.initsb.ttl(AllowCoreThreadTimeoutKey, "=", value);
             msg = "invalid allowCoreThreadTimeout value";
             boolean allowCoreThreadTimeout = Boolean.parseBoolean(value);
             
             String statusName = config.properties.getProperty(StatusNameKey, StatusNameDefault);
+            statusName = StrH.trim(statusName);
             config.initsb.ttl(StatusNameKey, "=", statusName);
 
             config.properties.remove(CorePoolSizeKey);

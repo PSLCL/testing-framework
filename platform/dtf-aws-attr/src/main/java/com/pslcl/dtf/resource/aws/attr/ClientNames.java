@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.resource.aws.attr;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @SuppressWarnings("javadoc")
 public class ClientNames
 {
@@ -93,29 +96,32 @@ public class ClientNames
     public static final String SendBuffSizeHintDefault = "0";
     public static final String SignerOverrideDefault = null;
     public static final String ConnectionTtlDefault = "-1";
+    
+    public static List<String> getClientKeys()
+    {
+        List<String> keys = new ArrayList<String>();
+        keys.add(GroupIdKey);
+        keys.add(ConnectionTimeoutKey);
+        keys.add(MaxConnectionsKey);
+        keys.add(MaxErrorRetryKey);
+        keys.add(RetryPolicyKey);
+        keys.add(LocalAddressKey);
+        keys.add(ProtocolKey);
+        keys.add(ProxyDomainKey);
+        keys.add(ProxyHostKey);
+        keys.add(ProxyPasswordKey);
+        keys.add(ProxyPortKey);
+        keys.add(ProxyUserNameKey);
+        keys.add(ProxyWorkstationKey);
+        keys.add(ProxyPreemptiveAuthKey);
+        keys.add(SocketTimeoutKey);
+        keys.add(UserAgentKey);
+        keys.add(UseReaperKey);
+        keys.add(UseGzipKey);
+        keys.add(ReceiveBuffSizeHintKey);
+        keys.add(SendBuffSizeHintKey);
+        keys.add(SignerOverrideKey);
+        keys.add(ConnectionTtlKey);
+        return keys;
+    }
 }
-/*
-amazonaws.client
-amazonaws.group-id
-amazonaws.client.client-config
-amazonaws.client.region
-amazonaws.client.endpoint
-amazonaws.client.retry-policy
-amazonaws.client.local-address
-amazonaws.client.protocol
-amazonaws.client.proxy-domain
-amazonaws.client.proxy-host
-amazonaws.client.proxy-password
-amazonaws.client.proxy-port
-amazonaws.client.proxy-user-name
-amazonaws.client.proxy-workstation
-amazonaws.client.preemptive-proxy-auth
-amazonaws.client.socket-timeout
-amazonaws.client.user-agent
-amazonaws.client.use-reaper
-amazonaws.client.use-gzip
-amazonaws.client.socket-receive-buff-size-hint
-amazonaws.client.socket-send-buff-size-hint
-amazonaws.client.signer-override
-amazonaws.client.connection-ttl
-*/
