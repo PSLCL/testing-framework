@@ -35,7 +35,7 @@ public interface PersonInstance extends ResourceInstance {
 	 *            An HTML-formatted list of instructions to be sent to the person.
 	 * 
 	 * @param fileContent
-	 *            Byte content of artifacts to be placed in the archive file to include.
+	 *            Byte content of artifacts to be placed in the archive file to include. Null means that no artifacts are provided.
 	 *            
 	 * @param fileName
 	 *            Name of the archive file to include.

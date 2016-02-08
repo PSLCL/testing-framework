@@ -199,12 +199,14 @@ public class RunEntryCore {
                 }
             }
         } catch(Exception e) {
+        	// can get here when MySQL Server is not running
             log.error(simpleName + "loadRunEntryData() exception for reNum " + this.reNum + ": "+ e);
             throw e;
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
-            connection.close();
+            if (connection != null)
+            	connection.close();
         }
     }
 
