@@ -26,7 +26,7 @@ public class TestConfigGenerator {
 			
 			passMachine.bind(new Attributes(attributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
 			passMachine.deploy(nodeArtifacts);
-			passMachine.run(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "pass");
+			passMachine.configure(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "pass");
 			
 			generator.completeTest();
 
@@ -35,7 +35,7 @@ public class TestConfigGenerator {
 			
 			failMachine.bind(new Attributes(attributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
 			failMachine.deploy(nodeArtifacts);
-			failMachine.run(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "fail");
+			failMachine.configure(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "fail");
 			
 			generator.completeTest();
 		}
