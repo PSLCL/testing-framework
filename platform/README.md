@@ -26,7 +26,26 @@ The following commands are supported:
 Execute `bin/dtfexec --help` for more information.
 
 ###dtfexec Configuration
-dtfexec utilizes the Portal's configuration found at testing-framework/portal/config/config.js. Ensure that this file exists and is in the correct relative path. 
+dtfexec utilizes the Portal's configuration found at testing-framework/portal/config/config.js. Ensure that this file exists and is in the correct relative path.
+
+### AWS IAM Policy
+
+dtfexec requires permission to publish messages to Amazon AWS Simple Queue Service(SQS). The following template should be used to create an IAM policy:
+
+    {
+        "Version": "2012-10-17",
+        "Statement":[{
+            "Effect":"Allow",
+            "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueUrl"
+            ],
+            "Resource":"<queue-arn>"
+            }
+        ]
+    }
+
+This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
 ##Test Runner Service  
 The platform includes the Test Runner Service which handles requests to start tests. Once the platform has been built, the Test Runner Service can be launched by executing the following command from the testing-framework/platform directory:
@@ -36,10 +55,37 @@ The platform includes the Test Runner Service which handles requests to start te
 The service is launched with jsvc.
 
 ### Runtime Requirements
-The following tools must be installed on production systems (or be accessible)
+The following must be installed or configured on production systems
 
 1. jsvc
 2. [STAF](http://prdownloads.sourceforge.net/staf/STAF3424-setup-linux-amd64-NoJVM.bin?download) version 'v3.4.24'.
+3. Amazon AWS IAM role
+
+### AWS IAM Policy
+The Test Runner Service requires permission to several Amazon AWS APIs. The following template should be used to create an IAM policy:
+
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "ec2:*",
+                "Effect": "Allow",
+                "Resource": "*"
+            },
+            {
+                "Effect":"Allow",
+                "Action": "sqs:*",
+                "Resource":"<queue-arn>"
+            },
+            {
+                "Effect": "Allow",
+                "Action": ["ses:*"],
+                "Resource":"*"
+            }
+        ]
+    }
+
+This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
 ### Install STAF
 STAF is installed via a STAF's InstallAnywhere installation application.
