@@ -32,8 +32,7 @@
     <artifact conf="sources" name="${ivy.module.group}-${ivy.module}-${version.simple}.src" type="source" ext="tar.gz"/> 
     <artifact conf="dtf_test_generator" name="${ivy.module.group}-${ivy.module}-${version.simple}.gen.noarch" type="dist" ext="tar.gz"/>
   </publications>
-  <dependencies>   
-	<dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="1.0" conf="dtf_test_generator->master"/>
+  <dependencies>
 	<dependency org="com.pslcl.dtf" name="dtf-core" rev="1.0" conf="dtf_test_generator->master"/>
   </dependencies>
 </ivy-module>
