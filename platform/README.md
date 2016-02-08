@@ -37,6 +37,7 @@ dtfexec requires permission to publish messages to Amazon AWS Simple Queue Servi
         "Statement":[{
             "Effect":"Allow",
             "Action": [
+                "sqs:QueueExists",
                 "sqs:SendMessage",
                 "sqs:GetQueueUrl"
             ],
@@ -44,6 +45,8 @@ dtfexec requires permission to publish messages to Amazon AWS Simple Queue Servi
             }
         ]
     }
+
+Note: <queue-arn> should be replaced by the AWS arn of the queue configured to be used by the testing framework.
 
 This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
@@ -68,9 +71,40 @@ The Test Runner Service requires permission to several Amazon AWS APIs. The foll
         "Version": "2012-10-17",
         "Statement": [
             {
-                "Action": "ec2:*",
                 "Effect": "Allow",
+                "Action": [
+                    "ec2:AuthorizeSecurityGroupIngress",
+                    "ec2:CreateKeyPair",
+                    "ec2:CreateSecurityGroup",
+                    "ec2:CreateSubnet",
+                    "ec2:CreateTags",
+                    "ec2:CreateVpc",
+                    "ec2:DeleteKeyPair",
+                    "ec2:DescribeImages",
+                    "ec2:DescribeInstances",
+                    "ec2:DescribeKeyPairs",
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeVpcs",
+                    "ec2:ModifyNetworkInterfaceAttribute",
+                    "ec2:RunInstances"
+                ],
                 "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "ec2:DeleteSecurityGroup",
+                    "ec2:DeleteSubnet",
+                    "ec2:DeleteVpc",
+                    "ec2:TerminateInstances"
+                ],
+                "Resource": "*",
+                "Condition": {
+                    "StringEquals": {
+                        "ec2:ResourceTag/dtfSystemId": "<dtf-system-id>"
+                    }
+                }
             },
             {
                 "Effect":"Allow",
@@ -79,11 +113,13 @@ The Test Runner Service requires permission to several Amazon AWS APIs. The foll
             },
             {
                 "Effect": "Allow",
-                "Action": ["ses:*"],
+                "Action": "ses:SendRawEmail",
                 "Resource":"*"
             }
         ]
     }
+
+Note: <dtf-system-id> should be replaced by the system ID configured in the test runner service configuration using the property `pslcl.dtf.system-id`. This tag is used to ensure that the test runner service can only delete resources that it creates. <queue-arn> should also be replaced by the AWS arn of the queue configured to be used by the testing framework.
 
 This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
