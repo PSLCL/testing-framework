@@ -97,7 +97,7 @@ public class ImageFinder
 
         defaultImageId = config.properties.getProperty(ResourceNames.ImageImageIdKey, ResourceNames.ImageImageIdDefault);
         defaultImageId = StrH.trim(defaultImageId);
-        defaultPlatform = config.properties.getProperty(ResourceNames.ImagePlatformKey, ResourceNames.ImagePlatformDefault);
+        defaultPlatform = config.properties.getProperty(ResourceNames.ImageOsKey, ResourceNames.ImagePlatformDefault);
         defaultPlatform = StrH.trim(defaultPlatform);
         List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ResourceNames.ImageConfigKey, config.properties);
         if (list.size() > 0)
@@ -186,7 +186,7 @@ public class ImageFinder
         for (Entry<String, String> entry : resource.getAttributes().entrySet())
         {
             String key = entry.getKey();
-            if (!allKnownKeys.contains(key) || key.equals(ResourceNames.ImagePlatformKey))
+            if (!allKnownKeys.contains(key) || key.equals(ResourceNames.ImageOsKey))
             {
                 String value = entry.getValue();
                 customAttrs.put(key, value);
