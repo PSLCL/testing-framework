@@ -69,7 +69,7 @@ public class MachineConfigData
         data.iamArn = getAttribute(InstanceNames.Ec2IamArnKey, defaultData.iamArn, resource, format);
         data.iamName = getAttribute(InstanceNames.Ec2IamNameKey, defaultData.iamName, resource, format);
         data.keyName = getAttribute(InstanceNames.Ec2KeyPairNameKey, defaultData.keyName, resource, format);
-        String platform = getAttribute(ResourceNames.ImagePlatformKey, (defaultData.windows ? ResourceNames.ImagePlatformWindows : ResourceNames.ImagePlatformLinux), resource, format);
+        String platform = getAttribute(ResourceNames.ImageOsKey, (defaultData.windows ? ResourceNames.ImagePlatformWindows : ResourceNames.ImagePlatformLinux), resource, format);
         data.windows = platform.equals(ResourceNames.ImagePlatformWindows);
         data.linuxUserData = getAttribute(InstanceNames.Ec2LinuxUserDataKey, defaultData.linuxUserData, resource, format);
         data.winUserData = getAttribute(InstanceNames.Ec2WinUserDataKey, defaultData.winUserData, resource, format);
@@ -95,7 +95,7 @@ public class MachineConfigData
         data.iamArn = getAttribute(config, InstanceNames.Ec2IamArnKey, null);
         data.iamName = getAttribute(config, InstanceNames.Ec2IamNameKey, null);
         data.keyName = getAttribute(config, InstanceNames.Ec2KeyPairNameKey, null);
-        String platform = getAttribute(config, ResourceNames.ImagePlatformKey, ResourceNames.ImagePlatformDefault);
+        String platform = getAttribute(config, ResourceNames.ImageOsKey, ResourceNames.ImagePlatformDefault);
         data.windows = platform.equals(ResourceNames.ImagePlatformWindows);
         data.linuxUserData = getAttribute(config, InstanceNames.Ec2LinuxUserDataKey, InstanceNames.Ec2LinuxUserDataDefault);
         data.winUserData = getAttribute(config, InstanceNames.Ec2WinUserDataKey, InstanceNames.Ec2WinUserDataDefault);

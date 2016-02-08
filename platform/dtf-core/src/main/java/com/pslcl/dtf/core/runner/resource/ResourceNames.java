@@ -94,7 +94,7 @@ public class ResourceNames
     public static final String MachineMemoryKey = MachineKeyBase + ".memory-size";
     public static final String MachineDiskKey = MachineKeyBase + ".disk-size";
     public static final String ImageImageIdKey = MachineKeyBase + ".image-id";
-    public static final String ImagePlatformKey = MachineKeyBase + ".platform";
+    public static final String ImageOsKey = MachineKeyBase + ".os";
     public static final String ImageConfigKey = MachineKeyBase + ".image.config";
     
     public static final String MachineCoresDefault = "1";
@@ -143,7 +143,7 @@ public class ResourceNames
         keys.add(ImageImageIdKey);
         keys.add(MachineMemoryKey);
         keys.add(MachineDiskKey);
-        keys.add(ImagePlatformKey);
+        keys.add(ImageOsKey);
         return keys;
     }
     
