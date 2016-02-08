@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
@@ -75,7 +76,7 @@ public class ResourceProviders
         
         config.initsb.ttl(ResourcesManager.class.getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
-        configToManagers(config, ManagerClassKey, ManagerClassDefault);
+        configToManagers(config, ResourceNames.ResourceManagerClassKey, ResourceNames.ResourceManagerClassDefault);
         config.initsb.level.decrementAndGet();
     }
     
@@ -104,16 +105,14 @@ public class ResourceProviders
     
     public void destroy() 
     {
-        try
-        {
+        try {
             int size = resourceManagers.size();
             for(int i=0; i < size; i++)
                 resourceManagers.get(i).destroy();
             resourceManagers.clear();
             resourceProviders.clear();
-        }catch(Exception e)
-        {
-            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".destroy failed", e);
+        } catch(Exception e) {
+        	log.error(this.simpleName + ".destroy() failed", e);
         }
     }
     
