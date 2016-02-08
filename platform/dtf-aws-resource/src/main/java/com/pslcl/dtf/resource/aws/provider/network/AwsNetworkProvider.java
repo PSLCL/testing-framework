@@ -329,6 +329,6 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     @Override
     public List<String> getAttributes()
     {
-        return ProviderNames.getAllNetworkProviderKeys();
+        return ProviderNames.getNetworkKeys();
     }
 }

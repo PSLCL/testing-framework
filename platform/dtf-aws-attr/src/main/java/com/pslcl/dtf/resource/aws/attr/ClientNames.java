@@ -15,30 +15,40 @@
  */
 package com.pslcl.dtf.resource.aws.attr;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @SuppressWarnings("javadoc")
 public class ClientNames
 {
     /* ****************************************************************************
-     * Global declarations    
-    ******************************************************************************/    
-    public static final String AwsKeyBase = "amazonaws";
-    public static final String GroupIdKey = AwsKeyBase + ".group-id";
-    public static final String PslclKeyBase = "pslcl.dtf";
-    public static final String TestKeyBase = PslclKeyBase + ".test";
-    
-    public static final String TestShortNameKey = PslclKeyBase + ".short-name";
-    
-    public static final String TestShortNameDefault = "dtf";
-    
-    /* ****************************************************************************
      * AWS Client Configuration declarations    
      * see com.pslcl.dtf.resource.aws.AwsClientConfiguration     
     ******************************************************************************/    
-    public static final String ClientKeyBase = AwsKeyBase + ".client";
+    public static final String ClientKeyBase = ProviderNames.AwsKeyBase + ".client";
+    public static final String SqsClientKeyBase = ClientKeyBase + ".sqs";
+    public static final String Ec2ClientKeyBase = ClientKeyBase + ".ec2";
+    public static final String SesClientKeyBase = ClientKeyBase + ".ses";
+
+    public static final String AvailabilityZoneName = ".avail-zone";
+    public static final String RegionName = ".region";
+    public static final String EndpointName = ".endpoint";
     
-    public static final String ConfiKey = ClientKeyBase + ".client-config"; // only used internally to cache the AWSClientConfiguration
-    public static final String RegionKey = ClientKeyBase + ".region";
-    public static final String EndpointKey = ClientKeyBase + ".endpoint";
+    public static final String SqsAvailabilityZoneDefault = "us-west-2a";
+    public static final String SqsRegionDefault = "us-west-2a";
+    public static final String SqsEndpointDefault = "us-west-2a";
+
+    public static final String Ec2AvailabilityZoneDefault = "us-west-2a";
+    public static final String Ec2RegionDefault = "us-west-2a";
+    public static final String Ec2EndpointDefault = "us-west-2a";
+
+    public static final String SesAvailabilityZoneDefault = "us-west-2a";
+    public static final String SesRegionDefault = "us-west-2a";
+    public static final String SesEndpointDefault = "us-west-2a";
+
+    public static final String GroupIdKey = ClientKeyBase + ".group-id";
+    
+//    public static final String ConfiKey = ClientKeyBase + ".client-config"; // only used internally to cache the AWSClientConfiguration
 
     public static final String ConnectionTimeoutKey = ClientKeyBase + ".connection-timeout";
     public static final String MaxConnectionsKey = ClientKeyBase + ".max-connections";
@@ -63,8 +73,8 @@ public class ClientNames
     public static final String ConnectionTtlKey = ClientKeyBase + ".connection-ttl";
     
     public static final String GroupIdDefault = "AwsTestResource";
-    public static final String RegionDefault = "us-west-1";
-    public static final String EndpointDefault = "ec2.us-west-2.amazonaws.com";
+//    public static final String RegionDefault = "us-west-1";
+//    public static final String EndpointDefault = "ec2.us-west-2.amazonaws.com";
     public static final String ConnectionTimeoutDefault = "50000";
     public static final String MaxConnectionsDefault = "50";
     public static final String MaxErrorRetryDefault = "-1";
@@ -86,4 +96,32 @@ public class ClientNames
     public static final String SendBuffSizeHintDefault = "0";
     public static final String SignerOverrideDefault = null;
     public static final String ConnectionTtlDefault = "-1";
+    
+    public static List<String> getClientKeys()
+    {
+        List<String> keys = new ArrayList<String>();
+        keys.add(GroupIdKey);
+        keys.add(ConnectionTimeoutKey);
+        keys.add(MaxConnectionsKey);
+        keys.add(MaxErrorRetryKey);
+        keys.add(RetryPolicyKey);
+        keys.add(LocalAddressKey);
+        keys.add(ProtocolKey);
+        keys.add(ProxyDomainKey);
+        keys.add(ProxyHostKey);
+        keys.add(ProxyPasswordKey);
+        keys.add(ProxyPortKey);
+        keys.add(ProxyUserNameKey);
+        keys.add(ProxyWorkstationKey);
+        keys.add(ProxyPreemptiveAuthKey);
+        keys.add(SocketTimeoutKey);
+        keys.add(UserAgentKey);
+        keys.add(UseReaperKey);
+        keys.add(UseGzipKey);
+        keys.add(ReceiveBuffSizeHintKey);
+        keys.add(SendBuffSizeHintKey);
+        keys.add(SignerOverrideKey);
+        keys.add(ConnectionTtlKey);
+        return keys;
+    }
 }

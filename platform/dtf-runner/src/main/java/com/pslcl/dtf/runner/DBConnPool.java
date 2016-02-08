@@ -12,12 +12,6 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
 public class DBConnPool {
-	
-    private static final String RunnerDBHostKey = "pslcl.dtf.runner.dbconn.host";
-    private static final String RunnerDBUserKey = "pslcl.dtf.runner.dbconn.user";
-    private static final String RunnerDBPasswordKey = "pslcl.dtf.runner.dbconn.password";
-    private static final String RunnerDBPasswordDefault = "";
-    
     private volatile String host;
     private volatile String user;
     private volatile String password;

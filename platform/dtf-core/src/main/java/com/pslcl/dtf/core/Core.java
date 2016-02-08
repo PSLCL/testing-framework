@@ -2931,8 +2931,31 @@ public class Core
             safeClose(statement);
         }
     }
+    
+    public void addResultToRun(long runID, boolean result) throws Exception {
+        Statement statement = null; 
+        
+        if (read_only)
+            return;
+        
+        try
+        {
+        	statement = connect.createStatement();
+            int rowsUpdated = statement.executeUpdate("Update run SET result = " + result + ", end_time = NOW() WHERE pk_run = " + runID);
+            if(rowsUpdated == 0){
+            	throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
+            }
+        } catch(Exception e)
+        {
+            System.err.println(e.getMessage());
+            throw e;
+        } finally
+        {
+            safeClose(statement);
+        }
+    }
 
-    public long createInstanceRun(long testInstanceNumber) throws Exception
+    public long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {
     	PreparedStatement runStatement = null;
         Statement templateStatement = null;
@@ -2967,7 +2990,12 @@ public class Core
         	runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
         	runStatement.setString(1, hash);
            	runStatement.setNull(2, Types.BOOLEAN);
-           	runStatement.setNull(3, Types.VARCHAR);
+           	
+            if (owner != null)
+            	runStatement.setString(3, owner);
+            else
+            	runStatement.setNull(3, Types.VARCHAR);
+            
             runStatement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
             runStatement.setNull(5, Types.TIMESTAMP);
             runStatement.setNull(6, Types.TIMESTAMP);

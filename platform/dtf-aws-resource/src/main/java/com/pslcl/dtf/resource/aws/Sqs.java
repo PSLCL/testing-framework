@@ -29,8 +29,6 @@ import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 @SuppressWarnings("javadoc")
 public class Sqs extends MessageQueueBase {
     
-    private static final String QueueStoreNameKey = "pslcl.dtf.runner.store.instance.queue-name";
-    private static final String QueueStoreNameDefault = "q";
     // Note: Whether hard-coded or not, this queue is identified here as being unique. So multiple RunnerService and Sqs class objects may exist, but there is only one QueueStore message queue.
     
     private volatile String queueStoreName;

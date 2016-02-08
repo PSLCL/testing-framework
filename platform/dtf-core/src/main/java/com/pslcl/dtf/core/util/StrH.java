@@ -18,37 +18,35 @@ package com.pslcl.dtf.core.util;
 import java.util.Map;
 import java.util.Map.Entry;
 
-
 @SuppressWarnings("javadoc")
 public class StrH
 {
     public final static char ForwardSlashSeperator = '/';
     public final static char BackSlashSeperator = '\\';
 
-    
     public static String mapToString(Map<?, ?> map)
     {
         StringBuilder sb = new StringBuilder("{[");
         boolean firstDone = false;
-        for(Entry<?,?> entry : map.entrySet())
+        for (Entry<?, ?> entry : map.entrySet())
         {
-            if(!firstDone)
+            if (!firstDone)
                 firstDone = true;
             else
                 sb.append(",");
-            String value = (String)entry.getValue(); 
-            if(value == null)
+            String value = (String) entry.getValue();
+            if (value == null)
                 value = "null";
             sb.append("{" + entry.getKey().toString() + "," + value + "}");
         }
         sb.append("]}");
-      return sb.toString();  
+        return sb.toString();
     }
-    
-    public static StringBuilder ttl(StringBuilder sb, int level, Object ... values)
+
+    public static StringBuilder ttl(StringBuilder sb, int level, Object... values)
     {
         String[] array = new String[values.length];
-        for(int i=0; i < array.length; i++)
+        for (int i = 0; i < array.length; i++)
             array[i] = (values[i] == null ? "null" : values[i].toString());
         return tabToLevel(sb, level, true, array);
     }
@@ -62,17 +60,17 @@ public class StrH
      * @param values list of values to add
      * @return the string builder that has handed in.
      */
-    public static StringBuilder tabToLevel(StringBuilder sb, int level, boolean eol, String ... values)
+    public static StringBuilder tabToLevel(StringBuilder sb, int level, boolean eol, String... values)
     {
-        for(int i=0; i < level; i++)
+        for (int i = 0; i < level; i++)
             sb.append("\t");
-        for(int j=0; j < values.length; j++)
+        for (int j = 0; j < values.length; j++)
             sb.append(values[j]);
-        if(eol)
+        if (eol)
             sb.append("\n");
         return sb;
     }
-    
+
     /**
      * Pad string to width and add to StringBuilder.
      *
@@ -83,19 +81,19 @@ public class StrH
      */
     public static StringBuilder pad(StringBuilder sb, String newValue, int length)
     {
-        if(sb == null)
+        if (sb == null)
             sb = new StringBuilder();
-        if(newValue == null)
+        if (newValue == null)
             newValue = "";
         sb.append(newValue);
         int delta = length - newValue.length();
-        if(delta <= 0)
+        if (delta <= 0)
             return sb;
-        for(int i=0; i < delta; i++)
+        for (int i = 0; i < delta; i++)
             sb.append(" ");
         return sb;
     }
-    
+
     /**
      * Gets the atomic name from a character seperated full name.
      *
@@ -113,7 +111,7 @@ public class StrH
             return name;
         return name.substring(++index);
     }
-    
+
     /**
      * Gets the penultimate name.
      *
@@ -131,7 +129,7 @@ public class StrH
             return null;
         return (name.substring(0, index));
     }
-    
+
     /**
      * Gets the atomic name from a file system path
      * @param name the name
@@ -153,7 +151,7 @@ public class StrH
         ++index;
         return (name.substring(index));
     }
-    
+
     /**
      * Gets the penultimate name from a file system path.
      * @param name the name
@@ -172,56 +170,56 @@ public class StrH
 
         return (name.substring(0, index));
     }
-    
+
     public static String stripTrailingSeparator(String value)
     {
-        if(value == null || value.length() == 0)
+        if (value == null || value.length() == 0)
             return value;
         value = value.trim();
-        if(value.charAt(value.length() - 1) == '/')
+        if (value.charAt(value.length() - 1) == '/')
             value = value.substring(0, value.length() - 1);
-        if(value.charAt(value.length() - 1) == '\\')
+        if (value.charAt(value.length() - 1) == '\\')
             value = value.substring(0, value.length() - 1);
         return value;
     }
-    
+
     public static String addTrailingSeparator(String value, char seperator)
     {
-        return addTrailingSeparator(value, ""+seperator);
+        return addTrailingSeparator(value, "" + seperator);
     }
-    
+
     public static String addTrailingSeparator(String value, String seperator)
     {
-        if(value == null || value.length() == 0)
+        if (value == null || value.length() == 0)
             return value;
         value = value.trim();
         boolean exists = false;
-        if(value.charAt(value.length() - 1) == '/')
+        if (value.charAt(value.length() - 1) == '/')
             exists = true;
-        if(value.charAt(value.length() - 1) == '\\')
+        if (value.charAt(value.length() - 1) == '\\')
             exists = true;
-        if(!exists)
+        if (!exists)
             value += seperator;
         return value;
     }
-    
+
     public static class StringPair implements Entry<String, String>
     {
         private final String key;
         private String value;
-        
+
         public StringPair(String key, String value)
         {
             this.key = key;
             this.value = value;
         }
-        
+
         public StringPair(Entry<Object, Object> entry)
         {
             key = (String) entry.getKey();
             value = (String) entry.getValue();
         }
-        
+
         @Override
         public String setValue(String value)
         {
@@ -241,30 +239,30 @@ public class StrH
         {
             return value;
         }
-        
+
         @Override
         public String toString()
         {
-            return key+"="+value; 
+            return key + "=" + value;
         }
     }
-    
-    public static String getAttribute(Map<String,String> map, String key, String defaultValue)
+
+    public static String getAttribute(Map<String, String> map, String key, String defaultValue)
     {
         String value = map.get(key);
-        if(value != null)
+        if (value != null)
             return value;
         return defaultValue;
     }
-    
-    public static int getIntAttribute(Map<String,String> map, String key, String defaultValue)
+
+    public static int getIntAttribute(Map<String, String> map, String key, String defaultValue)
     {
         String value = map.get(key);
-        if(value == null)
+        if (value == null)
             value = defaultValue;
         return Integer.parseInt(value);
     }
-    
+
     public static long msToNano(long ms)
     {
         return 1000000 * ms;
@@ -274,54 +272,111 @@ public class StrH
     {
         return ns / 1000000;
     }
-    
+
     public static String scaleMilliSeconds(long value)
     {
         return scaleNanoSeconds(msToNano(value));
     }
-    
+
     public static String scaleNanoSeconds(long value)
     {
-/*
+        /*
                 about max               about min
-ns:              999                            1
-mico:         999222                         1222
-ms:        999111222                      1111222
-sec:     59000111222                   1000111222
-min:   3633000111222                  60000111222
-hr:   86400000000000                3600000111222
-*/
-        if(value < 0)
+        ns:              999                            1
+        mico:         999222                         1222
+        ms:        999111222                      1111222
+        sec:     59000111222                   1000111222
+        min:   3633000111222                  60000111222
+        hr:   86400000000000                3600000111222
+        */
+        if (value < 0)
             return "0";
-        
-        if(value < 1000)
+
+        if (value < 1000)
         {// nano seconds
             return "" + value + "ns";
         }
-        if(value < 1000000)
+        if (value < 1000000)
         {// micro seconds
             return "" + (value / 1000.0) + "micos";
         }
-        
-        if(value < 1000000000)
+
+        if (value < 1000000000)
         {// milli seconds
             return "" + (value / 1000000.0) + "ms";
         }
-        
-        if(value < 60000000000L)
+
+        if (value < 60000000000L)
         {// seconds
             return "" + (value / 1000000000.0) + "sec";
         }
-        
-        if(value < 3600000000000L)
+
+        if (value < 3600000000000L)
         {// minutes
             return "" + (value / 60000000000.0) + "min";
         }
-        
-        if(value < 86400000000000L)
+
+        if (value < 86400000000000L)
         {// hours
             return "" + (value / 3600000000000.0) + "hr";
         }
         return "" + (value / 3600000000000.0) + "hr";
+    }
+
+    public static String trim(String value)
+    {
+        if(value == null)
+            return value;
+        return value.trim();
+    }
+    
+    public static class DoubleRange
+    {
+        public final double minimum;
+        public final double maximum;
+
+        public DoubleRange(String range)
+        {
+            range = range.trim();
+            int idx = range.indexOf('-');
+            if(idx == -1)
+            {
+                maximum = Double.parseDouble(range);
+                minimum = 0;
+                return;
+            }
+            String value = range.substring(0, idx);
+            value = value.trim();
+            minimum = Double.parseDouble(value);
+            value = range.substring(++idx);
+            value = value.trim();
+            maximum = Double.parseDouble(value);
+        }
+        
+        /**
+         *  Inclusive in range check
+         * @param value given
+         * @return if given value fits within this/my range return true.
+         */
+        public boolean inRange(double value)
+        {
+            if(value >= minimum && value <= maximum)
+                return true;
+            return false;
+        }
+
+        /**
+         *  Inclusive in range check
+         * @param range given
+         * @return if given range fits within this/my range return true.
+         */
+        public boolean inRange(DoubleRange range)
+        {
+            if(range.minimum > maximum)
+                return false;
+            if(range.maximum > maximum)
+                return false;
+            return true;
+        }
     }
 }

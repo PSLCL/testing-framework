@@ -15,14 +15,24 @@
  */
 package com.pslcl.dtf.resource.aws.provider.machine;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
+import com.pslcl.dtf.core.util.PropertiesFile;
+import com.pslcl.dtf.core.util.StrH;
+import com.pslcl.dtf.core.util.StrH.DoubleRange;
+import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 
 @SuppressWarnings("javadoc")
@@ -30,6 +40,7 @@ public class InstanceFinder
 {
     private final Map<String, AtomicInteger> limits;
     private volatile String instanceType;
+    private volatile List<GlobalAttrMapData> globalAttrMapData;
 
     public InstanceFinder()
     {
@@ -41,69 +52,190 @@ public class InstanceFinder
         config.initsb.ttl("AWS Instance:");
         config.initsb.level.incrementAndGet();
         instanceType = config.properties.getProperty(ProviderNames.InstanceTypeKey, ProviderNames.InstanceTypeDefault);
+        instanceType = StrH.trim(instanceType);
         config.initsb.ttl(ProviderNames.InstanceTypeKey, " = ", instanceType);
         config.initsb.level.decrementAndGet();
         config.initsb.ttl("AWS Instance Type Limits:");
         config.initsb.level.incrementAndGet();
-        for(int i=0; i < ProviderNames.instanceTypes.length; i++)
+        for (int i = 0; i < ProviderNames.instanceTypes.length; i++)
         {
             String key = ProviderNames.InstanceTypeKeyBase + "." + ProviderNames.instanceTypes[i].toString() + ProviderNames.InstanceTypeLimit;
             String value = config.properties.getProperty(key, "0");
-            config.initsb.ttl(key," = ", value);
+            value = StrH.trim(value);
+            config.initsb.ttl(key, " = ", value);
             int limit = Integer.parseInt(value);
             limits.put(ProviderNames.instanceTypes[i].toString(), new AtomicInteger(limit));
         }
         config.initsb.level.decrementAndGet();
-    }        
+        config.initsb.ttl("Global to AWS mapping configuration:");
+        config.initsb.level.incrementAndGet();
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.InstanceGlobalMapKey, config.properties);
+        if (list.size() > 0)
+            globalAttrMapData = new ArrayList<GlobalAttrMapData>();
+        for (Entry<String, String> entry : list)
+        {
+            // =cores memory-range disk-range awsInstanceType
+            // pslcl.dtf.aws.instance.map0=1 0.5-1.0 1.0 t2.micro
+            String value = entry.getValue();
+            value = StrH.trim(value);
+            String[] attrs = value.split(" ");
+            try
+            {
+                int cores = Integer.parseInt(attrs[0]);
+                globalAttrMapData.add(new GlobalAttrMapData(cores, attrs[1], attrs[2], attrs[3]));
+            } catch (Exception e)
+            {
+                throw new Exception("invalid " + ProviderNames.InstanceGlobalMapKey + " format: " + value + " : " + e.getMessage());
+            }
+        }
+//        instanceType = config.properties.getProperty(ProviderNames.InstanceTypeKey, ProviderNames.InstanceTypeDefault);
+        config.initsb.level.decrementAndGet();
+    }
 
     public InstanceType findInstance(ResourceDescription resource) throws ResourceNotFoundException
     {
         Map<String, String> attrs = resource.getAttributes();
-        String type = attrs.get(ProviderNames.InstanceTypeKey);
+        TabToLevel format = new TabToLevel();
+        format.ttl("\n", getClass().getSimpleName() + ".findInstance:");
+        format.level.incrementAndGet();
+        String type = attrs.get(ProviderNames.InstanceTypeKey); // globals have priority over aws specific
+        format.ttl(ProviderNames.InstanceTypeKey, " = ", type);
+        String coresStr = attrs.get(ResourceNames.MachineCoresKey);
+        format.ttl(ResourceNames.MachineCoresKey, " = ", coresStr);
+        String memoryRange = attrs.get(ResourceNames.MachineMemoryKey);
+        format.ttl(ResourceNames.MachineMemoryKey, " = ", memoryRange);
+        String diskRange = attrs.get(ResourceNames.MachineDiskKey);
+        format.ttl(ResourceNames.MachineDiskKey, " = ", diskRange);
+        InstanceType itype = null;
+        if(coresStr != null || memoryRange != null || diskRange != null)
+        {
+            String msg = "Test script specified cores, memory or disk but no AWS mappings have been configured";
+            if(globalAttrMapData == null)
+            {
+                format.ttl(msg);
+                LoggerFactory.getLogger(getClass()).warn(format.toString());
+                throw new ResourceNotFoundException(msg);
+            }
+            boolean found = false;
+            boolean jumpedUp = false;
+            int firstHit = -1;
+            for(int i=0; i < globalAttrMapData.size(); i++)
+            {
+                GlobalAttrMapData data = globalAttrMapData.get(i);
+                if(!data.isHit(coresStr, memoryRange, diskRange))
+                    continue;
+                itype = data.instanceType;
+                if(!jumpedUp)
+                    firstHit = i;
+                if(checkLimits(itype))
+                {
+                    found = true;
+                    type = itype.toString();
+                    format.ttl("instanceType = " + type.toString());
+                    break;
+                }
+                jumpedUp = true;
+            }
+            format.ttl("found = " + found);
+            format.ttl("firstHit = " + firstHit);
+            format.ttl("jumpedUp = " + jumpedUp);
+            if(!found)
+            {
+                format.ttl(msg);
+                LoggerFactory.getLogger(getClass()).warn(format.toString());
+                throw new ResourceNotFoundException(msg);
+            }
+            if(jumpedUp)
+            {
+                format.ttl("jumped past smaller fits because their limits hit: smallest hit index: " + firstHit);
+                LoggerFactory.getLogger(getClass()).info(format.toString());
+            }else
+                LoggerFactory.getLogger(getClass()).debug(format.toString());
+        }
         if(type == null)
         {
             type = instanceType;
             resource.addAttribute(ProviderNames.InstanceTypeKey, type);
         }
-        InstanceType itype = null;
-        for(int i=0; i < ProviderNames.instanceTypes.length; i++)
-        {
-            if(ProviderNames.instanceTypes[i].toString().equals(type))
-            {
-                itype = ProviderNames.instanceTypes[i];
-                break;
-            }
-        }
-        if(itype == null)
-            throw new ResourceNotFoundException(ProviderNames.InstanceTypeKey + "=" + type + " is not a valid AWS instance type");
+        itype = getInstanceType(type);
         return itype;
-    }    
-    
+    }
+
     public boolean checkLimits(InstanceType instanceType)
     {
         int count = limits.get(instanceType.toString()).get();
-        if(count == -1)
+        if (count == -1)
             return true;
-        if(count > 0)
+        if (count > 0)
             return true;
         return false;
     }
-    
+
     public boolean reserveInstance(InstanceType instanceType)
     {
         AtomicInteger count = limits.get(instanceType.toString());
-        if(count.get() == -1)
+        if (count.get() == -1)
             return true;
-        if(count.decrementAndGet() >= 0)
+        if (count.decrementAndGet() >= 0)
             return true;
         return false;
     }
-    
+
     public void releaseInstance(InstanceType instanceType)
     {
         AtomicInteger count = limits.get(instanceType.toString());
-        if(count.get() == -1)
+        if (count.get() == -1)
             return;
         count.incrementAndGet();
+    }
+
+    private static InstanceType getInstanceType(String type) throws ResourceNotFoundException
+    {
+        for (int i = 0; i < ProviderNames.instanceTypes.length; i++)
+        {
+            if (ProviderNames.instanceTypes[i].toString().equals(type))
+                return ProviderNames.instanceTypes[i];
+        }
+        throw new ResourceNotFoundException("Invalid AWS Instance Type: " + type);
+    }
+
+    private class GlobalAttrMapData
+    {
+        private final InstanceType instanceType;
+        private final int cores;
+        private final DoubleRange memory;
+        private final DoubleRange diskSpace;
+
+        private GlobalAttrMapData(int cores, String memoryRange, String diskRange, String instanceType) throws Exception
+        {
+            this.cores = cores;
+            memory = new DoubleRange(memoryRange);
+            diskSpace = new DoubleRange(diskRange);
+            this.instanceType = getInstanceType(instanceType);
+        }
+        
+        private boolean isHit(String cores, String memoryRange, String diskRange)
+        {
+            if(cores != null)
+            {
+                int c = Integer.parseInt(cores);
+                if(this.cores < c)
+                    return false;
+            }
+            DoubleRange range = null;
+            if(memoryRange != null)
+            {
+                range = new DoubleRange(memoryRange);
+                if(!memory.inRange(range))
+                    return false;
+            }
+            if(diskRange != null)
+            {
+                range = new DoubleRange(diskRange);
+                if(!diskSpace.inRange(range))
+                return false;
+            }
+            return true;
+        }
     }
 }

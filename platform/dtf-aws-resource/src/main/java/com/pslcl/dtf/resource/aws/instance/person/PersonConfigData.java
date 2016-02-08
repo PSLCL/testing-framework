@@ -24,11 +24,11 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.PropertiesFile;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.attr.ClientNames;
-import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 
 @SuppressWarnings("javadoc")
@@ -47,7 +47,7 @@ public class PersonConfigData
     
 //    private final String sender;
 //    private final String reply;
-//  private final String subject;
+//    private final String subject;
 //    private final String recipient;
 //    private final Region region;
     
@@ -63,34 +63,34 @@ public class PersonConfigData
         PersonConfigData data = new PersonConfigData();
         format.ttl(PersonConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
-        data.sesMaxDelay = Integer.parseInt(getAttribute(ProviderNames.SesMaxDelayKey, "" + defaultData.sesMaxDelay, resource, format));
-        data.sesMaxRetries = Integer.parseInt(getAttribute(ProviderNames.SesMaxRetriesKey, "" + defaultData.sesMaxRetries, resource, format));
-        data.sender = getAttribute(ProviderNames.SesSenderKey, "" + defaultData.sender, resource, format);
-        data.reply = getAttribute(ProviderNames.SesReplyKey, "" + defaultData.reply, resource, format);
-        data.subject = getAttribute(ProviderNames.SesSubjectKey, "" + defaultData.subject, resource, format);
+        data.sesMaxDelay = Integer.parseInt(getAttribute(ResourceNames.InspectMaxDelayKey, "" + defaultData.sesMaxDelay, resource, format));
+        data.sesMaxRetries = Integer.parseInt(getAttribute(ResourceNames.InspectMaxRetriesKey, "" + defaultData.sesMaxRetries, resource, format));
+        data.sender = getAttribute(ResourceNames.InspectSenderKey, defaultData.sender, resource, format);
+        data.reply = getAttribute(ResourceNames.InspectReplyKey, defaultData.reply, resource, format);
+        data.subject = getAttribute(ResourceNames.InspectSubjectKey, defaultData.subject, resource, format);
         format.ttl(PersonConfigData.class.getSimpleName() + " inspectors:");
         format.level.incrementAndGet();
-        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.SesInspectorKey, resource.getAttributes());
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ResourceNames.InspectInspectorKey, resource.getAttributes());
         if (list.size() == 0)
         {
             // nothing from the resource, use site defaults
             int index = 0;
             for (String inspector : defaultData.inspectors)
             {
-                String key = ProviderNames.SesInspectorKey + index++;
+                String key = ResourceNames.InspectInspectorKey + index++;
                 resource.addAttribute(key, inspector);
                 format.ttl(key, " = ", inspector, " (default injected)");
                 data.inspectors.add(inspector);
             }
         }else
         {
-            data.givenInspector = list.get(0).getValue();   // only accepting the first given
-            format.ttl(ProviderNames.SesInspectorKey, " = ", data.givenInspector);
+            data.givenInspector = getAttribute(ResourceNames.ResourcePersonEmailKey, defaultData.givenInspector, resource, format);
+            format.ttl(ResourceNames.InspectInspectorKey, " = ", data.givenInspector);
         }
         format.level.decrementAndGet();
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ClientNames.TestShortNameKey, defaultData.resoucePrefixName, resource, format);
+        data.resoucePrefixName = getAttribute(ResourceNames.ResourceShortNameKey, defaultData.resoucePrefixName, resource, format);
         LoggerFactory.getLogger(PersonConfigData.class).debug(format.sb.toString());
         return data;
     }
@@ -100,18 +100,19 @@ public class PersonConfigData
         PersonConfigData data = new PersonConfigData();
         config.initsb.ttl(SubnetManager.class.getSimpleName() + " init:");
         config.initsb.level.incrementAndGet();
-        data.sesMaxDelay = Integer.parseInt(getAttribute(config, ProviderNames.SesMaxDelayKey, ProviderNames.SesMaxDelayDefault));
-        data.sesMaxRetries = Integer.parseInt(getAttribute(config, ProviderNames.SesMaxRetriesKey, ProviderNames.SesMaxRetriesDefault));
-        data.sender = getAttribute(config, ProviderNames.SesSenderKey, ProviderNames.SesSenderDefault);
-        data.reply = getAttribute(config, ProviderNames.SesReplyKey, ProviderNames.SesReplyDefault);
-        data.subject = getAttribute(config, ProviderNames.SesSubjectKey, ProviderNames.SesSubjectDefault);
+        data.sesMaxDelay = Integer.parseInt(getAttribute(config, ResourceNames.InspectMaxDelayKey, ResourceNames.InspectMaxDelayDefault));
+        data.sesMaxRetries = Integer.parseInt(getAttribute(config, ResourceNames.InspectMaxRetriesKey, ResourceNames.InspectMaxRetriesDefault));
+        data.sender = getAttribute(config, ResourceNames.InspectSenderKey, ResourceNames.InspectSenderDefault);
+        data.reply = getAttribute(config, ResourceNames.InspectReplyKey, ResourceNames.InspectReplyDefault);
+        data.subject = getAttribute(config, ResourceNames.InspectSubjectKey, ResourceNames.InspectSubjectDefault);
 
         config.initsb.ttl(SubnetManager.class.getSimpleName() + " inspectors:");
         config.initsb.level.incrementAndGet();
-        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.SesInspectorKey, config.properties);
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ResourceNames.InspectInspectorKey, config.properties);
         // if there are no site configured inspectors, there is no possible default.
+        
         if(list.size() == 0)
-            throw new Exception("at least one " + ProviderNames.SesInspectorKey + " must be specified in the site configuration properties file");
+            throw new Exception("at least one " + ResourceNames.InspectInspectorKey + " must be specified in the site configuration properties file");
         for (Entry<String, String> entry : list)
         {
             config.initsb.ttl(entry.getKey(), " = ", entry.getValue());
@@ -120,7 +121,7 @@ public class PersonConfigData
         data.givenInspector = null;
         config.initsb.ttl("Test name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ClientNames.TestShortNameKey, ClientNames.TestShortNameDefault);
+        data.resoucePrefixName = getAttribute(config, ResourceNames.ResourceShortNameKey, ResourceNames.ResourceShortNameDefault);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;
@@ -129,6 +130,7 @@ public class PersonConfigData
     private static String getAttribute(String key, String defaultValue, ResourceDescription resource, TabToLevel format)
     {
         String value = resource.getAttributes().get(key);
+        value = StrH.trim(value);
         if (value == null)
         {
             value = defaultValue;
@@ -142,6 +144,7 @@ public class PersonConfigData
     private static String getAttribute(RunnerConfig config, String key, String defaultValue)
     {
         String value = config.properties.getProperty(key, defaultValue);
+        value = StrH.trim(value);
         config.initsb.ttl(key, " = ", value);
         return value;
     }

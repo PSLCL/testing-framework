@@ -17,6 +17,7 @@ package com.pslcl.dtf.core.util.executor;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.util.StrH;
 
 @SuppressWarnings("javadoc")
 public class ScheduledExecutorConfiguration
@@ -35,12 +36,15 @@ public class ScheduledExecutorConfiguration
         try
         {
             String value = config.properties.getProperty(CorePoolSizeKey, CorePoolSizeDefault);
+            value = StrH.trim(value);
             config.initsb.ttl(CorePoolSizeKey, "=", value);
             msg = "invalid corePoolSize value";
             int corePoolSize = Integer.parseInt(value);
             String threadName = config.properties.getProperty(ThreadNamePrefixKey, ThreadNamePrefixDefault);
+            threadName = StrH.trim(threadName);
             config.initsb.ttl(ThreadNamePrefixKey, "=", value);
             String statusName = config.properties.getProperty(StatusNameKey, StatusNameDefault);
+            statusName = StrH.trim(statusName);
             config.initsb.ttl(StatusNameKey, "=", statusName);
             
             config.properties.remove(CorePoolSizeKey);

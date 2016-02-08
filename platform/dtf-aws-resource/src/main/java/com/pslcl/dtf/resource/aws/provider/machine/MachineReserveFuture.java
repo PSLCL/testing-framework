@@ -64,8 +64,9 @@ public class MachineReserveFuture implements Callable<List<ResourceReserveDispos
                     //@formatter:on
                     MachineReservedResource rresource = new MachineReservedResource(provider, resource, resource.getCoordinates(), result);
                     ScheduledFuture<?> future = provider.config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
-                    rresource.setTimerFuture(future);
+                    rresource.setTimerFuture(future, timeoutSeconds);
                     provider.addReservedMachine(resource.getCoordinates().resourceId, rresource);
+                    LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".reserved" + rresource.format.toString());
                 } else
                     list.add(new ResourceReserveDisposition(resource));
             } catch (Exception e)

@@ -41,7 +41,6 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
-import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanceState;
@@ -72,12 +71,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     {
         try
         {
-            TabToLevel format = new TabToLevel();
-            format.ttl("\nEc2 Instance:");
-            format.level.incrementAndGet();
-            format.ttl(pdelayData.coord.toString(format));
+            reservedResource.format.ttl("preFixMostName = ", pdelayData.preFixMostName);
             checkFutureCanceled();
-            config = MachineConfigData.init(pdelayData, reservedResource.resource, format, pdelayData.provider.manager.machineProvider.defaultMachineConfigData);
+            config = MachineConfigData.init(pdelayData, reservedResource.resource, reservedResource.format, pdelayData.provider.manager.machineProvider.defaultMachineConfigData);
             checkFutureCanceled();
             pdelayData.preFixMostName = config.resoucePrefixName;
             reservedResource.vpc = pdelayData.provider.manager.subnetManager.getVpc(pdelayData, config.subnetConfigData);
@@ -88,6 +84,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             AwsMachineInstance retMachineInstance = new AwsMachineInstance(reservedResource, config, pdelayData.provider.config);
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, retMachineInstance);
+            LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "- bound: " + reservedResource.format.toString());
             return retMachineInstance;
         } catch (CancellationException ie)
         {
@@ -120,7 +117,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         if(config.windows)
             userData = encoder.encodeToString(config.winUserData.getBytes());
         //@formatter:off
-        Placement placement = new Placement().withAvailabilityZone(config.subnetConfigData.availabilityZone);
+        Placement placement = new Placement().withAvailabilityZone(pdelayData.provider.manager.ec2cconfig.availabilityZone);
+        
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
             .withImageId(reservedResource.imageId)
             .withInstanceType(reservedResource.instanceType)
@@ -133,9 +131,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             .withPlacement(placement);
         //@formatter:on
 
-        if (config.iamArn != null && config.iamName != null)
+        if (config.iamArn != null)// && config.iamName != null)
         {
-            IamInstanceProfileSpecification profile = new IamInstanceProfileSpecification().withArn(config.iamArn).withName(config.iamName);
+            IamInstanceProfileSpecification profile = new IamInstanceProfileSpecification().withArn(config.iamArn); //.withName(config.iamName);
             runInstancesRequest.setIamInstanceProfile(profile);
         }
 
@@ -202,6 +200,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         } while (true);
     }
 
+    @SuppressWarnings("null")
     private String createKeyPair() throws FatalResourceException
     {
         synchronized (pdelayData.provider)
@@ -209,7 +208,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             String name = pdelayData.getFullTemplateIdName(KeyPairMidStr, null);
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
             String msg = pdelayData.getHumanName(KeyPairMidStr, "describeKeyPairs");
-            DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest().withKeyNames(name);
+            DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest();//.withKeyNames(name);
             DescribeKeyPairsResult keyPairsResult = null;
             do
             {
@@ -227,8 +226,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 
             for (KeyPairInfo pair : keyPairsResult.getKeyPairs())
             {
-                name.equals(pair.getKeyName());
-                return name;
+                if(name.equals(pair.getKeyName()))
+                    return name;
             }
 
             CreateKeyPairRequest ckpr = new CreateKeyPairRequest().withKeyName(name);
