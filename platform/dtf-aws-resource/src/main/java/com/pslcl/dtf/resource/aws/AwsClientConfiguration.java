@@ -28,6 +28,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.retry.RetryPolicy;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
 
 @SuppressWarnings("javadoc")
@@ -43,111 +44,160 @@ public class AwsClientConfiguration
      * 
      * @throws JMSException 
      */
-    public static AwsClientConfig getClientConfiguration(RunnerConfig config) throws Exception
+    public static AwsClientConfig getClientConfiguration(RunnerConfig config, ClientType type) throws Exception
     {
-        AwsClientConfig awsClientConfig = (AwsClientConfig) config.properties.get(ClientNames.ConfiKey);
-        if (awsClientConfig != null)
-            return awsClientConfig;
-
-        config.initsb.ttl("AWS Client Configuration:");
-        config.initsb.level.incrementAndGet();
-
-        String value = config.properties.getProperty(ClientNames.RegionKey, ClientNames.RegionDefault);
-        config.initsb.ttl(ClientNames.RegionKey, " = ", value);
+        String locationKey = ClientNames.ClientKeyBase; 
+        String availDefault = null;
+        String regionDefault = null;
+        String endpointDefault = null;
+        switch(type)
+        {
+            case Ec2:
+                locationKey = ClientNames.Ec2ClientKeyBase;
+                availDefault = ClientNames.Ec2AvailabilityZoneDefault;
+                regionDefault = ClientNames.Ec2RegionDefault;
+                endpointDefault = ClientNames.Ec2EndpointDefault;
+                break;
+            case Ses:
+                locationKey = ClientNames.SesClientKeyBase;
+                availDefault = ClientNames.SesAvailabilityZoneDefault;
+                regionDefault = ClientNames.SesRegionDefault;
+                endpointDefault = ClientNames.SesEndpointDefault;
+                break;
+            case Sqs:
+                locationKey = ClientNames.SqsClientKeyBase;
+                availDefault = ClientNames.SqsAvailabilityZoneDefault;
+                regionDefault = ClientNames.SqsRegionDefault;
+                endpointDefault = ClientNames.SqsEndpointDefault;
+                break;
+            default:
+                break;
+        }
+        
+        String value = config.properties.getProperty(locationKey + ClientNames.RegionName, regionDefault);
+        value = StrH.trim(value);
+        config.initsb.ttl(locationKey+ ClientNames.RegionName, " = ", value);
         Region region = RegionUtils.getRegion(value);
         
-        value = config.properties.getProperty(ClientNames.EndpointKey, ClientNames.EndpointDefault);
-        config.initsb.ttl(ClientNames.EndpointKey, " = ", value);
+        value = config.properties.getProperty(locationKey + ClientNames.EndpointName, endpointDefault);
+        value = StrH.trim(value);
+        config.initsb.ttl(locationKey + ClientNames.EndpointName, " = ", value);
         String endpoint = value;
         
+        value = config.properties.getProperty(locationKey + ClientNames.AvailabilityZoneName, availDefault);
+        value = StrH.trim(value);
+        config.initsb.ttl(locationKey + ClientNames.AvailabilityZoneName, " = ", value);
+        String availabilityZone = value;
+        
         value = config.properties.getProperty(ClientNames.GroupIdKey, ClientNames.GroupIdDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.GroupIdKey, " = ", value);
         String groupId = value;
         
-        
         value = config.properties.getProperty(ClientNames.ConnectionTimeoutKey, ClientNames.ConnectionTimeoutDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ConnectionTimeoutKey, " = ", value);
         int connectionTimeout = Integer.parseInt(value);
         
         value = config.properties.getProperty(ClientNames.SocketTimeoutKey, ClientNames.SocketTimeoutDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.SocketTimeoutKey, " = ", value);
         int socketTimeout = Integer.parseInt(value);
 
         value = config.properties.getProperty(ClientNames.MaxConnectionsKey, ClientNames.MaxConnectionsDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.MaxConnectionsKey, " = ", value);
         int maxConnections = Integer.parseInt(value);
 
         value = config.properties.getProperty(ClientNames.MaxErrorRetryKey, ClientNames.MaxErrorRetryDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.MaxErrorRetryKey, " = ", value);
         int maxErrorRetry = Integer.parseInt(value);
 
         value = config.properties.getProperty(ClientNames.RetryPolicyKey, ClientNames.RetryPolicyDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.RetryPolicyKey, " = ", value);
         String retryPolicy = value;
 
         value = config.properties.getProperty(ClientNames.UseReaperKey, ClientNames.UseReaperDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.UseReaperKey, " = ", value);
         boolean useReaper = Boolean.parseBoolean(value);
 
         value = config.properties.getProperty(ClientNames.UseGzipKey, ClientNames.UseGzipDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.UseGzipKey, " = ", value);
         boolean useGzip = Boolean.parseBoolean(value);
 
         value = config.properties.getProperty(ClientNames.LocalAddressKey, ClientNames.LocalAddressDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.LocalAddressKey, " = ", value);
         String localAddress = value;
 
         value = config.properties.getProperty(ClientNames.ProtocolKey, ClientNames.ProtocolDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ProtocolKey, " = ", value);
         String protocol = value;
         
         value = config.properties.getProperty(ClientNames.UserAgentKey, ClientNames.UserAgentDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.UserAgentKey, " = ", value);
         String userAgent = value;
 
         value = config.properties.getProperty(ClientNames.ReceiveBuffSizeHintKey, ClientNames.ReceiveBuffSizeHintDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ReceiveBuffSizeHintKey, " = ", value);
         int receiveBuffSizeHint = Integer.parseInt(value);
 
         value = config.properties.getProperty(ClientNames.SendBuffSizeHintKey, ClientNames.SendBuffSizeHintDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.SendBuffSizeHintKey, " = ", value);
         int sendBuffSizeHint = Integer.parseInt(value);
 
         value = config.properties.getProperty(ClientNames.SignerOverrideKey, ClientNames.SignerOverrideDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.SignerOverrideKey, " = ", value);
         String signerOverride = value;
 
         value = config.properties.getProperty(ClientNames.ConnectionTtlKey, ClientNames.ConnectionTtlDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ConnectionTtlKey, " = ", value);
         long connectionTtl = Long.parseLong(value);
         
         config.initsb.ttl("AWS Client Proxy Configuration:");
         config.initsb.level.incrementAndGet();
         value = config.properties.getProperty(ClientNames.ProxyDomainKey, ClientNames.ProxyDomainDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ProxyDomainKey, " = ", value);
         String proxyDomain = value;
 
         value = config.properties.getProperty(ClientNames.ProxyHostKey, ClientNames.ProxyHostDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ProxyHostKey, " = ", value);
         String proxyHost = value;
 
         value = config.properties.getProperty(ClientNames.ProxyPasswordKey, ClientNames.ProxyPasswordDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ProxyPasswordKey, " = ", value);
         String proxyPassword = value;
 
         value = config.properties.getProperty(ClientNames.ProxyPortKey, ClientNames.ProxyPortDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ProxyPortKey, " = ", value);
         int proxyPort = Integer.parseInt(value);
 
         value = config.properties.getProperty(ClientNames.ProxyUserNameKey, ClientNames.ProxyUserNameDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ProxyUserNameKey, " = ", value);
         String proxyUserName = value;
 
         value = config.properties.getProperty(ClientNames.ProxyWorkstationKey, ClientNames.ProxyWorkstationDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ProxyWorkstationKey, " = ", value);
         String proxyWorkstation = value;
 
         value = config.properties.getProperty(ClientNames.ProxyPreemptiveAuthKey, ClientNames.ProxyPreemptiveAuthDefault);
+        value = StrH.trim(value);
         config.initsb.ttl(ClientNames.ProxyPreemptiveAuthKey, " = ", value);
         boolean proxyPreemptiveAuth = Boolean.parseBoolean(value);
         config.initsb.level.decrementAndGet();
@@ -188,9 +238,9 @@ public class AwsClientConfiguration
             clientConfig.setRetryPolicy(rpolicy);
         }
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain(); // finds available aws creds
-        awsClientConfig = new AwsClientConfig(clientConfig, providerChain, region, endpoint, groupId);
-        config.properties.put(ClientNames.ConfiKey, awsClientConfig);
-        return awsClientConfig;
+        return new AwsClientConfig(clientConfig, providerChain, region, endpoint, availabilityZone, groupId);
+//        config.properties.put(ClientNames.ConfiKey, awsClientConfig);
+//        return awsClientConfig;
     }
 
     public static class AwsClientConfig
@@ -199,6 +249,7 @@ public class AwsClientConfiguration
         public final DefaultAWSCredentialsProviderChain providerChain;
         public final Region region;
         public final String endpoint;
+        public final String availabilityZone;
         public final String groupId;
 
         //@formatter:off
@@ -207,6 +258,7 @@ public class AwsClientConfiguration
                         DefaultAWSCredentialsProviderChain providerChain, 
                         Region region,
                         String endpoint, 
+                        String availabilityZone,
                         String groupId)
         //@formatter:on
         {
@@ -214,7 +266,13 @@ public class AwsClientConfiguration
             this.providerChain = providerChain;
             this.region = region;
             this.endpoint = endpoint;
+            this.availabilityZone = availabilityZone;
             this.groupId = groupId;
         }
+    }
+    
+    public enum ClientType
+    {
+        Ec2, Ses, Sqs;
     }
 }

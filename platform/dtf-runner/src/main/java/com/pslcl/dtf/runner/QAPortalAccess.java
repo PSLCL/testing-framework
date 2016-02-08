@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.runner.template.InspectHandler;
 import com.pslcl.dtf.runner.template.QAPaResponse;
 
@@ -104,7 +105,8 @@ public class QAPortalAccess {
      * @param runnerConfig
      */
     void init(RunnerConfig runnerConfig) {
-        this.hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey, "https://testing.opendof.org");
+        hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey);
+        hostQAPortal = StrH.trim(hostQAPortal);
 		if(hostQAPortal == null){
 			this.log.error("Missing required property: " + RunnerQAPortalHostKey);
 		}

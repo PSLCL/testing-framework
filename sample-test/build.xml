@@ -184,7 +184,7 @@
 	
 	<!-- Copy test scripts files -->
     <copy todir="${bin.dir}" overwrite="true" flatten="true">
-      <fileset dir="bin" includes="*"/>
+      <fileset dir="tests" includes="*"/>
     </copy>
 	
 	<ivy:makepom ivyfile="ivy.xml" pomfile="${ivy.module}.pom" conf="dtf_test_generator" artifactPackaging="jar" description="${description}" templatefile="ivy.pom.template"/>

@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
@@ -37,10 +38,6 @@ import com.pslcl.dtf.core.util.StrH.StringPair;
  */
 public class ResourceProviders
 {
-
-    public static final String ManagerClassKey = "pslcl.dtf.runner.template.resource-manager-class"; 
-    public static final String ManagerClassDefault = "com.pslcl.dtf.resource.aws.AwsResourcesManager";
-    
     private final List<ResourcesManager> resourceManagers;
     private final List<ResourceProvider> resourceProviders;
     private final Logger log;
@@ -79,7 +76,7 @@ public class ResourceProviders
         
         config.initsb.ttl(ResourcesManager.class.getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
-        configToManagers(config, ManagerClassKey, ManagerClassDefault);
+        configToManagers(config, ResourceNames.ResourceManagerClassKey, ResourceNames.ResourceManagerClassDefault);
         config.initsb.level.decrementAndGet();
     }
     

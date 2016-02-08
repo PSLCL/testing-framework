@@ -21,20 +21,15 @@ import java.util.List;
 @SuppressWarnings("javadoc")
 public class InstanceNames
 {
-    /* ****************************************************************************
-     * Global declarations    
-    ******************************************************************************/
-    public static final String InstanceKeyBase = ClientNames.AwsKeyBase + ".ec2instance";
-    public static final String AvailabilityZoneKey = InstanceKeyBase + ".avail-zone";
-    public static final String AvailabilityZoneDefault = "us-west-2a";
+    public static final String InstanceKeyBase = ProviderNames.AwsKeyBase + ".ec2instance";
     
-    public static final String Ec2WindowsKey = InstanceKeyBase + ".windows";
+//    public static final String Ec2WindowsKey = InstanceKeyBase + ".windows";
     public static final String Ec2LinuxUserDataKey = InstanceKeyBase + ".linux-user-data";
     public static final String Ec2WinUserDataKey = InstanceKeyBase + ".win-user-data";
-//    public static final String Ec2UserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh $(curl http://169.254.169.254/latest/meta-data/instance-id)";
+    
     public static final String Ec2LinuxUserDataDefault = "#!/bin/bash\n/usr/local/staf/startSTAFProc.sh";
     public static final String Ec2WinUserDataDefault = "<script>\\STAF\\startSTAFProc.bat</script>";
-    public static final String Ec2WindowsDefault = "false";
+//    public static final String Ec2WindowsDefault = "false";
     
     /* ****************************************************************************
      * AWS Machine Provider bind declarations
@@ -43,11 +38,6 @@ public class InstanceNames
      * 
      * EC2 Instance declarations    
     ******************************************************************************/    
-    
-    public static final String shortMaxDelay = "5000";  // 5 seconds
-    public static final String shortMaxRetries = "17"; // roughly 1 minute
-    public static final String longMaxDelay = "15000";  // 15 seconds
-    public static final String longMaxRetries = "67"; // roughly 15 minutes
     
     /* ****************************************************************************
      * VPC declarations
@@ -64,8 +54,8 @@ public class InstanceNames
     public static final String VpcNameAwsDefault = "aws-vpc-default";   
     public static final String VpcNameDefault = null;   // installation/site default
     public static final String VpcTenancyDefault = "default";
-    public static final String VpcMaxDelayDefault = shortMaxDelay; 
-    public static final String VpcMaxRetriesDefault = shortMaxRetries;
+    public static final String VpcMaxDelayDefault = ProviderNames.ShortMaxDelayDefault; 
+    public static final String VpcMaxRetriesDefault = ProviderNames.ShortMaxRetriesDefault;
 
     /* ****************************************************************************
      * Subnet declarations
@@ -77,7 +67,7 @@ public class InstanceNames
     public static final String SubnetVpcIdKey = SubnetKeyBase + ".vpc-name";
 
     public static final String SubnetCidrDefault = "10.0.0.0/28";
-    public static final String SubnetNameDefault = ClientNames.TestShortNameDefault + "-" + SubnetCidrDefault;
+    public static final String SubnetNameDefault = ProviderNames.ResourceShortNameDefault + "-" + SubnetCidrDefault;
     public static final String SubnetSizeDefault = "16";  // nibble /28 cidr
     public static final String SubnetVpcNameDefault = VpcNameDefault;
     
@@ -91,10 +81,10 @@ public class InstanceNames
     public static final String SgMaxDelayKey = SgKeyBase + ".max-delay";       
     public static final String SgMaxRetriesKey = SgKeyBase + ".max-retries";   
     
-    public static final String SgNameDefault = ClientNames.TestShortNameDefault;
+    public static final String SgNameDefault = ProviderNames.ResourceShortNameDefault;
     public static final String SgIdDefault = null;
-    public static final String SgMaxDelayDefault = shortMaxDelay;      
-    public static final String SgMaxRetriesDefault = shortMaxRetries;  // about 1 min timeout
+    public static final String SgMaxDelayDefault = ProviderNames.ShortMaxDelayDefault;      
+    public static final String SgMaxRetriesDefault = ProviderNames.ShortMaxRetriesDefault;  // about 1 min timeout
     
     /* ****************************************************************************
      * VPC Permissions
@@ -117,37 +107,25 @@ public class InstanceNames
     public static final String Ec2MaxDelayKey = InstanceKeyBase + ".max-delay";
     public static final String Ec2MaxRetriesKey = InstanceKeyBase + ".max-retries";
     public static final String Ec2IamArnKey = InstanceKeyBase + ".iam-arn";
-    public static final String Ec2IamNameKey = InstanceKeyBase + ".max-retries";
+    public static final String Ec2IamNameKey = InstanceKeyBase + ".iam-name";
     public static final String Ec2KeyPairNameKey = InstanceKeyBase + ".keypair-name";
-    
     public static final String Ec2StallReleaseKey = InstanceKeyBase + ".stall-release";
     
-    public static final String Ec2MaxDelayDefault = longMaxDelay;
-    public static final String Ec2MaxRetriesDefault = longMaxRetries;
+    public static final String Ec2MaxDelayDefault = ProviderNames.LongMaxDelayDefault;
+    public static final String Ec2MaxRetriesDefault = ProviderNames.LongMaxRetriesDefault;
     public static final String Ec2StallReleaseDefault = "50"; // in minutes
     
-    public static List<String> getKeys()
+    public static List<String> getInstanceKeys()
     {
        List<String> keys = new ArrayList<String>();
-       keys.add(VpcCidrKey);
-       keys.add(VpcTenancyKey);
-       keys.add(VpcMaxDelayKey);       
-       keys.add(VpcMaxRetriesKey);  
-       keys.add(SgNameKey);
-       keys.add(SgIdKey);
-       keys.add(SgMaxDelayKey);       
-       keys.add(SgMaxRetriesKey);   
-       keys.add(PermProtocolKey);
-       keys.add(PermIpRangeKey);
-       keys.add(PermPortKey);
+       keys.add(Ec2LinuxUserDataKey);
+       keys.add(Ec2WinUserDataKey);       
        keys.add(Ec2MaxDelayKey);
        keys.add(Ec2MaxRetriesKey);
        keys.add(Ec2IamArnKey);
        keys.add(Ec2IamNameKey);
        keys.add(Ec2KeyPairNameKey);
-       keys.add(Ec2LinuxUserDataKey);
-       keys.add(Ec2WinUserDataKey);
-       keys.add(ClientNames.TestShortNameKey);
+       keys.add(Ec2StallReleaseKey);
        return keys;
     }
 }

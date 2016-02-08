@@ -10,14 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
+import com.pslcl.dtf.core.util.StrH;
 
 public class DBConnPool {
-	
-    public static final String RunnerDBHostKey = "pslcl.dtf.runner.dbconn.host";
-    public static final String RunnerDBUserKey = "pslcl.dtf.runner.dbconn.user";
-    public static final String RunnerDBPasswordKey = "pslcl.dtf.runner.dbconn.password";
-    public static final String RunnerDBPasswordDefault = "";
-    
     private volatile String host;
     private volatile String user;
     private volatile String password;
@@ -56,19 +52,14 @@ public class DBConnPool {
 		Properties properties = config.properties;
 		if (properties != null) {
 			// config from file
-			host = properties.getProperty(RunnerDBHostKey);
-			user = properties.getProperty(RunnerDBUserKey);
-			password = properties.getProperty(RunnerDBPasswordKey, RunnerDBPasswordDefault);
-		}
-		
-		if (false) // true: temporarily, and only if needed (host or user are still null), replace db access parameters with local machine environment variables
-		{
-			if (host==null || user==null) { // password config is not required
-				// config from environment variables
-		        host = System.getenv("DTF_TEST_DB_HOST");
-		        user = System.getenv("DTF_TEST_DB_USER");
-		        password = System.getenv("DTF_TEST_DB_PASSWORD");
-			}
+			host = properties.getProperty(ResourceNames.DbHostKey);
+            host = StrH.trim(host);
+			user = properties.getProperty(ResourceNames.DbUserKey);
+			user = StrH.trim(user);
+			password = properties.getProperty(ResourceNames.DbPassKey);
+			password = StrH.trim(password);
+			if(password == null)
+			    password = "";
 		}
 
 		if (host==null || host.isEmpty())
