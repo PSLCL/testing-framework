@@ -28,6 +28,8 @@ public class ResourceNames
     public static final String RunnerKeyBase = PslclKeyBase + ".runner";
     
     public static final String LogPathKey = PslclKeyBase + ".log-file-path";
+    public static final String SystemIdKey = PslclKeyBase + ".system-id";
+    public static final String SystemIdDefault = "dtf-system";
     
     public static final String LogPathDefault = null;
     public static final String ShortMaxDelayDefault = "5000"; // 5 seconds
