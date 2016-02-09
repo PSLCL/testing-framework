@@ -131,7 +131,7 @@ public class ResourceNames
     
     public static final String InspectSenderDefault = null; // valid email address
     public static final String InspectReplyDefault = null; // valid email address
-    public static final String InspectSubjectDefault = "dtf-runner inspect";
+    public static final String InspectSubjectDefault = "DTF Inspect";
     public static final String InspectInspectorDefault = null;  // valid email address
     public static final String InspectMaxDelayDefault = ShortMaxDelayDefault;      
     public static final String InspectMaxRetriesDefault = ShortMaxRetriesDefault;  // about 1 min timeout

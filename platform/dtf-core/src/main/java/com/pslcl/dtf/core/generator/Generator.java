@@ -15,8 +15,6 @@
  */
 package com.pslcl.dtf.core.generator;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,7 +27,6 @@ import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Content;
 import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
-import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.generator.template.Template.Parameter;
 import com.pslcl.dtf.core.generator.template.TestInstance;
 

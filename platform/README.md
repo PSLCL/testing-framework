@@ -46,7 +46,7 @@ dtfexec requires permission to publish messages to Amazon AWS Simple Queue Servi
         ]
     }
 
-Note: <queue-arn> should be replaced by the AWS arn of the queue configured to be used by the testing framework.
+Note: \<queue-arn> should be replaced by the AWS arn of the queue configured to be used by the testing framework.
 
 This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
@@ -119,7 +119,7 @@ The Test Runner Service requires permission to several Amazon AWS APIs. The foll
         ]
     }
 
-Note: <dtf-system-id> should be replaced by the system ID configured in the test runner service configuration using the property `pslcl.dtf.system-id`. This tag is used to ensure that the test runner service can only delete resources that it creates. <queue-arn> should also be replaced by the AWS arn of the queue configured to be used by the testing framework.
+Note: \<dtf-system-id> should be replaced by the system ID configured in the test runner service configuration using the property `pslcl.dtf.system-id`. This tag is used to ensure that the test runner service can only delete resources that it creates. \<queue-arn> should also be replaced by the AWS arn of the queue configured to be used by the testing framework.
 
 This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
@@ -149,7 +149,7 @@ Multiple images will likely need to be created depending on the needs of the tes
 **Linux/Windows**
 
     1. Launch an EC2 instance with the desired public or private AMI 
-	  a. if windows add this to user data without quotes: "<script\>\\STAF\\startSTAFProc.bat</script\>"
+	  a. if windows add this to user data without quotes: "<script>\\STAF\\startSTAFProc.bat</script>"
     2. Install STAF
     3. If windows, follow the Windows Sysprep steps outlined below
     4. Save this EC2 instance as AMI
