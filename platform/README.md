@@ -149,7 +149,7 @@ Multiple images will likely need to be created depending on the needs of the tes
 **Linux/Windows**
 
     1. Launch an EC2 instance with the desired public or private AMI 
-	  a. if windows add this to user data without quotes: "<script\>\\STAF\\startSTAFProc.bat</script\>"
+	  a. if windows add this to user data without quotes: "<script>\\STAF\\startSTAFProc.bat</script>"
     2. Install STAF
     3. If windows, follow the Windows Sysprep steps outlined below
     4. Save this EC2 instance as AMI
