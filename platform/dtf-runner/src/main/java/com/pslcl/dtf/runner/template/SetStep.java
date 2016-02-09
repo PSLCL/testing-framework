@@ -6,13 +6,30 @@ package com.pslcl.dtf.runner.template;
  * @note A set step has this wire format: setID command spaceSeparatedParam1 spaceSeparatedParam2 ...
  */
 public class SetStep {
+	
+	/**
+	 * 
+	 * @param param
+	 * @return
+	 */
+	static boolean isValueReference(String param) {
+		int openingIndex = param.indexOf("$(");
+		int endIndex = param.indexOf(")");
+		boolean retBoolean = (openingIndex>=0 && endIndex>openingIndex);
+		return retBoolean;
+	}
+	
 	private String[] setStep; // [setID, command, spaceSeparatedParam1, spaceSeparatedParam2, ...]
 	
 	/**
+	 * Constructor
+	 * 
+	 * @note param step is composed of space separated elements, including certain elements that are URL encoded (meaning spaces are replaced with alternate characters). We separate elements by spaces, as given to us.    
+	 * @note    The end result is that the URL encoded elements preserve their integrity as a single element of this template step, yet they also preserve their included (but encoded) spaces.  
 	 * @param step Must not be null
 	 */
 	public SetStep(String step) {
-		setStep = step.split(" ");
+		this.setStep = step.split(" ");
 	}
 	
 	/**

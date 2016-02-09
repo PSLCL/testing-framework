@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
+import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.runner.QAPortalAccess;
@@ -185,6 +186,79 @@ public class InstancedTemplate {
             // TODO: Do actual destroy of everything having to do with each nested template         
         }
         mapStepReferenceToNestedTemplate.clear();
+    }
+    
+    
+    /**
+     * 
+     * @param param A URL decoded parameter that is known to contain one or more ValueReference parameters that each begin with "$(" and ends with ")". 
+     * @return
+     * @throws Exception
+     */
+    String resolveValueReferences(String param) throws Exception {
+		log.debug(this.simpleName + "resolveValueReferences() processes input " + param);
+    	String retString = param;
+    	try {
+    		int length = retString.length();
+    		int begin = 0;
+    		while (begin < length) {
+    			int end = retString.indexOf(")", begin);
+    			begin = retString.indexOf("$(", begin);
+    			if (begin<0 || end<0 || begin>=end)
+    				break; // done
+    			// value reference found at begin, extending to end, inclusive
+    			String valueReference = retString.substring(begin, end+1);
+    			String resolved = this.resolveValueReference(valueReference);
+    			String early = retString.substring(0, begin);
+    			String late = new String();
+    			if (end < length-1)
+    				late += retString.substring(end+1);
+    			retString = early+resolved+late;
+    			
+    			// retString length changed; prep for next loop
+    			length = retString.length();
+    			begin = early.length()+resolved.length();
+    		}
+    		log.debug(this.simpleName + "resolveValueReferences() returns " + retString);
+    		return retString;
+    	} catch (Exception e) {
+			log.warn(this.simpleName + "resolveValueReferences() sees exception " + e.getMessage());
+    		throw e;
+    	}
+    }
+    
+    /**
+     * 
+     * @param valueRef A URL decoded ValueReference parameter that begins with "$(" and ends with ")".
+     * @return
+     * @throws Exception
+     */
+    private String resolveValueReference(String valueRef) throws Exception {
+    	try {
+			String param1 = valueRef.substring(2, valueRef.length()-1); // strip leading "$(" and trailing ")"
+			String[] parsedParam = param1.split(" ");
+			switch(parsedParam[0]) {
+			case "ip":
+				int machineReference = new Integer(parsedParam[1]).intValue();
+				ResourceInstance mi = this.getResourceInstance(machineReference);
+				int networkReference = new Integer(parsedParam[2]).intValue();
+				ResourceInstance ni = this.getResourceInstance(networkReference);
+				if (mi!=null && ni!=null) {
+					for (CableInstance cableInstance : this.cableInstances) {
+						if (mi.equals(cableInstance.getMachineInstance()) && ni.equals(cableInstance.getNetworkInstance())) {
+							return cableInstance.getIPAddress();
+						}
+					}
+				}
+				break;
+			default:
+				break;
+			}
+			throw new Exception("valueReference lookup failed: " + valueRef);
+		} catch (Exception e) {
+			log.warn(this.simpleName + "resolveValueReference() sees exception " + e.getMessage());
+			throw e;
+		}
     }
     
     /**
