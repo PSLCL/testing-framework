@@ -48,6 +48,9 @@ in 'server/config/config.js'.
 These can be added to the command line call to run the server, or added to `~/.bash_profile`. A sample config.js
 may be copied from 'example-config/config.js'.
 
+## Build the platform
+The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
+
 ## Running the server
 Windows does not fully support npm scripts, and so the process to launch a development server differ
 on Windows and Linux.
