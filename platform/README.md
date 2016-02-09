@@ -46,7 +46,7 @@ dtfexec requires permission to publish messages to Amazon AWS Simple Queue Servi
         ]
     }
 
-Note: <queue-arn> should be replaced by the AWS arn of the queue configured to be used by the testing framework.
+Note: \<queue-arn> should be replaced by the AWS arn of the queue configured to be used by the testing framework.
 
 This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
@@ -119,7 +119,7 @@ The Test Runner Service requires permission to several Amazon AWS APIs. The foll
         ]
     }
 
-Note: <dtf-system-id> should be replaced by the system ID configured in the test runner service configuration using the property `pslcl.dtf.system-id`. This tag is used to ensure that the test runner service can only delete resources that it creates. <queue-arn> should also be replaced by the AWS arn of the queue configured to be used by the testing framework.
+Note: \<dtf-system-id> should be replaced by the system ID configured in the test runner service configuration using the property `pslcl.dtf.system-id`. This tag is used to ensure that the test runner service can only delete resources that it creates. \<queue-arn> should also be replaced by the AWS arn of the queue configured to be used by the testing framework.
 
 This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
 
