@@ -35,16 +35,16 @@ public class ClientNames
     public static final String EndpointName = ".endpoint";
     
     public static final String SqsAvailabilityZoneDefault = "us-west-2a";
-    public static final String SqsRegionDefault = "us-west-2a";
-    public static final String SqsEndpointDefault = "us-west-2a";
+    public static final String SqsRegionDefault = "us-west-2";
+    public static final String SqsEndpointDefault = "sqs.us-west-2.amazonaws.com";
 
     public static final String Ec2AvailabilityZoneDefault = "us-west-2a";
-    public static final String Ec2RegionDefault = "us-west-2a";
-    public static final String Ec2EndpointDefault = "us-west-2a";
+    public static final String Ec2RegionDefault = "us-west-2";
+    public static final String Ec2EndpointDefault = "ec2.us-west-2.amazonaws.com";
 
     public static final String SesAvailabilityZoneDefault = "us-west-2a";
-    public static final String SesRegionDefault = "us-west-2a";
-    public static final String SesEndpointDefault = "us-west-2a";
+    public static final String SesRegionDefault = "us-west-2";
+    public static final String SesEndpointDefault = "email.us-west-2.amazonaws.com";
 
     public static final String GroupIdKey = ClientKeyBase + ".group-id";
     
