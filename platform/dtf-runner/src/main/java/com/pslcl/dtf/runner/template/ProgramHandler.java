@@ -41,15 +41,15 @@ public class ProgramHandler {
 	 * @param iT
 	 * @param setSteps List of steps to process. Must not be null. Must not be empty. First step must be [configure or run or start] 
 	 */
-	public ProgramHandler(InstancedTemplate iT, List<String> setSteps) throws IllegalArgumentException, NumberFormatException {
+	public ProgramHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws IllegalArgumentException, NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
 		this.futuresOfProgramState = new ArrayList<ProgramState>();
 
-		// get program name from 0'th step of the set: configure or run or start
-		SetStep setStep = new SetStep(setSteps.get(0));
+		// get program name from initial step of the set: configure or run or start
+		SetStep setStep = new SetStep(setSteps.get(initialSetStepCount));
 		String programString = setStep.getCommand();
 		if (programString.equals("configure"))
 			this.runType = RunType.CONFIGURE;
@@ -60,11 +60,11 @@ public class ProgramHandler {
 		else
 		   throw new IllegalArgumentException();
 		
-		int iTempFinalSetOffset = 0;
+		int iTempFinalSetOffset = initialSetStepCount;
 		while (true) {
 			if (!setStep.getCommand().equals(programString))
 				break;
-			this.iBeginSetOffset = 0;
+			this.iBeginSetOffset = initialSetStepCount;
 			this.iFinalSetOffset = iTempFinalSetOffset;
 			if (++iTempFinalSetOffset >= setSteps.size())
 				break;

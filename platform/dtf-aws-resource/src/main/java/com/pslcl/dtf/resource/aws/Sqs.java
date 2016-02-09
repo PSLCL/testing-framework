@@ -100,8 +100,9 @@ public class Sqs extends MessageQueueBase {
                         sqs.submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
                         log.debug(prependString + "Submitted to RunnerService");
                         return;
-                    } 
-                    log.debug(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");
+                    } else {
+                        log.debug(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");
+                    }
                 } catch (JMSException jmse) {
                     log.debug(prependString + "Drop - JMS message could not be examined " + jmse);
                 } catch (Exception e) {
