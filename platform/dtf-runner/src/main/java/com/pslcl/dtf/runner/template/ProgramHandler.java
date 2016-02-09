@@ -124,8 +124,12 @@ public class ProgramHandler {
 	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
 	            			throw new Exception("ProgramHandler processing asked to run a program on a non 'machine' resource");	
 	            		strProgramName = URLDecoder.decode(parsedSetStep.getParameter(1), "UTF-8");
-	            		for (int j=2; j<(parsedSetStep.getParameterCount()); j++)
-	            			parameters.add(URLDecoder.decode(parsedSetStep.getParameter(j), "UTF-8"));
+	            		for (int j=2; j<(parsedSetStep.getParameterCount()); j++) {
+	            			String param = URLDecoder.decode(parsedSetStep.getParameter(j), "UTF-8");
+	            			if (SetStep.isValueReference(param))
+	            				param = this.iT.resolveValueReferences(param);
+	            			parameters.add(param);
+	            		}
 	                	this.programInfos.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
 					} else {
 	            		throw new Exception("ProgramHandler.computeProgramRequests() finds null ResourceInstance at reference " + strMachineReference);
@@ -154,7 +158,7 @@ public class ProgramHandler {
         try {
             while (!done) {
 				if (this.futuresOfProgramState.isEmpty()) {
-	    			// The pattern is that this first work, accomplished at the firstopst .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+	    			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
 					//     initiate multiple asynch [configure | run | start]'s, this must add to this.futuresOfProgramState: it will because this.programInfos is NOT empty
 					for (ProgramInfo programInfo : programInfos) {
 						try {
