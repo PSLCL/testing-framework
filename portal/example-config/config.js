@@ -83,7 +83,7 @@ var configs = {
     generators_dir: all.generators_dir,
     shell: all.shell,
     prune: all.prune,
-    home_dir: all.home_dir;
+    home_dir: all.home_dir
   },
   production: {
     enable_livereload: false,
@@ -101,7 +101,7 @@ var configs = {
     generators_dir: all.generators_dir,
     shell: all.shell,
     prune: all.prune,
-    home_dir: all.home_dir;
+    home_dir: all.home_dir
   }
 };
 
