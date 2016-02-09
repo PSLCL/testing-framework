@@ -163,6 +163,9 @@ public class Person extends Resource
      */
     public void inspect(Content body, Artifact[] attachments) throws Exception
     {
+    	if(attachments == null){
+    		attachments = new Artifact[0];
+    	}
         generator.add(new InspectAction(this, body, attachments));
     }
 
