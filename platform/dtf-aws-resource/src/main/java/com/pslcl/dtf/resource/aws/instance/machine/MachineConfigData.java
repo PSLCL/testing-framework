@@ -44,6 +44,7 @@ public class MachineConfigData
     public volatile String linuxSandboxPath;
     public volatile String winSandboxPath;
     public volatile int stallReleaseMinutes;   
+    public volatile double rootDiskSize; // in gig   
     
     private MachineConfigData()
     {
@@ -76,6 +77,7 @@ public class MachineConfigData
         data.winUserData = getAttribute(InstanceNames.Ec2WinUserDataKey, defaultData.winUserData, resource, format);
         data.linuxSandboxPath = getAttribute(ResourceNames.DeployLinuxSandboxKey, defaultData.linuxSandboxPath, resource, format);
         data.winSandboxPath = getAttribute(ResourceNames.DeployWinSandboxKey, defaultData.winSandboxPath, resource, format);
+        data.rootDiskSize = Double.parseDouble(getAttribute(ResourceNames.MachineDiskKey, ""+defaultData.rootDiskSize, resource, format));
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
@@ -102,6 +104,7 @@ public class MachineConfigData
         data.winUserData = getAttribute(config, InstanceNames.Ec2WinUserDataKey, InstanceNames.Ec2WinUserDataDefault);
         data.linuxSandboxPath = getAttribute(config, ResourceNames.DeployLinuxSandboxKey, ResourceNames.DeployLinuxSandboxDefault);
         data.winSandboxPath = getAttribute(config, ResourceNames.DeployWinSandboxKey, ResourceNames.DeployWinSandboxDefault);
+        data.rootDiskSize = Double.parseDouble(getAttribute(config, ResourceNames.MachineDiskKey, ResourceNames.MachineDiskDefault));
         
         config.initsb.level.decrementAndGet();
 
