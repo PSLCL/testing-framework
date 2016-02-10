@@ -1252,6 +1252,7 @@ public class Core
 
         DBContent(Core core, Hash hash)
         {
+        	this.core = core;
             this.hash = hash;
         }
 
