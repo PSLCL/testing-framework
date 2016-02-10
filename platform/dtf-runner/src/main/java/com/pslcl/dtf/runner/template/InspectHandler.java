@@ -124,11 +124,10 @@ public class InspectHandler {
                                                                       // 8 inspect 0 A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
                     log.debug(simpleName + "computeInspectRequests() finds inspect in stepSet " + parsedSetStep.getSetID() + ": " + inspectStep);
                     int parsedSetStepParameterCount = parsedSetStep.getParameterCount();
-                    if (parsedSetStepParameterCount < 4) // after setID and command, must have 0-based-person-ref, instructionsHash, and at least this couple "strArtifactName strArtifactHash", each of which adds 2 to parameter count
+                    if (parsedSetStepParameterCount < 2) // after setID and command, must have at least 0-based-person-ref and instructionsHash; each couplet thereafter adds 2: "strArtifactName strArtifactHash"                    	 
                         throw new IllegalArgumentException("inspect step did not specify all needed person reference, instructionsHash, artifact name, and artifact hash");
-                    if (parsedSetStepParameterCount%2 != 0) { // odd parameter count means a strArtifactName is missing its associated strArtifactHash
+                    if (parsedSetStepParameterCount%2 != 0) // odd parameter count means a strArtifactName is missing its associated strArtifactHash
                         throw new IllegalArgumentException("InspectHandler.computeInspectRequests() finds its final artifact name parameter is missing its required artifact hash paramenter");
-                    }
                     
                     String strPersonReference = parsedSetStep.getParameter(0);
                     int personReference = Integer.valueOf(strPersonReference).intValue();
@@ -148,6 +147,8 @@ public class InspectHandler {
                             artifacts.put(parsedSetStep.getParameter(j),    // artifact filename
                                           parsedSetStep.getParameter(j+1)); // artifact hash
                         }
+                        if (artifacts.isEmpty())
+                        	artifacts = null; // flag further processing that we will not supply artifacts to the Person.inspect() call
                         this.inspectInfos.add(new InspectInfo(resourceInstance, strInstructionsHash, artifacts));
                     } else {
                         throw new Exception("InspectHandler.computeInspectRequests() finds null bound ResourceInstance at reference " + strPersonReference);
@@ -202,7 +203,8 @@ public class InspectHandler {
                                     inspectInfo.setInstruction(instruction);
                                     continue;
                                 }
-                            } else if (inspectInfo.getContentStream() == null) {
+                            } else if (inspectInfo.getContentStream()==null && // need to fill this
+                            		   inspectInfo.getArtifacts()!=null) {     // unless we don't have artifacts to give to the Person.inspect() call
                                 if (this.artifactEntriesIterator == null) {
                                     Map<String, String> artifacts = inspectInfo.getArtifacts();
                                     this.artifactEntriesIterator = artifacts.entrySet().iterator();
@@ -254,14 +256,10 @@ public class InspectHandler {
                                   
                                     FileInputStream fis = toTarGz.getFileInputStream(fileTarGz);
                                     inspectInfo.setContentStream(fis);
-                                    
-                                    ++this.indexNextInspectInfo;
-                                    this.artifactEntriesIterator = null;
                                 }
-                            } else {
-                                log.warn(this.simpleName + "proceed() fails to advance");
-                                throw new Exception("proceed() error");
                             }
+                            ++this.indexNextInspectInfo;
+                            this.artifactEntriesIterator = null;
                         } // end while(inspectInfo available)
                     } else {
                         // call the full set of (async) PersonInstance.inspect() method calls
@@ -274,7 +272,9 @@ public class InspectHandler {
                             PersonInstance pi = PersonInstance.class.cast(resourceInstance);
                             
                             // for this one inspectInfo, initiate person.inspect() and store the returned future
-                            Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(), inspectInfo.getContentStream(), InspectHandler.archiveFilename);
+                            Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(),
+                            		                                   inspectInfo.getContentStream(), // null only if inspectInfo.getArtifacts() is null
+                            		                                   InspectHandler.archiveFilename);
                             inspectInfo.setInspectFuture(future);
                             this.resultInspectInfos.add(inspectInfo);
                         } // end for(submit futures)
@@ -328,7 +328,9 @@ public class InspectHandler {
             } else {
                 allInspects = false;
             }
-            inspectInfo.getContentStream().close(); // cleanup original InputStream, regardless of success or failure
+            InputStream contentStream = inspectInfo.getContentStream();
+            if (contentStream != null)
+            	contentStream.close(); // cleanup original InputStream, regardless of our success or failure
         }
 
         if (!allInspects) {

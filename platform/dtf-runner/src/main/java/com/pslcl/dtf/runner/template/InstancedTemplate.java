@@ -250,6 +250,14 @@ public class InstancedTemplate {
 					}
 				}
 				break;
+			case "attribute":
+				int rr = new Integer(parsedParam[1]).intValue();
+				mi = this.getResourceInstance(rr);
+				if (mi != null) {
+					String attrName = parsedParam[2];
+					return mi.getAttributes().get(attrName);
+				}
+				break;
 			default:
 				break;
 			}
