@@ -28,17 +28,17 @@ public interface PersonInstance extends ResourceInstance {
 	 * 
 	 * This method is equivalent to a template Inspect command.
 	 * 
-	 * @note The name of the archive file to send to the person is nominally attachments.tar.gz.
+	 * @note The name of the archive file to send to the person is nominally attachments.tar.gzip.
 	 * @note This call blocks until the instructions and archive file are deemed to have been sent to the person.
 	 * 
 	 * @param instructions
-	 *            An HTML-formatted list of instructions to be sent to the person.
+	 *            An HTML-formatted list of instructions to be sent to the person. This must not be null.
 	 * 
 	 * @param fileContent
 	 *            Byte content of artifacts to be placed in the archive file to include. Null means that no artifacts are provided.
 	 *            
 	 * @param fileName
-	 *            Name of the archive file to include.
+	 *            Name of the archive file to include. This must not be null unless fileContent is null.
      *
 	 * @return A Future<Void> which returns once the message has been sent to the person. The Future will throw an exception if the message cannot be sent. 
 	 */
