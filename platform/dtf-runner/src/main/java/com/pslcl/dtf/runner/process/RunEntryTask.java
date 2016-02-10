@@ -81,8 +81,8 @@ public class RunEntryTask implements Runnable {
                 log.debug(simpleName + "run() ran Action " + action.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
 	            if (nextAction == Action.DISCARDED)
 	                break; // close thread
-			} catch (Exception e) {
-				log.warn(this.simpleName + "run() sees exception " + e.getMessage());
+			} catch (Throwable t) {
+				log.warn(this.simpleName + "run() sees exception " + t.getMessage());
 				break; // close thread
 			}
 

@@ -95,7 +95,6 @@ public class Sqs extends MessageQueueBase {
                     log.debug("\n");
                     prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ".";
                     if (jmsMessageID != null && strQueueStoreNumber != null) {
-                        log.debug("prependString");
                         // design decision: Object message will not, as it could, be stored as key value pair "jmsMessageID/hexStrQueueStoreNumber." Message instead passes out here, as state for eventual ack.
                         sqs.submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
                         log.debug(prependString + "Submitted to RunnerService");
@@ -105,7 +104,7 @@ public class Sqs extends MessageQueueBase {
                     }
                 } catch (JMSException jmse) {
                     log.debug(prependString + "Drop - JMS message could not be examined " + jmse);
-                } catch (Exception e) {
+                } catch (Throwable t) {
                     log.debug(prependString + "Drop - rejected by RunnerService");
                 }
                 

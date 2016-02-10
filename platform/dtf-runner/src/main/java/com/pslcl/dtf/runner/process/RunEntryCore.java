@@ -372,10 +372,10 @@ public class RunEntryCore {
               	                                                   null;               // the test run was successful but the result should be marked null
             testRunSuccess = true;
             runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
-        } catch (Exception e) {
+        } catch (Throwable t) {
         	// the template has already cleaned itself up (it was handled internally, by exception processing code, because we can't do it- we don't have iT in hand)
         	log.debug(simpleName + "testRun errors out, reNum : " + this.topDBTemplate.reNum);
-            throw e;
+            throw t;
         } finally {
             log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stores to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
            	storeResultRunEntryData();

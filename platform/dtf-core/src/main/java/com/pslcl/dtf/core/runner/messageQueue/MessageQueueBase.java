@@ -46,7 +46,7 @@ public abstract class MessageQueueBase implements MessageQueue
      * @param message
      * @return
      */
-    public void submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Exception
+    public void submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Throwable
     {
         config.runnerService.submitQueueStoreNumber(strQueueStoreEntryNumber, message);
     }

@@ -107,9 +107,9 @@ public class RunnerMachine {
      * @note When this call succeeds, runnerService.ackQueueStoreEntry() must be called. This can happen in the future from a distant thread, or very quickly. 
      * @oaram reNum
      * @param message An opaque Java object, used to acknowledge the message when processing is complete
-     * @throws Exception
+     * @throws Throwable
      */
-    public void initiateProcessing(long reNum, Object message) throws Exception {
+    public void initiateProcessing(long reNum, Object message) throws Throwable {
         try {
             RunEntryState reState = new RunEntryState(reNum, message);
             Action action = reState.getAction();  // Action.INITIALIZE

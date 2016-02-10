@@ -1,7 +1,6 @@
 package com.pslcl.dtf.runner.template;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -16,7 +15,6 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,12 +100,12 @@ public class ToTarGz {
 			}
 		}
 		
-		if (false) { // true: temporarily, write tarGzipOut's directories and files to disk, at a temporary location
-			FileInputStream fis = new FileInputStream(tarGzipOut);
-			String destTopDirectory = "recovered_" + this.sourceDirectory;
-			this.writeFileStructure(fis, destTopDirectory);
-			fis.close();
-		}
+		// temporarily as a test, write tarGzipOut's directories and files to disk, at a temporary directory recovered_xxx
+		//    (if class TestUtility is placed in src/test/java, arrange that project path's output Folder to be target/classes instead of target/test-classes 
+//		FileInputStream fis = new FileInputStream(tarGzipOut);
+//		String destTopDirectory = "recovered_" + this.sourceDirectory;
+//		TestUtility.writeFileStructure(fis, destTopDirectory);
+//		fis.close();
 	}
 	
 	/**
@@ -199,24 +197,23 @@ public class ToTarGz {
 		try {
 			TarArchiveInputStream retTAIS = new TarArchiveInputStream(bufIS);
 			
-			if (false) { // true: temporarily, use this independently created TAIS as a way to count how many tar entries are present, and to report their names
-				// replicate the above without using retTAIS, which must remain pristine
-				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzipFilename)))));
-				TarArchiveEntry taEntry;
-				List<TarArchiveEntry> tarArchiveEntries = new ArrayList<TarArchiveEntry>();
-				while ((taEntry = testTAIS.getNextTarEntry()) != null) {
-					log.debug(this.simpleName + "tais entry found: " + taEntry.getName());
-					tarArchiveEntries.add(taEntry);
-				}
-				log.debug(simpleName + tarArchiveEntries.size() + " TarArchiveEntry's found");
-				testTAIS.close();
-			}
-			if (false) { // true: temporarily, use this independently created TAIS to write the archive's directories and files to disk
-				TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzipFilename)))));
-				String destTopDirectory = "recovered_" + this.sourceDirectory;
-				this.writeFileStructure(testTAIS, destTopDirectory);
-				testTAIS.close();
-			}
+			// temporarily as a test, use this independently created TAIS as a way to count how many tar entries are present, and to report their names; allows retTAIS to remain pristine, as it must
+//			TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzipFilename)))));
+//			TarArchiveEntry taEntry;
+//			List<TarArchiveEntry> tarArchiveEntries = new ArrayList<TarArchiveEntry>();
+//			while ((taEntry = testTAIS.getNextTarEntry()) != null) {
+//				log.debug(this.simpleName + "tais entry found: " + taEntry.getName());
+//				tarArchiveEntries.add(taEntry);
+//			}
+//			log.debug(simpleName + tarArchiveEntries.size() + " TarArchiveEntry's found");
+//			testTAIS.close();
+
+			// temporarily as a test, use this independently created TAIS to write the archive's directories and files to disk, at a temporary directory recovered_xxx
+			//    (if class TestUtility is placed in src/test/java, arrange that project path's output Folder to be target/classes instead of target/test-classes 
+//			TarArchiveInputStream testTAIS = new TarArchiveInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(this.tarGzipFilename)))));
+//			String destTopDirectory = "recovered_" + this.sourceDirectory;
+//			TestUtility.writeFileStructure(testTAIS, destTopDirectory);
+//			testTAIS.close();
 			
 			return retTAIS;
 		} catch (Exception e) {
@@ -224,54 +221,6 @@ public class ToTarGz {
 			bufIS.close();
 			throw e;
 		}
-	}
-
-	
-	// Usable as unit tests
-		
-	/**
-	 * Write a file stream to disk.
-	 * (use as a unit test)
-	 * @param fis
-	 * @throws IOException
-	 */
-	private void writeFileStructure(FileInputStream fis, String destTopDirectory) throws IOException {
-        TarArchiveInputStream tais = new TarArchiveInputStream(new GZIPInputStream(fis));
-        this.writeFileStructure(tais, destTopDirectory);
-	}
-	
-	/**
-	 * Write a TarArchiveinputStream to disk.
-	 * (use as a unit test)
-	 * @param tais
-	 */
-	private void writeFileStructure(TarArchiveInputStream tais, String destTopDirectory) throws IOException {
-		// delete the entire top level destination directory
-		File destTopPath = new File(destTopDirectory);
-        FileUtils.deleteDirectory(destTopPath); // Whether directory is present, or not, this operates without exception. note: windows file explorer cannot be into this directory
-        
-		TarArchiveEntry taEntry;
-		while ((taEntry = tais.getNextTarEntry()) != null) {
-			File newFile = new File(destTopDirectory, taEntry.getName()); // appends a path of directories to the top directory
-			log.trace(this.simpleName + "writeFileStructure() forming taEntry for writing to disk: " + newFile.getCanonicalPath());
-			if (taEntry.isDirectory()) {
-				newFile.mkdirs();
-			} else {
-                newFile.createNewFile(); // empty file
-				long fileSize = taEntry.getSize();
-				byte [] readBuf = new byte[(int)fileSize];
-				FileOutputStream fos = new FileOutputStream(newFile);
-				BufferedOutputStream bfos = new BufferedOutputStream(fos);
-				while (true) {
-					int len = tais.read(readBuf); // this read is defined to occur only on the taEntry received by the last tais.getNextTarEntry() call
-					if (len == -1)
-						break;
-					bfos.write(readBuf, 0, len);
-					log.trace(this.simpleName + "writeFileStructure() wrote " + len + " bytes to file " + newFile.getCanonicalPath());
-				}
-				bfos.close();
-			}
-		} // end while()
 	}
 
 }
