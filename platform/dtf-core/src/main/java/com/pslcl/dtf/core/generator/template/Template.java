@@ -226,7 +226,7 @@ public class Template implements Comparable<Template>
      * @param actions The actions that the template will perform.
      * @param dependencies Any dependent templates. May be null or an empty list if none.
      */
-    public Template(Core core, List<TestInstance.Action> actions, List<DescribedTemplate> dependencies)
+    public Template(Core core, List<TestInstance.Action> actions, List<DescribedTemplate> dependencies) throws Exception
     {
         this.core = core;
         this.actions = actions;
@@ -244,8 +244,9 @@ public class Template implements Comparable<Template>
      * Build the string representation of the template. This format is canonical, and
      * must be strictly followed. The first section contains all dependencies, which are sorted
      * textually. Next come the actions, which are sorted textually, beginning with the set ID.
+     * @throws Exception 
      */
-    private void buildStrings()
+    private void buildStrings() throws Exception
     {
         try
         {
@@ -280,9 +281,10 @@ public class Template implements Comparable<Template>
             hash = Hash.fromContent(std_string);
         } catch (Exception e)
         {
-            // This shouldn't happen...
+            System.err.println("Failed to build template string: " + e);
             std_string = "";
             hash = null;
+            throw e;
         }
     }
 

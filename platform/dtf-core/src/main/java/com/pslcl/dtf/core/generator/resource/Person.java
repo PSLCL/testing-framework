@@ -62,7 +62,7 @@ public class Person extends Resource
             int i = 2;
             for (Artifact a : attachments)
             {
-                params[i++] = StringParameter.class.cast(a.getName()); // the artifact name, intended to be the artifact destination
+                params[i++] = new StringParameter(a.getName()); // the artifact name, intended to be the artifact destination
                 params[i++] = a.getContent(); // the artifact hash
             }
 
