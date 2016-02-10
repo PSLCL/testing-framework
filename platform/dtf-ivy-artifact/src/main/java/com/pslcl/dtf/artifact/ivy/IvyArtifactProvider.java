@@ -423,13 +423,13 @@ public class IvyArtifactProvider implements ArtifactProvider
     public void init() throws Exception
     {
         IvySettings ivySettings = new IvySettings();
-        ivySettings.setBaseDir(Paths.get("ivy/").toFile());
+        ivySettings.setBaseDir(Paths.get("portal/config/").toFile());
 
         ivy = Ivy.newInstance(ivySettings);
 
-        File ivySettingsXmlFile = new File("ivy/ivysettings.xml");
+        File ivySettingsXmlFile = new File("portal/config/ivysettings.xml");
         if (!ivySettingsXmlFile.exists())
-            throw new Exception("ivy/ivysettings.xml file does not exist.");
+            throw new Exception("portal/config/ivysettings.xml file does not exist.");
 
         ivy.configure(ivySettingsXmlFile);
 

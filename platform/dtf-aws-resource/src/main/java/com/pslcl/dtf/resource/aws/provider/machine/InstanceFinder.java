@@ -74,14 +74,14 @@ public class InstanceFinder
         for (Entry<String, String> entry : list)
         {
             // =cores memory-range disk-range awsInstanceType
-            // pslcl.dtf.aws.instance.map0=1 0.5-1.0 1.0 t2.micro
+            // pslcl.dtf.aws.instance.map0=1 0.5-1.0 t2.micro limit
             String value = entry.getValue();
             value = StrH.trim(value);
             String[] attrs = value.split(" ");
             try
             {
                 int cores = Integer.parseInt(attrs[0]);
-                globalAttrMapData.put(attrs[3], new GlobalAttrMapData(cores, attrs[1], attrs[2], attrs[3], attrs[4]));
+                globalAttrMapData.put(attrs[3], new GlobalAttrMapData(cores, attrs[1], attrs[2], attrs[3]));
             } catch (Exception e)
             {
                 throw new Exception("invalid " + ProviderNames.InstanceGlobalMapKey + " format: " + value + " : " + e.getMessage());
@@ -206,13 +206,11 @@ public class InstanceFinder
         private final InstanceType instanceType;
         private final int cores;
         private final DoubleRange memory;
-        private final DoubleRange diskSpace;
 
-        private GlobalAttrMapData(int cores, String memoryRange, String diskRange, String instanceType, String limit) throws Exception
+        private GlobalAttrMapData(int cores, String memoryRange, String instanceType, String limit) throws Exception
         {
             this.cores = cores;
             memory = new DoubleRange(memoryRange);
-            diskSpace = new DoubleRange(diskRange);
             this.instanceType = getInstanceType(instanceType);
             this.limit = new AtomicInteger(Integer.parseInt(limit));
         }
@@ -231,12 +229,6 @@ public class InstanceFinder
                 range = new DoubleRange(memoryRange);
                 if(!memory.inRange(range))
                     return false;
-            }
-            if(diskRange != null)
-            {
-                range = new DoubleRange(diskRange);
-                if(!diskSpace.inRange(range))
-                return false;
             }
             return true;
         }
