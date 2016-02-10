@@ -28,10 +28,10 @@ public class TestInspectGenerator {
 		for(Artifact[] failInstructions : failVersions)
 		{
 			generator.startTest();
-			Person passPerson = new Person(generator, "passPerson");
+			Person failPerson = new Person(generator, "failPerson");
 			
-			passPerson.bind();
-			passPerson.inspect(failInstructions[0].getContent(), failInstructions);
+			failPerson.bind();
+			failPerson.inspect(failInstructions[0].getContent(), failInstructions);
 			
 			generator.completeTest();
 		}

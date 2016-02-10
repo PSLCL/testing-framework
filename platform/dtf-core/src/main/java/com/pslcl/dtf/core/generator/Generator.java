@@ -336,6 +336,7 @@ public class Generator
         } catch (Exception e)
         {
             System.err.println("ERROR: Failure to close generator, " + e.getMessage());
+        	e.printStackTrace();
         }
 
         /* Read the main contents of the top-level synchronized tables: Content, DescribedTemplate.
