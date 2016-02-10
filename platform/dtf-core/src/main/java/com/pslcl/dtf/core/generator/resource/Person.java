@@ -56,7 +56,7 @@ public class Person extends Resource
         @Override
         public String getCommand(Template t) throws Exception
         {
-            Template.Parameter[] params = new Template.Parameter[2 + attachments.length];
+            Template.Parameter[] params = new Template.Parameter[2 + 2*attachments.length];
             params[0] = new Template.ResourceParameter(inspector);
             params[1] = body;
             int i = 2;
