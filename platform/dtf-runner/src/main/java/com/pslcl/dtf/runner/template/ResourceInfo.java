@@ -19,15 +19,11 @@ import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 
 public class ResourceInfo implements Comparable<ResourceInfo> {
     private ResourceInstance resourceInstance;
-    private ArtifactInfo artifactInfo = null;
-    private String instructionsHash = null;
-    private String network = null;
-    private String runParams = null;
     
-    //FIXME: why is this private and unused?  if ever needed, note that reference and resourceId are no longer equivalent.
-    private long getReference() {
-        return resourceInstance.getCoordinates().resourceId;
-    }
+//    //FIXME: why is this private and unused?  if ever needed, note that reference and resourceId are no longer equivalent.
+//    private long getReference() {
+//        return resourceInstance.getCoordinates().resourceId;
+//    }
     
     // implement Comparable interface
     @Override
@@ -45,13 +41,13 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
    
     // public methods
     
-    // FIXME: Chad added this constructor to see if anyone was creating an object from this class.
+    // FIXME: This constructor is added to see if anything was creating an object from this class.
     //  it appears this class is not currently used.
     // if this class is ever used, note that reference and resourceId are no longer equivalent.
     public ResourceInfo()
     {
-        
     }
+    
     /**
      * Constructor
      * @param resourceInstance
@@ -63,6 +59,16 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
     public ResourceInstance getResourceInstance() {
         return resourceInstance;
     }
+
+    
+    @SuppressWarnings("unused")
+    private ArtifactInfo artifactInfo = null;
+    @SuppressWarnings("unused")
+    private String instructionsHash = null;
+    @SuppressWarnings("unused")
+    private String network = null;
+    @SuppressWarnings("unused")
+    private String runParams = null;
     
     public void setArtifactInfo(ArtifactInfo artifactInfo) {
         this.artifactInfo = artifactInfo;

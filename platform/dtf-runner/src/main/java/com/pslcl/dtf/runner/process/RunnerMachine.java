@@ -113,7 +113,7 @@ public class RunnerMachine {
         try {
             RunEntryState reState = new RunEntryState(reNum, message);
             Action action = reState.getAction();  // Action.INITIALIZE
-            Action nextAction = action.act(reState, null, getService());            
+            /*Action nextAction =*/ action.act(reState, null, getService());            
             // .act() stores a computed next action in reState and returns it as nextAction
         } catch (Exception e) {
             log.error(simpleName + "initiateProcessing() finds Exception while handling reNum " + reNum + ": " + e + ". Message remains in the QueueStore.");
@@ -130,7 +130,7 @@ public class RunnerMachine {
         // boolean doProcess = determineDoProcess(reNum, reState);
         // if (doProcess)
         {
-            RunEntryState reStateOld = getService().runEntryStateStore.put(reNum, reState);
+            /*RunEntryState reStateOld =*/ getService().runEntryStateStore.put(reNum, reState);
             // TODO: For reStateOld not null, consider: is this a bug, or shall we cleanup whatever it is that reStateOld shows has been allocated or started or whatever?
         }
         
@@ -147,7 +147,7 @@ public class RunnerMachine {
      * @param reNum
      */
     void disengageRunEntry(long reNum) {
-        RunEntryState reStateOld = getService().runEntryStateStore.remove(reNum);
+        /*RunEntryState reStateOld =*/ getService().runEntryStateStore.remove(reNum);
         // TODO: Shall we cleanup whatever it is that reStateOld shows has been allocated or started or whatever?
     }
     

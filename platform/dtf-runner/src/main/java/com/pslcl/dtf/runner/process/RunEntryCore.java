@@ -223,8 +223,8 @@ public class RunEntryCore {
 		try { 
 	        writeRunEntryData(); // ready_time and owner have changed
 		} catch (Exception e) {
-			if (true) // false: temporarily allow test run to proceed, after write failure 
-				throw e;
+			log.debug(this.simpleName + "storeReadyRunEntryData() database write failure");
+			throw e;
 		}
     }
 
@@ -236,8 +236,8 @@ public class RunEntryCore {
         try {
             writeRunEntryData();
         } catch (Exception e) {
-			if (true) // false: temporarily allow test run to proceed, after write failure 
-				throw e;
+			log.debug(this.simpleName + "storeResultRunEntryData() database write failure");
+			throw e;
         }
     }
 
@@ -248,9 +248,14 @@ public class RunEntryCore {
      *
      */
     private void writeRunEntryData() throws Exception {
+        // temporarily, comment out these next 5 lines, to allow overwriting a past result
     	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, reNum);
-    	if(false || // true: temporarily allow overwriting of a past result
-    	   previousResultIsStored == null) { // this check is a fail-safe
+    	if (previousResultIsStored != null) { // this specific test is a fail-safe
+    		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
+    		throw new Exception("Database write not accomplished");
+    	} else
+    		
+    	{
     		if (!this.dbConnPool.getReadOnly()) {
                 Connection connection = null;
     	        Statement statement = null;
@@ -295,9 +300,6 @@ public class RunEntryCore {
     			log.warn(simpleName + "writeRunEntryData() finds readonly status; does not write a result, for reNum " + topDBTemplate.reNum);
     			throw new Exception("Database write not accomplished");
     		}
-    	} else {
-    		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
-			throw new Exception("Database write not accomplished");
     	}
     }
 

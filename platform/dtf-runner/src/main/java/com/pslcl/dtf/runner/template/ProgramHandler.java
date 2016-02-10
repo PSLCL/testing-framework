@@ -17,6 +17,8 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 public class ProgramHandler {
 	private enum RunType {
 		CONFIGURE(0), RUN(1), START(2);
+		
+	    @SuppressWarnings("unused")
 		private int value;
 		
 		private RunType(int value) {

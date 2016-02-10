@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
-import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.runner.QAPortalAccess;
@@ -182,9 +181,9 @@ public class InstancedTemplate {
     
     
     public void destroyNestedTemplate() {
-        for (InstancedTemplate instancedTemplate : mapStepReferenceToNestedTemplate.values()) {
-            // TODO: Do actual destroy of everything having to do with each nested template         
-        }
+//        for (InstancedTemplate instancedTemplate : mapStepReferenceToNestedTemplate.values()) {
+//            // TODO: Do actual destroy of everything having to do with each nested template         
+//        }
         mapStepReferenceToNestedTemplate.clear();
     }
     
@@ -456,7 +455,7 @@ public class InstancedTemplate {
 
 
                 // TODO: move things like this to here
-                List<ProgramInfo> runInfos = null;
+//              List<ProgramInfo> runInfos = null;
 //              List<ProgramInfo> startInfos = null;
 
                 

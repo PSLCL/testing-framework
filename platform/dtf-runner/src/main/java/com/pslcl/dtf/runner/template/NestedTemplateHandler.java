@@ -32,7 +32,7 @@ public class NestedTemplateHandler {
         List<Future<? extends ReferencedNestedTemplate>> futures = new ArrayList<>();
         for (String includeStep: includeSteps) {
         	String includeText = StepsParser.peekNextSubString(includeStep, 0) + " "; // move past include hash parameter, past "include" substring and its trailing space
-            String templateHashText = StepsParser.peekNextSubString(includeStep, (includeText.length()));
+            /*String templateHashText =*/ StepsParser.peekNextSubString(includeStep, (includeText.length()));
             DBTemplate nestedDBTemplate = new DBTemplate(null); // null: a nested template has no reNum (run entry number)
             // use reCore to fill nestedDBTemplate. TODO: nestedDBTemplate can be truncated
 

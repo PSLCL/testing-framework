@@ -16,7 +16,6 @@
 package com.pslcl.dtf.runner.process;
 
 import com.pslcl.dtf.runner.RunnerService;
-import com.pslcl.dtf.runner.template.TemplateProvider;
 
 /**
  * 
@@ -61,7 +60,7 @@ public enum Action implements Actions {
     ANALYZE {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
-            long reNum = reState.getRunEntryNumber();
+            /*long reNum =*/ reState.getRunEntryNumber();
             
             // TODO. Determine a priority
             // int priority = determineAndStorePriority(reNum, reState);
@@ -78,7 +77,7 @@ public enum Action implements Actions {
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             try {
                 // initiate a test run, then block until the test run completes, its result is gathered, and its result is stored
-                boolean result = reCore.testRun(runnerService.runnerMachine);
+                /*boolean result =*/ reCore.testRun(runnerService.runnerMachine);
             } catch (Exception e) {
                 System.out.println("Action.DO() sees testRun() exception: " + e);
             }
@@ -93,8 +92,10 @@ public enum Action implements Actions {
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
             System.out.println("Action.REMOVE() removes reNum " + reNum);
-            if (true) // false: temporarily, allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
-            	runnerService.getRunnerMachine().disengageRunEntry(reNum);
+            
+            // temporarily, comment out this line, to allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
+            runnerService.getRunnerMachine().disengageRunEntry(reNum);
+            
             reState.setAction(DISCARDED);
             return reState.getAction();
         }
@@ -105,8 +106,10 @@ public enum Action implements Actions {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
-            if (true) // false: temporarily, allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
-            	runnerService.getRunnerMachine().disengageRunEntry(reNum);
+            
+            // temporarily, comment out this line, to allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
+            runnerService.getRunnerMachine().disengageRunEntry(reNum);
+           	
             return reState.getAction();
         }
     };

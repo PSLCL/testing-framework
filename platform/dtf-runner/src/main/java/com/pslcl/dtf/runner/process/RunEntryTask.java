@@ -27,7 +27,7 @@ public class RunEntryTask implements Runnable {
 	private RunnerMachine runnerMachine;
     private RunEntryCore reCore;
     private long reNum;
-    private String runInstanceThreadName;
+    //private String runInstanceThreadName;
     private final Logger log;
     private final String simpleName;
         
@@ -48,7 +48,7 @@ public class RunEntryTask implements Runnable {
         this.simpleName = getClass().getSimpleName() + " ";
         this.runnerMachine = runnerMachine;
         this.reNum = reNum;
-        this.runInstanceThreadName = new String("runEntry " + reNum);
+        //this.runInstanceThreadName = new String("runEntry " + reNum);
         this.reCore = new RunEntryCore(this.runnerMachine.getDBConnPool(), new Long(reNum));
         
         try {

@@ -35,10 +35,10 @@ public class ProcessTracker {
     static public boolean isResultStored(DBConnPool dbConnPool, long reNum) throws TimeoutException, Exception {
     	boolean retBoolean = false;
 
-    	if (true) { // false: temporarily disable this code; by so doing, we allow local testing to proceed, even if a result is already stored
-    		Boolean result = RunEntryCore.getResult(dbConnPool, reNum);
-    		retBoolean = (result != null);
-    	}
+        // temporarily, comment out these two lines, to allow local testing to proceed, even if a result is already stored
+ 		Boolean result = RunEntryCore.getResult(dbConnPool, reNum);
+ 		retBoolean = (result != null);
+   		
         return retBoolean;
     }
 
