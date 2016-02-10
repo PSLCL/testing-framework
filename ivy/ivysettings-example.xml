@@ -1,11 +1,11 @@
 <ivysettings>
   <property name="dtf.dir" value="${ivy.settings.dir}/.."/>
   <settings defaultResolver="local" />
-  <caches  defaultCacheDir="${dtf.dir}/ivy/repo" checkUpToDate="false" ivyPattern="[organisation]/[module]/[revision]/ivy(.[platform]).xml" artifactPattern="[organisation]/[module]/[revision](/[platform])/[type]s/[artifact].[ext]"/>
+  <caches  defaultCacheDir="${dtf.dir}/ivy/repo" checkUpToDate="false" ivyPattern="[organisation]/[module]/[revision]/ivy.xml" artifactPattern="[organisation]/[module]/[revision](/[type]s)/[artifact]-[revision](-[classifier]).[ext]"/>
   <resolvers>
     <filesystem name="local" descriptor="required">
-      <ivy pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision]/ivy(.[platform]).xml"/>
-      <artifact pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision](/[platform])/[type]s/[artifact].[ext]"/>
+      <ivy pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision]/ivy.xml"/>
+      <artifact pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision](/[type]s)/[artifact]-[revision](-[classifier]).[ext]"/>
     </filesystem>
   </resolvers>
 </ivysettings>
