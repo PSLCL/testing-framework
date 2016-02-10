@@ -23,12 +23,14 @@ import java.util.concurrent.CancellationException;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.model.BlockDeviceMapping;
 import com.amazonaws.services.ec2.model.CreateKeyPairRequest;
 import com.amazonaws.services.ec2.model.CreateKeyPairResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsRequest;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsResult;
+import com.amazonaws.services.ec2.model.EbsBlockDevice;
 import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
 import com.amazonaws.services.ec2.model.Instance;
@@ -118,7 +120,11 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             userData = encoder.encodeToString(config.winUserData.getBytes());
         //@formatter:off
         Placement placement = new Placement().withAvailabilityZone(pdelayData.provider.manager.ec2cconfig.availabilityZone);
-        
+        int volumeSize = (int)config.rootDiskSize;
+        if(config.rootDiskSize - volumeSize != 0.0)
+            ++volumeSize;
+        EbsBlockDevice ebsBlockDevice = new EbsBlockDevice().withDeleteOnTermination(true).withVolumeSize(volumeSize);
+        BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping().withDeviceName("/dev/sda1").withEbs(ebsBlockDevice);
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
             .withImageId(reservedResource.imageId)
             .withInstanceType(reservedResource.instanceType)
@@ -127,7 +133,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             .withKeyName(config.keyName)
             .withSubnetId(subnetId)
             .withUserData(userData)
-//            .withSecurityGroupIds(sgGroupId)
+            .withBlockDeviceMappings(blockDeviceMapping)
             .withPlacement(placement);
         //@formatter:on
 

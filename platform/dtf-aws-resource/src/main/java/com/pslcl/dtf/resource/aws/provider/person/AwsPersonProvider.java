@@ -37,6 +37,7 @@ import com.pslcl.dtf.core.util.RequestThrottle;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.instance.person.AwsPersonInstance;
 import com.pslcl.dtf.resource.aws.instance.person.PersonConfigData;
 import com.pslcl.dtf.resource.aws.instance.person.PersonInstanceFuture;
@@ -256,6 +257,8 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     @Override
     public List<String> getAttributes()
     {
-        return ResourceNames.getAllPersonProviderKeys();
+        List<String> attrs = ResourceNames.getAllPersonProviderKeys();
+        attrs.addAll(ProviderNames.getSesKeys());
+        return attrs;
     }
 }

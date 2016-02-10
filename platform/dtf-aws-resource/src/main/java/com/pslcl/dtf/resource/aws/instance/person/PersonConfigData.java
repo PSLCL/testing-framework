@@ -64,8 +64,8 @@ public class PersonConfigData
         PersonConfigData data = new PersonConfigData();
         format.ttl(PersonConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
-        data.sesMaxDelay = Integer.parseInt(getAttribute(ResourceNames.InspectMaxDelayKey, "" + defaultData.sesMaxDelay, resource, format));
-        data.sesMaxRetries = Integer.parseInt(getAttribute(ResourceNames.InspectMaxRetriesKey, "" + defaultData.sesMaxRetries, resource, format));
+        data.sesMaxDelay = Integer.parseInt(getAttribute(ProviderNames.SesMaxDelayKey, "" + defaultData.sesMaxDelay, resource, format));
+        data.sesMaxRetries = Integer.parseInt(getAttribute(ProviderNames.SesMaxRetriesKey, "" + defaultData.sesMaxRetries, resource, format));
         data.sender = getAttribute(ResourceNames.InspectSenderKey, defaultData.sender, resource, format);
         data.reply = getAttribute(ResourceNames.InspectReplyKey, defaultData.reply, resource, format);
         data.subject = getAttribute(ResourceNames.InspectSubjectKey, defaultData.subject, resource, format);
@@ -101,8 +101,8 @@ public class PersonConfigData
         PersonConfigData data = new PersonConfigData();
         config.initsb.ttl(SubnetManager.class.getSimpleName() + " init:");
         config.initsb.level.incrementAndGet();
-        data.sesMaxDelay = Integer.parseInt(getAttribute(config, ResourceNames.InspectMaxDelayKey, ResourceNames.InspectMaxDelayDefault));
-        data.sesMaxRetries = Integer.parseInt(getAttribute(config, ResourceNames.InspectMaxRetriesKey, ResourceNames.InspectMaxRetriesDefault));
+        data.sesMaxDelay = Integer.parseInt(getAttribute(config, ProviderNames.SesMaxDelayKey, ResourceNames.InspectMaxDelayDefault));
+        data.sesMaxRetries = Integer.parseInt(getAttribute(config, ProviderNames.SesMaxRetriesKey, ResourceNames.InspectMaxRetriesDefault));
         data.sender = getAttribute(config, ResourceNames.InspectSenderKey, ResourceNames.InspectSenderDefault);
         data.reply = getAttribute(config, ResourceNames.InspectReplyKey, ResourceNames.InspectReplyDefault);
         data.subject = getAttribute(config, ResourceNames.InspectSubjectKey, ResourceNames.InspectSubjectDefault);

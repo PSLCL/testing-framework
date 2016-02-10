@@ -47,8 +47,6 @@ public class ProviderNames
      * Instance type declarations    
     ******************************************************************************/    
     public static final String InstanceKeyBase = AwsKeyBase + ".instance";
-    public static final String InstanceTypeKeyBase = InstanceKeyBase + ".type";
-    public static final String InstanceTypeLimit = "-limit";
     
     public static final String InstanceTypeKey = InstanceKeyBase + ".type";
     public static final String InstanceGlobalMapKey = InstanceKeyBase + ".map";
@@ -228,6 +226,15 @@ public class ProviderNames
     public static final String LocationMonthDefault = null;
     public static final String LocationDotDefault = null;
     
+    
+    /* ****************************************************************************
+     * SES Inspect    
+    ******************************************************************************/    
+    public static final String SesKeyBase = AwsKeyBase + ".ses";
+    
+    public static final String SesMaxDelayKey = SesKeyBase + ".max-delay";
+    public static final String SesMaxRetriesKey = SesKeyBase + ".max-retries";
+
     /* ****************************************************************************
      * Various helper key lists    
     ******************************************************************************/
@@ -281,6 +288,13 @@ public class ProviderNames
         keys.add(InstanceNames.PermProtocolKey);
         keys.add(InstanceNames.PermIpRangeKey);
         keys.add(InstanceNames.PermPortKey);
+        return keys;
+    }
+    public static List<String> getSesKeys()
+    {
+        List<String> keys = new ArrayList<String>();
+        keys.add(SesMaxDelayKey);  
+        keys.add(SesMaxRetriesKey);  
         return keys;
     }
 }
