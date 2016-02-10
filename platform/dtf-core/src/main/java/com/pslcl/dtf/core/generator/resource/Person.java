@@ -88,7 +88,7 @@ public class Person extends Resource
             StringBuilder sb = new StringBuilder();
             if (attachments.length > 0)
             {
-                sb.append("Create an archive of the following files called <tt>attachments.tar.gz</tt>:<ul>");
+                sb.append("Create an archive of the following files called <tt>attachments.tar.gzip</tt>:<ul>");
                 for (Artifact a : attachments)
                 {
                     sb.append("<li><tt>");
@@ -102,7 +102,7 @@ public class Person extends Resource
 
                 sb.append("</ul>\n");
 
-                sb.append("Send <tt>attachments.tar.gz</tt> to <em>");
+                sb.append("Send <tt>attachments.tar.gzip</tt> to <em>");
                 sb.append(inspector.name);
                 sb.append("</em> with the following instructions:\n");
             } else

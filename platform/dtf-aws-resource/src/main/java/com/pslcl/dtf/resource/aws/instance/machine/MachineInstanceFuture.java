@@ -26,6 +26,8 @@ import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.BlockDeviceMapping;
 import com.amazonaws.services.ec2.model.CreateKeyPairRequest;
 import com.amazonaws.services.ec2.model.CreateKeyPairResult;
+import com.amazonaws.services.ec2.model.DescribeImagesRequest;
+import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsRequest;
@@ -33,6 +35,7 @@ import com.amazonaws.services.ec2.model.DescribeKeyPairsResult;
 import com.amazonaws.services.ec2.model.EbsBlockDevice;
 import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
+import com.amazonaws.services.ec2.model.Image;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.KeyPair;
 import com.amazonaws.services.ec2.model.KeyPairInfo;
@@ -120,11 +123,18 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             userData = encoder.encodeToString(config.winUserData.getBytes());
         //@formatter:off
         Placement placement = new Placement().withAvailabilityZone(pdelayData.provider.manager.ec2cconfig.availabilityZone);
+        
+        pdelayData.maxDelay = config.subnetConfigData.sgMaxDelay;
+        pdelayData.maxRetries = config.subnetConfigData.sgMaxRetries;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        RootBlockDeviceInfo rootBlockDeviceInfo = getImageDiskInfo(reservedResource.imageId, pdelay);
         int volumeSize = (int)config.rootDiskSize;
         if(config.rootDiskSize - volumeSize != 0.0)
             ++volumeSize;
-        EbsBlockDevice ebsBlockDevice = new EbsBlockDevice().withDeleteOnTermination(true).withVolumeSize(volumeSize);
-        BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping().withDeviceName("/dev/sda1").withEbs(ebsBlockDevice);
+        if(rootBlockDeviceInfo.minDeviceSize > volumeSize)
+            volumeSize = rootBlockDeviceInfo.minDeviceSize;
+        EbsBlockDevice ebsBlockDevice = new EbsBlockDevice().withVolumeSize(volumeSize);
+        BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping().withDeviceName(rootBlockDeviceInfo.deviceName).withEbs(ebsBlockDevice);
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
             .withImageId(reservedResource.imageId)
             .withInstanceType(reservedResource.instanceType)
@@ -146,7 +156,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         RunInstancesResult runResult = null;
         pdelayData.maxDelay = config.ec2MaxDelay;
         pdelayData.maxRetries = config.ec2MaxRetries;
-        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        pdelay.reset();
         String msg = pdelayData.getHumanName(Ec2MidStr, "runInstances");
         synchronized (reservedResource)
         {
@@ -206,6 +216,33 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         } while (true);
     }
 
+    
+    private RootBlockDeviceInfo getImageDiskInfo(String amiId, ProgressiveDelay pdelay) throws FatalResourceException
+    {
+        DescribeImagesRequest diRequest = new DescribeImagesRequest().withImageIds(amiId);
+        String msg = pdelayData.getHumanName(Ec2MidStr, "describeImage");
+        do
+        {
+            checkFutureCanceled();
+            try
+            {
+                DescribeImagesResult diResult = ec2Client.describeImages(diRequest);
+                Image image = diResult.getImages().get(0);
+                List<BlockDeviceMapping> blockDevices = image.getBlockDeviceMappings();
+                BlockDeviceMapping blockDevice = blockDevices.get(0);
+                String deviceName = blockDevice.getDeviceName();
+                EbsBlockDevice ebs = blockDevice.getEbs();
+                int size = ebs.getVolumeSize();
+                return new RootBlockDeviceInfo(deviceName, size);
+            } catch (Exception e)
+            {
+                FatalResourceException fre = pdelay.handleException(msg, e);
+                if (fre instanceof FatalException)
+                    throw fre;
+            }
+        } while (true);
+    }
+    
     @SuppressWarnings("null")
     private String createKeyPair() throws FatalResourceException
     {
@@ -256,6 +293,18 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             KeyPair keypair = keypairResult.getKeyPair();
 
             return keypair.getKeyName();
+        }
+    }
+    
+    private class RootBlockDeviceInfo
+    {
+        private final String deviceName;
+        private final int minDeviceSize;
+        
+        private RootBlockDeviceInfo(String deviceName, int minDeviceSize)
+        {
+            this.deviceName = deviceName;
+            this.minDeviceSize = minDeviceSize;
         }
     }
 }
