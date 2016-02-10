@@ -137,7 +137,7 @@ edit the configuration file /usr/local/staf/bin/STAF.cfg
     1. add "option ConnectTimeout=60000" to the end of both "interface ..." lines.
     2. add a new line with "trust level 5 default" 
 
-STAF is started with /usr/local/startSTAFProc.sh
+STAF is started with /usr/local/staf/startSTAFProc.sh
 a nohup.out log file is created at /home/ec2-user
 
 Setup your machine to auto start STAF on reboot (i.e. /etc/rc.local)
