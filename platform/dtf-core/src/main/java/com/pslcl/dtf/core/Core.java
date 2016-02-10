@@ -2156,6 +2156,8 @@ public class Core
             return dbdt;
         } catch (Exception e)
         {
+        	System.err.println("Failed to add described template: " + e);
+        	e.printStackTrace();
             try
             {
                 connect.rollback();
