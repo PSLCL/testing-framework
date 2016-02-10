@@ -126,8 +126,6 @@ public class ResourceNames
     public static final String InspectReplyKey = InspectKeyBase + ".reply";
     public static final String InspectSubjectKey = InspectKeyBase + ".subject";
     public static final String InspectInspectorKey = InspectKeyBase + ".inspector";
-    public static final String InspectMaxDelayKey = InspectKeyBase + ".max-delay";
-    public static final String InspectMaxRetriesKey = InspectKeyBase + ".max-retries";
     
     public static final String InspectSenderDefault = null; // valid email address
     public static final String InspectReplyDefault = null; // valid email address
@@ -154,8 +152,6 @@ public class ResourceNames
         keys.add(InspectReplyKey);
         keys.add(InspectSubjectKey);
         keys.add(InspectInspectorKey);
-        keys.add(InspectMaxDelayKey);
-        keys.add(InspectMaxRetriesKey);
         return keys;
     }
 }
