@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.runner.template.InspectHandler;
 import com.pslcl.dtf.runner.template.QAPaResponse;
@@ -61,9 +62,6 @@ public class QAPortalAccess {
 
     
     // Class instance variables
-    
-    private static final String RunnerQAPortalHostKey = "pslcl.dtf.runner.qa.portal.host";
-
     private final Executor executor; // is pooling, uses PoolingHttpClientConnectionManager 
     private volatile String hostQAPortal = null;
     private final Logger log;
@@ -105,10 +103,10 @@ public class QAPortalAccess {
      * @param runnerConfig
      */
     void init(RunnerConfig runnerConfig) {
-        hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey);
+        hostQAPortal = runnerConfig.properties.getProperty(ResourceNames.PortalHostKey);
         hostQAPortal = StrH.trim(hostQAPortal);
 		if(hostQAPortal == null){
-			this.log.error("Missing required property: " + RunnerQAPortalHostKey);
+			this.log.error("Missing required property: " + ResourceNames.PortalHostKey);
 		}
     }
     
