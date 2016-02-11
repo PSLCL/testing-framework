@@ -181,6 +181,8 @@ AWS SQS is used by the test runner service as a persistent queue to handle reque
 
 ### AWS Simple Email Service(SES)
 AWS SES is used by the test runner service in order to send emails for the inspect commands. From the AWS Console, configure SES to allow sending an email from the desired address. Configure the test runner service to use the verified email as the sender.
+
+Note: SES by default limits the number of emails that may be sent per 24 hour period. Request a sending limit increase if more is required.
  
 ###Test Runner Service Configuration
 
