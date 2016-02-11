@@ -96,7 +96,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config.initsb.indentedOk();
             config.initsb.ttl("Initialize RunnerMachine:");
             config.initsb.indentedOk();
-            config.initsb.ttl("Initialize QueueStoreDao:");
+            config.initsb.ttl("Initialize MessageQueueBase:");
             config.initsb.level.incrementAndGet(); // l2
             String daoClass = config.properties.getProperty(ResourceNames.MsgQueClassKey, ResourceNames.MsgQueClassDefault);
             daoClass = StrH.trim(daoClass);

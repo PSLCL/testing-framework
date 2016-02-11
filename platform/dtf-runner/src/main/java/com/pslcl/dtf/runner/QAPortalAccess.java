@@ -108,7 +108,7 @@ public class QAPortalAccess {
         hostQAPortal = StrH.trim(hostQAPortal);
 		if(hostQAPortal == null){
 			this.log.error("Missing required property: " + ResourceNames.PortalHostKey);
-//			throw new Exception("QAPortalAccess.init() fails");
+			throw new Exception("QAPortalAccess.init() fails");
 		}
     }
     
