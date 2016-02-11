@@ -31,6 +31,6 @@ The Distributed Test Framework Main.
     <dependency org="com.pslcl.testing-framework" name="dtf-aws-resource" rev="[1,2)" conf="compile->master,compile"/>
     <dependency org="com.pslcl.testing-framework" name="dtf-ivy-artifact" rev="[1,2)" conf="compile->master,compile"/>
     <dependency org="com.pslcl.testing-framework" name="dtf-runner" rev="[1,2)" conf="compile->master,compile"/>
-	<dependency org="mysql" name="mysql-connector-java" rev="[5.1,6)"/>
+    <dependency org="mysql" name="mysql-connector-java" rev="[5.1,6)"/>
   </dependencies>
 </ivy-module>
