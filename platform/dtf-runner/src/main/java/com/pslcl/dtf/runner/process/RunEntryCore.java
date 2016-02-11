@@ -21,10 +21,13 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import javax.jms.Message;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.runner.DBConnPool;
+import com.pslcl.dtf.runner.RunnerService;
 import com.pslcl.dtf.runner.template.InstancedTemplate;
 
 /**
@@ -379,12 +382,37 @@ public class RunEntryCore {
         	log.debug(simpleName + "testRun errors out, reNum : " + this.topDBTemplate.reNum);
             throw t;
         } finally {
-            log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stores to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
-           	storeResultRunEntryData();
+        	this.storeResultAndAckMessageQueue(runnerMachine.getService());
         }
         return testRunSuccess; // always true, for exception not thrown
     }
-
+    
+    /**
+     * 
+     * @param runnerService
+     * @throws Exception
+     */
+    private void storeResultAndAckMessageQueue(RunnerService runnerService) throws Exception {
+       	try {
+			storeResultRunEntryData();
+	        log.debug(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
+		} catch (Exception e) {
+            log.warn(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() FAILED to store to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
+			throw e;
+		}
+       	// result stored ok, so ack the message queue
+       	boolean msgAcked = false;
+       	try {
+			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
+			Object message = reState.getMessage();
+			runnerService.ackRunEntry(message);
+			msgAcked = true;
+		} catch (Exception e) {
+			// swallow this exception, it does not relate to the actual test run
+		}
+       	log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() completed and message queue was " + (msgAcked ? "" : "NOT ") + "acked");
+    }
+    
         // unneeded- our real approach involves an api to come to us soon
 //        // prove that api works to get files from the build machine
 //        String endpoint = null;

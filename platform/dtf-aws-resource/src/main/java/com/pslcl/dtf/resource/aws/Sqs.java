@@ -109,7 +109,7 @@ public class Sqs extends MessageQueueBase {
                 }
                 
                 // .submitQueueStoreNumber() failed to be deliver message to dtf-runner
-                log.debug(prependString + "Message not acked");
+                log.warn(prependString + "Message not acked");
             } else {
                 log.debug(prependString + "Dropped - null message cannot be processed");
             }
