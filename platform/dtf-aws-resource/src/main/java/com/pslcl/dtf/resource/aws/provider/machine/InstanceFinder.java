@@ -73,7 +73,7 @@ public class InstanceFinder
             globalAttrMapData = new HashMap<String, GlobalAttrMapData>();
         for (Entry<String, String> entry : list)
         {
-            // =cores memory-range disk-range awsInstanceType
+            // =cores memory-range awsInstanceType
             // pslcl.dtf.aws.instance.map0=1 0.5-1.0 t2.micro limit
             String value = entry.getValue();
             value = StrH.trim(value);
@@ -81,7 +81,7 @@ public class InstanceFinder
             try
             {
                 int cores = Integer.parseInt(attrs[0]);
-                globalAttrMapData.put(attrs[3], new GlobalAttrMapData(cores, attrs[1], attrs[2], attrs[3]));
+                globalAttrMapData.put(attrs[2], new GlobalAttrMapData(cores, attrs[1], attrs[2], attrs[3]));
             } catch (Exception e)
             {
                 throw new Exception("invalid " + ProviderNames.InstanceGlobalMapKey + " format: " + value + " : " + e.getMessage());
