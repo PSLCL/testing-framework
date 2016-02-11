@@ -21,8 +21,6 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import javax.jms.Message;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -251,7 +249,7 @@ public class RunEntryCore {
      *
      */
     private void writeRunEntryData() throws Exception {
-        // temporarily, comment out these next 5 lines, to allow overwriting a past result
+        // temporarily, comment out these next 5 lines, to allow overwriting a past non-null result
     	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, reNum);
     	if (previousResultIsStored != null) { // this specific test is a fail-safe
     		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
