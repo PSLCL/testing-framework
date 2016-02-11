@@ -48,14 +48,15 @@ public class QAPortalAccess {
         @Override
         public void run() {
             
+        	QAPaResponse qapaResponse = null;
             try {
                 Response response = this.qaPortalAccess.request(this.contentSpecifier);
-                QAPaResponse qapaResponse = new QAPaResponse(response);
-                this.inspectHandler.setQAPaResponse(qapaResponse);
+                qapaResponse = new QAPaResponse(response);
             } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            	qapaResponse = new QAPaResponse(); // empty: will be interpreted as an error
             }
+            // inform QAPortalAccess originator (inspectHandler) by setting its QAPaResponse
+            this.inspectHandler.setQAPaResponse(qapaResponse);
         }
         
     }
@@ -102,11 +103,12 @@ public class QAPortalAccess {
      * 
      * @param runnerConfig
      */
-    void init(RunnerConfig runnerConfig) {
+    void init(RunnerConfig runnerConfig) throws Exception {
         hostQAPortal = runnerConfig.properties.getProperty(ResourceNames.PortalHostKey);
         hostQAPortal = StrH.trim(hostQAPortal);
 		if(hostQAPortal == null){
 			this.log.error("Missing required property: " + ResourceNames.PortalHostKey);
+//			throw new Exception("QAPortalAccess.init() fails");
 		}
     }
     

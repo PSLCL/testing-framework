@@ -39,7 +39,7 @@ public class InspectHandler {
     private final List<String> setSteps;
 
     private boolean qapaResponseLaunched;
-    private QAPaResponse qapaResponse; // as a flag, this starts out instantiated, but empty
+    private QAPaResponse qapaResponse; // as a flag, this starts out instantiated, but empty (with null member qaPortalResponse member)
     private Iterator<Map.Entry<String, String>> artifactEntriesIterator;
     private Entry<String, String> currArtifact;
     private List<InspectInfo> resultInspectInfos;
@@ -197,8 +197,13 @@ public class InspectHandler {
                                     this.qapaResponseLaunched = true;
                                     return; // allow http return time; fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks
                                 } else {
-                                    // accept instructions; this.qapaResponse is guaranteed to be filled
+                                    // accept instructions
                                     this.qapaResponseLaunched = false;
+                                    // this.qapaResponse is guaranteed not null, but exception out if it is not filled
+                                    if (!this.qapaResponse.isFilled()) {
+                                    	log.warn(this.simpleName + "proceed() finds empty qapaResponse");
+                                    	throw new Exception("QAPortal access failure");
+                                    }
                                     String instruction = this.qapaResponse.getContentAsString();
                                     inspectInfo.setInstruction(instruction);
                                     continue;
@@ -221,8 +226,13 @@ public class InspectHandler {
                                         this.qapaResponseLaunched = true;
                                         return; // allow http return time
                                     } else {
-                                        // accept file content of currArtifact; this.qapaResponse is guaranteed to be filled
+                                        // accept file content of currArtifact
                                         this.qapaResponseLaunched = false;
+                                        // this.qapaResponse is guaranteed not null, but exception out if it is not filled
+                                        if (!this.qapaResponse.isFilled()) {
+                                        	log.warn(this.simpleName + "proceed() finds empty qapaResponse");
+                                        	throw new Exception("QAPortal access failure");
+                                        }
                                         InputStream streamContent = this.qapaResponse.getContentAsStream();
                                         String contentFilename = currArtifact.getKey();
                                         

@@ -237,8 +237,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
             try
             {
                 if (ProcessTracker.isResultStored(this.dbConnPool, reNum)) {
-                    ackRunEntry(message);
                     LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", result already stored. Acking this reNum now.");
+                    ackRunEntry(message);
                 } else if (processTracker.isRunning(reNum)) {
                 	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
                 } else {
