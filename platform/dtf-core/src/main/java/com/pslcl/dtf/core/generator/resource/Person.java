@@ -39,12 +39,15 @@ public class Person extends Resource
         private Resource inspector;
         private Content body;
         private Artifact[] attachments;
+        private List<Action> actionDependencies;
 
         private InspectAction(Resource inspector, Content body, Artifact[] attachments)
         {
             this.inspector = inspector;
             this.body = body;
             this.attachments = attachments;
+            actionDependencies = new ArrayList<Action>();
+            actionDependencies.add(inspector.getBindAction());
         }
 
         /*        @Override
@@ -137,7 +140,7 @@ public class Person extends Resource
 
 		@Override
 		public List<Action> getActionDependencies() throws Exception {
-			return new ArrayList<Action>();
+			return actionDependencies;
 		}
 
     }
