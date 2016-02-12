@@ -132,16 +132,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
                 }
             }
         }
-        // make sure they are all complete before going further
-        for (Future<Void> future : futures)
-        {
-            try
-            {
-                future.get();
-            } catch (Exception e)
-            {
-            }
-        }
+        config.blockingExecutor.submit(new WaitForTerminate(futures, coordinates));
     }
 
     private void releasePossiblePendings(String templateId, boolean isReusable)
@@ -260,5 +251,34 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         List<String> attrs = ResourceNames.getAllPersonProviderKeys();
         attrs.addAll(ProviderNames.getSesKeys());
         return attrs;
+    }
+    
+    private class WaitForTerminate implements Runnable
+    {
+        private final List<Future<Void>> futures;
+        private final ResourceCoordinates coordinates;
+        
+        private WaitForTerminate(List<Future<Void>> futures, ResourceCoordinates coordinates)
+        {
+            this.futures = futures;
+            this.coordinates = coordinates;
+        }
+
+        public void run()
+        {
+            // make sure they are all complete before deleting the key-pair
+            for (Future<Void> future : futures)
+            {
+                try
+                {
+                    future.get();
+                } catch (Exception e)
+                {
+                    // nothing further we can really do if these fail, futures should have logged error details
+                    // could email someone to double check manual clean may be needed.
+                    log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                }
+            }
+        }
     }
 }

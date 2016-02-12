@@ -150,44 +150,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 }
             }
         }
-        
-        // make sure all the release futures are complete before deleting the key-pair
-        for (Future<Void> future : futures)
-        {
-            try
-            {
-                future.get();
-            } catch (Exception e)
-            {
-                // nothing further we can really do if these fail, futures should have logged error details
-                // could email someone to double check manual clean may be needed.
-                log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
-            }
-        }
-
-        if (coordinates != null)    // got at least one, all will have the same keypair
-        {
-            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
-            pdelayData.preFixMostName = prefixTestName;
-            
-            String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
-            DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
-            ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-            String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + name);
-            do
-            {
-                try
-                {
-                    manager.ec2Client.deleteKeyPair(request);
-                    break;
-                } catch (Exception e)
-                {
-                    FatalResourceException fre = pdelay.handleException(msg, e);
-                    if (fre instanceof FatalException)
-                        break;
-                }
-            } while (true);
-        }
+        config.blockingExecutor.submit(new WaitForTerminate(futures, coordinates, prefixTestName));
     }
 
     private void releasePossiblePendings(String templateId, boolean isReusable)
@@ -199,7 +162,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         for (Entry<Long, MachineReservedResource> entry : reservedMachines.entrySet())
         {
             MachineReservedResource rresource = entry.getValue();
-            synchronized(rresource)
+            synchronized (rresource)
             {
                 coordinates = rresource.resource.getCoordinates();
                 if (coordinates.templateId.equals(templateId))
@@ -225,7 +188,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                             {
                                 future.get();
                             } catch (Exception e)
-                            {}// pass or fail, its going down
+                            {
+                            } // pass or fail, its going down
                             finally
                             {
                                 TabToLevel format = new TabToLevel();
@@ -346,17 +310,72 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         attrs.addAll(ProviderNames.getMachineKeys());
         return attrs;
     }
-    
+
     private class StalledReleaseTask implements Runnable
     {
         private StalledReleaseTask()
         {
-            
+
         }
-        
+
         @Override
         public void run()
         {
+        }
+    }
+
+    private class WaitForTerminate implements Runnable
+    {
+        private final List<Future<Void>> futures;
+        private final ResourceCoordinates coordinates;
+        private final String prefixTestName;
+        
+        private WaitForTerminate(List<Future<Void>> futures, ResourceCoordinates coordinates, String prefixTestName)
+        {
+            this.futures = futures;
+            this.coordinates = coordinates;
+            this.prefixTestName = prefixTestName;
+        }
+
+        public void run()
+        {
+            // make sure all the release futures are complete before deleting the key-pair
+            for (Future<Void> future : futures)
+            {
+                try
+                {
+                    future.get();
+                } catch (Exception e)
+                {
+                    // nothing further we can really do if these fail, futures should have logged error details
+                    // could email someone to double check manual clean may be needed.
+                    log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                }
+            }
+
+            if (coordinates != null) // got at least one, all will have the same keypair
+            {
+                ProgressiveDelayData pdelayData = new ProgressiveDelayData(AwsMachineProvider.this, coordinates);
+                pdelayData.preFixMostName = prefixTestName;
+
+                String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
+                DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
+                ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+                String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + name);
+                do
+                {
+                    try
+                    {
+                        manager.ec2Client.deleteKeyPair(request);
+                        break;
+                    } catch (Exception e)
+                    {
+                        FatalResourceException fre = pdelay.handleException(msg, e);
+                        if (fre instanceof FatalException)
+                            break;
+                    }
+                } while (true);
+            }
         }
     }
 }

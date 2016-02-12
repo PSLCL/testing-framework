@@ -18,7 +18,6 @@ package com.pslcl.dtf.runner;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 
-import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -31,7 +30,6 @@ import com.pslcl.dtf.core.runner.Runner;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.messageQueue.MessageQueue;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
-import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.runner.process.ProcessTracker;
 import com.pslcl.dtf.runner.process.RunEntryStateStore;
