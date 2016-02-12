@@ -104,7 +104,7 @@ public class DeployFuture implements Callable<Void>
         
         cmdData = new ProcessCommandData(cmdData);
         cmdData.setUseWorkingDir(true);
-        cmdData.setCommand("sudo wget " + urlFile + " " + sourceUrl);
+        cmdData.setCommand("sudo wget " + sourceUrl);
         executeStafProcess(cmdData, false, true);
         
         cmdData = new ProcessCommandData(cmdData);
