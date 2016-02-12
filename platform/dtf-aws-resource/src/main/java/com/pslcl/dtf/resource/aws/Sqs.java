@@ -93,11 +93,11 @@ public class Sqs extends MessageQueueBase {
                     String jmsMessageID = message.getJMSMessageID(); // begins with "ID:", by JMS specification
                     String strQueueStoreNumber = ((TextMessage)message).getText();
                     log.debug("\n");
-                    prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ".";
+                    prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ". ";
                     if (jmsMessageID != null && strQueueStoreNumber != null) {
                         // design decision: Object message will not, as it could, be stored as key value pair "jmsMessageID/hexStrQueueStoreNumber." Message instead passes out here, as state for eventual ack.
+                        log.debug(prependString + "Submits to RunnerService to form or reject a test run.");
                         sqs.submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
-                        log.debug(prependString + "Submitted to RunnerService");
                         return;
                     } else {
                         log.debug(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");

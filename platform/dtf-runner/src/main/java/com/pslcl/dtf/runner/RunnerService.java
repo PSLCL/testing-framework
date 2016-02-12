@@ -233,7 +233,6 @@ public class RunnerService implements Runner, RunnerServiceMBean
         try
         {
             long reNum = Long.parseLong(strRunEntryNumber);
-            LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum);
             try
             {
                 if (ProcessTracker.isResultStored(this.dbConnPool, reNum)) {

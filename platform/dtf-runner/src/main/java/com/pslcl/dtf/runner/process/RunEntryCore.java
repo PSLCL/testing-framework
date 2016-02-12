@@ -21,8 +21,6 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import javax.jms.Message;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -365,52 +363,103 @@ public class RunEntryCore {
         //     We understand that the pseudo test runs of nested templates will return a result that may or may not be stored in table run.
         //         Regardless of that, these pseudo test runs may often, or even usually, not be connected to any test instance.
 
-        // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
-
-        this.topDBTemplate.result = new Boolean(false);
+        Boolean result = new Boolean(false);
         boolean testRunSuccess = false;
         InstancedTemplate iT = null;
         try {
         	// this executes all the template steps
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
-            this.topDBTemplate.result = !iT.getForceNullResult() ? new Boolean(true) : // no exception means success, but for the case where
-              	                                                   null;               // the test run was successful but the result should be marked null
+            result = !iT.getForceNullResult() ? new Boolean(true) : // No exception means test run success.
+                                                null;               // Although the test run succeeded, the result should be marked null. 
             testRunSuccess = true;
-            runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
         } catch (Throwable t) {
-        	// the template has already cleaned itself up (it was handled internally, by exception processing code, because we can't do it- we don't have iT in hand)
-        	log.debug(simpleName + "testRun errors out, reNum : " + this.topDBTemplate.reNum);
+        	log.debug(simpleName + "testRun errors out, reNum : " + this.reNum);
             throw t;
         } finally {
-        	this.storeResultAndAckMessageQueue(runnerMachine.getService());
+        	this.storeResultAndAckMessageQueue(runnerMachine.getService(), result);
         }
+        
+    	// note: for !testRunSuccess, the template has already cleaned itself up (it was handled internally, by exception processing code, because we can't do it- iT is null for that)
+        if (testRunSuccess)
+            runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
+        	
         return testRunSuccess; // always true, for exception not thrown
     }
     
     /**
      * 
      * @param runnerService
-     * @throws Exception
+     * @param result
+     * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
+     */
+    public void storeResultAndAckMessageQueue(RunnerService runnerService, Boolean result) throws Exception {
+        // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
+        this.topDBTemplate.result = result;
+        this.storeResultAndAckMessageQueue(runnerService);
+    }
+    
+    /**
+     * 
+     * @param runnerService
+     * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
      */
     private void storeResultAndAckMessageQueue(RunnerService runnerService) throws Exception {
-       	try {
-			storeResultRunEntryData();
-	        log.debug(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
-		} catch (Exception e) {
-            log.warn(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() FAILED to store to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
-			throw e;
-		}
-       	// result stored ok, so ack the message queue
-       	boolean msgAcked = false;
-       	try {
-			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
-			Object message = reState.getMessage();
-			runnerService.ackRunEntry(message);
-			msgAcked = true;
-		} catch (Exception e) {
-			// swallow this exception, it does not relate to the actual test run
-		}
-       	log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() completed and message queue was " + (msgAcked ? "" : "NOT ") + "acked");
+    	Boolean storedResult = RunEntryCore.getResult(this.dbConnPool, reNum);
+    	if (storedResult == null) {
+    		boolean resultNowStored = false;
+        	try {
+    			storeResultRunEntryData();
+    			resultNowStored = true;
+    	        log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
+    		} catch (Exception e) {
+    			// swallow this exception, it does not relate to the actual test run
+                log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", FAILED to store to database this result: " + this.topDBTemplate.result + "; message queue not acked"); // result can be null, true, or false
+    		}
+        	
+        	if (resultNowStored) {
+               	// ack the message queue
+               	try {
+        			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
+        			Object message = reState.getMessage();
+        			runnerService.ackRunEntry(message);
+                   	log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", result stored and message queue was acked");
+        		} catch (Exception e) {
+        			// swallow this exception, it does not relate to the actual test run
+                    log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", result stored but FAILED to ack the message queue");
+        		}
+        	}
+    	} else {
+           	log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum + ", message queue should already be acked");
+    	}
+//    	
+//    	
+//    	
+//    	if (storedResult == null) {
+//        	try {
+//    			storeResultRunEntryData();
+//    			storedResult = new Boolean(true);
+//    	        log.debug(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
+//    		} catch (Exception e) {
+//    			// swallow this exception, it does not relate to the actual test run
+//                log.debug(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() FAILED to store to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
+//    		}
+//    	}
+//    	
+//       	boolean msgAcked = false;
+//    	if (storedResult) {
+//           	// ack the message queue
+//           	try {
+//    			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
+//    			Object message = reState.getMessage();
+//    			runnerService.ackRunEntry(message);
+//    			msgAcked = true;
+//    		} catch (Exception e) {
+//    			// swallow this exception, it does not relate to the actual test run
+//                log.debug(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() FAILED to ack the message queue");
+//    		}
+//    	}
+//       	log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() completed and message queue was " + (msgAcked ? "" : "NOT ") + "acked");
+//       	// note: msgAcked also states whether the result is written to the database, or not
     }
     
         // unneeded- our real approach involves an api to come to us soon

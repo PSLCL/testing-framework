@@ -255,7 +255,9 @@ public class InstancedTemplate {
 				mi = this.getResourceInstance(rr);
 				if (mi != null) {
 					String attrName = parsedParam[2];
-					return mi.getAttributes().get(attrName);
+					String resolved = mi.getAttributes().get(attrName);
+					if (resolved != null)
+						return resolved;
 				}
 				break;
 			default:
@@ -629,23 +631,39 @@ public class InstancedTemplate {
                 } while (!allStepsCompleteForThisStepSet); // end do/while loop: process all step commands for same setID
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
-            log.debug(this.simpleName + "runSteps() errors out for runID " + this.getRunID() + ", templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());
-            this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
-            throw e;
+            log.debug(this.simpleName + "runSteps() errors out for runID " + this.getRunID() + ", templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark() + ". Failed result stored now.");
+			this.reCore.storeResultAndAckMessageQueue(this.runnerMachine.getService(), new Boolean(false));
+			try {
+				this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
+			} catch (Exception ignoreE) {
+				// swallow this exception, it does not relate to the actual test run
+				log.warn(this.simpleName + "after runSteps() fails out, problem reported for releasing the template, msg: " + ignoreE.getMessage());
+			}
+            throw e; // e is the actual test run exception
         }
-        
         log.debug(this.simpleName + "runSteps() completes without error");
     }
 
+    /**
+     * 
+     * @param resourceCoordinates
+     */
     void setTemplateCleanupInfo(ResourceCoordinates resourceCoordinates) {
         this.templateCleanupInfo = resourceCoordinates;
     }
     
+    /**
+     * 
+     * @param resourceCoordinates
+     */
     void informResourceProviders(ResourceCoordinates resourceCoordinates) {
         if (this.templateCleanupInfo == null)
             this.templateCleanupInfo = resourceCoordinates;
     }
     
+    /**
+     * 
+     */
     private void informResourceProviders() {
         String templateID = null;
         if (this.templateCleanupInfo != null) { // null: this template did not successfully reserve a resource
@@ -661,6 +679,9 @@ public class InstancedTemplate {
             log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
     }
     
+    /**
+     * 
+     */
     public void destroy() {
         // this is intended to be called only by TemplateProvider.releaseTemplate(iT)
         this.informResourceProviders();
