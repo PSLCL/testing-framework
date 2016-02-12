@@ -59,7 +59,6 @@ public class MachineConfigData
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();
         data.resoucePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, defaultData.resoucePrefixName, resource, format);
-        LoggerFactory.getLogger(MachineConfigData.class).debug(format.sb.toString());
         format.level.decrementAndGet();
         
         format.ttl("\nEc2 Instance:");

@@ -65,6 +65,12 @@ public class SubnetConfigData
         SubnetConfigData data = new SubnetConfigData();
         format.ttl(SubnetConfigData.class.getSimpleName() + " init:");
         format.level.incrementAndGet();
+        
+        format.ttl("Resource name prefix:");
+        format.level.incrementAndGet();
+        data.resoucePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, defaultData.resoucePrefixName, resource, format);
+        format.level.decrementAndGet();
+        
         format.ttl("VPC/Subnet: ");
         format.level.incrementAndGet();
 //        data.availabilityZone = getAttribute(InstanceNames.AvailabilityZoneKey, defaultData.availabilityZone, resource, format);
@@ -91,10 +97,6 @@ public class SubnetConfigData
         format.level.incrementAndGet();
         addPermissions(null, resource, format, data.permissions, defaultData);
         format.level.decrementAndGet();
-        
-        format.ttl("Resource name prefix:");
-        format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, ProviderNames.ResourcePrefixNameDefault, resource, format);
         return data;
     }
 
