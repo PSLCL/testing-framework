@@ -17,6 +17,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.runner.Now;
 
 /**
  * Handle Resource Reserve and Resource Bind activities for multiple resources, in parallel.
@@ -269,10 +270,14 @@ public class BindHandler {
 		Exception exception = null;
         boolean allBindsSucceeded = true;
 
+        int futureInstance = -1;
         for (Future<? extends ResourceInstance> future : this.futuresOfResourceInstances) {
+        	++futureInstance;
             if (future != null) { // null: bind failed early so move along; do not add to this.resourceInstances
                 try {
+                	log.debug(this.simpleName + "Bind future.get()[" + futureInstance + "] called at " + Now.time());
                     ResourceInstance resourceInstance = future.get(); // blocks until asynch answer comes, or exception, at which time the target thread has completed and is gone
+                	log.debug(this.simpleName + "Bind future.get()[" + futureInstance + "] returned at " + Now.time());
                     this.resourceInstances.add(resourceInstance);
                     // We could, but don't need to, retrieve a ResourceProvider from this new bound resourceInstance. We don't check anything here, - we don't yet know what this ResourceInstance will be used for (we learn that in a follow-on step).
 
@@ -282,7 +287,7 @@ public class BindHandler {
                     int stepReference = iT.getStepReference(resourceInstance.getCoordinates());
                     iT.markResourceInstance(stepReference, resourceInstance);
                     
-                    log.debug(this.simpleName + "1 bind completes, with attributes of " + resourceInstance.getAttributes());
+                    log.debug(this.simpleName + "bind [" + futureInstance + "] completes, with attributes of " + resourceInstance.getAttributes());
                 } catch (InterruptedException ie) {
                     allBindsSucceeded = false;
                     exception = ie;
