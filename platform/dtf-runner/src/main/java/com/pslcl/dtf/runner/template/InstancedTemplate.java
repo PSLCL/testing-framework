@@ -270,6 +270,11 @@ public class InstancedTemplate {
 		}
     }
     
+    private boolean isTestRunCanceled() {
+    	boolean isTestRunCanceled = this.reCore.isTestRunCanceled();
+    	return isTestRunCanceled;
+    }
+    
     /**
      * templates.md.step-ordering says that "each set of commands is sorted in increasing alphanumeric order." Interpretations:
      *     - it is the duty of the generator to place these template steps in both its desired order and in the required order
@@ -306,7 +311,7 @@ public class InstancedTemplate {
             // second, process each step set, in sequence (starting at setID 0, allow no missing setID)
             //     do this by fully processing steps of the same set, before moving on to the next set
             // any error terminates step handling
-            for (int setID=0; ; setID++) {
+            for (int setID=0; !this.isTestRunCanceled(); setID++) {
                 String strSetID = Integer.toString(setID) + ' '; // trailing space required for a legal setID
                 List<String> stepsOfSet = this.stepsParser.getNextSteps(strSetID); // this call consumed all steps in the set; i.e. having the same setID 
                 if (stepsOfSet.isEmpty()) {
@@ -327,6 +332,9 @@ public class InstancedTemplate {
                 
                 // this for() loop: initiate all step commands for same setID
                 for (int setStepCount=0; setStepCount<stepsOfSet.size(); setStepCount++) {
+                	if (this.isTestRunCanceled() == true)
+                		break;
+                	
                     // from the first step of a possible group of same-command steps, get its command and act on it
                     String commandString = null;
                     SetStep firstLikeStep = new SetStep(stepsOfSet.get(setStepCount));
@@ -477,7 +485,7 @@ public class InstancedTemplate {
                     // These individual .proceed() calls may potentially each block for a while, then return. At each return, they mark themselves as done, or not.
                     //     Eventually, by cycling through this loop multiple times, all steps of this step set will be found to have concluded their processing.
                     //     The loop exits at that time.
-                    if (bindHandler!=null && !bindHandler.isDone()) {
+                    if (bindHandler!=null && !bindHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
                         bindHandler.proceed();
                         if (bindHandler.isDone()) {
@@ -486,7 +494,7 @@ public class InstancedTemplate {
                             log.debug(simpleName + "bindHandler() completes " + localRI.size() + " bind(s) for setID " + setID);
                         }
                     }
-                    if (configureHandler!=null && !configureHandler.isDone()) {
+                    if (configureHandler!=null && !configureHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
 
                         List<ProgramState> localProgramStates = configureHandler.proceed();
@@ -519,7 +527,7 @@ public class InstancedTemplate {
                             log.debug(simpleName + "configureHandler() completes " + configureHandler.getConsecutiveSameStepCount() + " configure program(s) for setID " + setID);
                         }
                     }
-                    if (connectHandler!=null && !connectHandler.isDone()) {
+                    if (connectHandler!=null && !connectHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
 
                         // we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
@@ -535,7 +543,7 @@ public class InstancedTemplate {
                             }
                         }
                     }
-                    if (deployHandler!=null && !deployHandler.isDone()) {
+                    if (deployHandler!=null && !deployHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
 
                         // we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
@@ -552,7 +560,7 @@ public class InstancedTemplate {
                             }
                         }
                     }
-                    if (inspectHandler!=null && !inspectHandler.isDone()) {
+                    if (inspectHandler!=null && !inspectHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
 
                         inspectHandler.proceed();
@@ -561,7 +569,7 @@ public class InstancedTemplate {
                             log.debug(simpleName + "inspectHandler() completes " + inspectHandler.getInspectRequestCount() + " inspect(s) for setID " + setID);
                         }
                     }
-                    if (runHandler!=null && !runHandler.isDone()) {
+                    if (runHandler!=null && !runHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
                         
                         List<ProgramState> localProgramStates = runHandler.proceed();
@@ -595,7 +603,7 @@ public class InstancedTemplate {
                         }
                     }
                     
-                    if (startHandler!=null && !startHandler.isDone()) {
+                    if (startHandler!=null && !startHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
                         
                         List<ProgramState> localProgramStates = startHandler.proceed();
@@ -628,11 +636,11 @@ public class InstancedTemplate {
                             log.debug(simpleName + "startHandler() completes " + startHandler.getConsecutiveSameStepCount() + " start program(s) for setID " + setID);
                         }
                     }
-                } while (!allStepsCompleteForThisStepSet); // end do/while loop: process all step commands for same setID
+                } while (!allStepsCompleteForThisStepSet && !this.isTestRunCanceled()); // end do/while loop: process all step commands for same setID
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
             log.debug(this.simpleName + "runSteps() errors out for runID " + this.getRunID() + ", templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark() + ". Failed result stored now.");
-			this.reCore.storeResultAndAckMessageQueue(this.runnerMachine.getService(), new Boolean(false));
+			this.reCore.closeCancelTaskStoreResultAckMessageQueue(this.runnerMachine.getService(), new Boolean(false));
 			try {
 				this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
 			} catch (Exception ignoreE) {
@@ -641,7 +649,10 @@ public class InstancedTemplate {
 			}
             throw e; // e is the actual test run exception
         }
-        log.debug(this.simpleName + "runSteps() completes without error");
+        if (this.isTestRunCanceled())
+        	log.debug(this.simpleName + "runSteps() CANCELED");
+        else
+        	log.debug(this.simpleName + "runSteps() completes without error");
     }
 
     /**
