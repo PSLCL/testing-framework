@@ -97,6 +97,8 @@ public class RunEntryCore {
     private DBConnPool dbConnPool;
     private Long reNum;
     private DBTemplate topDBTemplate = null; // describes the top-level template only, i.e. the template that is matched to the run table entry known as reNum
+    private CancelTask cancelTask;
+    private boolean testRunIsCanceled;
 
 
     // private methods
@@ -250,7 +252,7 @@ public class RunEntryCore {
      */
     private void writeRunEntryData() throws Exception {
         // temporarily, comment out these next 5 lines, to allow overwriting a past non-null result
-    	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, reNum);
+    	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, this.reNum);
     	if (previousResultIsStored != null) { // this specific test is a fail-safe
     		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
     		throw new Exception("Database write not accomplished");
@@ -318,6 +320,8 @@ public class RunEntryCore {
         this.dbConnPool = dbConnPool;
         this.reNum = reNum;
         topDBTemplate = new DBTemplate(this.reNum);
+        this.cancelTask = null;
+        this.testRunIsCanceled = false;
         try {
           	// fill all fields of topDBTemplate from the existing existing database entries
 			loadRunEntryData(); // throws Exception for no database entry for this.reNum
@@ -333,6 +337,11 @@ public class RunEntryCore {
     
     public long getRENum() {
     	return reNum;
+    }
+    
+    private void closeCancelTask() {
+    	if (this.cancelTask != null)
+    		this.cancelTask.close();
     }
     
     /**
@@ -367,7 +376,12 @@ public class RunEntryCore {
         boolean testRunSuccess = false;
         InstancedTemplate iT = null;
         try {
-        	// this executes all the template steps
+        	// Setup test run cancellation, prior to starting our test run.
+        	// 	   While a test run is in progress, a user can cancel it, by entering a fail result in "our" run table entry.  
+        	// Setup local task to watch for on the fly run cancellation. Place it as a member of RunEntryCore (ie: this), passed into and accessible while the test run executes its template steps.
+        	this.cancelTask = new CancelTask(this, runnerMachine);
+        	
+        	// Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
             result = !iT.getForceNullResult() ? new Boolean(true) : // No exception means test run success.
                                                 null;               // Although the test run succeeded, the result should be marked null. 
@@ -376,7 +390,7 @@ public class RunEntryCore {
         	log.debug(simpleName + "testRun errors out, reNum : " + this.reNum);
             throw t;
         } finally {
-        	this.storeResultAndAckMessageQueue(runnerMachine.getService(), result);
+        	this.closeCancelTaskStoreResultAckMessageQueue(runnerMachine.getService(), result);
         }
         
     	// note: for !testRunSuccess, the template has already cleaned itself up (it was handled internally, by exception processing code, because we can't do it- iT is null for that)
@@ -386,14 +400,40 @@ public class RunEntryCore {
         return testRunSuccess; // always true, for exception not thrown
     }
     
+    public boolean isTestRunCanceled() {
+    	return this.testRunIsCanceled;
+    }
+    
+    /**
+     * Never call this after the dtf-test-runner stores a false test run result.
+     */
+    void checkForRunCancel() {
+		try {
+			Boolean result = RunEntryCore.getResult(this.dbConnPool, this.reNum);
+			// result null:  test run not canceled
+			//        true:  test run passed, not canceled
+			//        false: test run canceled by a force that is outside dtf-runner
+			//    (or false could mean that we are called wrongly, after we stored a false test run result) 
+	    	if (result!=null &&	result==false) {
+	    		// cancel this test run
+	    		this.testRunIsCanceled = true;
+	    	}
+	    	log.debug(this.simpleName + ".checkRunCancel() called for reNum " + this.reNum + ", finds test run " + (this.testRunIsCanceled?"CANCELED":"running"));
+		} catch (Exception e) {
+			log.warn(this.simpleName + "for reNum " + this.reNum + ", checkRunCancel exception, msg: " + e.getMessage());
+			// swallow exception, we will check run cancel again, in a while.
+		}
+    }
+    
     /**
      * 
      * @param runnerService
      * @param result
      * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
      */
-    public void storeResultAndAckMessageQueue(RunnerService runnerService, Boolean result) throws Exception {
+    public void closeCancelTaskStoreResultAckMessageQueue(RunnerService runnerService, Boolean result) throws Exception {
         // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
+    	this.closeCancelTask();
         this.topDBTemplate.result = result;
         this.storeResultAndAckMessageQueue(runnerService);
     }
@@ -404,9 +444,10 @@ public class RunEntryCore {
      * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
      */
     private void storeResultAndAckMessageQueue(RunnerService runnerService) throws Exception {
+    	boolean resultNowStored = false;
     	Boolean storedResult = RunEntryCore.getResult(this.dbConnPool, reNum);
     	if (storedResult == null) {
-    		boolean resultNowStored = false;
+    		// note: we do not get here when test run is canceled
         	try {
     			storeResultRunEntryData();
     			resultNowStored = true;
@@ -415,51 +456,22 @@ public class RunEntryCore {
     			// swallow this exception, it does not relate to the actual test run
                 log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", FAILED to store to database this result: " + this.topDBTemplate.result + "; message queue not acked"); // result can be null, true, or false
     		}
-        	
-        	if (resultNowStored) {
-               	// ack the message queue
-               	try {
-        			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
-        			Object message = reState.getMessage();
-        			runnerService.ackRunEntry(message);
-                   	log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", result stored and message queue was acked");
-        		} catch (Exception e) {
-        			// swallow this exception, it does not relate to the actual test run
-                    log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", result stored but FAILED to ack the message queue");
-        		}
-        	}
     	} else {
-           	log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum + ", message queue should already be acked");
+           	log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum);
     	}
-//    	
-//    	
-//    	
-//    	if (storedResult == null) {
-//        	try {
-//    			storeResultRunEntryData();
-//    			storedResult = new Boolean(true);
-//    	        log.debug(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
-//    		} catch (Exception e) {
-//    			// swallow this exception, it does not relate to the actual test run
-//                log.debug(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() FAILED to store to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
-//    		}
-//    	}
-//    	
-//       	boolean msgAcked = false;
-//    	if (storedResult) {
-//           	// ack the message queue
-//           	try {
-//    			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
-//    			Object message = reState.getMessage();
-//    			runnerService.ackRunEntry(message);
-//    			msgAcked = true;
-//    		} catch (Exception e) {
-//    			// swallow this exception, it does not relate to the actual test run
-//                log.debug(this.simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() FAILED to ack the message queue");
-//    		}
-//    	}
-//       	log.debug(simpleName + "for reNum " + this.topDBTemplate.reNum + ", testRun() completed and message queue was " + (msgAcked ? "" : "NOT ") + "acked");
-//       	// note: msgAcked also states whether the result is written to the database, or not
+
+    	if (storedResult!=null || resultNowStored) {
+           	// ack the message queue
+           	try {
+    			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
+    			Object message = reState.getMessage();
+    			runnerService.ackRunEntry(message);
+               	log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
+    		} catch (Exception e) {
+    			// swallow this exception, it does not relate to the actual test run
+                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue");
+    		}
+    	}
     }
     
         // unneeded- our real approach involves an api to come to us soon
