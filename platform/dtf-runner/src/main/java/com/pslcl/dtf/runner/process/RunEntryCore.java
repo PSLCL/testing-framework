@@ -339,6 +339,42 @@ public class RunEntryCore {
     	return reNum;
     }
     
+    /**
+     * 
+     * @param templateHash
+     * @return
+     */
+    public DBTemplate getTemplateInfo(String templateHash) throws Exception {
+    	DBTemplate retDBTemplate = new DBTemplate(-1L);
+    	retDBTemplate.hash = templateHash.getBytes();
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+        	connection = this.dbConnPool.getConnection();
+        	statement = connection.createStatement();
+        	String str = "SELECT pk_template, hash, enabled, steps " +
+                         "FROM template " +
+                         "WHERE hash = " + templateHash;
+            resultSet = statement.executeQuery(str);
+            if ( resultSet.next() ) {
+                retDBTemplate.pk_template = resultSet.getLong("pk_template");
+                retDBTemplate.hash = resultSet.getBytes("hash");
+                retDBTemplate.enabled = resultSet.getBoolean("enabled");
+                retDBTemplate.steps = resultSet.getString("steps");
+            }
+        } catch (Exception e) {
+        	log.debug(this.simpleName + ".getTemplateInfo() does not find template for template hash " + templateHash);
+        	throw e;
+        } finally {
+            safeClose( resultSet ); resultSet = null;
+            safeClose( statement ); statement = null;
+            if (connection != null)
+            	connection.close();
+        }
+    	return retDBTemplate;
+    }
+    
     private void closeCancelTask() {
     	if (this.cancelTask != null)
     		this.cancelTask.close();
@@ -380,6 +416,7 @@ public class RunEntryCore {
         	// 	   While a test run is in progress, a user can cancel it, by entering a fail result in "our" run table entry.  
         	// Setup local task to watch for on the fly run cancellation. Place it as a member of RunEntryCore (ie: this), passed into and accessible while the test run executes its template steps.
         	this.cancelTask = new CancelTask(this, runnerMachine);
+        	// temporarily, comment out the above line, to avoid CancelTask activity
         	
         	// Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
@@ -462,6 +499,8 @@ public class RunEntryCore {
 
     	if (storedResult!=null || resultNowStored) {
            	// ack the message queue
+    		
+            // temporarily, comment out these next 9 lines, to prevent acking the message queue
            	try {
     			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
     			Object message = reState.getMessage();
