@@ -64,6 +64,8 @@ public class InstancedTemplate {
     private boolean forceNullResult; // known use case is Person.Inspect()
     
     private StepsParser stepsParser;
+    List<ReferencedNestedTemplate> rnts = null;
+
     private Map<Integer, InstancedTemplate> mapStepReferenceToNestedTemplate;
     private Map<ResourceCoordinates, Integer> mapResourceCoordinatesToStepReference;
     private Map<Integer, ResourceInstance> mapStepReferenceToResourceInstance;
@@ -119,6 +121,10 @@ public class InstancedTemplate {
     
     public long getRunID() {
         return reCore.getRENum();
+    }
+    
+    RunEntryCore getRunEntryCore() {
+    	return this.reCore;
     }
 
     public boolean getForceNullResult() {
@@ -296,18 +302,18 @@ public class InstancedTemplate {
     void runSteps() throws Exception {
         // resets internal StepsParser object and uses it to run steps
         this.stepsParser = new StepsParser(dbTemplate.steps); // tracks steps offset internally
+        int currentStepReference = 0;
         
         try {
             // first, instance nested templates
-            NestedTemplateHandler nth = new NestedTemplateHandler(this, runnerMachine);
-            try {
-                nth.instanceNestedTemplates(reCore, this.stepsParser); // blocking call
-            } catch (Exception e) {
-                log.debug(simpleName + "runSteps() exception in processing a nested template, msg: " + e);
-                throw e;
+            List<String> includeSteps = this.stepsParser.getNextSteps("include "); // this call consumes all include steps
+            if (!includeSteps.isEmpty()) {
+            	// includeSteps is an ArrayList across which iteration retrieves in the same order as insertion (because we are done inserting)
+            	IncludeHandler includeHandler = new IncludeHandler(this, includeSteps, this.runnerMachine);
+            	currentStepReference += includeHandler.computeIncludeRequests();
+            	this.rnts = includeHandler.instanceTemplates(); // blocking call
             }
-            int currentStepReference = this.mapStepReferenceToNestedTemplate.size();
-
+            	
             // second, process each step set, in sequence (starting at setID 0, allow no missing setID)
             //     do this by fully processing steps of the same set, before moving on to the next set
             // any error terminates step handling
@@ -404,6 +410,9 @@ public class InstancedTemplate {
                                 throw new Exception("Improper step order");
                             }
                             break;
+                        case "include":
+                            log.debug(this.simpleName + "include step(s) mixed into step set " + setStepCount);
+                            throw new Exception("Improper step order");
                         case "inspect":
                             if (inspectHandler == null) {
                                 inspectHandler = new InspectHandler(this, this.runnerMachine, stepsOfSet, setStepCount);
@@ -649,10 +658,11 @@ public class InstancedTemplate {
 			}
             throw e; // e is the actual test run exception
         }
+        String templateHash = this.dbTemplate.getTemplateId();
         if (this.isTestRunCanceled())
-        	log.debug(this.simpleName + "runSteps() CANCELED");
+        	log.debug(this.simpleName + "runSteps() CANCELED, for template hash " + templateHash);
         else
-        	log.debug(this.simpleName + "runSteps() completes without error");
+        	log.debug(this.simpleName + "runSteps() completes without error, for template hash " + templateHash);
     }
 
     /**
@@ -676,27 +686,31 @@ public class InstancedTemplate {
      * 
      */
     private void informResourceProviders() {
-        String templateID = null;
+        String templateID = this.getTemplateID();
         if (this.templateCleanupInfo != null) { // null: this template did not successfully reserve a resource
             // Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant templateID). 
             ResourcesManager rm = this.templateCleanupInfo.getManager();
             templateID = this.templateCleanupInfo.templateId;
             
-            log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
             rm.release(templateID, false);
-            log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
             
         } else
-            log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
     }
     
     /**
-     * 
+     * Recursive
      */
     public void destroy() {
         // this is intended to be called only by TemplateProvider.releaseTemplate(iT)
+
+    	// look at included templates- decide whether to release each of them, or not 
+    	for (ReferencedNestedTemplate rnt : this.rnts) {
+    		this.runnerMachine.getTemplateProvider().releaseTemplate(rnt.instancedTemplate);
+    	}
         this.informResourceProviders();
-        // maybe other cleanup related to iT only, but not .releaseTemplate() again - it called us
     }
         
 }
