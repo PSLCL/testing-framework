@@ -78,8 +78,7 @@ public class ConnectHandler {
             	ResourceInstance networkInstance = null;
         		try {
 					String strMachineReference = parsedSetStep.getParameter(0);
-					int machineReference = Integer.valueOf(strMachineReference).intValue();
-					machineInstance = iT.getResourceInstance(machineReference);
+					machineInstance = iT.getResourceInstance(strMachineReference);
 					if (machineInstance != null) {
 	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
 	            		//       Now that we know it is used for the first parameter of connect, check resourceInstance for required type: machine
@@ -89,12 +88,11 @@ public class ConnectHandler {
 	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
 	            			throw new Exception("ConnectHandler processing asked to connect a non 'machine' resource");	
 					} else {
-	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound ResourceInstance at reference " + strMachineReference);
+	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound MachineInstance at reference " + strMachineReference);
 					}
 					
 					String strNetworkReference = parsedSetStep.getParameter(1);
-					int networkReference = Integer.valueOf(strNetworkReference).intValue();
-					networkInstance = iT.getResourceInstance(networkReference);
+					networkInstance = iT.getResourceInstance(strNetworkReference);					
 					if (networkInstance != null) {
 	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
 	            		//       Now that we know it is used for the second parameter of connect, check resourceInstance for required type: network
@@ -104,11 +102,11 @@ public class ConnectHandler {
 	            		if (resourceType==null || resourceType!=ResourceProvider.NetworkName)
 	            			throw new Exception("ConnectHandler processing asked to connect a machine to a non 'network' resource");	
 					} else {
-	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound ResourceInstance at reference " + strNetworkReference);
+	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound NetworkInstance at reference " + strNetworkReference);
 					}
 					this.connectInfos.add(new ConnectInfo(machineInstance, networkInstance));
 				} catch (Exception e) {
-                    log.debug(simpleName + " connect step does not specify machine reference or network reference");
+                    log.debug(simpleName + " connect step improperly specifies machine reference or network reference");
 					throw e;
 				}
             }

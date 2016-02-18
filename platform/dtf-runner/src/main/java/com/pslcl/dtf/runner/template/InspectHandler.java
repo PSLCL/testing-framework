@@ -130,8 +130,7 @@ public class InspectHandler {
                         throw new IllegalArgumentException("InspectHandler.computeInspectRequests() finds its final artifact name parameter is missing its required artifact hash paramenter");
                     
                     String strPersonReference = parsedSetStep.getParameter(0);
-                    int personReference = Integer.valueOf(strPersonReference).intValue();
-                    resourceInstance = iT.getResourceInstance(personReference);
+                    resourceInstance = iT.getResourceInstance(strPersonReference);
                     if (resourceInstance != null)
                     {
                         // Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).

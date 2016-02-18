@@ -418,6 +418,7 @@ public class RunEntryCore {
         	this.cancelTask = new CancelTask(this, runnerMachine);
         	// temporarily, comment out the above line, to avoid CancelTask activity
         	
+			log.debug(this.simpleName + ".testRun() launches template instantiation for top level template " + this.topDBTemplate.getTemplateId());
         	// Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
             result = !iT.getForceNullResult() ? new Boolean(true) : // No exception means test run success.

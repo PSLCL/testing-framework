@@ -115,8 +115,7 @@ public class ProgramHandler {
             	List<String> parameters = new ArrayList<String>();
         		try {
 					String strMachineReference = parsedSetStep.getParameter(0);
-					int machineReference = Integer.valueOf(strMachineReference).intValue();
-					resourceInstance = iT.getResourceInstance(machineReference);
+					resourceInstance = iT.getResourceInstance(strMachineReference);
 					if (resourceInstance != null) {
 	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
 	            		//       Now that we know it is used for [configure | run | start], check resourceInstance for required type: machine

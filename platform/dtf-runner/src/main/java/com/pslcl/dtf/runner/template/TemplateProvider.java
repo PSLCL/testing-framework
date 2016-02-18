@@ -110,20 +110,21 @@ public class TemplateProvider implements ResourceStatusListener {
     public void releaseTemplate(InstancedTemplate iT) {
     	boolean found = false;
     	String templateID = iT.getTemplateID();
+		long templateUniqueMark = iT.getUniqueMark();
     	
     	// Avoid conflict: the same template can be released by normal template processing, or by us (TemplateProvider) being asked to go down, such as happens at dtf application exit.
     	synchronized (this.templateReleaseMap) {
-    		if (this.templateReleaseMap.containsKey(iT.getUniqueMark())) {
+    		if (this.templateReleaseMap.containsKey(templateUniqueMark)) {
     			found = true;
-    			this.templateReleaseMap.remove(uniqueMark);
+    			this.templateReleaseMap.remove(templateUniqueMark);
     		}
     	} // end synchronized()
 
     	if (found) {
+			log.debug(simpleName + "releaseTemplate() releases template, for template hash " + templateID + ", uniqueMark " + templateUniqueMark);
     		iT.destroy();
-			log.debug(simpleName + "releaseTemplate() releases template, for template hash " + templateID + ", uniqueMark " + uniqueMark);
     	} else {
-			log.debug(simpleName + "releaseTemplate() finds no entry in templateReleaseMap, for template hash " + templateID + ", uniqueMark " + uniqueMark);
+			log.debug(simpleName + "releaseTemplate() finds no entry in templateReleaseMap, for template hash " + templateID + ", uniqueMark " + templateUniqueMark);
     		// no entry <= no resources were bound  
     	}
     }
