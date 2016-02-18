@@ -64,7 +64,6 @@ public class InstancedTemplate {
     private boolean forceNullResult; // known use case is Person.Inspect()
     
     private StepsParser stepsParser;
-    List<ReferencedNestedTemplate> rnts = null;
 
     private Map<Integer, InstancedTemplate> mapStepReferenceToNestedTemplate;
     private Map<ResourceCoordinates, Integer> mapResourceCoordinatesToStepReference;
@@ -159,14 +158,44 @@ public class InstancedTemplate {
     }
 
     /**
+     * @note recursive
+     * @param strResourceReference
+     * @return
+     * @throws Exception 
+     */
+    public ResourceInstance getResourceInstance(String strResourceReference) throws Exception {
+    	ResourceInstance retResourceInstance = null;
+		try {
+			int resourceReference = Integer.valueOf(strResourceReference).intValue();
+			retResourceInstance = this.getResourceInstance(resourceReference);
+		} catch (NumberFormatException nfe) {
+			// not a number, try nested template referencing
+			try {
+				int indexSlash = strResourceReference.indexOf("/");
+				String strTemplateReference = strResourceReference.substring(0, indexSlash);
+				int templateReference = Integer.valueOf(strTemplateReference).intValue();
+				String strNewResourceReference = strResourceReference.substring(indexSlash+1);
+				InstancedTemplate nestedIT = this.getNestedTemplate(templateReference);
+				if (nestedIT == null)
+					throw new Exception("nested template not found");
+				retResourceInstance = nestedIT.getResourceInstance(strNewResourceReference);
+			} catch (Exception e) {
+				log.debug(this.simpleName + ".getResourceInstance(str) finds improper resource reference: " + strResourceReference);
+				throw e;
+			}
+		}
+		return retResourceInstance;
+    }
+    
+    /**
      * 
      * @param stepReference
      * @return
      */
-    public ResourceInstance getResourceInstance(int stepReference) {
+    private ResourceInstance getResourceInstance(int stepReference) {
         return mapStepReferenceToResourceInstance.get(stepReference);
     }
-
+    
     /**
      * 
      * @param stepReference
@@ -185,14 +214,16 @@ public class InstancedTemplate {
         return mapStepReferenceToNestedTemplate.get(stepReference);
     }
     
-    
+    /**
+     * 
+     */
     public void destroyNestedTemplate() {
-//        for (InstancedTemplate instancedTemplate : mapStepReferenceToNestedTemplate.values()) {
-//            // TODO: Do actual destroy of everything having to do with each nested template         
-//        }
+        for (InstancedTemplate nestedIT : mapStepReferenceToNestedTemplate.values()) {
+			log.debug(this.simpleName + ".destroyNestedTemplates() destroys nested template " + nestedIT.getTemplateID() + ", of uniqueMark " + nestedIT.getUniqueMark());
+			runnerMachine.getTemplateProvider().releaseTemplate(nestedIT);
+        }
         mapStepReferenceToNestedTemplate.clear();
     }
-    
     
     /**
      * 
@@ -306,17 +337,24 @@ public class InstancedTemplate {
         
         try {
             // first, instance nested templates
-            List<String> includeSteps = this.stepsParser.getNextSteps("include "); // this call consumes all include steps
-            if (!includeSteps.isEmpty()) {
-            	// includeSteps is an ArrayList across which iteration retrieves in the same order as insertion (because we are done inserting)
-            	IncludeHandler includeHandler = new IncludeHandler(this, includeSteps, this.runnerMachine);
-            	currentStepReference += includeHandler.computeIncludeRequests();
-            	this.rnts = includeHandler.instanceTemplates(); // blocking call
-            }
-            	
+			List<String> includeSteps = this.stepsParser.getNextSteps("include "); // this call consumes all include steps
+			if (!includeSteps.isEmpty()) {
+				// includeSteps is an ArrayList across which iteration retrieves in the same order as insertion (because we are done inserting)
+				IncludeHandler includeHandler = new IncludeHandler(this, includeSteps, this.runnerMachine);
+				currentStepReference += includeHandler.computeIncludeRequests();
+	            try {
+	            	includeHandler.instanceTemplates(); // blocking call
+				} catch (Exception e1) {
+		            log.debug(this.simpleName + "runSteps() errors out for nested template " + this.getTemplateID() + ", of uniqueMark " + this.getUniqueMark() + "; msg: " + e1.getMessage());
+		            
+		            // TODO: cleanup whatever has happened with the nested templates, so far
+				}
+			}
+
             // second, process each step set, in sequence (starting at setID 0, allow no missing setID)
             //     do this by fully processing steps of the same set, before moving on to the next set
             // any error terminates step handling
+			log.debug(this.simpleName + ".runSteps() moves from includes to set step processing, for templateID " + this.getTemplateID());
             for (int setID=0; !this.isTestRunCanceled(); setID++) {
                 String strSetID = Integer.toString(setID) + ' '; // trailing space required for a legal setID
                 List<String> stepsOfSet = this.stepsParser.getNextSteps(strSetID); // this call consumed all steps in the set; i.e. having the same setID 
@@ -685,7 +723,7 @@ public class InstancedTemplate {
     /**
      * 
      */
-    private void informResourceProviders() {
+    private void templateReleased_InformResourceProviders() {
         String templateID = this.getTemplateID();
         if (this.templateCleanupInfo != null) { // null: this template did not successfully reserve a resource
             // Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant templateID). 
@@ -706,11 +744,11 @@ public class InstancedTemplate {
     public void destroy() {
         // this is intended to be called only by TemplateProvider.releaseTemplate(iT)
 
-    	// look at included templates- decide whether to release each of them, or not 
-    	for (ReferencedNestedTemplate rnt : this.rnts) {
-    		this.runnerMachine.getTemplateProvider().releaseTemplate(rnt.instancedTemplate);
-    	}
-        this.informResourceProviders();
+   		// look at this iT's included templates- decide whether to release each of them, or not
+    	this.destroyNestedTemplate(); // TODO: decide whether to reuse any of these
+    	
+   		// for this iT, accomplish required cleanup
+   		this.templateReleased_InformResourceProviders();
     }
         
 }

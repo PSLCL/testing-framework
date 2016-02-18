@@ -33,11 +33,11 @@ public class IncludeHandler {
 		this.ntt = null;
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
-
 	}
 	
     /**
      * 
+     * @note This method does not cause actions that need to be cleaned up
      * @return
      * @throws Exception
      */
@@ -67,27 +67,33 @@ public class IncludeHandler {
     /**
      * 
      */
-    List<ReferencedNestedTemplate> instanceTemplates() throws Exception {
+    void instanceTemplates() throws Exception {
     	// launch instantiation tasks
         List<Future<ReferencedNestedTemplate>> futures = new ArrayList<>();
         int stepReference = 0; // the first include statement is always line 0 of steps
     	for (IncludeInfo includeInfo : this.includeInfos) { // this.includeInfos is an ArrayList across which iteration retrieves in the same order as insertion (because we are done inserting)
-    		NestedTemplateTask ntt = new NestedTemplateTask(stepReference, this.iT.getRunEntryCore(), includeInfo.getDBTemplate(), this.runnerMachine);
-    		log.debug(this.simpleName + ".instanceTemplates() launches template instantiation for nested template " + includeInfo.getTemplateHash() + ", as reference " + stepReference);
-    		Future<ReferencedNestedTemplate> future = this.runnerMachine.getConfig().blockingExecutor.submit(ntt);
-    		futures.add(future);
-    		++stepReference;
+    		try {
+				NestedTemplateTask ntt = new NestedTemplateTask(stepReference, this.iT.getRunEntryCore(), includeInfo.getDBTemplate(), this.runnerMachine);
+				log.debug(this.simpleName + ".instanceTemplates() launches template instantiation for nested template " + includeInfo.getTemplateHash() + ", as reference " + stepReference);
+				Future<ReferencedNestedTemplate> future = this.runnerMachine.getConfig().blockingExecutor.submit(ntt);
+				futures.add(future);
+				++stepReference;
+			} catch (Exception e) {
+				log.debug(this.simpleName + ".instanceTemplates(), sees exception while launching template instantiation tasks, msg: " + e.getMessage());
+				// TODO: cleanup whatever exists in futures, i.e. future.get() for each, to get an iT; then iT.cleanup 
+				
+				throw e;
+			}
     	}
     	
     	// collect task results
     	boolean allIncludes = true;
-    	List<ReferencedNestedTemplate> retRnts = new ArrayList<>();
     	for (Future<ReferencedNestedTemplate> future : futures) {
     		ReferencedNestedTemplate rnt = null;
     		try {
 				rnt = future.get();
-	    		log.debug(this.simpleName + ".instanceTemplates() sees successful template instantation for nested template " + rnt.instancedTemplate.getTemplateID());
-	    		retRnts.add(rnt);
+	    		log.debug(this.simpleName + ".instanceTemplates() sees successful template instantation for nested template " + rnt.iT.getTemplateID());
+            	this.iT.markNestedTemplate(rnt.nestedStepReference, rnt.iT);
             } catch (InterruptedException | ExecutionException ioreE) {
                 Throwable t = ioreE.getCause();
                 String msg = ioreE.getLocalizedMessage();
@@ -95,11 +101,16 @@ public class IncludeHandler {
                     msg = t.getLocalizedMessage();
                 log.warn(simpleName + ".instanceTemplates(), include failed: " + msg, ioreE);
                 allIncludes = false;
+                break;
             }
     	}
-        if (!allIncludes)
+        if (!allIncludes) {
+			log.debug(this.simpleName + ".instanceTemplates(), sees include failure while collecting template instantiation results; now cleans up successful nested templates");
+        	
+			// cleanup whatever nested templates have been instantiated
+        	this.iT.destroyNestedTemplate();
             throw new Exception("IncludeHandler() finds one or more include steps failed");
-        return retRnts;
+        }
     }
 
 }
