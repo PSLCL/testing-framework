@@ -15,6 +15,36 @@ import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class ConnectHandler {
+	
+	/**
+	 * 
+	 */
+	static void disconnect(List<CableInstance> cableInstances) {
+    	for (CableInstance ci : cableInstances) {
+    		MachineInstance mi = ci.getMachineInstance();
+    		NetworkInstance ni = ci.getNetworkInstance();
+    		Future<Void> future = mi.disconnect(ni);
+    		
+    		// TODO: treat this as asynch, and handle all of them in parallel
+    		if (future != null) {
+        		try {
+					future.get();
+				} catch (InterruptedException | ExecutionException ioreE) {
+		            String msg = ioreE.getLocalizedMessage();
+		            Throwable t = ioreE.getCause();
+		            if(t != null)
+		                msg = t.getLocalizedMessage();
+	    			LoggerFactory.getLogger("ConnectHandler").warn(".disconnect() fails: " + msg);
+				}
+    		} else {
+    			LoggerFactory.getLogger("ConnectHandler").warn(".disconnect() encounters null future, so a machine.disconnect() fails");
+    		}
+    	}
+	}
+	
+
+	// instance members
+	
 	private InstancedTemplate iT;
 	private List<String> setSteps;
     private boolean done;

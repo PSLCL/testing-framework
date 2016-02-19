@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -761,11 +762,28 @@ public class InstancedTemplate {
      */
     public void destroy() {
         // this is intended to be called only by TemplateProvider.releaseTemplate(iT)
-
-   		// look at this iT's included templates- decide whether to release each of them, or not
-    	this.destroyNestedTemplate(); // TODO: decide whether to reuse any of these
     	
-   		// for this iT, accomplish required cleanup
+    	{
+    	    // Unwind MachineInstance commitments made by this template. These are:
+        	//  mandatory when the MachineInstance is on a nested template (because that template might be reused)
+        	//  optional when the MachineInstance is on this template (which is being destroyed, anyway).
+        	// Decision: Do this cleanup in all cases. At the very least, it will cleanly disentangle whatever resource remains. For example, a surviving network will see a purposeful disconnect() rather than a lost contact exception 
+
+	    	//		1) react to this template's this.cableInstances
+//			ConnectHandler.disconnect(this.cableInstances);
+//			this.cableInstances.clear(); // for form
+	
+			//		2) react to this template's this.deployedInfos
+//			DeployHandler.delete(this.deployedInfos);
+//			this.deployedInfos.clear(); // for form
+			
+	    	//		3) there is no api to unwind anything else
+    	}
+	    	
+	   	// look at this iT's included templates- decide whether to release each of them, or not
+	    this.destroyNestedTemplate(); // TODO: decide whether to reuse any of these
+    	
+   		// inform resource providers that this template is released
    		this.templateReleased_InformResourceProviders();
     }
         
