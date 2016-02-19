@@ -204,7 +204,9 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public Future<Void> disconnect(NetworkInstance network)
     {
-        return null;
+        AwsNetworkInstance instance = (AwsNetworkInstance) network;
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
+        return  instance.runnerConfig.blockingExecutor.submit(new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
 
     public enum AwsInstanceState

@@ -22,26 +22,25 @@ import java.util.concurrent.Callable;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.amazonaws.services.ec2.model.ModifyNetworkInterfaceAttributeRequest;
+import com.amazonaws.services.ec2.model.NetworkInterfaceAttribute;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
-import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
-import com.pslcl.dtf.resource.aws.instance.network.AwsCableInstance;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 
 @SuppressWarnings("javadoc")
-public class ConnectFuture implements Callable<CableInstance>
+public class DisconnectFuture implements Callable<Void>
 {
     public static final String EniMidStr = "eni";
-    
+
     private final AwsMachineInstance machineInstance;
     private final AwsNetworkInstance networkInstance;
-    
+
     private final ProgressiveDelayData pdelayData;
     private final AmazonEC2Client ec2Client;
 
-    public ConnectFuture(AwsMachineInstance machineInstance, AwsNetworkInstance networkInstance, ProgressiveDelayData pdelayData)
+    public DisconnectFuture(AwsMachineInstance machineInstance, AwsNetworkInstance networkInstance, ProgressiveDelayData pdelayData)
     {
         this.machineInstance = machineInstance;
         this.networkInstance = networkInstance;
@@ -50,18 +49,23 @@ public class ConnectFuture implements Callable<CableInstance>
     }
 
     @Override
-    public CableInstance call() throws FatalResourceException
+    public Void call() throws FatalResourceException
     {
         List<String> sgroups = new ArrayList<String>();
-        sgroups.add(networkInstance.groupIdentifier.getGroupId());
-        
+        List<GroupIdentifier> existingGroups = machineInstance.ec2Instance.getSecurityGroups();
+        for (GroupIdentifier gid : existingGroups)
+        {
+            if(gid.getGroupName().equals("default"))
+                sgroups.add(gid.getGroupId());
+        }
         String netInterId = machineInstance.ec2Instance.getNetworkInterfaces().get(0).getNetworkInterfaceId();
+        NetworkInterfaceAttribute nia = NetworkInterfaceAttribute.GroupSet;
         //@formatter:off
         ModifyNetworkInterfaceAttributeRequest mniar = new ModifyNetworkInterfaceAttributeRequest()
             .withNetworkInterfaceId(netInterId)
             .withGroups(sgroups);
         //@formatter:on
-        
+
         pdelayData.maxDelay = networkInstance.reservedResource.subnetConfig.sgMaxDelay;
         pdelayData.maxRetries = networkInstance.reservedResource.subnetConfig.sgMaxRetries;
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
@@ -75,10 +79,10 @@ public class ConnectFuture implements Callable<CableInstance>
             } catch (Exception e)
             {
                 FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
+                if (fre instanceof FatalException)
                     throw fre;
             }
-        }while(true);
-        return new AwsCableInstance(machineInstance, networkInstance);
+        } while (true);
+        return null;
     }
 }
