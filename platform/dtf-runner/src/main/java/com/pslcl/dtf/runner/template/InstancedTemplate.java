@@ -94,6 +94,10 @@ public class InstancedTemplate {
         this.forceNullResult = false;
     }
     
+    /**
+     * 
+     * @return
+     */
     long getUniqueMark() {
         return this.uniqueMark;
     }
@@ -172,6 +176,9 @@ public class InstancedTemplate {
 			// not a number, try nested template referencing
 			try {
 				int indexSlash = strResourceReference.indexOf("/");
+				if (indexSlash<1 ||                                  // no slash or slash is first char
+					indexSlash>=(strResourceReference.length() - 1)) // slash is final char
+				   throw new Exception("improper resource reference");
 				String strTemplateReference = strResourceReference.substring(0, indexSlash);
 				int templateReference = Integer.valueOf(strTemplateReference).intValue();
 				String strNewResourceReference = strResourceReference.substring(indexSlash+1);
@@ -313,6 +320,15 @@ public class InstancedTemplate {
     }
     
     /**
+     * 
+     * @return
+     */
+    private boolean isTopLevelTemplate() {
+    	boolean retBoolean = (this.dbTemplate.getReNum() >= 0) ? true : false;
+    	return retBoolean;
+    }
+    
+    /**
      * templates.md.step-ordering says that "each set of commands is sorted in increasing alphanumeric order." Interpretations:
      *     - it is the duty of the generator to place these template steps in both its desired order and in the required order
      *     - since only include steps are stipulated to begin with an alpha character, they come first, both by original intent and by alphanumeric order (when considered as alphas before numerals)
@@ -343,11 +359,10 @@ public class InstancedTemplate {
 				IncludeHandler includeHandler = new IncludeHandler(this, includeSteps, this.runnerMachine);
 				currentStepReference += includeHandler.computeIncludeRequests();
 	            try {
-	            	includeHandler.instanceTemplates(); // blocking call
+	            	includeHandler.instanceTemplates(); // blocking call; on error out, this cleans up successful nested templates 
 				} catch (Exception e1) {
-		            log.debug(this.simpleName + "runSteps() errors out for nested template " + this.getTemplateID() + ", of uniqueMark " + this.getUniqueMark() + "; msg: " + e1.getMessage());
-		            
-		            // TODO: cleanup whatever has happened with the nested templates, so far
+		            log.debug(this.simpleName + ".runSteps() sees nested template error out, and errors out itself,  for templateID " + this.getTemplateID() + ", of uniqueMark " + this.getUniqueMark() + "; msg: " + e1.getMessage());
+		            throw e1;
 				}
 			}
 
@@ -453,6 +468,10 @@ public class InstancedTemplate {
                             throw new Exception("Improper step order");
                         case "inspect":
                             if (inspectHandler == null) {
+                            	if (!this.isTopLevelTemplate()) {
+                            		log.debug(this.simpleName + "inspect step not allowed for any nested template, in this case template " + this.getTemplateID());
+                            		throw new Exception("nested template cannot use inspect step");
+                            	}
                                 inspectHandler = new InspectHandler(this, this.runnerMachine, stepsOfSet, setStepCount);
                                 int consumedStepReferences = inspectHandler.computeInspectRequests(); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
                                 setStepCount += consumedStepReferences;
@@ -686,15 +705,14 @@ public class InstancedTemplate {
                 } while (!allStepsCompleteForThisStepSet && !this.isTestRunCanceled()); // end do/while loop: process all step commands for same setID
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
-            log.debug(this.simpleName + "runSteps() errors out for runID " + this.getRunID() + ", templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark() + ". Failed result stored now.");
-			this.reCore.closeCancelTaskStoreResultAckMessageQueue(this.runnerMachine.getService(), new Boolean(false));
+            log.debug(this.simpleName + "runSteps() errors out for templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());
 			try {
 				this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
 			} catch (Exception ignoreE) {
 				// swallow this exception, it does not relate to the actual test run
 				log.warn(this.simpleName + "after runSteps() fails out, problem reported for releasing the template, msg: " + ignoreE.getMessage());
 			}
-            throw e; // e is the actual test run exception
+            throw e; // e is the actual template errors-out exception
         }
         String templateHash = this.dbTemplate.getTemplateId();
         if (this.isTestRunCanceled())
