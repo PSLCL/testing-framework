@@ -29,15 +29,16 @@ public class ConnectHandler {
     		if (future != null) {
         		try {
 					future.get();
+	    			LoggerFactory.getLogger("ConnectHandler").debug(".disconnect() successfully disconects one machineInstance");
 				} catch (InterruptedException | ExecutionException ioreE) {
 		            String msg = ioreE.getLocalizedMessage();
 		            Throwable t = ioreE.getCause();
 		            if(t != null)
 		                msg = t.getLocalizedMessage();
-	    			LoggerFactory.getLogger("ConnectHandler").warn(".disconnect() fails: " + msg);
+	    			LoggerFactory.getLogger("ConnectHandler").warn(".disconnect() fails to disconnect one machineInstance: " + msg);
 				}
     		} else {
-    			LoggerFactory.getLogger("ConnectHandler").warn(".disconnect() encounters null future, so a machine.disconnect() fails");
+    			LoggerFactory.getLogger("ConnectHandler").warn(".disconnect() encounters null future, so 1 machineInstance fails to disconnect");
     		}
     	}
 	}
