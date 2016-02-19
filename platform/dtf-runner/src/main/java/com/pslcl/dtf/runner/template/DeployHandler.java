@@ -14,6 +14,29 @@ import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class DeployHandler {
+	
+	/**
+	 * 
+	 */
+	static void delete(List<DeployInfo> deployInfos) {
+    	for (DeployInfo di : deployInfos) {
+    		MachineInstance mi = MachineInstance.class.cast(di.getResourceInstance());
+    		String filename = di.getFilename();
+   
+    		// TODO: treat this as asynch, and handle all of them in parallel
+    		Future<Void> future;
+			try {
+				future = mi.delete(filename);
+				future.get();
+			} catch (Exception e) {
+    			LoggerFactory.getLogger("DeployHandler").warn(".delete() fails for filename " + filename + ", with msg: " + e.getMessage());
+			}	
+    	}
+	}
+
+	
+	// instance members
+	
 	private InstancedTemplate iT;
 	private List<String> setSteps;
     private List<DeployInfo> deployInfos = null;
