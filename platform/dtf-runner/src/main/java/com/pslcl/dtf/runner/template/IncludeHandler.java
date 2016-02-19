@@ -20,7 +20,6 @@ public class IncludeHandler {
 	private List<String> includeSteps;
 	private List<IncludeInfo> includeInfos;
 	private RunnerMachine runnerMachine;
-	private List<NestedTemplateTask> ntt;
     private final Logger log;
     private final String simpleName;
 
@@ -30,7 +29,6 @@ public class IncludeHandler {
 		this.includeSteps = includeSteps;
 		this.includeInfos = null;
 		this.runnerMachine = runnerMachine;
-		this.ntt = null;
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 	}

@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -770,8 +769,8 @@ public class InstancedTemplate {
         	// Decision: Do this cleanup in all cases. At the very least, it will cleanly disentangle whatever resource remains. For example, a surviving network will see a purposeful disconnect() rather than a lost contact exception 
 
 	    	//		1) react to this template's this.cableInstances
-//			ConnectHandler.disconnect(this.cableInstances);
-//			this.cableInstances.clear(); // for form
+			ConnectHandler.disconnect(this.cableInstances);
+			this.cableInstances.clear(); // for form
 	
 			//		2) react to this template's this.deployedInfos
 //			DeployHandler.delete(this.deployedInfos);
