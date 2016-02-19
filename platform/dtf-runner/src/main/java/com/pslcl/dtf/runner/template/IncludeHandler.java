@@ -95,11 +95,11 @@ public class IncludeHandler {
 	    		log.debug(this.simpleName + ".instanceTemplates() sees successful template instantation for nested template " + rnt.iT.getTemplateID());
             	this.iT.markNestedTemplate(rnt.nestedStepReference, rnt.iT);
             } catch (InterruptedException | ExecutionException ioreE) {
-                Throwable t = ioreE.getCause();
                 String msg = ioreE.getLocalizedMessage();
+                Throwable t = ioreE.getCause();
                 if(t != null)
                     msg = t.getLocalizedMessage();
-                log.warn(simpleName + ".instanceTemplates(), include failed: " + msg, ioreE);
+                log.warn(simpleName + ".instanceTemplates(), include failed: " + msg);
                 allIncludes = false;
                 break;
             }

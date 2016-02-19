@@ -39,6 +39,10 @@ public class DBTemplate {
         this.reNum = reNum;
     }
     
+    public Long getReNum() {
+    	return this.reNum;
+    }
+    
     public boolean checkValidTemplateInfo() {
     	return (this.hash!=null && this.steps!=null && this.enabled);
     }
