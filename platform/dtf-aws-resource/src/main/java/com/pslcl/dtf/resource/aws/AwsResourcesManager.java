@@ -54,6 +54,7 @@ public class AwsResourcesManager implements ResourcesManager
     public volatile AmazonEC2Client ec2Client;
     public volatile AwsClientConfig ec2cconfig;
     public volatile AmazonSimpleEmailServiceClient sesClient;
+    public volatile String systemId;
     
     public AwsResourcesManager()
     {
@@ -122,6 +123,8 @@ public class AwsResourcesManager implements ResourcesManager
     
     
     public static final String TagNameKey = "Name";
+    
+    public static final String SystemIdKey = "dtfSystemId";
     public static final String TagRunIdKey = "runId";
     public static final String TagTemplateIdKey = "templateId";
     public static final String TagResourceIdKey = "resourceId";
@@ -135,6 +138,7 @@ public class AwsResourcesManager implements ResourcesManager
         CreateTagsRequest ctr = new 
                         CreateTagsRequest().withTags(
                                         new Tag(TagNameKey, name),
+                                        new Tag(SystemIdKey, systemId),
                                         new Tag(TagRunIdKey, Long.toString(pdelayData.coord.getRunId())),
                                         new Tag(TagTemplateIdKey, pdelayData.coord.templateId),
                                         new Tag(TagResourceIdKey, "0x"+Long.toHexString(pdelayData.coord.resourceId)))
@@ -183,6 +187,9 @@ public class AwsResourcesManager implements ResourcesManager
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
         
+        String value = config.properties.getProperty(ResourceNames.SystemIdKey, ResourceNames.SystemIdDefault);
+        value = StrH.trim(value);
+        systemId = value;
         config.initsb.ttl("ec2Client:");
         config.initsb.level.incrementAndGet();
         ec2cconfig = AwsClientConfiguration.getClientConfiguration(config, ClientType.Ec2);
@@ -206,7 +213,7 @@ public class AwsResourcesManager implements ResourcesManager
         machineProvider.init(config);
         personProvider.init(config);
         networkProvider.init(config);
-        String value = config.properties.getProperty(ResourceNames.StafLocalPingKey, ResourceNames.StafLocalPingDefault);
+        value = config.properties.getProperty(ResourceNames.StafLocalPingKey, ResourceNames.StafLocalPingDefault);
         value = StrH.trim(value);
         if(Boolean.parseBoolean(value))
             StafSupport.ping("local");

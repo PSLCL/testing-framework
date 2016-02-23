@@ -108,44 +108,45 @@ public class TemplateProvider implements ResourceStatusListener {
      * @param iT
      */
     public void releaseTemplate(InstancedTemplate iT) {
-    	// Avoid conflict: the same template can be released by normal template processing, or by us (TemplateProvider) being asked to go down, such as happens at dtf application exit.
     	boolean found = false;
-    	Long uniqueMark = iT.getUniqueMark();
+    	String templateID = iT.getTemplateID();
+		long templateUniqueMark = iT.getUniqueMark();
+    	
+    	// Avoid conflict: the same template can be released by normal template processing, or by us (TemplateProvider) being asked to go down, such as happens at dtf application exit.
     	synchronized (this.templateReleaseMap) {
-    		if (this.templateReleaseMap.containsKey(uniqueMark)) {
+    		if (this.templateReleaseMap.containsKey(templateUniqueMark)) {
     			found = true;
-    			this.templateReleaseMap.remove(uniqueMark);
+    			this.templateReleaseMap.remove(templateUniqueMark);
     		}
     	} // end synchronized()
 
     	if (found) {
+			log.debug(simpleName + "releaseTemplate() releases template, for template hash " + templateID + ", uniqueMark " + templateUniqueMark);
     		iT.destroy();
-			log.debug(simpleName + "releaseTemplate() releases template, for uniqueMark " + uniqueMark);
     	} else {
-			log.debug(simpleName + "releaseTemplate() finds no template to release, for uniqueMark " + uniqueMark);
+			log.debug(simpleName + "releaseTemplate() finds no entry in templateReleaseMap, for template hash " + templateID + ", uniqueMark " + templateUniqueMark);
+    		// no entry <= no resources were bound  
     	}
     }
 	
     /**
-     * Get an instanced template. An instanced template has executed all its steps, and has recorded enough information along the way to be reused.
-     *  
-     * Instance a template
-     *     by instantiating a new template and running its steps for the first time, or
-     *     by reusing a template and running its steps again.
-     *         On reuse, the steps will be executed again, but includes, binds, and start will be found in place already.
-     *         Deploys and connects are also found in place, unless new target info can be specified during reuse. 
-     *         Run steps will happen again at each reuse.
-     * 
-     * @note re-entrant
-     * @param nestedStepOffset TODO
-     * @param dbdt
-     * @return
+     * Get an instanced top level template.
      */
     public InstancedTemplate getInstancedTemplate(RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) throws Exception {
-    	return getInstancedTemplate(-1, reCore, dbTemplate, runnerMachine);
+    	InstancedTemplate iT = getInstancedTemplate(-1, reCore, dbTemplate, runnerMachine);
+    	return iT;
     }
         
     /**
+     * Get an instanced template. An instanced template has executed all its steps, and has recorded enough information along the way to be reused.
+     * 
+     * 
+     * Instance a template
+     *     By instantiating a new template and running its steps for the first time, or
+     *     By reusing a template and running its some of its steps again.
+     *         On reuse, some of the steps will be executed again, but includes, binds, and start will be found in place already.
+     *         On reuse, deploys and connects are also found in place, unless new target info can be specified during reuse. 
+     *         Run steps will happen again at each reuse.
      * 
      * @param nestedStepReference
      * @param reCore

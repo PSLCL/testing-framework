@@ -1,0 +1,14 @@
+<ivysettings>
+  <!--This ivysettings file is used by the Ivy Artifact Provider to find and retreive artifacts and modules to be cached and tested by the Testing Framework-->
+  <!--This is an example ivysettings file that retrieves all of the modules found in the local portal's ivy repository and should only be used for validation.
+  On production systems it should be updated to correctly retrieve artifacts from the desired repository.-->
+  <property name="dtf.dir" value="${ivy.settings.dir}/../.."/>
+  <settings defaultResolver="local" />
+  <caches  defaultCacheDir="${dtf.dir}/ivy/repo" checkUpToDate="false" ivyPattern="[organisation]/[module]/[revision]/ivy.xml" artifactPattern="[organisation]/[module]/[revision](/[type]s)/[artifact]-[revision](-[classifier]).[ext]"/>
+  <resolvers>
+    <filesystem name="local" descriptor="required">
+      <ivy pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision]/ivy.xml"/>
+      <artifact pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision](/[type]s)/[artifact]-[revision](-[classifier]).[ext]"/>
+    </filesystem>
+  </resolvers>
+</ivysettings>

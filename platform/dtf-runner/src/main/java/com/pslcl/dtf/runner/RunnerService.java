@@ -18,7 +18,6 @@ package com.pslcl.dtf.runner;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 
-import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -96,7 +95,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config.initsb.indentedOk();
             config.initsb.ttl("Initialize RunnerMachine:");
             config.initsb.indentedOk();
-            config.initsb.ttl("Initialize QueueStoreDao:");
+            config.initsb.ttl("Initialize MessageQueueBase:");
             config.initsb.level.incrementAndGet(); // l2
             String daoClass = config.properties.getProperty(ResourceNames.MsgQueClassKey, ResourceNames.MsgQueClassDefault);
             daoClass = StrH.trim(daoClass);
@@ -139,7 +138,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
                     mq.initQueueStoreGet();
                 } else
                 {
-                	LoggerFactory.getLogger(getClass()).warn(getClass().getSimpleName() + "start exits- QueueStore message queue not available.");
+                	LoggerFactory.getLogger(getClass()).warn(getClass().getSimpleName() + ".start exits- QueueStore message queue not available.");
                     throw new Exception("QueueStore not available");
                 }
             }
@@ -225,46 +224,47 @@ public class RunnerService implements Runner, RunnerServiceMBean
      * 
      * @param strRunEntryNumber String representation of the run entry number, or reNum (pk_run of this entry in table run).
      * @param message JMS message associated with reNum, used for eventual message ack
-     * @throws Exception
+     * @throws Throwable
      */
-    public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Exception
+    public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Throwable
     {
         try
         {
-            // the ordinary method
             long reNum = Long.parseLong(strRunEntryNumber);
-            LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum);
             try
             {
                 if (ProcessTracker.isResultStored(this.dbConnPool, reNum)) {
+                    LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + " has a non-null result already stored. Acking this reNum now.");
                     ackRunEntry(message);
-                    LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", result already stored. Acking this reNum now.");
                 } else if (processTracker.isRunning(reNum)) {
-                	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
+                	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
                 } else {
-                	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "submitQueueStoreNumber() finds reNum " + reNum + ", submitted for processing. ");
+                	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() submits reNum " + reNum + " for testRun processing. ");
                     // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.
                     runnerMachine.initiateProcessing(reNum, message);
                 }
             } catch (Exception e) {
                 // do nothing; reNum remains in InstanceStore, we will see it again
-            	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + "submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
+            	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
                 throw e;
             }
         } catch (Exception e) {
-            throw e; // recipient must ack the message
+            throw e; // the original caller must ack the message
         }
     }
 
     /**
-     * 
+     *
+     * @note Classes that do not know about the JMS library's Message class, can call this instead.
      * @param message Original opaque message associated with a run entry number, used now to ack the message
-     * @throws JMSException
+     * @throws Exception 
      */
-    private void ackRunEntry(Object message) throws JMSException
-    {
-        // this call is for classes that do not know about JMS
-        mq.ackQueueStoreEntry((Message) message);
+    public void ackRunEntry(Object message) throws Exception {
+    	if (!javax.jms.Message.            // javax.jms.Message is a Java interface
+    			class.isAssignableFrom(message.getClass())) {
+    		throw new Exception("parameter message is not a JMS Message");
+    	}
+        mq.ackQueueStoreEntry((Message)message);
     }
 
 }

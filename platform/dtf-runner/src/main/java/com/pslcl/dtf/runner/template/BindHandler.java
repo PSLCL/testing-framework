@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -18,6 +17,7 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
+import com.pslcl.dtf.runner.Now;
 
 /**
  * Handle Resource Reserve and Resource Bind activities for multiple resources, in parallel.
@@ -28,8 +28,7 @@ public class BindHandler {
 	
 	private InstancedTemplate iT;
 	private List<String> setSteps;
-	private int iBeginSetOffset = -1;
-	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private StepSetOffsets stepSetOffsets; 
 	private boolean reserveInProgress;
 	private final ResourceProviders resourceProviders;
 	private List<ResourceProvider> listResourceProviders;
@@ -54,7 +53,7 @@ public class BindHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public BindHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
+	public BindHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -70,19 +69,7 @@ public class BindHandler {
 		this.reservedResources = new ArrayList<>();
 		this.futuresOfResourceInstances = null;
 		this.resourceInstances = new ArrayList<>();
-		
-		int iTempFinalSetOffset = 0;
-		int iSetOffset = 0;
-		while (true) {
-			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
-			if (!setStep.getCommand().equals("bind"))
-				break;
-			this.iBeginSetOffset = 0;
-			this.iFinalSetOffset = iTempFinalSetOffset;
-			if (++iTempFinalSetOffset >= setSteps.size())
-				break;
-			iSetOffset = iTempFinalSetOffset; // there is another step in this set
-		}
+        this.stepSetOffsets = new StepSetOffsets("bind", setSteps, initialSetStepCount);		
 	}
 
 	/**
@@ -106,8 +93,9 @@ public class BindHandler {
     int computeReserveRequests(int currentStepReference, String templateId, long runId) throws Exception {
         try {
 			reserveResourceRequests = new ArrayList<>();
-			if (this.iBeginSetOffset != -1) {
-			    for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
+	        int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
+	        if (beginSetOffset >= 0) {
+	            for (int i=beginSetOffset; i<=this.stepSetOffsets.getFinalSetOffset(); i++) {
 			    	String bindStep = setSteps.get(i);
 			    	int bindStepReference = currentStepReference + i;
 			    	SetStep parsedSetStep = new SetStep(bindStep); // setID bind resourceName attributeKVPs 
@@ -282,10 +270,14 @@ public class BindHandler {
 		Exception exception = null;
         boolean allBindsSucceeded = true;
 
+        int futureInstance = -1;
         for (Future<? extends ResourceInstance> future : this.futuresOfResourceInstances) {
+        	++futureInstance;
             if (future != null) { // null: bind failed early so move along; do not add to this.resourceInstances
                 try {
+                	log.debug(this.simpleName + "Bind future.get()[" + futureInstance + "] called at " + Now.time());
                     ResourceInstance resourceInstance = future.get(); // blocks until asynch answer comes, or exception, at which time the target thread has completed and is gone
+                	log.debug(this.simpleName + "Bind future.get()[" + futureInstance + "] returned at " + Now.time());
                     this.resourceInstances.add(resourceInstance);
                     // We could, but don't need to, retrieve a ResourceProvider from this new bound resourceInstance. We don't check anything here, - we don't yet know what this ResourceInstance will be used for (we learn that in a follow-on step).
 
@@ -295,7 +287,7 @@ public class BindHandler {
                     int stepReference = iT.getStepReference(resourceInstance.getCoordinates());
                     iT.markResourceInstance(stepReference, resourceInstance);
                     
-                    log.debug(this.simpleName + "1 bind completes, with attributes of " + resourceInstance.getAttributes());
+                    log.debug(this.simpleName + "bind [" + futureInstance + "] completes, with attributes of " + resourceInstance.getAttributes());
                 } catch (InterruptedException ie) {
                     allBindsSucceeded = false;
                     exception = ie;

@@ -24,6 +24,7 @@ import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
+import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetConfigData;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 
@@ -43,6 +44,7 @@ public class MachineConfigData
     public volatile String linuxSandboxPath;
     public volatile String winSandboxPath;
     public volatile int stallReleaseMinutes;   
+    public volatile double rootDiskSize; // in gig   
     
     private MachineConfigData()
     {
@@ -56,8 +58,7 @@ public class MachineConfigData
 
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ResourceNames.ResourceShortNameKey, defaultData.resoucePrefixName, resource, format);
-        LoggerFactory.getLogger(MachineConfigData.class).debug(format.sb.toString());
+        data.resoucePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, defaultData.resoucePrefixName, resource, format);
         format.level.decrementAndGet();
         
         format.ttl("\nEc2 Instance:");
@@ -75,6 +76,7 @@ public class MachineConfigData
         data.winUserData = getAttribute(InstanceNames.Ec2WinUserDataKey, defaultData.winUserData, resource, format);
         data.linuxSandboxPath = getAttribute(ResourceNames.DeployLinuxSandboxKey, defaultData.linuxSandboxPath, resource, format);
         data.winSandboxPath = getAttribute(ResourceNames.DeployWinSandboxKey, defaultData.winSandboxPath, resource, format);
+        data.rootDiskSize = Double.parseDouble(getAttribute(ResourceNames.MachineDiskKey, ""+defaultData.rootDiskSize, resource, format));
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
@@ -101,6 +103,7 @@ public class MachineConfigData
         data.winUserData = getAttribute(config, InstanceNames.Ec2WinUserDataKey, InstanceNames.Ec2WinUserDataDefault);
         data.linuxSandboxPath = getAttribute(config, ResourceNames.DeployLinuxSandboxKey, ResourceNames.DeployLinuxSandboxDefault);
         data.winSandboxPath = getAttribute(config, ResourceNames.DeployWinSandboxKey, ResourceNames.DeployWinSandboxDefault);
+        data.rootDiskSize = Double.parseDouble(getAttribute(config, ResourceNames.MachineDiskKey, ResourceNames.MachineDiskDefault));
         
         config.initsb.level.decrementAndGet();
 
@@ -108,7 +111,7 @@ public class MachineConfigData
         
         config.initsb.ttl("Test name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ResourceNames.ResourceShortNameKey, ResourceNames.ResourceShortNameDefault);
+        data.resoucePrefixName = getAttribute(config, ProviderNames.ResourcePrefixNameKey, ProviderNames.ResourcePrefixNameDefault);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;

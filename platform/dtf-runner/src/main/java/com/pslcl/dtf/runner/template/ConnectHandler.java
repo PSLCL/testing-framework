@@ -12,15 +12,44 @@ import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
-import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class ConnectHandler {
+	
+	/**
+	 * 
+	 */
+	static void disconnect(List<CableInstance> cableInstances) {
+    	for (CableInstance ci : cableInstances) {
+    		MachineInstance mi = ci.getMachineInstance();
+    		NetworkInstance ni = ci.getNetworkInstance();
+    		Future<Void> future = mi.disconnect(ni);
+    		
+    		// TODO: treat this as asynch, and handle all of them in parallel
+    		if (future != null) {
+        		try {
+					future.get();
+	    			LoggerFactory.getLogger("ConnectHandler").debug(".disconnect() successfully disconects one machineInstance");
+				} catch (InterruptedException | ExecutionException ioreE) {
+		            String msg = ioreE.getLocalizedMessage();
+		            Throwable t = ioreE.getCause();
+		            if(t != null)
+		                msg = t.getLocalizedMessage();
+	    			LoggerFactory.getLogger("ConnectHandler").warn(".disconnect() fails to disconnect one machineInstance: " + msg);
+				}
+    		} else {
+    			LoggerFactory.getLogger("ConnectHandler").warn(".disconnect() encounters null future, so 1 machineInstance fails to disconnect");
+    		}
+    	}
+	}
+	
+
+	// instance members
+	
 	private InstancedTemplate iT;
 	private List<String> setSteps;
     private boolean done;
-	private int iBeginSetOffset = -1;
-	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private StepSetOffsets stepSetOffsets; 
 	private List<ConnectInfo> connectInfos;
     private List<Future<? extends CableInstance>> futuresOfConnects;
     private final Logger log;
@@ -33,7 +62,7 @@ public class ConnectHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public ConnectHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
+	public ConnectHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -41,20 +70,8 @@ public class ConnectHandler {
 		this.connectInfos = null;
 		this.futuresOfConnects = new ArrayList<>();
         this.done = false;
+        this.stepSetOffsets = new StepSetOffsets("connect", setSteps, initialSetStepCount);
 //		this.mapFuturesToMachineInstance = new HashMap<Future<? extends CableInstance>, MachineInstance>();
-		
-		int iTempFinalSetOffset = 0;
-		int iSetOffset = 0;
-		while (true) {
-			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
-			if (!setStep.getCommand().equals("connect"))
-				break;
-			this.iBeginSetOffset = 0;
-			this.iFinalSetOffset = iTempFinalSetOffset;
-			if (++iTempFinalSetOffset >= setSteps.size())
-				break;
-			iSetOffset = iTempFinalSetOffset; // there is another step in this set
-		}
 	}
 	
     /**
@@ -81,8 +98,9 @@ public class ConnectHandler {
 
 	public int computeConnectRequests() throws Exception {
 		this.connectInfos = new ArrayList<>();
-        if (this.iBeginSetOffset != -1) {
-            for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
+        int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
+        if (beginSetOffset >= 0) {
+            for (int i=beginSetOffset; i<=this.stepSetOffsets.getFinalSetOffset(); i++) {
             	String connectStep = setSteps.get(i);
             	SetStep parsedSetStep = new SetStep(connectStep); // setID connect 0-based-machine-ref 0-based-network-reference
                                                                   // 9 connect 0 1
@@ -91,8 +109,7 @@ public class ConnectHandler {
             	ResourceInstance networkInstance = null;
         		try {
 					String strMachineReference = parsedSetStep.getParameter(0);
-					int machineReference = Integer.valueOf(strMachineReference).intValue();
-					machineInstance = iT.getResourceInstance(machineReference);
+					machineInstance = iT.getResourceInstance(strMachineReference);
 					if (machineInstance != null) {
 	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
 	            		//       Now that we know it is used for the first parameter of connect, check resourceInstance for required type: machine
@@ -102,12 +119,11 @@ public class ConnectHandler {
 	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
 	            			throw new Exception("ConnectHandler processing asked to connect a non 'machine' resource");	
 					} else {
-	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound ResourceInstance at reference " + strMachineReference);
+	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound MachineInstance at reference " + strMachineReference);
 					}
 					
 					String strNetworkReference = parsedSetStep.getParameter(1);
-					int networkReference = Integer.valueOf(strNetworkReference).intValue();
-					networkInstance = iT.getResourceInstance(networkReference);
+					networkInstance = iT.getResourceInstance(strNetworkReference);					
 					if (networkInstance != null) {
 	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
 	            		//       Now that we know it is used for the second parameter of connect, check resourceInstance for required type: network
@@ -117,11 +133,11 @@ public class ConnectHandler {
 	            		if (resourceType==null || resourceType!=ResourceProvider.NetworkName)
 	            			throw new Exception("ConnectHandler processing asked to connect a machine to a non 'network' resource");	
 					} else {
-	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound ResourceInstance at reference " + strNetworkReference);
+	            		throw new Exception("ConnectHandler.computeConnectRequests() finds null bound NetworkInstance at reference " + strNetworkReference);
 					}
 					this.connectInfos.add(new ConnectInfo(machineInstance, networkInstance));
 				} catch (Exception e) {
-                    log.debug(simpleName + " connect step does not specify machine reference or network reference");
+                    log.debug(simpleName + " connect step improperly specifies machine reference or network reference");
 					throw e;
 				}
             }

@@ -93,23 +93,23 @@ public class Sqs extends MessageQueueBase {
                     String jmsMessageID = message.getJMSMessageID(); // begins with "ID:", by JMS specification
                     String strQueueStoreNumber = ((TextMessage)message).getText();
                     log.debug("\n");
-                    prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ".";
+                    prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ". ";
                     if (jmsMessageID != null && strQueueStoreNumber != null) {
-                        log.debug("prependString");
                         // design decision: Object message will not, as it could, be stored as key value pair "jmsMessageID/hexStrQueueStoreNumber." Message instead passes out here, as state for eventual ack.
+                        log.debug(prependString + "Submits to RunnerService to form or reject a test run.");
                         sqs.submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
-                        log.debug(prependString + "Submitted to RunnerService");
                         return;
-                    } 
-                    log.debug(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");
+                    } else {
+                        log.debug(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");
+                    }
                 } catch (JMSException jmse) {
                     log.debug(prependString + "Drop - JMS message could not be examined " + jmse);
-                } catch (Exception e) {
+                } catch (Throwable t) {
                     log.debug(prependString + "Drop - rejected by RunnerService");
                 }
                 
                 // .submitQueueStoreNumber() failed to be deliver message to dtf-runner
-                log.debug(prependString + "Message not acked");
+                log.warn(prependString + "Message not acked");
             } else {
                 log.debug(prependString + "Dropped - null message cannot be processed");
             }

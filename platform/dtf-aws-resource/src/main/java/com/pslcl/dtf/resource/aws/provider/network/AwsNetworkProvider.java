@@ -23,7 +23,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
@@ -31,18 +30,14 @@ import com.pslcl.dtf.core.runner.resource.ReservedResource;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
-import com.pslcl.dtf.core.runner.resource.exception.FatalException;
-import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.provider.NetworkProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.AwsResourcesManager;
-import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
-import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.resource.aws.instance.network.NetworkInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
@@ -127,40 +122,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                 }
             }
         }
-        // make sure they are all complete before deleting the key-pair
-        for (Future<Void> future : futures)
-        {
-            try
-            {
-                future.get();
-            } catch (Exception e)
-            {
-            }
-        }
-
-        //TODO: this should not be nuking keypair, but vpc?
-        if (coordinates != null)
-        {
-            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
-            pdelayData.preFixMostName = prefixTestName;
-            String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
-            DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
-            ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-            String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + name);
-            do
-            {
-                try
-                {
-                    manager.ec2Client.deleteKeyPair(request);
-                    break;
-                } catch (Exception e)
-                {
-                    FatalResourceException fre = pdelay.handleException(msg, e);
-                    if (fre instanceof FatalException)
-                        break;
-                }
-            } while (true);
-        }
+        config.blockingExecutor.submit(new WaitForTerminate(futures, coordinates, prefixTestName));
     }
 
     private void releasePossiblePendings(String templateId, boolean isReusable)
@@ -330,5 +292,60 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     public List<String> getAttributes()
     {
         return ProviderNames.getNetworkKeys();
+    }
+    
+    private class WaitForTerminate implements Runnable
+    {
+        private final List<Future<Void>> futures;
+        private final ResourceCoordinates coordinates;
+        private final String prefixTestName;
+        
+        private WaitForTerminate(List<Future<Void>> futures, ResourceCoordinates coordinates, String prefixTestName)
+        {
+            this.futures = futures;
+            this.coordinates = coordinates;
+            this.prefixTestName = prefixTestName;
+        }
+
+        public void run()
+        {
+            // make sure they are all complete before deleting the key-pair
+            for (Future<Void> future : futures)
+            {
+                try
+                {
+                    future.get();
+                } catch (Exception e)
+                {
+                    // nothing further we can really do if these fail, futures should have logged error details
+                    // could email someone to double check manual clean may be needed.
+                    log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                }
+            }
+
+            //TODO: this should not be nuking keypair, but vpc?
+//            if (coordinates != null)
+//            {
+//                ProgressiveDelayData pdelayData = new ProgressiveDelayData(AwsNetworkProvider.this, coordinates);
+//                pdelayData.preFixMostName = prefixTestName;
+//                String name = pdelayData.getFullTemplateIdName(MachineInstanceFuture.KeyPairMidStr, null);
+//                DeleteKeyPairRequest request = new DeleteKeyPairRequest().withKeyName(name);
+//                ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+//                String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "deleteVpc:" + name);
+//                do
+//                {
+//                    try
+//                    {
+//                        manager.ec2Client.deleteKeyPair(request);
+//                        break;
+//                    } catch (Exception e)
+//                    {
+//                        FatalResourceException fre = pdelay.handleException(msg, e);
+//                        if (fre instanceof FatalException)
+//                            break;
+//                    }
+//                } while (true);
+//            }
+        }
     }
 }

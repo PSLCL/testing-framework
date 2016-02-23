@@ -8,7 +8,7 @@ import org.apache.http.client.fluent.Response;
 
 public class QAPaResponse {
 
-    private Response qaPortalResponse;
+    private Response qaPortalResponse; // null is interpreted as error
     
     /**
      * 
@@ -23,6 +23,10 @@ public class QAPaResponse {
      */
     public QAPaResponse(Response qaPortalResponse) {
         this.qaPortalResponse = qaPortalResponse;
+    }
+    
+    public boolean isFilled() {
+    	return this.qaPortalResponse!=null;
     }
     
     /**

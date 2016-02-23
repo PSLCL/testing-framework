@@ -28,6 +28,8 @@ public class ResourceNames
     public static final String RunnerKeyBase = PslclKeyBase + ".runner";
     
     public static final String LogPathKey = PslclKeyBase + ".log-file-path";
+    public static final String SystemIdKey = PslclKeyBase + ".system-id";
+    public static final String SystemIdDefault = "dtf-system";
     
     public static final String LogPathDefault = null;
     public static final String ShortMaxDelayDefault = "5000"; // 5 seconds
@@ -78,11 +80,9 @@ public class ResourceNames
      * Resource Providers    
     ******************************************************************************/
     public static final String ResourceKeyBase = PslclKeyBase + ".resource";    
-    public static final String ResourceShortNameKey = ResourceKeyBase + ".short-name";
     public static final String ResourceManagerClassKey = ResourceKeyBase + ".resource-manager-class";
     public static final String ResourcePersonEmailKey = ResourceKeyBase + ".person.email";
     
-    public static final String ResourceShortNameDefault = "dtf";
     public static final String ResourceManagerClassDefault = "com.pslcl.dtf.resource.aws.AwsResourcesManager";
 
     /* ****************************************************************************
@@ -126,12 +126,10 @@ public class ResourceNames
     public static final String InspectReplyKey = InspectKeyBase + ".reply";
     public static final String InspectSubjectKey = InspectKeyBase + ".subject";
     public static final String InspectInspectorKey = InspectKeyBase + ".inspector";
-    public static final String InspectMaxDelayKey = InspectKeyBase + ".max-delay";
-    public static final String InspectMaxRetriesKey = InspectKeyBase + ".max-retries";
     
     public static final String InspectSenderDefault = null; // valid email address
     public static final String InspectReplyDefault = null; // valid email address
-    public static final String InspectSubjectDefault = "dtf-runner inspect";
+    public static final String InspectSubjectDefault = "DTF Inspect";
     public static final String InspectInspectorDefault = null;  // valid email address
     public static final String InspectMaxDelayDefault = ShortMaxDelayDefault;      
     public static final String InspectMaxRetriesDefault = ShortMaxRetriesDefault;  // about 1 min timeout
@@ -154,8 +152,6 @@ public class ResourceNames
         keys.add(InspectReplyKey);
         keys.add(InspectSubjectKey);
         keys.add(InspectInspectorKey);
-        keys.add(InspectMaxDelayKey);
-        keys.add(InspectMaxRetriesKey);
         return keys;
     }
 }

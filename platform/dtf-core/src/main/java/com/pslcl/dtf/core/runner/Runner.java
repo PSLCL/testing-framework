@@ -33,7 +33,7 @@ public interface Runner extends Daemon, UncaughtExceptionHandler
      * @param message JMS message associated with reNum, used for eventual message ack
      * @throws Exception
      */
-    public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Exception;
+    public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Throwable;
 
     /**
      * Test pipeline backdoor

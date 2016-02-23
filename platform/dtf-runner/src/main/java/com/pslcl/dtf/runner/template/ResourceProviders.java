@@ -105,16 +105,14 @@ public class ResourceProviders
     
     public void destroy() 
     {
-        try
-        {
+        try {
             int size = resourceManagers.size();
             for(int i=0; i < size; i++)
                 resourceManagers.get(i).destroy();
             resourceManagers.clear();
             resourceProviders.clear();
-        }catch(Exception e)
-        {
-            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".destroy failed", e);
+        } catch(Exception e) {
+        	log.error(this.simpleName + ".destroy() failed", e);
         }
     }
     

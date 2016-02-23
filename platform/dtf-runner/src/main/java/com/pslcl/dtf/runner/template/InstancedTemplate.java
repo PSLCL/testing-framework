@@ -61,8 +61,10 @@ public class InstancedTemplate {
     private RunnerMachine runnerMachine;
     private ResourceCoordinates templateCleanupInfo;
     private long uniqueMark;
+    private boolean forceNullResult; // known use case is Person.Inspect()
     
     private StepsParser stepsParser;
+
     private Map<Integer, InstancedTemplate> mapStepReferenceToNestedTemplate;
     private Map<ResourceCoordinates, Integer> mapResourceCoordinatesToStepReference;
     private Map<Integer, ResourceInstance> mapStepReferenceToResourceInstance;
@@ -81,6 +83,7 @@ public class InstancedTemplate {
         this.dbTemplate = dbTemplate;
         this.runnerMachine = runnerMachine;
         this.templateCleanupInfo = null;
+        this.stepsParser = null;
         mapStepReferenceToNestedTemplate = new HashMap<Integer, InstancedTemplate>(); 
         mapResourceCoordinatesToStepReference = new HashMap<ResourceCoordinates, Integer>();
         mapStepReferenceToResourceInstance = new HashMap<Integer, ResourceInstance>();
@@ -88,8 +91,13 @@ public class InstancedTemplate {
         this.deployedInfos = new ArrayList<>();
         this.cableInstances = new ArrayList<>();
         this.uniqueMark = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
+        this.forceNullResult = false;
     }
     
+    /**
+     * 
+     * @return
+     */
     long getUniqueMark() {
         return this.uniqueMark;
     }
@@ -100,10 +108,6 @@ public class InstancedTemplate {
     
     public QAPortalAccess getQAPortalAccess() {
         return this.runnerMachine.getService().getQAPortalAccess();
-    }
-    
-    public StepsParser getStepsParser() {
-        return stepsParser;
     }
     
     public void setOrderedResourceInfos(List<ResourceInfo> orderedResourceInfos) {
@@ -122,6 +126,13 @@ public class InstancedTemplate {
         return reCore.getRENum();
     }
     
+    RunEntryCore getRunEntryCore() {
+    	return this.reCore;
+    }
+
+    public boolean getForceNullResult() {
+    	return this.forceNullResult;
+    }
     
     /**
      * 
@@ -151,14 +162,47 @@ public class InstancedTemplate {
     }
 
     /**
+     * @note recursive
+     * @param strResourceReference
+     * @return
+     * @throws Exception 
+     */
+    public ResourceInstance getResourceInstance(String strResourceReference) throws Exception {
+    	ResourceInstance retResourceInstance = null;
+		try {
+			int resourceReference = Integer.valueOf(strResourceReference).intValue();
+			retResourceInstance = this.getResourceInstance(resourceReference);
+		} catch (NumberFormatException nfe) {
+			// not a number, try nested template referencing
+			try {
+				int indexSlash = strResourceReference.indexOf("/");
+				if (indexSlash<1 ||                                  // no slash or slash is first char
+					indexSlash>=(strResourceReference.length() - 1)) // slash is final char
+				   throw new Exception("improper resource reference");
+				String strTemplateReference = strResourceReference.substring(0, indexSlash);
+				int templateReference = Integer.valueOf(strTemplateReference).intValue();
+				String strNewResourceReference = strResourceReference.substring(indexSlash+1);
+				InstancedTemplate nestedIT = this.getNestedTemplate(templateReference);
+				if (nestedIT == null)
+					throw new Exception("nested template not found");
+				retResourceInstance = nestedIT.getResourceInstance(strNewResourceReference);
+			} catch (Exception e) {
+				log.debug(this.simpleName + ".getResourceInstance(str) finds improper resource reference: " + strResourceReference);
+				throw e;
+			}
+		}
+		return retResourceInstance;
+    }
+    
+    /**
      * 
      * @param stepReference
      * @return
      */
-    public ResourceInstance getResourceInstance(int stepReference) {
+    private ResourceInstance getResourceInstance(int stepReference) {
         return mapStepReferenceToResourceInstance.get(stepReference);
     }
-
+    
     /**
      * 
      * @param stepReference
@@ -177,12 +221,111 @@ public class InstancedTemplate {
         return mapStepReferenceToNestedTemplate.get(stepReference);
     }
     
-    
+    /**
+     * 
+     */
     public void destroyNestedTemplate() {
-        for (InstancedTemplate instancedTemplate : mapStepReferenceToNestedTemplate.values()) {
-            // TODO: Do actual destroy of everything having to do with each nested template         
+        for (InstancedTemplate nestedIT : mapStepReferenceToNestedTemplate.values()) {
+			log.debug(this.simpleName + ".destroyNestedTemplates() destroys nested template " + nestedIT.getTemplateID() + ", of uniqueMark " + nestedIT.getUniqueMark());
+			runnerMachine.getTemplateProvider().releaseTemplate(nestedIT);
         }
         mapStepReferenceToNestedTemplate.clear();
+    }
+    
+    /**
+     * 
+     * @param param A URL decoded parameter that is known to contain one or more ValueReference parameters that each begin with "$(" and ends with ")". 
+     * @return
+     * @throws Exception
+     */
+    String resolveValueReferences(String param) throws Exception {
+		log.debug(this.simpleName + "resolveValueReferences() processes input " + param);
+    	String retString = param;
+    	try {
+    		int length = retString.length();
+    		int begin = 0;
+    		while (begin < length) {
+    			int end = retString.indexOf(")", begin);
+    			begin = retString.indexOf("$(", begin);
+    			if (begin<0 || end<0 || begin>=end)
+    				break; // done
+    			// value reference found at begin, extending to end, inclusive
+    			String valueReference = retString.substring(begin, end+1);
+    			String resolved = this.resolveValueReference(valueReference);
+    			String early = retString.substring(0, begin);
+    			String late = new String();
+    			if (end < length-1)
+    				late += retString.substring(end+1);
+    			retString = early+resolved+late;
+    			
+    			// retString length changed; prep for next loop
+    			length = retString.length();
+    			begin = early.length()+resolved.length();
+    		}
+    		log.debug(this.simpleName + "resolveValueReferences() returns " + retString);
+    		return retString;
+    	} catch (Exception e) {
+			log.warn(this.simpleName + "resolveValueReferences() sees exception " + e.getMessage());
+    		throw e;
+    	}
+    }
+    
+    /**
+     * 
+     * @param valueRef A URL decoded ValueReference parameter that begins with "$(" and ends with ")".
+     * @return
+     * @throws Exception
+     */
+    private String resolveValueReference(String valueRef) throws Exception {
+    	try {
+			String param1 = valueRef.substring(2, valueRef.length()-1); // strip leading "$(" and trailing ")"
+			String[] parsedParam = param1.split(" ");
+			switch(parsedParam[0]) {
+			case "ip":
+				int machineReference = new Integer(parsedParam[1]).intValue();
+				ResourceInstance mi = this.getResourceInstance(machineReference);
+				int networkReference = new Integer(parsedParam[2]).intValue();
+				ResourceInstance ni = this.getResourceInstance(networkReference);
+				if (mi!=null && ni!=null) {
+					for (CableInstance cableInstance : this.cableInstances) {
+						if (mi.equals(cableInstance.getMachineInstance()) && ni.equals(cableInstance.getNetworkInstance())) {
+							return cableInstance.getIPAddress();
+						}
+					}
+				}
+				break;
+			case "attribute":
+				int rr = new Integer(parsedParam[1]).intValue();
+				mi = this.getResourceInstance(rr);
+				if (mi != null) {
+					String attrName = parsedParam[2];
+					String resolved = mi.getAttributes().get(attrName);
+					if (resolved != null)
+						return resolved;
+				}
+				break;
+			default:
+				break;
+			}
+			throw new Exception("valueReference lookup failed: " + valueRef);
+		} catch (Exception e) {
+			log.warn(this.simpleName + "resolveValueReference() sees exception " + e.getMessage());
+			throw e;
+		}
+    }
+    
+    private boolean isTestRunCanceled() {
+    	boolean isTestRunCanceled = this.reCore.isTestRunCanceled();
+    	return isTestRunCanceled;
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    private boolean isTopLevelTemplate() {
+    	boolean retBoolean = (this.dbTemplate.getReNum() >= 0) ? true : false;
+    	return retBoolean;
     }
     
     /**
@@ -206,24 +349,30 @@ public class InstancedTemplate {
     void runSteps() throws Exception {
         // resets internal StepsParser object and uses it to run steps
         this.stepsParser = new StepsParser(dbTemplate.steps); // tracks steps offset internally
+        int currentStepReference = 0;
         
         try {
             // first, instance nested templates
-            NestedTemplateHandler nth = new NestedTemplateHandler(this, runnerMachine);
-            try {
-                nth.instanceNestedTemplates(reCore); // blocking call
-            } catch (Exception e) {
-                log.debug(simpleName + "runSteps() exception in processing a nested template, msg: " + e);
-                throw e;
-            }
-            int currentStepReference = this.mapStepReferenceToNestedTemplate.size();
+			List<String> includeSteps = this.stepsParser.getNextSteps("include "); // this call consumes all include steps
+			if (!includeSteps.isEmpty()) {
+				// includeSteps is an ArrayList across which iteration retrieves in the same order as insertion (because we are done inserting)
+				IncludeHandler includeHandler = new IncludeHandler(this, includeSteps, this.runnerMachine);
+				currentStepReference += includeHandler.computeIncludeRequests();
+	            try {
+	            	includeHandler.instanceTemplates(); // blocking call; on error out, this cleans up successful nested templates 
+				} catch (Exception e1) {
+		            log.debug(this.simpleName + ".runSteps() sees nested template error out, and errors out itself,  for templateID " + this.getTemplateID() + ", of uniqueMark " + this.getUniqueMark() + "; msg: " + e1.getMessage());
+		            throw e1;
+				}
+			}
 
-            // second, process each step set, in sequence (starting at setID 0, with no missing setID)
+            // second, process each step set, in sequence (starting at setID 0, allow no missing setID)
             //     do this by fully processing steps of the same set, before moving on to the next set
             // any error terminates step handling
-            for (int setID=0; ; setID++) {
+			log.debug(this.simpleName + ".runSteps() moves from includes to set step processing, for templateID " + this.getTemplateID());
+            for (int setID=0; !this.isTestRunCanceled(); setID++) {
                 String strSetID = Integer.toString(setID) + ' '; // trailing space required for a legal setID
-                List<String> stepsOfSet = stepsParser.getNextSteps(strSetID); // this call consumed all steps in the set; i.e. having the same setID 
+                List<String> stepsOfSet = this.stepsParser.getNextSteps(strSetID); // this call consumed all steps in the set; i.e. having the same setID 
                 if (stepsOfSet.isEmpty()) {
                     // Our choice: We could check that any additional steps exist. If they exist, their setID is out of sequence, the template is in error, and we can fail the test run.
                     //             Or we can ignore this check. By failing to check, and by leaving the loop here, we terminate the template at the last successful step.
@@ -239,11 +388,12 @@ public class InstancedTemplate {
                 InspectHandler inspectHandler = null;
                 ProgramHandler runHandler = null;
                 ProgramHandler startHandler = null;
-
-                List<ProgramInfo> startInfos = null;
                 
                 // this for() loop: initiate all step commands for same setID
                 for (int setStepCount=0; setStepCount<stepsOfSet.size(); setStepCount++) {
+                	if (this.isTestRunCanceled() == true)
+                		break;
+                	
                     // from the first step of a possible group of same-command steps, get its command and act on it
                     String commandString = null;
                     SetStep firstLikeStep = new SetStep(stepsOfSet.get(setStepCount));
@@ -253,7 +403,7 @@ public class InstancedTemplate {
                             // NOTE: In a pattern, none of these cases accomplish their final work. That work is accomplished in the do/while loop that follows our for loop.
                         case "bind":
                             if (bindHandler == null) {
-                                bindHandler = new BindHandler(this, stepsOfSet);
+                                bindHandler = new BindHandler(this, stepsOfSet, setStepCount);
                                 int consumedStepReferences = bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
@@ -268,7 +418,7 @@ public class InstancedTemplate {
                             break;
                         case "configure":
                             if (configureHandler == null) {
-                                configureHandler = new ProgramHandler(this, stepsOfSet);
+                                configureHandler = new ProgramHandler(this, stepsOfSet, setStepCount);
                                 int consumedStepReferences = configureHandler.computeProgramRequests(); // setID configure 0-based-machine-ref program-name [param param ...]
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
@@ -284,7 +434,7 @@ public class InstancedTemplate {
                         case "connect":
                             // We track CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
                             if (connectHandler == null) {
-                                connectHandler = new ConnectHandler(this, stepsOfSet);
+                                connectHandler = new ConnectHandler(this, stepsOfSet, setStepCount);
                                 int consumedStepReferences = connectHandler.computeConnectRequests(); // setID connect 0-based-machine-ref 0-based-network-reference
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
@@ -300,7 +450,7 @@ public class InstancedTemplate {
                         case "deploy":
                             // We track MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to the machine of a nested template
                             if (deployHandler == null) {
-                                deployHandler = new DeployHandler(this, stepsOfSet);
+                                deployHandler = new DeployHandler(this, stepsOfSet, setStepCount);
                                 int consumedStepReferences = deployHandler.computeDeployRequests(); // setID deploy 0-based-machine-ref artifact-name artifactHash
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
@@ -313,12 +463,24 @@ public class InstancedTemplate {
                                 throw new Exception("Improper step order");
                             }
                             break;
+                        case "include":
+                            log.debug(this.simpleName + "include step(s) mixed into step set " + setStepCount);
+                            throw new Exception("Improper step order");
                         case "inspect":
                             if (inspectHandler == null) {
-                                inspectHandler = new InspectHandler(this, this.runnerMachine, stepsOfSet);
+                            	if (!this.isTopLevelTemplate()) {
+                            		log.debug(this.simpleName + "inspect step not allowed for any nested template, in this case template " + this.getTemplateID());
+                            		throw new Exception("nested template cannot use inspect step");
+                            	}
+                                inspectHandler = new InspectHandler(this, this.runnerMachine, stepsOfSet, setStepCount);
                                 int consumedStepReferences = inspectHandler.computeInspectRequests(); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
+                                if(!this.stepsParser.isExhausted() || // more sets exists after our set
+                                   setStepCount<stepsOfSet.size()) { // more steps exist in our set 
+                                    log.debug(this.simpleName + "inspect steps not final steps of this test run, for step set " + setStepCount);
+                                    throw new Exception("Inspect steps not final step");
+                                }
                                 
                                 // Pattern for all .proceed() calls. Call it (first) in this for() loop that initiates all step commands for same setID. This first call will not block.
                                 inspectHandler.proceed();
@@ -331,7 +493,7 @@ public class InstancedTemplate {
                         case "run":
                             // We track MachineInstance's of each run, even though (probably) only needed for cleaning up the case where a parent template "runs" to the machine instance of a nested template
                             if (runHandler == null) {
-                                runHandler = new ProgramHandler(this, stepsOfSet);
+                                runHandler = new ProgramHandler(this, stepsOfSet, setStepCount);
                                 int consumedStepReferences = runHandler.computeProgramRequests(); // setID run 0-based-machine-ref program-name [param param ...]
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
@@ -349,7 +511,7 @@ public class InstancedTemplate {
                             if (startHandler == null) {
                                 // A generator is encouraged to divide templates into nested templates, such that a single start step appears in a template, and only in a nested template.
                                 // Even so, we process whatever start step arrangement comes to us.
-                                startHandler = new ProgramHandler(this, stepsOfSet);
+                                startHandler = new ProgramHandler(this, stepsOfSet, setStepCount);
                                 int consumedStepReferences = startHandler.computeProgramRequests(); // setID start 0-based-machine-ref program-name [param param ...]
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
@@ -377,7 +539,7 @@ public class InstancedTemplate {
 
 
                 // TODO: move things like this to here
-                List<ProgramInfo> runInfos = null;
+//              List<ProgramInfo> runInfos = null;
 //              List<ProgramInfo> startInfos = null;
 
                 
@@ -389,7 +551,7 @@ public class InstancedTemplate {
                     // These individual .proceed() calls may potentially each block for a while, then return. At each return, they mark themselves as done, or not.
                     //     Eventually, by cycling through this loop multiple times, all steps of this step set will be found to have concluded their processing.
                     //     The loop exits at that time.
-                    if (bindHandler!=null && !bindHandler.isDone()) {
+                    if (bindHandler!=null && !bindHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
                         bindHandler.proceed();
                         if (bindHandler.isDone()) {
@@ -398,7 +560,7 @@ public class InstancedTemplate {
                             log.debug(simpleName + "bindHandler() completes " + localRI.size() + " bind(s) for setID " + setID);
                         }
                     }
-                    if (configureHandler!=null && !configureHandler.isDone()) {
+                    if (configureHandler!=null && !configureHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
 
                         List<ProgramState> localProgramStates = configureHandler.proceed();
@@ -430,30 +592,8 @@ public class InstancedTemplate {
                                 throw new Exception("Configure step(s) errored out");
                             log.debug(simpleName + "configureHandler() completes " + configureHandler.getConsecutiveSameStepCount() + " configure program(s) for setID " + setID);
                         }
-//                      List<ProgramState> localProgramStates = configureHandler.proceed();
-//                      if (configureHandler.isDone()) {
-//                          boolean fail = true;
-//                          if (localProgramStates.size() == configureHandler.getConsecutiveSameStepCount()) {
-//                              boolean configStepErroredOut= false;
-//                              for (ProgramState ps : localProgramStates) {
-//                                  Integer programRunResult = ps.getProgramRunResult(); 
-//                                  if (programRunResult==null || programRunResult!=0) {
-//                                      configStepErroredOut = true;
-//                                      log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
-//                                      break;
-//                                  }
-//                              }
-//                              if (!configStepErroredOut)
-//                                  fail = false;
-//                          } else {
-//                              log.debug(this.simpleName + "Configure program results are missing");
-//                          }
-//                          if (fail)
-//                              throw new Exception("Configure step(s) errored out");
-//                          log.debug(simpleName + "configureHandler() completes " + configureHandler.getConsecutiveSameStepCount() + " configure program(s) for setID " + setID);
-//                      }
                     }
-                    if (connectHandler!=null && !connectHandler.isDone()) {
+                    if (connectHandler!=null && !connectHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
 
                         // we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
@@ -469,7 +609,7 @@ public class InstancedTemplate {
                             }
                         }
                     }
-                    if (deployHandler!=null && !deployHandler.isDone()) {
+                    if (deployHandler!=null && !deployHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
 
                         // we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
@@ -486,15 +626,16 @@ public class InstancedTemplate {
                             }
                         }
                     }
-                    if (inspectHandler!=null && !inspectHandler.isDone()) {
+                    if (inspectHandler!=null && !inspectHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
 
                         inspectHandler.proceed();
                         if (inspectHandler.isDone()) {
+                        	this.forceNullResult = true; // a person must enter the final result
                             log.debug(simpleName + "inspectHandler() completes " + inspectHandler.getInspectRequestCount() + " inspect(s) for setID " + setID);
                         }
                     }
-                    if (runHandler!=null && !runHandler.isDone()) {
+                    if (runHandler!=null && !runHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
                         
                         List<ProgramState> localProgramStates = runHandler.proceed();
@@ -528,7 +669,7 @@ public class InstancedTemplate {
                         }
                     }
                     
-                    if (startHandler!=null && !startHandler.isDone()) {
+                    if (startHandler!=null && !startHandler.isDone() && !this.isTestRunCanceled()) {
                         allStepsCompleteForThisStepSet = false;
                         
                         List<ProgramState> localProgramStates = startHandler.proceed();
@@ -561,45 +702,88 @@ public class InstancedTemplate {
                             log.debug(simpleName + "startHandler() completes " + startHandler.getConsecutiveSameStepCount() + " start program(s) for setID " + setID);
                         }
                     }
-                } while (!allStepsCompleteForThisStepSet); // end do/while loop: process all step commands for same setID
+                } while (!allStepsCompleteForThisStepSet && !this.isTestRunCanceled()); // end do/while loop: process all step commands for same setID
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
-            log.debug(this.simpleName + "runSteps() errors out for runID " + this.getRunID() + ", templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());
-            this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
-            throw e;
+            log.debug(this.simpleName + "runSteps() errors out for templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());
+			try {
+				this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
+			} catch (Exception ignoreE) {
+				// swallow this exception, it does not relate to the actual test run
+				log.warn(this.simpleName + "after runSteps() fails out, problem reported for releasing the template, msg: " + ignoreE.getMessage());
+			}
+            throw e; // e is the actual template errors-out exception
         }
-        
-        log.debug(this.simpleName + "runSteps() completes without error");
+        String templateHash = this.dbTemplate.getTemplateId();
+        if (this.isTestRunCanceled())
+        	log.debug(this.simpleName + "runSteps() CANCELED, for template hash " + templateHash);
+        else
+        	log.debug(this.simpleName + "runSteps() completes without error, for template hash " + templateHash);
     }
 
+    /**
+     * 
+     * @param resourceCoordinates
+     */
     void setTemplateCleanupInfo(ResourceCoordinates resourceCoordinates) {
         this.templateCleanupInfo = resourceCoordinates;
     }
     
+    /**
+     * 
+     * @param resourceCoordinates
+     */
     void informResourceProviders(ResourceCoordinates resourceCoordinates) {
         if (this.templateCleanupInfo == null)
             this.templateCleanupInfo = resourceCoordinates;
     }
     
-    private void informResourceProviders() {
-        String templateID = null;
+    /**
+     * 
+     */
+    private void templateReleased_InformResourceProviders() {
+        String templateID = this.getTemplateID();
         if (this.templateCleanupInfo != null) { // null: this template did not successfully reserve a resource
             // Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant templateID). 
             ResourcesManager rm = this.templateCleanupInfo.getManager();
             templateID = this.templateCleanupInfo.templateId;
             
-            log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
             rm.release(templateID, false);
-            log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
             
         } else
-            log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + (templateID!=null ? templateID : "null") + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
     }
     
+    /**
+     * Recursive
+     */
     public void destroy() {
         // this is intended to be called only by TemplateProvider.releaseTemplate(iT)
-        this.informResourceProviders();
-        // maybe other cleanup related to iT only, but not .releaseTemplate() again - it called us
+    	
+    	{
+    	    // Unwind MachineInstance commitments made by this template. These are:
+        	//  mandatory when the MachineInstance is on a nested template (because that template might be reused)
+        	//  optional when the MachineInstance is on this template (which is being destroyed, anyway).
+        	// Decision: Do this cleanup in all cases. At the very least, it will cleanly disentangle whatever resource remains. For example, a surviving network will see a purposeful disconnect() rather than a lost contact exception 
+
+	    	//		1) react to this template's this.cableInstances
+			ConnectHandler.disconnect(this.cableInstances);
+			this.cableInstances.clear(); // for form
+	
+			//		2) react to this template's this.deployedInfos
+//			DeployHandler.delete(this.deployedInfos);
+//			this.deployedInfos.clear(); // for form
+			
+	    	//		3) there is no api to unwind anything else
+    	}
+	    	
+	   	// look at this iT's included templates- decide whether to release each of them, or not
+	    this.destroyNestedTemplate(); // TODO: decide whether to reuse any of these
+    	
+   		// inform resource providers that this template is released
+   		this.templateReleased_InformResourceProviders();
     }
         
 }

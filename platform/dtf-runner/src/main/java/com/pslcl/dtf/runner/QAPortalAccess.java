@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.runner.template.InspectHandler;
 import com.pslcl.dtf.runner.template.QAPaResponse;
@@ -47,23 +48,21 @@ public class QAPortalAccess {
         @Override
         public void run() {
             
+        	QAPaResponse qapaResponse = null;
             try {
                 Response response = this.qaPortalAccess.request(this.contentSpecifier);
-                QAPaResponse qapaResponse = new QAPaResponse(response);
-                this.inspectHandler.setQAPaResponse(qapaResponse);
+                qapaResponse = new QAPaResponse(response);
             } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            	qapaResponse = new QAPaResponse(); // empty: will be interpreted as an error
             }
+            // inform QAPortalAccess originator (inspectHandler) by setting its QAPaResponse
+            this.inspectHandler.setQAPaResponse(qapaResponse);
         }
         
     }
 
     
     // Class instance variables
-    
-    private static final String RunnerQAPortalHostKey = "pslcl.dtf.runner.qa.portal.host";
-
     private final Executor executor; // is pooling, uses PoolingHttpClientConnectionManager 
     private volatile String hostQAPortal = null;
     private final Logger log;
@@ -104,11 +103,12 @@ public class QAPortalAccess {
      * 
      * @param runnerConfig
      */
-    void init(RunnerConfig runnerConfig) {
-        hostQAPortal = runnerConfig.properties.getProperty(RunnerQAPortalHostKey);
+    void init(RunnerConfig runnerConfig) throws Exception {
+        hostQAPortal = runnerConfig.properties.getProperty(ResourceNames.PortalHostKey);
         hostQAPortal = StrH.trim(hostQAPortal);
 		if(hostQAPortal == null){
-			this.log.error("Missing required property: " + RunnerQAPortalHostKey);
+			this.log.error("Missing required property: " + ResourceNames.PortalHostKey);
+			throw new Exception("QAPortalAccess.init() fails");
 		}
     }
     

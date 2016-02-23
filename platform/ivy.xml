@@ -15,7 +15,7 @@
 **  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
 <ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
-  <info organisation="com.pslcl.dtf" module="main" revision="1.0">
+  <info organisation="com.pslcl.testing-framework" module="main" revision="1.0">
     <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
     <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
     <description homepage="https://github.com/PSLCL/testing-framework/">
@@ -27,11 +27,10 @@ The Distributed Test Framework Main.
     <conf name="compile" visibility="public" description="this is the default scope, used if none is specified. Compile dependencies are available in all classpaths."/>
   </configurations>
   <dependencies>
-    <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile"/>
-    <dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="[1,2)" conf="compile->master,compile"/>
-    <dependency org="com.pslcl.dtf" name="dtf-aws-resource" rev="[1,2)" conf="compile->master,compile"/>
-    <dependency org="com.pslcl.dtf" name="dtf-ivy-artifact" rev="[1,2)" conf="compile->master,compile"/>
-    <dependency org="com.pslcl.dtf" name="dtf-runner" rev="[1,2)" conf="compile->master,compile"/>
-	<dependency org="mysql" name="mysql-connector-java" rev="[5.1,6)"/>
+    <dependency org="com.pslcl.testing-framework" name="dtf-core" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="com.pslcl.testing-framework" name="dtf-aws-resource" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="com.pslcl.testing-framework" name="dtf-ivy-artifact" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="com.pslcl.testing-framework" name="dtf-runner" rev="[1,2)" conf="compile->master,compile"/>
+    <dependency org="mysql" name="mysql-connector-java" rev="[5.1,6)"/>
   </dependencies>
 </ivy-module>

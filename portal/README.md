@@ -5,7 +5,8 @@ Node.js application using [express.js](http://expressjs.com), MySQL, [bootstrap]
 The following tools must be installed on production systems (or be accessible), and Node.js should be installed on development machines.
 
 1. [Node.js](http://nodejs.org) version 'v0.10.26'. Note that on Windows, you need to disable path modifications because it corrupts your environment.
-2. [MySQL](http://mysql.com)
+2. [MySQL](http://mysql.com) version 5.7 or newer.
+3. ports 80 and/or 443 should be accessible
 
 ## Install packages
 Packages are installed automatically based on the 'package.json' file.
@@ -47,6 +48,9 @@ in 'server/config/config.js'.
 
 These can be added to the command line call to run the server, or added to `~/.bash_profile`. A sample config.js
 may be copied from 'example-config/config.js'.
+
+## Build the platform
+The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
 
 ## Running the server
 Windows does not fully support npm scripts, and so the process to launch a development server differ

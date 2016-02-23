@@ -39,12 +39,15 @@ public class Person extends Resource
         private Resource inspector;
         private Content body;
         private Artifact[] attachments;
+        private List<Action> actionDependencies;
 
         private InspectAction(Resource inspector, Content body, Artifact[] attachments)
         {
             this.inspector = inspector;
             this.body = body;
             this.attachments = attachments;
+            actionDependencies = new ArrayList<Action>();
+            actionDependencies.add(inspector.getBindAction());
         }
 
         /*        @Override
@@ -56,13 +59,13 @@ public class Person extends Resource
         @Override
         public String getCommand(Template t) throws Exception
         {
-            Template.Parameter[] params = new Template.Parameter[2 + attachments.length];
+            Template.Parameter[] params = new Template.Parameter[2 + 2*attachments.length];
             params[0] = new Template.ResourceParameter(inspector);
             params[1] = body;
             int i = 2;
             for (Artifact a : attachments)
             {
-                params[i++] = StringParameter.class.cast(a.getName()); // the artifact name, intended to be the artifact destination
+                params[i++] = new StringParameter(a.getName()); // the artifact name, intended to be the artifact destination
                 params[i++] = a.getContent(); // the artifact hash
             }
 
@@ -88,7 +91,7 @@ public class Person extends Resource
             StringBuilder sb = new StringBuilder();
             if (attachments.length > 0)
             {
-                sb.append("Create an archive of the following files called <tt>attachments.tar.gz</tt>:<ul>");
+                sb.append("Create an archive of the following files called <tt>attachments.tar.gzip</tt>:<ul>");
                 for (Artifact a : attachments)
                 {
                     sb.append("<li><tt>");
@@ -102,7 +105,7 @@ public class Person extends Resource
 
                 sb.append("</ul>\n");
 
-                sb.append("Send <tt>attachments.tar.gz</tt> to <em>");
+                sb.append("Send <tt>attachments.tar.gzip</tt> to <em>");
                 sb.append(inspector.name);
                 sb.append("</em> with the following instructions:\n");
             } else
@@ -137,7 +140,7 @@ public class Person extends Resource
 
 		@Override
 		public List<Action> getActionDependencies() throws Exception {
-			return new ArrayList<Action>();
+			return actionDependencies;
 		}
 
     }
@@ -163,6 +166,9 @@ public class Person extends Resource
      */
     public void inspect(Content body, Artifact[] attachments) throws Exception
     {
+    	if(attachments == null){
+    		attachments = new Artifact[0];
+    	}
         generator.add(new InspectAction(this, body, attachments));
     }
 

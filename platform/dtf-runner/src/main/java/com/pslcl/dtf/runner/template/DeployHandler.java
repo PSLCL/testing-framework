@@ -14,12 +14,34 @@ import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 
 public class DeployHandler {
+	
+	/**
+	 * 
+	 */
+	static void delete(List<DeployInfo> deployInfos) {
+    	for (DeployInfo di : deployInfos) {
+    		MachineInstance mi = MachineInstance.class.cast(di.getResourceInstance());
+    		String filename = di.getFilename();
+   
+    		// TODO: treat this as asynch, and handle all of them in parallel
+    		Future<Void> future;
+			try {
+				future = mi.delete(filename);
+				future.get();
+			} catch (Exception e) {
+    			LoggerFactory.getLogger("DeployHandler").warn(".delete() fails for filename " + filename + ", with msg: " + e.getMessage());
+			}	
+    	}
+	}
+
+	
+	// instance members
+	
 	private InstancedTemplate iT;
 	private List<String> setSteps;
     private List<DeployInfo> deployInfos = null;
     private List<DeployInfo> futuresOfDeploys;
-	private int iBeginSetOffset = -1;
-	private int iFinalSetOffset = -1; // always non-negative when iBegin... becomes non-negative; never less than iBegin...
+    private StepSetOffsets stepSetOffsets; 
     private boolean done;
     private final Logger log;
     private final String simpleName;
@@ -29,28 +51,15 @@ public class DeployHandler {
 	 * @param iT
 	 * @param setSteps
 	 */
-	public DeployHandler(InstancedTemplate iT, List<String> setSteps) throws NumberFormatException {
+	public DeployHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
 		this.futuresOfDeploys = new ArrayList<DeployInfo>();
 		this.done = false;
-		
-		int iTempFinalSetOffset = 0;
-		int iSetOffset = 0;
-		while (true) {
-			SetStep setStep = new SetStep(setSteps.get(iSetOffset));
-			if (!setStep.getCommand().equals("deploy"))
-				break;
-			this.iBeginSetOffset = 0;
-			this.iFinalSetOffset = iTempFinalSetOffset;
-			if (++iTempFinalSetOffset >= setSteps.size())
-				break;
-			iSetOffset = iTempFinalSetOffset; // there is another step in this set
-		}		
+        this.stepSetOffsets = new StepSetOffsets("deploy", setSteps, initialSetStepCount);
 	}
-
 	
 	/**
 	 * 
@@ -88,8 +97,9 @@ public class DeployHandler {
 	 */
 	int computeDeployRequests() throws Exception {
     	this.deployInfos = new ArrayList<>();
-        if (this.iBeginSetOffset != -1) {
-            for (int i=this.iBeginSetOffset; i<=this.iFinalSetOffset; i++) {
+        int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
+        if (beginSetOffset >= 0) {
+            for (int i=beginSetOffset; i<=this.stepSetOffsets.getFinalSetOffset(); i++) {
             	try {
                 	String deployStep = setSteps.get(i);
                 	SetStep parsedSetStep = new SetStep(deployStep); // setID deploy 0-based-machine-ref artifact-name artifactHash
@@ -101,8 +111,7 @@ public class DeployHandler {
                 	String strArtifactHash = null;
                 	
                 	String strMachineReference = parsedSetStep.getParameter(0);
-	            	int machineRef = Integer.valueOf(strMachineReference).intValue();
-	            	resourceInstance = iT.getResourceInstance(machineRef);
+	            	resourceInstance = iT.getResourceInstance(strMachineReference);
 	            	if (resourceInstance != null) {
 	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
 	            		//       Now that we know it is used for deploy, check resourceInstance for required type: machine

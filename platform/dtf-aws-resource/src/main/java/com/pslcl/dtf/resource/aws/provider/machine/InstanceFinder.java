@@ -15,7 +15,6 @@
  */
 package com.pslcl.dtf.resource.aws.provider.machine;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,13 +37,13 @@ import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 @SuppressWarnings("javadoc")
 public class InstanceFinder
 {
-    private final Map<String, AtomicInteger> limits;
+//    private final Map<String, AtomicInteger> limits;
     private volatile String instanceType;
-    private volatile List<GlobalAttrMapData> globalAttrMapData;
+    private volatile Map<String, GlobalAttrMapData> globalAttrMapData;
 
     public InstanceFinder()
     {
-        limits = new HashMap<String, AtomicInteger>();
+//        limits = new HashMap<String, AtomicInteger>();
     }
 
     public void init(RunnerConfig config) throws Exception
@@ -57,32 +56,32 @@ public class InstanceFinder
         config.initsb.level.decrementAndGet();
         config.initsb.ttl("AWS Instance Type Limits:");
         config.initsb.level.incrementAndGet();
-        for (int i = 0; i < ProviderNames.instanceTypes.length; i++)
-        {
-            String key = ProviderNames.InstanceTypeKeyBase + "." + ProviderNames.instanceTypes[i].toString() + ProviderNames.InstanceTypeLimit;
-            String value = config.properties.getProperty(key, "0");
-            value = StrH.trim(value);
-            config.initsb.ttl(key, " = ", value);
-            int limit = Integer.parseInt(value);
-            limits.put(ProviderNames.instanceTypes[i].toString(), new AtomicInteger(limit));
-        }
+//        for (int i = 0; i < ProviderNames.instanceTypes.length; i++)
+//        {
+//            String key = ProviderNames.InstanceTypeKeyBase + "." + ProviderNames.instanceTypes[i].toString() + ProviderNames.InstanceTypeLimit;
+//            String value = config.properties.getProperty(key, "0");
+//            value = StrH.trim(value);
+//            config.initsb.ttl(key, " = ", value);
+//            int limit = Integer.parseInt(value);
+//            limits.put(ProviderNames.instanceTypes[i].toString(), new AtomicInteger(limit));
+//        }
         config.initsb.level.decrementAndGet();
         config.initsb.ttl("Global to AWS mapping configuration:");
         config.initsb.level.incrementAndGet();
         List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(ProviderNames.InstanceGlobalMapKey, config.properties);
         if (list.size() > 0)
-            globalAttrMapData = new ArrayList<GlobalAttrMapData>();
+            globalAttrMapData = new HashMap<String, GlobalAttrMapData>();
         for (Entry<String, String> entry : list)
         {
-            // =cores memory-range disk-range awsInstanceType
-            // pslcl.dtf.aws.instance.map0=1 0.5-1.0 1.0 t2.micro
+            // =cores memory-range awsInstanceType
+            // pslcl.dtf.aws.instance.map0=1 0.5-1.0 t2.micro limit
             String value = entry.getValue();
             value = StrH.trim(value);
             String[] attrs = value.split(" ");
             try
             {
                 int cores = Integer.parseInt(attrs[0]);
-                globalAttrMapData.add(new GlobalAttrMapData(cores, attrs[1], attrs[2], attrs[3]));
+                globalAttrMapData.put(attrs[2], new GlobalAttrMapData(cores, attrs[1], attrs[2], attrs[3]));
             } catch (Exception e)
             {
                 throw new Exception("invalid " + ProviderNames.InstanceGlobalMapKey + " format: " + value + " : " + e.getMessage());
@@ -119,9 +118,11 @@ public class InstanceFinder
             boolean found = false;
             boolean jumpedUp = false;
             int firstHit = -1;
-            for(int i=0; i < globalAttrMapData.size(); i++)
+            int i = -1;
+            for(Entry<String, GlobalAttrMapData> entry : globalAttrMapData.entrySet())
             {
-                GlobalAttrMapData data = globalAttrMapData.get(i);
+                ++i;
+                GlobalAttrMapData data = entry.getValue();
                 if(!data.isHit(coresStr, memoryRange, diskRange))
                     continue;
                 itype = data.instanceType;
@@ -163,7 +164,7 @@ public class InstanceFinder
 
     public boolean checkLimits(InstanceType instanceType)
     {
-        int count = limits.get(instanceType.toString()).get();
+        int count = globalAttrMapData.get(instanceType.toString()).limit.get();
         if (count == -1)
             return true;
         if (count > 0)
@@ -173,7 +174,7 @@ public class InstanceFinder
 
     public boolean reserveInstance(InstanceType instanceType)
     {
-        AtomicInteger count = limits.get(instanceType.toString());
+        AtomicInteger count = globalAttrMapData.get(instanceType.toString()).limit;
         if (count.get() == -1)
             return true;
         if (count.decrementAndGet() >= 0)
@@ -183,7 +184,7 @@ public class InstanceFinder
 
     public void releaseInstance(InstanceType instanceType)
     {
-        AtomicInteger count = limits.get(instanceType.toString());
+        AtomicInteger count = globalAttrMapData.get(instanceType.toString()).limit;
         if (count.get() == -1)
             return;
         count.incrementAndGet();
@@ -201,17 +202,17 @@ public class InstanceFinder
 
     private class GlobalAttrMapData
     {
+        private final AtomicInteger limit;
         private final InstanceType instanceType;
         private final int cores;
         private final DoubleRange memory;
-        private final DoubleRange diskSpace;
 
-        private GlobalAttrMapData(int cores, String memoryRange, String diskRange, String instanceType) throws Exception
+        private GlobalAttrMapData(int cores, String memoryRange, String instanceType, String limit) throws Exception
         {
             this.cores = cores;
             memory = new DoubleRange(memoryRange);
-            diskSpace = new DoubleRange(diskRange);
             this.instanceType = getInstanceType(instanceType);
+            this.limit = new AtomicInteger(Integer.parseInt(limit));
         }
         
         private boolean isHit(String cores, String memoryRange, String diskRange)
@@ -228,12 +229,6 @@ public class InstanceFinder
                 range = new DoubleRange(memoryRange);
                 if(!memory.inRange(range))
                     return false;
-            }
-            if(diskRange != null)
-            {
-                range = new DoubleRange(diskRange);
-                if(!diskSpace.inRange(range))
-                return false;
             }
             return true;
         }

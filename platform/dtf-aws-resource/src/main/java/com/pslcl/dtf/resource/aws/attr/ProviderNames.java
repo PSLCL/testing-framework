@@ -29,10 +29,12 @@ public class ProviderNames
     // see dtf-core ResourceNames.PslclKeyBase, ResourceKeyBase and ResourceShortNameDefault.
     // Did not want to depend on dtf-core
     public static final String PslclKeyBase = "pslcl.dtf";  
-    public static final String ResourceKeyBase = PslclKeyBase + ".resource";    
-    public static final String ResourceShortNameDefault = "dtf";
-    
     public static final String AwsKeyBase = PslclKeyBase + ".aws";
+    public static final String ResourceKeyBase = AwsKeyBase + ".resource";
+    
+    public static final String ResourcePrefixNameKey = ResourceKeyBase + ".prefix-name";
+    public static final String ResourcePrefixNameDefault = "dtf";
+    
     public static final String ShortMaxDelayDefault = "5000"; // 5 seconds
     public static final String ShortMaxRetriesDefault = "17"; // roughly 1 minute
     public static final String LongMaxDelayDefault = "15000"; // 15 seconds
@@ -45,8 +47,6 @@ public class ProviderNames
      * Instance type declarations    
     ******************************************************************************/    
     public static final String InstanceKeyBase = AwsKeyBase + ".instance";
-    public static final String InstanceTypeKeyBase = InstanceKeyBase + ".type";
-    public static final String InstanceTypeLimit = "-limit";
     
     public static final String InstanceTypeKey = InstanceKeyBase + ".type";
     public static final String InstanceGlobalMapKey = InstanceKeyBase + ".map";
@@ -143,7 +143,6 @@ public class ProviderNames
      * Run this method to log the current state of instance attributes.  
      * @param log SLF4j Logger to use.
      */
-    //TODO: I don't think this is useful, searching is all filters, this only useful for results of search
     public static void logImageAttributeNames(Logger log)
     {
         StringBuilder sb = new StringBuilder("\nImage attribute names:\n");
@@ -227,12 +226,22 @@ public class ProviderNames
     public static final String LocationMonthDefault = null;
     public static final String LocationDotDefault = null;
     
+    
+    /* ****************************************************************************
+     * SES Inspect    
+    ******************************************************************************/    
+    public static final String SesKeyBase = AwsKeyBase + ".ses";
+    
+    public static final String SesMaxDelayKey = SesKeyBase + ".max-delay";
+    public static final String SesMaxRetriesKey = SesKeyBase + ".max-retries";
+
     /* ****************************************************************************
      * Various helper key lists    
     ******************************************************************************/
     public static List<String> getMachineKeys()
     {
        List<String> keys = new ArrayList<String>();
+       keys.add(ResourcePrefixNameKey);
        keys.add(InstanceTypeKey);
        keys.add(ImageArchitectureKey);
        keys.add(ImageHypervisorKey);
@@ -279,6 +288,13 @@ public class ProviderNames
         keys.add(InstanceNames.PermProtocolKey);
         keys.add(InstanceNames.PermIpRangeKey);
         keys.add(InstanceNames.PermPortKey);
+        return keys;
+    }
+    public static List<String> getSesKeys()
+    {
+        List<String> keys = new ArrayList<String>();
+        keys.add(SesMaxDelayKey);  
+        keys.add(SesMaxRetriesKey);  
         return keys;
     }
 }

@@ -31,7 +31,11 @@ public class ArtifactInfo {
     }
 
     
+    // class instances
+    
+    @SuppressWarnings("unused")
     private String strArtifactName;
+    @SuppressWarnings("unused")
     private String strArtifactHash;
     
     public ArtifactInfo(String strArtifactName, String strArtifactHash) {

@@ -54,7 +54,6 @@ import com.pslcl.dtf.core.generator.Generator;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.resource.Machine;
 import com.pslcl.dtf.core.generator.template.Template;
-import com.pslcl.dtf.core.generator.template.TestInstance;
 import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
 
 public class DistributedTestingFramework
@@ -992,7 +991,6 @@ public class DistributedTestingFramework
         {
         }
 
-        @SuppressWarnings("incomplete-switch")
         @Override
         public void iterateModules(ModuleNotifier moduleNotifier) throws Exception
         {
@@ -1046,7 +1044,6 @@ public class DistributedTestingFramework
      *   results: enabled with the --results option, creates test results.
      * @param args
      */
-    @SuppressWarnings("null")
     private static void populate(String[] args)
     {
         if (args.length < 2 || args[1].compareTo("--help") == 0)

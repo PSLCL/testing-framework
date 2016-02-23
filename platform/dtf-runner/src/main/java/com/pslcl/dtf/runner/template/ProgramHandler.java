@@ -17,6 +17,8 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 public class ProgramHandler {
 	private enum RunType {
 		CONFIGURE(0), RUN(1), START(2);
+		
+	    @SuppressWarnings("unused")
 		private int value;
 		
 		private RunType(int value) {
@@ -41,15 +43,15 @@ public class ProgramHandler {
 	 * @param iT
 	 * @param setSteps List of steps to process. Must not be null. Must not be empty. First step must be [configure or run or start] 
 	 */
-	public ProgramHandler(InstancedTemplate iT, List<String> setSteps) throws IllegalArgumentException, NumberFormatException {
+	public ProgramHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws IllegalArgumentException, NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
 		this.setSteps = setSteps;
 		this.futuresOfProgramState = new ArrayList<ProgramState>();
 
-		// get program name from 0'th step of the set: configure or run or start
-		SetStep setStep = new SetStep(setSteps.get(0));
+		// get program name from initial step of the set: configure or run or start
+		SetStep setStep = new SetStep(setSteps.get(initialSetStepCount));
 		String programString = setStep.getCommand();
 		if (programString.equals("configure"))
 			this.runType = RunType.CONFIGURE;
@@ -60,11 +62,11 @@ public class ProgramHandler {
 		else
 		   throw new IllegalArgumentException();
 		
-		int iTempFinalSetOffset = 0;
+		int iTempFinalSetOffset = initialSetStepCount;
 		while (true) {
 			if (!setStep.getCommand().equals(programString))
 				break;
-			this.iBeginSetOffset = 0;
+			this.iBeginSetOffset = initialSetStepCount;
 			this.iFinalSetOffset = iTempFinalSetOffset;
 			if (++iTempFinalSetOffset >= setSteps.size())
 				break;
@@ -113,8 +115,7 @@ public class ProgramHandler {
             	List<String> parameters = new ArrayList<String>();
         		try {
 					String strMachineReference = parsedSetStep.getParameter(0);
-					int machineReference = Integer.valueOf(strMachineReference).intValue();
-					resourceInstance = iT.getResourceInstance(machineReference);
+					resourceInstance = iT.getResourceInstance(strMachineReference);
 					if (resourceInstance != null) {
 	            		// Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
 	            		//       Now that we know it is used for [configure | run | start], check resourceInstance for required type: machine
@@ -124,8 +125,12 @@ public class ProgramHandler {
 	            		if (resourceType==null || resourceType!=ResourceProvider.MachineName)
 	            			throw new Exception("ProgramHandler processing asked to run a program on a non 'machine' resource");	
 	            		strProgramName = URLDecoder.decode(parsedSetStep.getParameter(1), "UTF-8");
-	            		for (int j=2; j<(parsedSetStep.getParameterCount()); j++)
-	            			parameters.add(URLDecoder.decode(parsedSetStep.getParameter(j), "UTF-8"));
+	            		for (int j=2; j<(parsedSetStep.getParameterCount()); j++) {
+	            			String param = URLDecoder.decode(parsedSetStep.getParameter(j), "UTF-8");
+	            			if (SetStep.isValueReference(param))
+	            				param = this.iT.resolveValueReferences(param);
+	            			parameters.add(param);
+	            		}
 	                	this.programInfos.add(new ProgramInfo(resourceInstance, strProgramName, parameters));
 					} else {
 	            		throw new Exception("ProgramHandler.computeProgramRequests() finds null ResourceInstance at reference " + strMachineReference);
@@ -154,7 +159,7 @@ public class ProgramHandler {
         try {
             while (!done) {
 				if (this.futuresOfProgramState.isEmpty()) {
-	    			// The pattern is that this first work, accomplished at the firstopst .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
+	    			// The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
 					//     initiate multiple asynch [configure | run | start]'s, this must add to this.futuresOfProgramState: it will because this.programInfos is NOT empty
 					for (ProgramInfo programInfo : programInfos) {
 						try {

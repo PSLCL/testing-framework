@@ -200,11 +200,13 @@ public class AwsMachineInstance implements MachineInstance
         DeleteFuture df = new DeleteFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, partialDestPath, windows);
         return reservedResource.provider.config.blockingExecutor.submit(df);
     }
-
+    
     @Override
     public Future<Void> disconnect(NetworkInstance network)
     {
-        return null;
+        AwsNetworkInstance instance = (AwsNetworkInstance) network;
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
+        return  instance.runnerConfig.blockingExecutor.submit(new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
 
     public enum AwsInstanceState

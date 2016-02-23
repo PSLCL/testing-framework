@@ -14,12 +14,12 @@
 **  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 **  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
-<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
-  <info organisation="com.pslcl.dtf" module="dtf-aws-resource" revision="1.0">
+<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd" xmlns:m="http://ant.apache.org/ivy/maven">
+  <info organisation="com.pslcl.testing-framework" module="dtf-aws-resource" revision="1.0">
     <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
     <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
     <description homepage="https://github.com/PSLCL/testing-framework/">
-The Distributed Test Framework AWS Resources implementation.
+The Distributed Test Framework AWS resource provider implementation.
     </description>
   </info>
   <configurations>
@@ -34,15 +34,14 @@ The Distributed Test Framework AWS Resources implementation.
     <conf name="dist" visibility="public" description="contains only the standard, binary distribution, with no transitive dependencies"/>
   </configurations>
   <publications>
-    <artifact conf="sources" name="${ivy.module.group}-${ivy.module}-${version.simple}.src" type="source" ext="tar.gz"/>
-    <artifact conf="sources" name="${jar.name}-${version.simple}-sources"/>
-    <artifact conf="dist" name="${ivy.module.group}-${ivy.module}-${version.simple}.noarch" type="dist" ext="tar.gz"/>
-    <artifact conf="master" name="${jar.name}-${version.simple}"/>
-    <artifact conf="javadoc" name="${jar.name}-${version.simple}-javadoc"/>
+    <artifact conf="sources" name="${ivy.module.group}-${ivy.module}" type="source" ext="src.tar.gz"/>
+    <artifact conf="sources" name="${jar.name}" type="source" ext="jar" m:classifier="sources"/>
+    <artifact conf="dist" name="${ivy.module.group}-${ivy.module}" type="dist" ext="noarch.tar.gz"/>
+    <artifact conf="master" name="${jar.name}" type="jar" ext="jar"/>
+    <artifact conf="javadoc" name="${jar.name}" type="javadoc" ext="jar" m:classifier="javadoc"/>
   </publications>
   <dependencies>
-    <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
-    <dependency org="com.pslcl.dtf" name="dtf-aws-attr" rev="[1,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="com.pslcl.testing-framework" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="com.amazonaws" name="aws-java-sdk" rev="[1.10.23,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="com.amazonaws" name="amazon-sqs-java-messaging-lib" rev="[1,2)" conf="compile->master,compile;javadoc"/>
   </dependencies>
