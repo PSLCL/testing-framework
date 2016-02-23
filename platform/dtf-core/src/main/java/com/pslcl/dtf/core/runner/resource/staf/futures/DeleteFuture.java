@@ -62,11 +62,20 @@ public class DeleteFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
-        ProcessCommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
-        String sudo = "sudo ";
+        if(partialDestPath != null)
+        {
+            ProcessCommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+            if (windows)
+                issueRequest("del " + commandData.getFdn());
+            else
+                issueRequest("sudo " + "rm " + commandData.getFdn());
+            return null;
+        }
+        
         if (windows)
-            sudo = "";
-        issueRequest(sudo + "rm " + commandData.getFdn());
+            issueRequest("rd " + winSandbox + " /s /q");
+        else
+            issueRequest("sudo " + "rm -rf" + linuxSandbox + " ");
         return null;
     }
 
