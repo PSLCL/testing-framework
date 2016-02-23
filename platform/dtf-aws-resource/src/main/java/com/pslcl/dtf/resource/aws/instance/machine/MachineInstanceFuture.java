@@ -181,16 +181,21 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             if (runResult != null) // get rid of possible null warning
                 reservedResource.ec2Instance = runResult.getReservation().getInstances().get(0);
         }
+        waitForState(pdelay, AwsInstanceState.Pending);
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
         List<GroupIdentifier> sgs = reservedResource.ec2Instance.getSecurityGroups();
         reservedResource.groupId = sgs.get(0).getGroupId();
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
-        //        setSgPermissions(reservedResource.groupId);
+        waitForState(pdelay, AwsInstanceState.Running);
+    }
+
+    private void waitForState(ProgressiveDelay pdelay, AwsInstanceState state) throws FatalResourceException
+    {
         DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(reservedResource.ec2Instance.getInstanceId());
         pdelayData.maxDelay = config.ec2MaxDelay;
         pdelayData.maxRetries = config.ec2MaxRetries;
         pdelay.reset();
-        msg = pdelayData.getHumanName(Ec2MidStr, "describeInstances");
+        String msg = pdelayData.getHumanName(Ec2MidStr, "describeInstances");
         do
         {
             checkFutureCanceled();
@@ -198,7 +203,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             {
                 DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
-                if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Running)
+                if (AwsInstanceState.getState(inst.getState().getName()) == state)
                 {
                     synchronized (reservedResource)
                     {
@@ -215,7 +220,6 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             }
         } while (true);
     }
-
     
     private RootBlockDeviceInfo getImageDiskInfo(String amiId, ProgressiveDelay pdelay) throws FatalResourceException
     {
