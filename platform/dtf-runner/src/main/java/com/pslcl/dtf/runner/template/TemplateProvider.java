@@ -35,6 +35,7 @@ public class TemplateProvider implements ResourceStatusListener {
 	// Note: Although Java is strictly pass by value, the value we store in this map is a reference to an InstancedTemplate object. The map does not hold the Java object itself.
 	//       When that value is eventually extracted from this map, it is still a reference to the original object; all transitory changes in that object are reflected.
 	
+	private final Map<byte[],InstancedTemplate> activeNestedTemplates;
     private final Map<byte[],InstancedTemplate> availableInstancedTemplates; // note: this populates in the destroy method
     private final ResourceProviders resourceProviders;
     private volatile StatusTracker statusTracker;
@@ -47,6 +48,7 @@ public class TemplateProvider implements ResourceStatusListener {
         this.simpleName = getClass().getSimpleName() + " ";
     	this.uniqueMark = 0;
     	this.templateReleaseMap = new HashMap<>();
+        this.activeNestedTemplates = new HashMap<byte[],InstancedTemplate>();
         this.availableInstancedTemplates = new HashMap<byte[],InstancedTemplate>();
         this.resourceProviders = new ResourceProviders();
     }
@@ -63,6 +65,11 @@ public class TemplateProvider implements ResourceStatusListener {
         resourceProviders.init(config);
     }
 
+    /**
+     * 
+     * @param template_hash
+     * @param iT
+     */
     public void destroy(byte [] template_hash, InstancedTemplate iT) {
         // can also choose to destroy iT; this is early impl with no smarts
         availableInstancedTemplates.put(template_hash, iT);
@@ -110,6 +117,7 @@ public class TemplateProvider implements ResourceStatusListener {
     public void releaseTemplate(InstancedTemplate iT) {
     	boolean found = false;
     	String templateID = iT.getTemplateID();
+//    	String templateID = iT.getTemplateID();
 		long templateUniqueMark = iT.getUniqueMark();
     	
     	// Avoid conflict: the same template can be released by normal template processing, or by us (TemplateProvider) being asked to go down, such as happens at dtf application exit.

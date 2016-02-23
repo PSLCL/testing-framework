@@ -53,17 +53,31 @@ public class InstancedTemplate {
     
     private StepsParser stepsParser;
 
-    private Map<Integer, InstancedTemplate> mapStepReferenceToNestedTemplate;
     private Map<ResourceCoordinates, Integer> mapResourceCoordinatesToStepReference;
     private Map<Integer, ResourceInstance> mapStepReferenceToResourceInstance;
+    private Map<Integer, InstancedTemplate> mapStepReferenceToNestedTemplate;
     
-    /** the purpose of holding these accumulating lists is, at least, for cleanup when this (a template) is destroyed */
+    /** the purpose of holding these accumulating lists is, at least, for cleanup */
     private List<ResourceInstance> boundResourceInstances;
     private List<DeployInfo> deployedInfos;
     private List<CableInstance> cableInstances;
 
     private List<ResourceInfo> orderedResourceInfos = null;
+    public void setOrderedResourceInfos(List<ResourceInfo> orderedResourceInfos) {
+        this.orderedResourceInfos = orderedResourceInfos;
+    }
+    public ResourceInfo getResourceInfo(int stepReference) {
+        return (orderedResourceInfos != null) ? orderedResourceInfos.get(stepReference) : null;
+    }
     
+    /**
+     * Constructor. Form template object and run its steps.
+     * 
+     * @param reCore
+     * @param dbTemplate
+     * @param runnerMachine
+     * @throws Exception
+     */
     InstancedTemplate(RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) throws Exception {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
@@ -99,16 +113,8 @@ public class InstancedTemplate {
         return this.runnerMachine.getService().getQAPortalAccess();
     }
     
-    public void setOrderedResourceInfos(List<ResourceInfo> orderedResourceInfos) {
-        this.orderedResourceInfos = orderedResourceInfos;
-    }
-    
-    public ResourceInfo getResourceInfo(int stepReference) {
-        return (orderedResourceInfos != null) ? orderedResourceInfos.get(stepReference) : null;
-    }
-    
     public String getTemplateID() {
-        return dbTemplate.getTemplateId();
+    	return DBTemplate.getId(this.dbTemplate.hash);
     }
     
     public long getRunID() {
@@ -131,12 +137,6 @@ public class InstancedTemplate {
     public void markStepReference(ResourceCoordinates coord, int stepReference) {
         mapResourceCoordinatesToStepReference.put(coord, stepReference);
     }
-    
-    /**
-     * 
-     * @param coord
-     * @return
-     */
     public int getStepReference(ResourceCoordinates coord) {
         return mapResourceCoordinatesToStepReference.get(coord).intValue();
     }
@@ -149,6 +149,9 @@ public class InstancedTemplate {
     public void markResourceInstance(int stepReference, ResourceInstance resourceInstance) {
         mapStepReferenceToResourceInstance.put(stepReference, resourceInstance);
     }
+    private ResourceInstance getResourceInstance(int stepReference) {
+        return mapStepReferenceToResourceInstance.get(stepReference);
+    }    
 
     /**
      * @note recursive
@@ -184,28 +187,13 @@ public class InstancedTemplate {
     }
     
     /**
-     * 
-     * @param stepReference
-     * @return
-     */
-    private ResourceInstance getResourceInstance(int stepReference) {
-        return mapStepReferenceToResourceInstance.get(stepReference);
-    }
-    
-    /**
-     * 
+     *  
      * @param stepReference
      * @param instancedTemplate
      */
     public void markNestedTemplate(int stepReference, InstancedTemplate instancedTemplate) {
         mapStepReferenceToNestedTemplate.put(stepReference, instancedTemplate);
     }
-
-    /**
-     * 
-     * @param stepReference
-     * @return
-     */
     public InstancedTemplate getNestedTemplate(int stepReference) {
         return mapStepReferenceToNestedTemplate.get(stepReference);
     }
@@ -703,11 +691,11 @@ public class InstancedTemplate {
 			}
             throw e; // e is the actual template errors-out exception
         }
-        String templateHash = this.dbTemplate.getTemplateId();
+        String templateID = this.getTemplateID();
         if (this.isTestRunCanceled())
-        	log.debug(this.simpleName + "runSteps() CANCELED, for template hash " + templateHash);
+        	log.debug(this.simpleName + "runSteps() CANCELED, for template hash " + templateID);
         else
-        	log.debug(this.simpleName + "runSteps() completes without error, for template hash " + templateHash);
+        	log.debug(this.simpleName + "runSteps() completes without error, for template hash " + templateID);
     }
 
     /**
