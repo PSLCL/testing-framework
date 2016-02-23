@@ -18,6 +18,27 @@ package com.pslcl.dtf.runner.process;
 import java.util.Date;
 
 public class DBTemplate {
+	
+    /**
+     * Return the value of the hash array as a hex String.
+     * @return hex string value of the hash array
+     */
+    static public String getId(byte [] hash)
+    {
+        StringBuilder sb = new StringBuilder("0x");
+        for(int i=0; i < hash.length; i++)
+        {
+            String value = Integer.toHexString(hash[i]);
+            if(value.length() == 1)
+                sb.append("0");
+            sb.append(value);
+        }
+        String retString = sb.toString();
+        return retString;
+    }
+
+    
+    // instance members
     
     long pk_template;       // INT(11) in template
     public byte [] hash;    // BINARY(32) in template
@@ -30,7 +51,6 @@ public class DBTemplate {
     Date end_time;          // DATETIME in run
     Boolean result = false; // nullable BOOLEAN in run
     String owner;           // VARCHAR(128) in run
-    private volatile String templateId; // hash turned into a hex string
     
     /**
      *  Constructor
@@ -47,23 +67,4 @@ public class DBTemplate {
     	return (this.hash!=null && this.steps!=null && this.enabled);
     }
     
-    /**
-     * Return the value of the hash array as a hex String.
-     * @return hex string value of the hash array
-     */
-    public String getTemplateId()
-    {
-        if(templateId != null)
-            return templateId;
-        StringBuilder sb = new StringBuilder("0x");
-        for(int i=0; i < hash.length; i++)
-        {
-            String value = Integer.toHexString(hash[i]);
-            if(value.length() == 1)
-                sb.append("0");
-            sb.append(value);
-        }
-        templateId = sb.toString();
-        return templateId;
-    }
 }

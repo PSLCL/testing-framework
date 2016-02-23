@@ -252,11 +252,11 @@ public class RunEntryCore {
      */
     private void writeRunEntryData() throws Exception {
         // temporarily, comment out these next 5 lines, to allow overwriting a past non-null result
-//    	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, this.reNum);
-//    	if (previousResultIsStored != null) { // this specific test is a fail-safe
-//    		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
-//    		throw new Exception("Database write not accomplished");
-//    	} else
+    	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, this.reNum);
+    	if (previousResultIsStored != null) { // this specific test is a fail-safe
+    		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
+    		throw new Exception("Database write not accomplished");
+    	} else
     		
     	{
     		if (!this.dbConnPool.getReadOnly()) {
@@ -415,10 +415,10 @@ public class RunEntryCore {
         	// Setup test run cancellation, prior to starting our test run.
         	// 	   While a test run is in progress, a user can cancel it, by entering a fail result in "our" run table entry.  
         	// Setup local task to watch for on the fly run cancellation. Place it as a member of RunEntryCore (ie: this), passed into and accessible while the test run executes its template steps.
-//        	this.cancelTask = new CancelTask(this, runnerMachine);
+        	this.cancelTask = new CancelTask(this, runnerMachine);
         	// temporarily, comment out the above line, to avoid CancelTask activity
         	
-			log.debug(this.simpleName + ".testRun() launches template instantiation for top level template " + this.topDBTemplate.getTemplateId());
+			log.debug(this.simpleName + ".testRun() launches template instantiation for top level template " + DBTemplate.getId(this.topDBTemplate.hash));
         	// Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
             result = !iT.getForceNullResult() ? new Boolean(true) : // No exception means test run success.
@@ -502,15 +502,15 @@ public class RunEntryCore {
            	// ack the message queue
     		
             // temporarily, comment out these next 9 lines, to prevent acking the message queue
-//           	try {
-//    			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
-//    			Object message = reState.getMessage();
-//    			runnerService.ackRunEntry(message);
-//               	log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
-//    		} catch (Exception e) {
-//    			// swallow this exception, it does not relate to the actual test run
-//                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue");
-//    		}
+           	try {
+    			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
+    			Object message = reState.getMessage();
+    			runnerService.ackRunEntry(message);
+               	log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
+    		} catch (Exception e) {
+    			// swallow this exception, it does not relate to the actual test run
+                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue");
+    		}
     	}
     }
     

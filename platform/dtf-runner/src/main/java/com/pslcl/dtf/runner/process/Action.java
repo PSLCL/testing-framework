@@ -94,7 +94,7 @@ public enum Action implements Actions {
             System.out.println("Action.REMOVE() removes reNum " + reNum);
             
             // temporarily, comment out this line, to allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
-//          runnerService.getRunnerMachine().disengageRunEntry(reNum);
+            runnerService.getRunnerMachine().disengageRunEntry(reNum);
             
             reState.setAction(DISCARDED);
             return reState.getAction();
@@ -108,7 +108,7 @@ public enum Action implements Actions {
             long reNum = reState.getRunEntryNumber();
             
             // temporarily, comment out this line, to allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
-//          runnerService.getRunnerMachine().disengageRunEntry(reNum);
+            runnerService.getRunnerMachine().disengageRunEntry(reNum);
            	
             return reState.getAction();
         }
