@@ -6,6 +6,7 @@ import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.generator.Generator;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.resource.Machine;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 
 public class TestRunGenerator {
 	public static void main(String[] args) throws Exception
@@ -13,25 +14,51 @@ public class TestRunGenerator {
 		String DTF_TEST_ID = System.getenv("DTF_TEST_ID");
 		int qa_test_id = Integer.parseInt(DTF_TEST_ID);
 		Generator generator = new Generator(qa_test_id);
-		Attributes attributes = new Attributes();
+		Attributes linuxAttributes = new Attributes();
+		Attributes windowsAttributes = new Attributes();
 		
-		Iterable<Artifact[]> versions = generator.createArtifactSet(null, null, "bin/testrun.sh");
+		linuxAttributes.put(ResourceNames.ImageOsKey, "linux");
+		windowsAttributes.put(ResourceNames.ImageOsKey, "windows");
 		
-		for(Artifact[] nodeArtifacts : versions)
+		Iterable<Artifact[]> linuxVersions = generator.createArtifactSet(null, null, "bin/testrun.sh");
+		Iterable<Artifact[]> windowsVersions = generator.createArtifactSet(null, null, "bin/testrun.bat");
+		
+		for(Artifact[] nodeArtifacts : linuxVersions)
 		{
 			generator.startTest();
-			Machine passMachine = new Machine(generator, "passMachine");
+			Machine passMachine = new Machine(generator, "passLinuxMachine");
 			
-			passMachine.bind(new Attributes(attributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
+			passMachine.bind(new Attributes(linuxAttributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
 			passMachine.deploy(nodeArtifacts);
 			passMachine.run(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "pass");
 			
 			generator.completeTest();
 
 			generator.startTest();
-			Machine failMachine = new Machine(generator, "failMachine");
+			Machine failMachine = new Machine(generator, "failLinuxMachine");
 			
-			failMachine.bind(new Attributes(attributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
+			failMachine.bind(new Attributes(linuxAttributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
+			failMachine.deploy(nodeArtifacts);
+			failMachine.run(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "fail");
+			
+			generator.completeTest();
+		}
+
+		for(Artifact[] nodeArtifacts : windowsVersions)
+		{
+			generator.startTest();
+			Machine passMachine = new Machine(generator, "passWindowsMachine");
+			
+			passMachine.bind(new Attributes(windowsAttributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
+			passMachine.deploy(nodeArtifacts);
+			passMachine.run(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "pass");
+			
+			generator.completeTest();
+
+			generator.startTest();
+			Machine failMachine = new Machine(generator, "failWindowsMachine");
+			
+			failMachine.bind(new Attributes(windowsAttributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
 			failMachine.deploy(nodeArtifacts);
 			failMachine.run(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "fail");
 			
