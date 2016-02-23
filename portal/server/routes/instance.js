@@ -95,6 +95,8 @@ function buildModules( m ) {
 };
 
 function expandModules( m, ls ) {
+	if(!ls)
+		return null;
     var la = ls.split(',');
     return _.map( la, function(i) {
         return m[i];
