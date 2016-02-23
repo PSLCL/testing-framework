@@ -42,18 +42,6 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
  */
 public class InstancedTemplate {
 
-    /**
-     * 
-     * @param dbTemplate
-     * @return
-     */
-    static InstancedTemplate createInstancedTemplate(RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) throws Exception {
-        InstancedTemplate iT;
-        iT = new InstancedTemplate(reCore, dbTemplate, runnerMachine);
-        iT.runSteps();
-        return iT;
-    }
-    
     private final Logger log;
     private final String simpleName;
     private RunEntryCore reCore;   // holds runID of our top-level template (might be us or we might be nested down from it)
@@ -92,6 +80,7 @@ public class InstancedTemplate {
         this.cableInstances = new ArrayList<>();
         this.uniqueMark = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
         this.forceNullResult = false;
+        this.runSteps();
     }
     
     /**

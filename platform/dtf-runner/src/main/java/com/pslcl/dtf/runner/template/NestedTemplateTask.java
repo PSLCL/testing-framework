@@ -28,10 +28,8 @@ class NestedTemplateTask implements Callable<ReferencedNestedTemplate> {
 	 */
 	@Override
 	public ReferencedNestedTemplate call() throws Exception {
-		InstancedTemplate iT = runnerMachine.getTemplateProvider().getInstancedTemplate(stepReference, this.reCore, this.nestedDBTemplate, this.runnerMachine);
+		InstancedTemplate iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this.reCore, this.nestedDBTemplate, this.runnerMachine);
 		ReferencedNestedTemplate rnt = new ReferencedNestedTemplate(this.stepReference, iT);
-		
-		
 		return rnt;
 	}
 	
