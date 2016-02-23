@@ -48,9 +48,10 @@ public interface MachineInstance extends ResourceInstance
      * <p>A destination sandbox url is a configurable value.  It's key and default values are declared in
      * ResourceNames.  If the sandbox url is /opt/dtf/sandbox, then the file to be deleted would be 
      * /opt/dtf/sandbox/lib/dof-oal.jar
+     * <p>if partialDestPath is null then the sandbox is deleted.
      *  
-     * @param partialDestPath
-     *            The partial destination file to be deleted from to the destination sandbox.
+     * @param partialDestPath if non-null the partial destination file to be deleted from the destination sandbox
+     * otherwise the sandbox is deleted.
      * @throws Exception  if delete fails
      * @return A Future<Void> which returns once the delete is complete. The Future will throw an exception if the delete fails. 
      */
