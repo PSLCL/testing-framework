@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.ibm.staf.STAFException;
 import com.ibm.staf.STAFHandle;
 import com.ibm.staf.STAFResult;
+import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
 import com.pslcl.dtf.core.util.TabToLevel;
 
