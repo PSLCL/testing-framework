@@ -118,7 +118,7 @@ public class AwsResourcesManager implements ResourcesManager
         pdelayData.statusTracker.setStatus(StatusPrefixStr+pdelayData.coord.resourceId, status);
         pdelayData.statusTracker.fireResourceStatusChanged(
                         pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, status));
-        pdelayData.statusTracker.removeStatus(pdelayData.coord.templateId);
+        pdelayData.statusTracker.removeStatus("0x"+Long.toHexString(pdelayData.coord.templateInstanceId));
     }
     
     
@@ -127,6 +127,7 @@ public class AwsResourcesManager implements ResourcesManager
     public static final String SystemIdKey = "dtfSystemId";
     public static final String TagRunIdKey = "runId";
     public static final String TagTemplateIdKey = "templateId";
+    public static final String TagTemplateInstanceIdKey = "templateInstanceId";
     public static final String TagResourceIdKey = "resourceId";
     
     public void createNameTag(ProgressiveDelayData pdelayData, String name, String resourceId) throws FatalResourceException
@@ -140,7 +141,8 @@ public class AwsResourcesManager implements ResourcesManager
                                         new Tag(TagNameKey, name),
                                         new Tag(SystemIdKey, systemId),
                                         new Tag(TagRunIdKey, Long.toString(pdelayData.coord.getRunId())),
-                                        new Tag(TagTemplateIdKey, pdelayData.coord.templateId),
+                                        new Tag(TagTemplateIdKey, "0x"+Long.toHexString(pdelayData.coord.templateInstanceId)),
+                                        new Tag(TagTemplateInstanceIdKey, "0x"+Long.toHexString(pdelayData.coord.templateInstanceId)),
                                         new Tag(TagResourceIdKey, "0x"+Long.toHexString(pdelayData.coord.resourceId)))
                                         .withResources(resourceId);
         //@formatter:on
@@ -240,9 +242,9 @@ public class AwsResourcesManager implements ResourcesManager
     }
 
     @Override
-    public void setRunId(String templateId, long runId)
+    public void setRunId(long templateInstanceId, long runId)
     {
-        machineProvider.setRunId(templateId, runId);
+        machineProvider.setRunId(templateInstanceId, runId);
     }
 
     @Override
@@ -252,15 +254,15 @@ public class AwsResourcesManager implements ResourcesManager
     }
 
     @Override
-    public void release(String templateId, boolean isReusable)
+    public void release(long templateInstanceId, boolean isReusable)
     {
-        machineProvider.release(templateId, isReusable);
-        networkProvider.release(templateId, isReusable);
-        personProvider.release(templateId, isReusable);
+        machineProvider.release(templateInstanceId, isReusable);
+        networkProvider.release(templateInstanceId, isReusable);
+        personProvider.release(templateInstanceId, isReusable);
     }
 
     @Override
-    public void release(String templateId, long resourceId, boolean isReusable)
+    public void release(long templateInstanceId, long resourceId, boolean isReusable)
     {
         throw new RuntimeException("not implemented");
     }
