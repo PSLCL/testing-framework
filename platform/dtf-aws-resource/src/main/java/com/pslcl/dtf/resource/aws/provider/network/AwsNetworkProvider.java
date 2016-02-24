@@ -75,14 +75,14 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         }
     }
 
-    public void setRunId(String templateId, long runId)
+    public void setRunId(long templateInstanceId, long runId)
     {
         synchronized (reservedNetworks)
         {
             for (Entry<Long, NetworkReservedResource> entry : reservedNetworks.entrySet())
             {
                 ResourceCoordinates coord = entry.getValue().resource.getCoordinates();
-                if (coord.templateId.equals(templateId))
+                if (coord.templateInstanceId == templateInstanceId)
                     coord.setRunId(runId);
             }
         }
@@ -92,7 +92,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
     {
     }
 
-    public void release(String templateId, boolean isReusable)
+    public void release(long templateInstanceId, boolean isReusable)
     {
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
@@ -102,12 +102,12 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         {
             synchronized (reservedNetworks)
             {
-                releasePossiblePendings(templateId, isReusable);
+                releasePossiblePendings(templateInstanceId, isReusable);
                 List<Long> releaseList = new ArrayList<Long>();
                 for (Entry<Long, AwsNetworkInstance> entry : boundNetworks.entrySet())
                 {
                     coordinates = entry.getValue().getCoordinates();
-                    if (coordinates.templateId.equals(templateId))
+                    if (coordinates.templateInstanceId == templateInstanceId)
                     {
                         releaseList.add(entry.getKey());
                         prefixTestName = entry.getValue().reservedResource.subnetConfig.resoucePrefixName;
@@ -125,7 +125,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         config.blockingExecutor.submit(new WaitForTerminate(futures, coordinates, prefixTestName));
     }
 
-    private void releasePossiblePendings(String templateId, boolean isReusable)
+    private void releasePossiblePendings(long templateInstanceId, boolean isReusable)
     {
         // note this is being called already synchronized to reservedNetworks
         
@@ -136,7 +136,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
         {
             NetworkReservedResource rresource = entry.getValue(); 
             coordinates = rresource.resource.getCoordinates();
-            if (coordinates.templateId.equals(templateId))
+            if (coordinates.templateInstanceId == templateInstanceId)
             {
                 Future<NetworkInstance> future = rresource.getInstanceFuture();
                 boolean cancelResult = future.cancel(false);
@@ -178,9 +178,9 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
             reservedNetworks.remove(key);
     }
     
-    public void releaseReservedResource(String templateId)
+    public void releaseReservedResource(long templateInstanceId)
     {
-        release(templateId, false);
+        release(templateInstanceId, false);
     }
 
     @Override

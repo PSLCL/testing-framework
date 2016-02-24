@@ -56,9 +56,9 @@ import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 @SuppressWarnings("javadoc")
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
-    private final HashMap<Long, AwsMachineInstance> boundInstances; // key is templateId
+    private final HashMap<Long, AwsMachineInstance> boundInstances; // key is resourceId
     private final HashMap<Long, MachineReservedResource> reservedMachines; // key is resourceId
-    private final HashMap<Long, AwsMachineInstance> stalledRelease; // key is templateId
+    private final HashMap<Long, AwsMachineInstance> stalledRelease; // key is templateInstanceId
     private final HashMap<Long, List<Future<RunnableProgram>>> runnablePrograms;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
@@ -120,14 +120,14 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         }
     }
 
-    public void setRunId(String templateId, long runId)
+    public void setRunId(long templateInstanceId, long runId)
     {
         synchronized (reservedMachines)
         {
             for (Entry<Long, MachineReservedResource> entry : reservedMachines.entrySet())
             {
                 ResourceCoordinates coord = entry.getValue().resource.getCoordinates();
-                if (coord.templateId.equals(templateId))
+                if (coord.templateInstanceId == templateInstanceId)
                     coord.setRunId(runId);
             }
         }
@@ -137,7 +137,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     {
     }
 
-    public void release(String templateId, boolean isReusable)
+    public void release(long templateInstanceId, boolean isReusable)
     {
         /**********************************************************************
          * 1. remove resource from reservedMachines.
@@ -166,11 +166,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             synchronized (reservedMachines)
             {
                 List<Long> releaseList = new ArrayList<Long>();
-                releasePossiblePendings(templateId, isReusable); // this will clean up the reserved list for given template 
+                releasePossiblePendings(templateInstanceId, isReusable); // this will clean up the reserved list for given template 
                 for (Entry<Long, AwsMachineInstance> entry : boundInstances.entrySet())
                 {
                     coordinates = entry.getValue().getCoordinates();
-                    if (coordinates.templateId.equals(templateId))
+                    if (coordinates.templateInstanceId == templateInstanceId)
                     {
                         prefixTestName = entry.getValue().mconfig.resoucePrefixName;
                         releaseList.add(entry.getKey());
@@ -188,7 +188,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         config.blockingExecutor.submit(new WaitForTerminate(futures, coordinates, prefixTestName));
     }
 
-    private void releasePossiblePendings(String templateId, boolean isReusable)
+    private void releasePossiblePendings(long templateInstanceId, boolean isReusable)
     {
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
@@ -200,7 +200,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             synchronized (rresource)
             {
                 coordinates = rresource.resource.getCoordinates();
-                if (coordinates.templateId.equals(templateId))
+                if (coordinates.templateInstanceId == templateInstanceId)
                 {
                     Future<MachineInstance> future = rresource.getInstanceFuture();
                     if (future != null)
@@ -256,9 +256,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             reservedMachines.remove(key);
     }
 
-    public void releaseReservedResource(String templateId)
+    public void releaseReservedResource(long templateInstanceId)
     {
-        release(templateId, false);
+        release(templateInstanceId, false);
     }
 
     @Override

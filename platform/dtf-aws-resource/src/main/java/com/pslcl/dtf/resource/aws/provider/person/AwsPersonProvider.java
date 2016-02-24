@@ -90,14 +90,14 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         }
     }
 
-    public void setRunId(String templateId, long runId)
+    public void setRunId(long templateInstanceId, long runId)
     {
         synchronized (reservedPeople)
         {
             for (Entry<Long, PersonReservedResource> entry : reservedPeople.entrySet())
             {
                 ResourceCoordinates coord = entry.getValue().getCoordinates();
-                if (coord.templateId.equals(templateId))
+                if (coord.templateInstanceId == templateInstanceId)
                     coord.setRunId(runId);
             }
         }
@@ -107,7 +107,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     {
     }
 
-    public void release(String templateId, boolean isReusable)
+    public void release(long templateInstanceId, boolean isReusable)
     {
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
@@ -115,12 +115,12 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         {
             synchronized (reservedPeople)
             {
-                releasePossiblePendings(templateId, isReusable);
+                releasePossiblePendings(templateInstanceId, isReusable);
                 List<Long> releaseList = new ArrayList<Long>();
                 for (Entry<Long, AwsPersonInstance> entry : boundPeople.entrySet())
                 {
                     coordinates = entry.getValue().getCoordinates();
-                    if (coordinates.templateId.equals(templateId))
+                    if (coordinates.templateInstanceId == templateInstanceId)
                         releaseList.add(entry.getKey());
                 }
                 for (Long key : releaseList)
@@ -135,7 +135,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         config.blockingExecutor.submit(new WaitForTerminate(futures, coordinates));
     }
 
-    private void releasePossiblePendings(String templateId, boolean isReusable)
+    private void releasePossiblePendings(long templateInstanceId, boolean isReusable)
     {
         // note this is being called already synchronized to reservedMachines
         
@@ -146,7 +146,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
         {
             PersonReservedResource rresource = entry.getValue(); 
             coordinates = rresource.resource.getCoordinates();
-            if (coordinates.templateId.equals(templateId))
+            if (coordinates.templateInstanceId == templateInstanceId)
             {
                 Future<PersonInstance> future = rresource.getInstanceFuture();
                 boolean cancelResult = future.cancel(false);
@@ -188,9 +188,9 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
             reservedPeople.remove(key);
     }
     
-    public void releaseReservedResource(String templateId)
+    public void releaseReservedResource(long templateInstanceId)
     {
-        release(templateId, false);
+        release(templateInstanceId, false);
     }
 
     @Override
