@@ -36,6 +36,7 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotFoundException;
 import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
+import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.provider.MachineProvider;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.TabToLevel;
@@ -55,9 +56,10 @@ import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 @SuppressWarnings("javadoc")
 public class AwsMachineProvider extends AwsResourceProvider implements MachineProvider
 {
-    private final HashMap<Long, AwsMachineInstance> stalledRelease; // key is templateId
     private final HashMap<Long, AwsMachineInstance> boundInstances; // key is templateId
     private final HashMap<Long, MachineReservedResource> reservedMachines; // key is resourceId
+    private final HashMap<Long, AwsMachineInstance> stalledRelease; // key is templateId
+    private final HashMap<Long, List<Future<RunnableProgram>>> runnablePrograms;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
     public volatile MachineConfigData defaultMachineConfigData;
@@ -68,10 +70,25 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         reservedMachines = new HashMap<Long, MachineReservedResource>();
         boundInstances = new HashMap<Long, AwsMachineInstance>();
         stalledRelease = new HashMap<Long, AwsMachineInstance>();
+        runnablePrograms = new HashMap<Long, List<Future<RunnableProgram>>>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
     }
 
+    public void addRunnableProgram(long templateId, Future<RunnableProgram> runnableProgramFuture)
+    {
+        synchronized (runnablePrograms)
+        {
+            List<Future<RunnableProgram>> list = runnablePrograms.get(templateId);
+            if(list == null)
+            {
+                list = new ArrayList<Future<RunnableProgram>>();
+                runnablePrograms.put(templateId, list);
+            }
+            list.add(runnableProgramFuture);
+        }
+    }
+    
     InstanceFinder getInstanceFinder()
     {
         return instanceFinder;
@@ -122,6 +139,24 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
     public void release(String templateId, boolean isReusable)
     {
+        /**********************************************************************
+         * 1. remove resource from reservedMachines.
+         * 2. remove resource from boundInstances.
+         * 3. determine if resources for this template are reusable
+         *      a. if the isReusable flag is true;
+         *      b. if configure was called on it, no
+         *      c. if they are outside some stall margin of the targeted stall time, yes; if in margin no 
+         * 4. if not clean them up now
+         *      a. don't worry about stopping any RunnableProgram's
+         *      b. don't worry about nuking sandboxes
+         *      c. clean up runnablePrograms map
+         * 5. if reusable
+         *      a. stop any RunnableProgram's
+         *      b. nuke sandboxes
+         *      c. clean up runnablePrograms map
+         *      a. if the above pass, add them to stalled release collection, otherwise destroy them.
+         * 6. A repeating check stalled release task will check for timed out stalls and destroy them. 
+         *********************************************************************/
         List<Future<Void>> futures = new ArrayList<Future<Void>>();
         ResourceCoordinates coordinates = null;
         String prefixTestName = null;
@@ -131,7 +166,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             synchronized (reservedMachines)
             {
                 List<Long> releaseList = new ArrayList<Long>();
-                releasePossiblePendings(templateId, isReusable);
+                releasePossiblePendings(templateId, isReusable); // this will clean up the reserved list for given template 
                 for (Entry<Long, AwsMachineInstance> entry : boundInstances.entrySet())
                 {
                     coordinates = entry.getValue().getCoordinates();
@@ -177,7 +212,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                         To guarantee that we don't kill the future.call thread right in the middle of the ec2Client.runInstances()
                         we use the mayInterruptIfRunning false call to allow the future.call thread to continue.  
                         There is synchronized(reservedMachines) around the critical ec2Client.runInstances call to block it if we
-                        are here doing cleanup.  We we set a canceled flag so when it resumes it will throw an exception on the future.
+                        are here doing cleanup.  We set a canceled flag so when it resumes it will throw an exception on the future.
                         Within that synchronized block, the call method will have set the ec2Instance prior to our getting here and 
                         we can then execute the terminate command for it. 
                         */

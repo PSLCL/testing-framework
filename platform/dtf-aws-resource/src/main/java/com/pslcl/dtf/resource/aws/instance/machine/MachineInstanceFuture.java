@@ -45,10 +45,15 @@ import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
+import com.pslcl.dtf.core.runner.resource.exception.FatalServerTimeoutException;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
+import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
+import com.pslcl.dtf.core.runner.resource.staf.futures.PingFuture;
+import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanceState;
+import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
@@ -187,6 +192,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         reservedResource.groupId = sgs.get(0).getGroupId();
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
         waitForState(pdelay, AwsInstanceState.Running);
+        waitForStaf(pdelay);
     }
 
     private void waitForState(ProgressiveDelay pdelay, AwsInstanceState state) throws FatalResourceException
@@ -203,7 +209,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             {
                 DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
-                if (AwsInstanceState.getState(inst.getState().getName()) == state)
+                if (inst != null && AwsInstanceState.getState(inst.getState().getName()) == state)
                 {
                     synchronized (reservedResource)
                     {
@@ -217,6 +223,57 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 FatalResourceException fre = pdelay.handleException(msg, e);
                 if (fre instanceof FatalException)
                     throw fre;
+            }
+        } while (true);
+    }
+    
+    private void waitForStaf(ProgressiveDelay pdelay) throws FatalResourceException
+    {
+        ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false);
+        StafRunnableProgram runnableProgram;
+        try
+        {
+            runnableProgram = new StafRunnableProgram(null, cmdData);
+        } catch (Exception e1)
+        {
+            throw new FatalResourceException(reservedResource.resource.getCoordinates(), "failed to obtain StafRunnableProgram", e1);
+        }
+        cmdData.setHost(reservedResource.ec2Instance.getPublicIpAddress());
+        cmdData.setWait(true);
+
+        //@formatter:off
+        ProgressiveDelayData pdelayData = new ProgressiveDelayData(
+                        (AwsResourceProvider)reservedResource.resource.getCoordinates().getProvider(), 
+                        reservedResource.resource.getCoordinates());
+        //@formatter:on
+        
+        pdelayData.maxDelay = config.ec2MaxDelay;
+        pdelayData.maxRetries = config.ec2MaxRetries;
+        pdelay.reset();
+        String msg = pdelayData.getHumanName(Ec2MidStr, "stafPing");
+        do
+        {
+            if (reservedResource.bindFutureCanceled.get())
+                throw new CancellationException();
+            try
+            {
+                PingFuture pingFuture = new PingFuture(runnableProgram);
+                Integer rc = reservedResource.provider.config.blockingExecutor.submit(pingFuture).get();
+                if (rc != null && rc == 0)
+                    break;
+                pdelay.retry(msg);
+            } catch (FatalServerTimeoutException fstoe)
+            {
+                throw fstoe;
+            } catch (Exception e)
+            {
+                try
+                {
+                    pdelay.retry(msg);
+                } catch (FatalServerTimeoutException fstoe)
+                {
+                    throw fstoe;
+                }
             }
         } while (true);
     }
@@ -247,7 +304,6 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         } while (true);
     }
     
-    @SuppressWarnings("null")
     private String createKeyPair() throws FatalResourceException
     {
         synchronized (pdelayData.provider)

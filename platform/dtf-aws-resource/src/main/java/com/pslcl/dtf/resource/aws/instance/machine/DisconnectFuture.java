@@ -22,7 +22,6 @@ import java.util.concurrent.Callable;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.amazonaws.services.ec2.model.ModifyNetworkInterfaceAttributeRequest;
-import com.amazonaws.services.ec2.model.NetworkInterfaceAttribute;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
@@ -59,7 +58,6 @@ public class DisconnectFuture implements Callable<Void>
                 sgroups.add(gid.getGroupId());
         }
         String netInterId = machineInstance.ec2Instance.getNetworkInterfaces().get(0).getNetworkInterfaceId();
-        NetworkInterfaceAttribute nia = NetworkInterfaceAttribute.GroupSet;
         //@formatter:off
         ModifyNetworkInterfaceAttributeRequest mniar = new ModifyNetworkInterfaceAttributeRequest()
             .withNetworkInterfaceId(netInterId)

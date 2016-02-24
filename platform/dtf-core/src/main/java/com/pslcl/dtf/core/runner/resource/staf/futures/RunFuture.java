@@ -39,16 +39,15 @@ public class RunFuture implements Callable<RunnableProgram>
     private final String partialDestPath;
     private final ExecutorService executor;
     private final boolean windows;
+    private final long runId;
     private final Object context;
-
     
-    
-    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, Object context)
+    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, long runId, Object context)
     {
-        this(host, linuxSandbox, winSandbox, partialDestPath, null, windows, context);
+        this(host, linuxSandbox, winSandbox, partialDestPath, null, windows, runId, context);
     }
     
-    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, ExecutorService executor, boolean windows, Object context)
+    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, ExecutorService executor, boolean windows, long runId, Object context)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
@@ -56,6 +55,7 @@ public class RunFuture implements Callable<RunnableProgram>
         this.partialDestPath = partialDestPath;
         this.executor = executor;
         this.windows = windows;
+        this.runId = runId;
         this.context = context;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
@@ -76,7 +76,7 @@ public class RunFuture implements Callable<RunnableProgram>
     @Override
     public RunnableProgram call() throws Exception
     {
-        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
         cmdData.setHost(host);
         cmdData.setWait(executor == null);
         cmdData.setContext(context);

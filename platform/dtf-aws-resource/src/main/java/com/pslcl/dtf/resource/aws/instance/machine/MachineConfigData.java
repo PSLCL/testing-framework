@@ -15,8 +15,6 @@
  */
 package com.pslcl.dtf.resource.aws.instance.machine;
 
-import org.slf4j.LoggerFactory;
-
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
