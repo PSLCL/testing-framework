@@ -50,6 +50,7 @@ public class InstancedTemplate {
     private ResourceCoordinates templateCleanupInfo;
     private long uniqueMark;
     private boolean forceNullResult; // known use case is Person.Inspect()
+    private boolean reusable;
     
     private StepsParser stepsParser;
 
@@ -92,8 +93,10 @@ public class InstancedTemplate {
         this.boundResourceInstances = new ArrayList<>();
         this.deployedInfos = new ArrayList<>();
         this.cableInstances = new ArrayList<>();
-        this.uniqueMark = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
         this.forceNullResult = false;
+        this.reusable = this.isTopLevelTemplate() ? false : true; // false is never overwritten to true
+
+        this.uniqueMark = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
         this.runSteps();
     }
     
@@ -113,6 +116,10 @@ public class InstancedTemplate {
         return this.runnerMachine.getService().getQAPortalAccess();
     }
     
+    public byte[] getTemplateHash() {
+    	return this.dbTemplate.hash;
+    }
+    
     public String getTemplateID() {
     	return DBTemplate.getId(this.dbTemplate.hash);
     }
@@ -127,6 +134,10 @@ public class InstancedTemplate {
 
     public boolean getForceNullResult() {
     	return this.forceNullResult;
+    }
+    
+    boolean isReusable() {
+    	return this.reusable;
     }
     
     /**
@@ -201,7 +212,7 @@ public class InstancedTemplate {
     /**
      * 
      */
-    public void destroyNestedTemplate() {
+    public void destroyNestedTemplates() {
         for (InstancedTemplate nestedIT : mapStepReferenceToNestedTemplate.values()) {
 			log.debug(this.simpleName + ".destroyNestedTemplates() destroys nested template " + nestedIT.getTemplateID() + ", of uniqueMark " + nestedIT.getUniqueMark());
 			runnerMachine.getTemplateProvider().releaseTemplate(nestedIT);
@@ -395,6 +406,7 @@ public class InstancedTemplate {
                             break;
                         case "configure":
                             if (configureHandler == null) {
+                            	this.reusable = false;
                                 configureHandler = new ProgramHandler(this, stepsOfSet, setStepCount);
                                 int consumedStepReferences = configureHandler.computeProgramRequests(); // setID configure 0-based-machine-ref program-name [param param ...]
                                 setStepCount += consumedStepReferences;
@@ -682,6 +694,7 @@ public class InstancedTemplate {
                 } while (!allStepsCompleteForThisStepSet && !this.isTestRunCanceled()); // end do/while loop: process all step commands for same setID
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
+        	this.reusable = false;
             log.debug(this.simpleName + "runSteps() errors out for templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());
 			try {
 				this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
@@ -757,7 +770,7 @@ public class InstancedTemplate {
     	}
 	    	
 	   	// look at this iT's included templates- decide whether to release each of them, or not
-	    this.destroyNestedTemplate(); // TODO: decide whether to reuse any of these
+	    this.destroyNestedTemplates(); // TODO: decide whether to reuse any of these
     	
    		// inform resource providers that this template is released
    		this.templateReleased_InformResourceProviders();
