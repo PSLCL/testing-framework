@@ -110,7 +110,6 @@ public class InstanceNames
     public static final String Ec2IamNameKey = InstanceKeyBase + ".iam-name";
     public static final String Ec2KeyPairNameKey = InstanceKeyBase + ".keypair-name";
     public static final String Ec2StallReleaseKey = InstanceKeyBase + ".stall-release";     // in minutes
-    public static final String Ec2StallReleaseMarginKey = InstanceKeyBase + ".stall-release-margin"; // in minutes
     
     public static final String Ec2MaxDelayDefault = ProviderNames.LongMaxDelayDefault;
     public static final String Ec2MaxRetriesDefault = ProviderNames.LongMaxRetriesDefault;
@@ -127,7 +126,6 @@ public class InstanceNames
        keys.add(Ec2IamNameKey);
        keys.add(Ec2KeyPairNameKey);
        keys.add(Ec2StallReleaseKey);
-       keys.add(Ec2StallReleaseMarginKey);
        return keys;
     }
 }
