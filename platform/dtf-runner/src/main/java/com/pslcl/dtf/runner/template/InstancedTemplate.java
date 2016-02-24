@@ -392,7 +392,7 @@ public class InstancedTemplate {
                         case "bind":
                             if (bindHandler == null) {
                                 bindHandler = new BindHandler(this, stepsOfSet, setStepCount);
-                                int consumedStepReferences = bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getRunID());
+                                int consumedStepReferences = bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getUniqueMark(), this.getRunID());
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
                                 
@@ -738,9 +738,9 @@ public class InstancedTemplate {
             ResourcesManager rm = this.templateCleanupInfo.getManager();
             templateID = this.templateCleanupInfo.templateId;
             
-            log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
-            rm.release(templateID, false);
-            log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + templateID + ", templateInstanceID " + this.uniqueMark + " no longer needs its reserved or bound resources");
+            rm.release(this.uniqueMark, false);
+            log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + templateID + ", templateInstanceID " + this.uniqueMark + " no longer needs its reserved or bound resources");
             
         } else
             log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");

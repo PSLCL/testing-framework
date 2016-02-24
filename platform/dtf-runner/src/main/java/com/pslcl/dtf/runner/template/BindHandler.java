@@ -90,7 +90,7 @@ public class BindHandler {
      * 
      * @return
      */
-    int computeReserveRequests(int currentStepReference, String templateId, long runId) throws Exception {
+    int computeReserveRequests(int currentStepReference, String templateId, long templateInstanceID, long runId) throws Exception {
         try {
 			reserveResourceRequests = new ArrayList<>();
 	        int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
@@ -126,7 +126,7 @@ public class BindHandler {
 			    	}
 			    	
 			    	long resourceid = ResourceDescription.resourceIdMaster.incrementAndGet();
-			        ResourceCoordinates coord = new ResourceCoordinates(templateId, resourceid, runId);
+			        ResourceCoordinates coord = new ResourceCoordinates(templateId, templateInstanceID, resourceid, runId);
 			        this.iT.markStepReference(coord, bindStepReference);
 			        ResourceDescription rd = new ResourceDescImpl(resourceName, // resourceName comes from the bind step, as string "machine", "person" or "network"
 			        		                                      coord, attributeMap);
