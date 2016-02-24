@@ -20,6 +20,7 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
@@ -34,16 +35,18 @@ public class ConfigureFuture implements Callable<RunnableProgram>
     private final String winSandbox;
     private final String partialDestPath;
     private final boolean windows;
-    private final Object context;
+    private final long runId;
+    private final MachineInstance machineInstance;
 
-    public ConfigureFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, Object context)
+    public ConfigureFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, long runId, MachineInstance machineInstance)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
         this.winSandbox = winSandbox;
         this.partialDestPath = partialDestPath;
         this.windows = windows;
-        this.context = context;
+        this.runId = runId;
+        this.machineInstance = machineInstance;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
         {
@@ -62,10 +65,10 @@ public class ConfigureFuture implements Callable<RunnableProgram>
     @Override
     public RunnableProgram call() throws Exception
     {
-        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
         cmdData.setHost(host);
         cmdData.setWait(true);
-        cmdData.setContext(context);
+        cmdData.setContext(machineInstance);
         cmdData.setUseWorkingDir(true);
         if (windows)
         {
