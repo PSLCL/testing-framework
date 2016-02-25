@@ -502,14 +502,14 @@ public class RunEntryCore {
            	// ack the message queue
     		
             // temporarily, comment out these next 9 lines, to prevent acking the message queue
-           	try {
+    		try {
     			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
     			Object message = reState.getMessage();
     			runnerService.ackRunEntry(message);
-               	log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
+    			log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
     		} catch (Exception e) {
     			// swallow this exception, it does not relate to the actual test run
-                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue");
+    			log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue");
     		}
     	}
     }

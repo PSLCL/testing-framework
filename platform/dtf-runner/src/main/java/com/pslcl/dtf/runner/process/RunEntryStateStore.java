@@ -34,11 +34,11 @@ public class RunEntryStateStore {
      * 
      * @note put to an existing Long key overwrites previous the previously held InstanceState
      * @param iNum
-     * @param iState
+     * @param reState
      * @return Previously stored InstanceState when put overwrites it, null otherwise. 
      */
-    RunEntryState put(long reNum, RunEntryState iState) {
-        return map.put(Long.valueOf(reNum), iState);
+    RunEntryState put(long reNum, RunEntryState reState) {
+        return map.put(Long.valueOf(reNum), reState);
     }
     
     /**

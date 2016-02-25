@@ -68,30 +68,21 @@ public class RunEntryTask implements Runnable {
     public void run() {
         // this thread blocks while waiting for the test run to return a test result and otherwise complete itself (if needed, block could be for days at a time)
         log.debug(simpleName + "run() opens reNum " + reNum);
+    	RunnerService rs = this.runnerMachine.getService();
+    	RunEntryStateStore ress = rs.runEntryStateStore;
+    	RunEntryState reState = ress.get(reNum);
         
         while(true) {
-        	RunnerMachine rm = this.runnerMachine;
-        	RunnerService rs = rm.getService();
-        	RunEntryStateStore ress = rs.runEntryStateStore;
-        	RunEntryState reState = ress.get(reNum);
-            Action action = reState.getAction();
-            Action nextAction;
 			try {
-				nextAction = action.act(reState, reCore, runnerMachine.getService());
-                log.debug(simpleName + "run() ran Action " + action.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
+	            Action newAction = reState.getNewAction(); // blocks until action changes to something new
+	            Action nextAction = newAction.act(reState, reCore, runnerMachine.getService());
+                log.debug(simpleName + "run() ran Action " + newAction.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
 	            if (nextAction == Action.DISCARDED)
 	                break; // close thread
 			} catch (Throwable t) {
 				log.warn(this.simpleName + "run() sees exception " + t.getMessage());
 				break; // close thread
 			}
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ie) {
-				log.warn(this.simpleName + "run() sees exception " + ie.getMessage());
-				break; // close thread
-            }
         }
  
         log.debug(simpleName + "run() closes reNum " + reNum);

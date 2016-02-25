@@ -20,6 +20,7 @@ public class RunEntryState {
     private final long reNum;
     private Object message;
     private Action action;
+    private Action lastAction;
     
     /**
      * Constructor
@@ -30,22 +31,43 @@ public class RunEntryState {
         this.reNum = reNum;
         this.message = message;
         this.action = Action.INITIALIZE;
+        this.lastAction = this.action;
     }
 
-    public long getRunEntryNumber() {
+    long getRunEntryNumber() {
         return reNum;
     }
     
-    public Object getMessage() {
+    Object getMessage() {
         return message;
     }
 
-    public Action getAction() {
+    Action getAction() {
         return action;
     }
     
-    public void setAction(Action action) {
+    void setAction(Action action) {
         this.action = action;
     }
-
+    
+    /**
+     * @note blocks until Action has changed; calling this.setAction() is required 
+     * @return
+     * @throws InterruptedException
+     */
+    Action getNewAction() throws InterruptedException {
+    	do {
+	    	if (this.lastAction != this.action) {
+	    		this.lastAction =  this.action;
+	    		return this.action;
+	    	}
+	    	
+	        try {
+	            Thread.sleep(1000);
+	        } catch (InterruptedException ie) {
+	        	throw ie;
+	        }
+    	} while (true);
+    }
+    
 }
