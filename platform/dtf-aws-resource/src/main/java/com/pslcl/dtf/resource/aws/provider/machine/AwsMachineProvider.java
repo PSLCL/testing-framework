@@ -158,8 +158,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
          *      a. if the above pass, add them to stalled release collection, otherwise destroy them.
          * 6. A repeating check stalled release task will check for timed out stalls and destroy them. 
          *********************************************************************/
-        ResourceCoordinates coordinates = null;
-        String prefixTestName = null;
 
         List<AwsMachineInstance> instancesInTemplate = new ArrayList<AwsMachineInstance>();
         synchronized (boundInstances)
@@ -170,12 +168,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 releasePossiblePendings(templateInstanceId, isReusable); // this will clean up the reserved list for given template 
                 for (Entry<Long, AwsMachineInstance> entry : boundInstances.entrySet())
                 {
-                    coordinates = entry.getValue().getCoordinates();
+                    ResourceCoordinates coordinates = entry.getValue().getCoordinates();
                     if (coordinates.templateInstanceId == templateInstanceId)
-                    {
-                        prefixTestName = entry.getValue().mconfig.resourcePrefixName;
                         releaseList.add(entry.getKey());
-                    }
                 }
                 for (Long key : releaseList)
                 {
