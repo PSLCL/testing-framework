@@ -224,7 +224,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
      * 
      * @param strRunEntryNumber String representation of the run entry number, or reNum (pk_run of this entry in table run).
      * @param message JMS message associated with reNum, used for eventual message ack
-     * @throws Throwable
+     * @throws Throwable to catch error conditions beyond the Exceptions that are thrown in this method. 
      */
     public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Throwable
     {

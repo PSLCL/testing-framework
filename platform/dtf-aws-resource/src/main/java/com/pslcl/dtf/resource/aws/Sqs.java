@@ -100,12 +100,12 @@ public class Sqs extends MessageQueueBase {
                         sqs.submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
                         return;
                     } else {
-                        log.debug(prependString + "Drop - jmsMessageID or strQueueStoreNumber are null");
+                        log.debug(prependString + "Drop msg - jmsMessageID or strQueueStoreNumber are null");
                     }
                 } catch (JMSException jmse) {
-                    log.debug(prependString + "Drop - JMS message could not be examined " + jmse);
+                    log.debug(prependString + "Drop msg - JMS message could not be examined " + jmse);
                 } catch (Throwable t) {
-                    log.debug(prependString + "Drop - rejected by RunnerService");
+                    log.debug(prependString + "Drop msg - JMS message rejected by RunnerService");
                 }
                 
                 // .submitQueueStoreNumber() failed to be deliver message to dtf-runner

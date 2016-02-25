@@ -116,7 +116,7 @@ public class RunnerMachine {
             /*Action nextAction =*/ action.act(reState, null, this.getService());            
             // .act() stores a computed next action in reState and returns it as nextAction
         } catch (Exception e) {
-            log.error(simpleName + "initiateProcessing() finds Exception while handling reNum " + reNum + ": " + e + ". Message remains in the QueueStore.");
+            log.warn(simpleName + "initiateProcessing() finds Exception while handling reNum " + reNum + ": " + e + ". Message remains in the QueueStore.");
             throw e;
         }
     }
@@ -130,8 +130,14 @@ public class RunnerMachine {
         // boolean doProcess = determineDoProcess(reNum, reState);
         // if (doProcess)
         {
-            /*RunEntryState reStateOld =*/ this.getService().runEntryStateStore.put(reNum, reState);
-            // TODO: For reStateOld not null, consider: is this a bug, or shall we cleanup whatever it is that reStateOld shows has been allocated or started or whatever?
+            log.debug(simpleName + "engageRunEntry() processes reNum/action/message " + reNum + "/" + reState.getAction() + "/" + reState.getMessage());
+            RunEntryState reStateOld = this.getService().runEntryStateStore.get(reNum);
+            if (reStateOld != null) {
+                log.warn(simpleName + "engageRunEntry() finds existing reState while processing reNum/action/message " + reNum + "/" + reState.getAction() +    "/" + reState.getMessage() + 
+                                                                        ". reStateOld holds " + reStateOld.getRunEntryNumber() + "/" + reStateOld.getAction() + "/" + reStateOld.getMessage());
+                throw new Exception("Attempt to launch duplicate runEntry, the new runEntry is dropped");
+            }
+            this.getService().runEntryStateStore.put(reNum, reState);
         }
         
         try {
