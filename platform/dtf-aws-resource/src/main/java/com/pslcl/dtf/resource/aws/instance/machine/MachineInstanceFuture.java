@@ -85,7 +85,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             checkFutureCanceled();
             config = MachineConfigData.init(pdelayData, reservedResource.resource, reservedResource.format, pdelayData.provider.manager.machineProvider.defaultMachineConfigData);
             checkFutureCanceled();
-            pdelayData.preFixMostName = config.resoucePrefixName;
+            pdelayData.preFixMostName = config.resourcePrefixName;
             reservedResource.vpc = pdelayData.provider.manager.subnetManager.getVpc(pdelayData, config.subnetConfigData);
             checkFutureCanceled();
             reservedResource.subnet = pdelayData.provider.manager.subnetManager.getSubnet(pdelayData, config.subnetConfigData);
@@ -308,7 +308,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     {
         synchronized (pdelayData.provider)
         {
-            String name = pdelayData.getFullTemplateIdName(KeyPairMidStr, null);
+            String name = pdelayData.getKeyPairName(KeyPairMidStr);
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
             String msg = pdelayData.getHumanName(KeyPairMidStr, "describeKeyPairs");
             DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest();//.withKeyNames(name);

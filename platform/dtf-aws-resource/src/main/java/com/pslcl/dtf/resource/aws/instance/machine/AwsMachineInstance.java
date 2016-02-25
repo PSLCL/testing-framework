@@ -38,10 +38,11 @@ import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 @SuppressWarnings("javadoc")
 public class AwsMachineInstance implements MachineInstance
 {
-    private final MachineReservedResource reservedResource;
+    public final MachineReservedResource reservedResource;
     public final Instance ec2Instance;
     public final MachineConfigData mconfig;
     public final RunnerConfig rconfig;
+    public final long instantiationTime;
 
     public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
@@ -49,6 +50,7 @@ public class AwsMachineInstance implements MachineInstance
         this.mconfig = mconfig;
         this.rconfig = rconfig;
         ec2Instance = reservedResource.ec2Instance;
+        instantiationTime = System.currentTimeMillis();
     }
 
     @Override
