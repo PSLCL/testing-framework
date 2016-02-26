@@ -269,6 +269,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 if (!instance.reservedResource.resource.getCoordinates().equals(coordinates))
                     continue;
             }
+            instance.sanitizing.set(true);  // the checkReusable may be waiting on this, if so, drop it from its wait and let it error out on first use.
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
             ((AwsMachineProvider)instance.getResourceProvider()).instanceFinder.releaseInstance(instance.reservedResource.instanceType);
             synchronized (deleteInstanceFutures)
@@ -342,7 +343,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 }
                 if(ok)
                 {
-                    instance.sanitizing.set(false);
+                    instance.sanitizing.set(true);
                     stalledRelease.put(instance.getCoordinates().resourceId, instance);
                 }
             }
