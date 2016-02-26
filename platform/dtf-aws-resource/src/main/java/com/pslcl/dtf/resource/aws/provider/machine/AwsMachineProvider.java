@@ -151,7 +151,15 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         for (Entry<Long, AwsMachineInstance> entry : stalledMap.entrySet())
         {
             AwsMachineInstance stalledInstance = entry.getValue();
-            if (stalledInstance.reservedResource.instanceType != reservedResource.instanceType)
+            InstanceType instanceType;
+            try
+            {
+                instanceType = instanceFinder.findInstance(stalledInstance.reservedResource.resource);
+            } catch (ResourceNotFoundException e1)
+            {
+                continue;
+            }
+            if (instanceType != reservedResource.instanceType)
                 continue;
             if (!stalledInstance.reservedResource.imageId.equals(reservedResource.imageId))
                 continue;
@@ -186,6 +194,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
          *      a. don't worry about stopping any RunnableProgram's
          *      b. don't worry about nuking sandboxes
          *      c. clean up runnablePrograms map
+         *      d. decrement reserved count
          * 5. if reusable
          *      a. stop any RunnableProgram's
          *      b. nuke sandboxes
@@ -261,6 +270,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     continue;
             }
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
+            ((AwsMachineProvider)instance.getResourceProvider()).instanceFinder.releaseInstance(instance.reservedResource.instanceType);
             synchronized (deleteInstanceFutures)
             {
                 deleteInstanceFutures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, null, pdelayData)));
