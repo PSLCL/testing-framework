@@ -19,6 +19,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.Future;
 
 import org.slf4j.LoggerFactory;
 
@@ -85,17 +86,21 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             checkFutureCanceled();
             config = MachineConfigData.init(pdelayData, reservedResource.resource, reservedResource.format, pdelayData.provider.manager.machineProvider.defaultMachineConfigData);
             checkFutureCanceled();
-            pdelayData.preFixMostName = config.resourcePrefixName;
-            reservedResource.vpc = pdelayData.provider.manager.subnetManager.getVpc(pdelayData, config.subnetConfigData);
-            checkFutureCanceled();
-            reservedResource.subnet = pdelayData.provider.manager.subnetManager.getSubnet(pdelayData, config.subnetConfigData);
-            checkFutureCanceled();
-            createInstance(reservedResource.subnet.getSubnetId());
-            AwsMachineInstance retMachineInstance = new AwsMachineInstance(reservedResource, config, pdelayData.provider.config);
-            pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
-            ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, retMachineInstance);
+            AwsMachineInstance machineInstance = ((AwsMachineProvider) pdelayData.provider).checkForReuse(reservedResource);
+            if (machineInstance == null)
+            {
+                pdelayData.preFixMostName = config.resourcePrefixName;
+                reservedResource.vpc = pdelayData.provider.manager.subnetManager.getVpc(pdelayData, config.subnetConfigData);
+                checkFutureCanceled();
+                reservedResource.subnet = pdelayData.provider.manager.subnetManager.getSubnet(pdelayData, config.subnetConfigData);
+                checkFutureCanceled();
+                createInstance(reservedResource.subnet.getSubnetId());
+                machineInstance = new AwsMachineInstance(reservedResource, config, pdelayData.provider.config);
+                pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
+            }
+            ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, machineInstance);
             LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "- bound: " + reservedResource.format.toString());
-            return retMachineInstance;
+            return machineInstance;
         } catch (CancellationException ie)
         {
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), ie);
@@ -124,7 +129,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 
         Base64.Encoder encoder = Base64.getMimeEncoder();
         String userData = encoder.encodeToString(config.linuxUserData.getBytes());
-        if(config.windows)
+        if (config.windows)
             userData = encoder.encodeToString(config.winUserData.getBytes());
         //@formatter:off
         Placement placement = new Placement().withAvailabilityZone(pdelayData.provider.manager.ec2cconfig.availabilityZone);
@@ -186,7 +191,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             if (runResult != null) // get rid of possible null warning
                 reservedResource.ec2Instance = runResult.getReservation().getInstances().get(0);
         }
-        waitForState(pdelay, AwsInstanceState.Pending);
+        waitForState(pdelay, AwsInstanceState.Pending, AwsInstanceState.Running);
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
         List<GroupIdentifier> sgs = reservedResource.ec2Instance.getSecurityGroups();
         reservedResource.groupId = sgs.get(0).getGroupId();
@@ -195,7 +200,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         waitForStaf(pdelay);
     }
 
-    private void waitForState(ProgressiveDelay pdelay, AwsInstanceState state) throws FatalResourceException
+    private void waitForState(ProgressiveDelay pdelay, AwsInstanceState... states) throws FatalResourceException
     {
         DescribeInstancesRequest diRequest = new DescribeInstancesRequest().withInstanceIds(reservedResource.ec2Instance.getInstanceId());
         pdelayData.maxDelay = config.ec2MaxDelay;
@@ -209,12 +214,24 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             {
                 DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
-                if (inst != null && AwsInstanceState.getState(inst.getState().getName()) == state)
+                if (inst != null)
                 {
-                    synchronized (reservedResource)
+                    boolean found = false;
+                    for (int i = 0; i < states.length; i++)
                     {
-                        reservedResource.ec2Instance = inst; // this picks up the running information i.e. public ip addresses
-                        break;
+                        if (AwsInstanceState.getState(inst.getState().getName()) == states[i])
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                    {
+                        synchronized (reservedResource)
+                        {
+                            reservedResource.ec2Instance = inst; // this picks up the running information i.e. public ip addresses
+                            break;
+                        }
                     }
                 }
                 pdelay.retry(pdelayData.getHumanName(Ec2MidStr, "describeInstances"));
@@ -226,7 +243,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             }
         } while (true);
     }
-    
+
     private void waitForStaf(ProgressiveDelay pdelay) throws FatalResourceException
     {
         ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false);
@@ -246,7 +263,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                         (AwsResourceProvider)reservedResource.resource.getCoordinates().getProvider(), 
                         reservedResource.resource.getCoordinates());
         //@formatter:on
-        
+
         pdelayData.maxDelay = config.ec2MaxDelay;
         pdelayData.maxRetries = config.ec2MaxRetries;
         pdelay.reset();
@@ -258,7 +275,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             try
             {
                 PingFuture pingFuture = new PingFuture(runnableProgram);
-                Integer rc = reservedResource.provider.config.blockingExecutor.submit(pingFuture).get();
+                Future<Integer> future = reservedResource.provider.config.blockingExecutor.submit(pingFuture); 
+                Integer rc = future.get();
                 if (rc != null && rc == 0)
                     break;
                 pdelay.retry(msg);
@@ -277,7 +295,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             }
         } while (true);
     }
-    
+
     private RootBlockDeviceInfo getImageDiskInfo(String amiId, ProgressiveDelay pdelay) throws FatalResourceException
     {
         DescribeImagesRequest diRequest = new DescribeImagesRequest().withImageIds(amiId);
@@ -303,7 +321,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             }
         } while (true);
     }
-    
+
     private String createKeyPair() throws FatalResourceException
     {
         synchronized (pdelayData.provider)
@@ -329,7 +347,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 
             for (KeyPairInfo pair : keyPairsResult.getKeyPairs())
             {
-                if(name.equals(pair.getKeyName()))
+                if (name.equals(pair.getKeyName()))
                     return name;
             }
 
@@ -355,12 +373,12 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             return keypair.getKeyName();
         }
     }
-    
+
     private class RootBlockDeviceInfo
     {
         private final String deviceName;
         private final int minDeviceSize;
-        
+
         private RootBlockDeviceInfo(String deviceName, int minDeviceSize)
         {
             this.deviceName = deviceName;

@@ -18,6 +18,7 @@ package com.pslcl.dtf.resource.aws.instance.machine;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.amazonaws.services.ec2.model.Instance;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
@@ -42,17 +43,30 @@ public class AwsMachineInstance implements MachineInstance
     public final Instance ec2Instance;
     public final MachineConfigData mconfig;
     public final RunnerConfig rconfig;
-    public final long instantiationTime;
+    public final AtomicBoolean sanitizing;
+    private long instantiationTime;
+    
 
     public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
         this.reservedResource = reservedResource;
         this.mconfig = mconfig;
         this.rconfig = rconfig;
+        sanitizing = new AtomicBoolean(false);
         ec2Instance = reservedResource.ec2Instance;
         instantiationTime = System.currentTimeMillis();
     }
 
+    public synchronized long getInstantiationTime()
+    {
+        return instantiationTime;
+    }
+    
+    public synchronized void setInstantiationTime()
+    {
+        instantiationTime = System.currentTimeMillis();
+    }
+    
     @Override
     public String getName()
     {

@@ -60,6 +60,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     private final HashMap<Long, AwsMachineInstance> boundInstances; // key is resourceId
     private final HashMap<Long, MachineReservedResource> reservedMachines; // key is resourceId
     private final HashMap<Long, AwsMachineInstance> stalledRelease; // key is templateInstanceId
+    private final List<Future<Void>> deleteInstanceFutures;
     private final HashMap<Long, List<Future<RunnableProgram>>> runnablePrograms;
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
@@ -71,6 +72,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         reservedMachines = new HashMap<Long, MachineReservedResource>();
         boundInstances = new HashMap<Long, AwsMachineInstance>();
         stalledRelease = new HashMap<Long, AwsMachineInstance>();
+        deleteInstanceFutures = new ArrayList<Future<Void>>();
         runnablePrograms = new HashMap<Long, List<Future<RunnableProgram>>>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder();
@@ -138,6 +140,39 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     {
     }
 
+    public AwsMachineInstance checkForReuse(MachineReservedResource reservedResource)
+    {
+        HashMap<Long, AwsMachineInstance> stalledMap;
+        synchronized (stalledRelease)
+        {
+            stalledMap = new HashMap<Long, AwsMachineInstance>(stalledRelease);
+        }
+
+        for (Entry<Long, AwsMachineInstance> entry : stalledMap.entrySet())
+        {
+            AwsMachineInstance stalledInstance = entry.getValue();
+            if (stalledInstance.reservedResource.instanceType != reservedResource.instanceType)
+                continue;
+            if (!stalledInstance.reservedResource.imageId.equals(reservedResource.imageId))
+                continue;
+            do
+            {
+                if (!stalledInstance.sanitizing.get())
+                    break;
+                try
+                {
+                    Thread.sleep(100);
+                } catch (InterruptedException e)
+                {
+                }
+            } while (true);
+            stalledRelease.remove(entry.getKey());
+            stalledInstance.setInstantiationTime();
+            return stalledInstance;
+        }
+        return null;
+    }
+
     public void release(long templateInstanceId, boolean isReusable)
     {
         /**********************************************************************
@@ -194,7 +229,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     break;
                 }
                 long t1 = System.currentTimeMillis();
-                long delta = t1 - instance.instantiationTime;
+                long delta = t1 - instance.getInstantiationTime();
                 delta = TimeUnit.MINUTES.convert(delta, TimeUnit.MILLISECONDS);
                 if (delta >= instance.mconfig.stallReleaseMinutes)
                 {
@@ -218,7 +253,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
     private void deleteInstances(long templateInstanceId, List<AwsMachineInstance> instancesInTemplate, ResourceCoordinates coordinates)
     {
-        List<Future<Void>> futures = new ArrayList<Future<Void>>();
         for (AwsMachineInstance instance : instancesInTemplate)
         {
             if (coordinates != null)
@@ -227,18 +261,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     continue;
             }
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
-            futures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, null, pdelayData)));
-        }
-        for (Future<Void> future : futures)
-        {
-            try
+            synchronized (deleteInstanceFutures)
             {
-                future.get();
-            } catch (Exception e)
-            {
-                // nothing further we can really do if these fail, futures should have logged error details
-                // could email someone to double check manual clean may be needed.
-                log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                deleteInstanceFutures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, null, pdelayData)));
             }
         }
     }
@@ -246,7 +271,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     private void sanitizeInstance(long templateInstanceId, List<AwsMachineInstance> instancesInTemplate)
     {
         List<AwsMachineInstance> deletedList = new ArrayList<AwsMachineInstance>();
-        for(AwsMachineInstance instance : instancesInTemplate)
+        for (AwsMachineInstance instance : instancesInTemplate)
+            instance.sanitizing.set(true);
+        for (AwsMachineInstance instance : instancesInTemplate)
         {
             try
             {
@@ -257,37 +284,57 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 deleteInstances(templateInstanceId, instancesInTemplate, instance.getCoordinates());
             }
         }
-        
+
+//        Map<Long, AwsMachineInstance> stalledList = new HashMap<Long, AwsMachineInstance>();
         List<Future<RunnableProgram>> rplist = null;
-        synchronized(runnablePrograms)
+        synchronized (runnablePrograms)
         {
             rplist = runnablePrograms.remove(templateInstanceId);
         }
-        for(Future<RunnableProgram> rp : rplist)
+        if (rplist != null)
         {
-            try
+            for (Future<RunnableProgram> rp : rplist)
             {
-                StafRunnableProgram srp = (StafRunnableProgram)rp.get();
-                AwsMachineInstance machineInstance = (AwsMachineInstance)srp.getCommandData().getContext();
-                ResourceCoordinates coord = machineInstance.getCoordinates();
-                if(srp.isRunning())
+                try
                 {
-                    Integer ccode = srp.kill().get();
-                    if(ccode != 0)
+                    StafRunnableProgram srp = (StafRunnableProgram) rp.get();
+                    AwsMachineInstance machineInstance = (AwsMachineInstance) srp.getCommandData().getContext();
+                    ResourceCoordinates coord = machineInstance.getCoordinates();
+                    if (srp.isRunning())
                     {
-                        deletedList.add(machineInstance);
-                        deleteInstances(templateInstanceId, instancesInTemplate, coord);
+                        Integer ccode = srp.kill().get();
+                        if (ccode != 0)
+                        {
+                            deletedList.add(machineInstance);
+                            deleteInstances(templateInstanceId, instancesInTemplate, coord);
+                        }
+                    }
+                } catch (Exception e)
+                {
+                    // nothing further we can really do if this fails, instead of warning for manual cleanup, nuke the whole template's worth
+                    deleteInstances(templateInstanceId, instancesInTemplate, null);
+                    return;
+                }
+            }
+        }
+        for (AwsMachineInstance instance : instancesInTemplate)
+        {
+            synchronized (stalledRelease)
+            {
+                boolean ok = true;
+                for(AwsMachineInstance dinstance : deletedList)
+                {
+                    if(instance == dinstance)
+                    {
+                        ok = false;
+                        break;
                     }
                 }
-                synchronized(stalledRelease)
+                if(ok)
                 {
-                    stalledRelease.put(coord.resourceId, machineInstance);
+                    instance.sanitizing.set(false);
+                    stalledRelease.put(instance.getCoordinates().resourceId, instance);
                 }
-            } catch (Exception e)
-            {
-                // nothing further we can really do if this fails, instead of warning for manual cleanup, nuke the whole template's worth
-                deleteInstances(templateInstanceId, instancesInTemplate, null);
-                return;
             }
         }
     }
@@ -413,7 +460,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         config.initsb.indentedOk();
         defaultMachineConfigData = MachineConfigData.init(config);
         config.initsb.level.decrementAndGet();
-        config.scheduledExecutor.schedule(new StalledReleaseTask(), 1, TimeUnit.MINUTES);
+        config.scheduledExecutor.scheduleAtFixedRate(new StalledReleaseTask(), 1, 1, TimeUnit.MINUTES);
     }
 
     @Override
@@ -499,6 +546,45 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         @Override
         public void run()
         {
+            long t1 = System.currentTimeMillis();
+            HashMap<Long, AwsMachineInstance> stalledMap = null;
+            synchronized (stalledRelease)
+            {
+                stalledMap = new HashMap<Long, AwsMachineInstance>(stalledRelease);
+            }
+            for (Entry<Long, AwsMachineInstance> entry : stalledMap.entrySet())
+            {
+                AwsMachineInstance machineInstance = entry.getValue();
+                long delta = t1 - machineInstance.getInstantiationTime();
+                delta = TimeUnit.MINUTES.convert(delta, TimeUnit.MILLISECONDS);
+                if (delta >= machineInstance.mconfig.stallReleaseMinutes)
+                {
+                    synchronized (stalledRelease)
+                    {
+                        stalledRelease.remove(entry.getKey());
+                    }
+                    ResourceCoordinates coord = machineInstance.reservedResource.resource.getCoordinates();
+                    List<AwsMachineInstance> instancesInTemplate = new ArrayList<AwsMachineInstance>();
+                    instancesInTemplate.add(machineInstance);
+                    deleteInstances(coord.templateInstanceId, instancesInTemplate, null);
+                }
+            }
+            synchronized (deleteInstanceFutures)
+            {
+                for (Future<Void> future : deleteInstanceFutures)
+                {
+                    try
+                    {
+                        if (future.isDone())
+                            future.get();
+                    } catch (Exception e)
+                    {
+                        // nothing further we can really do if these fail, futures should have logged error details
+                        // could email someone to double check manual clean may be needed.
+                        log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                    }
+                }
+            }
         }
     }
 }
