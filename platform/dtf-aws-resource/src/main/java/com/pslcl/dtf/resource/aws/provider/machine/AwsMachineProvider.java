@@ -151,6 +151,12 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         for (Entry<Long, AwsMachineInstance> entry : stalledMap.entrySet())
         {
             AwsMachineInstance stalledInstance = entry.getValue();
+            synchronized (stalledInstance)
+            {
+                if (stalledInstance.taken.get())
+                    continue;
+                stalledInstance.taken.set(true);
+            }
             InstanceType instanceType;
             try
             {
@@ -176,6 +182,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             } while (true);
             stalledRelease.remove(entry.getKey());
             stalledInstance.setInstantiationTime();
+            if (stalledInstance.destroyed.get())
+                return null;
             return stalledInstance;
         }
         return null;
@@ -269,9 +277,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 if (!instance.reservedResource.resource.getCoordinates().equals(coordinates))
                     continue;
             }
-            instance.sanitizing.set(true);  // the checkReusable may be waiting on this, if so, drop it from its wait and let it error out on first use.
+            instance.sanitizing.set(false); // the checkReusable may be waiting on this, if so, drop it from its wait and let it error out on first use.
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
-            ((AwsMachineProvider)instance.getResourceProvider()).instanceFinder.releaseInstance(instance.reservedResource.instanceType);
+            ((AwsMachineProvider) instance.getResourceProvider()).instanceFinder.releaseInstance(instance.reservedResource.instanceType);
             synchronized (deleteInstanceFutures)
             {
                 deleteInstanceFutures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, null, pdelayData)));
@@ -296,7 +304,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             }
         }
 
-//        Map<Long, AwsMachineInstance> stalledList = new HashMap<Long, AwsMachineInstance>();
+        //        Map<Long, AwsMachineInstance> stalledList = new HashMap<Long, AwsMachineInstance>();
         List<Future<RunnableProgram>> rplist = null;
         synchronized (runnablePrograms)
         {
@@ -316,13 +324,24 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                         Integer ccode = srp.kill().get();
                         if (ccode != 0)
                         {
+                            machineInstance.destroyed.set(true);
+                            machineInstance.sanitizing.set(false);
+                            machineInstance.taken.set(true);
                             deletedList.add(machineInstance);
                             deleteInstances(templateInstanceId, instancesInTemplate, coord);
                         }
                     }
+                    machineInstance.sanitizing.set(false);
                 } catch (Exception e)
                 {
                     // nothing further we can really do if this fails, instead of warning for manual cleanup, nuke the whole template's worth
+                    for (AwsMachineInstance instance : instancesInTemplate)
+                    {
+                        instance.destroyed.set(true);
+                        instance.sanitizing.set(false);
+                        instance.taken.set(true);
+                    }
+                    
                     deleteInstances(templateInstanceId, instancesInTemplate, null);
                     return;
                 }
@@ -333,19 +352,18 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             synchronized (stalledRelease)
             {
                 boolean ok = true;
-                for(AwsMachineInstance dinstance : deletedList)
+                for (AwsMachineInstance dinstance : deletedList)
                 {
-                    if(instance == dinstance)
+                    if (instance == dinstance)
                     {
                         ok = false;
                         break;
                     }
                 }
-                if(ok)
-                {
-                    instance.sanitizing.set(true);
+                if (ok)
                     stalledRelease.put(instance.getCoordinates().resourceId, instance);
-                }
+                instance.sanitizing.set(false);
+                instance.taken.set(false);
             }
         }
     }
@@ -573,6 +591,16 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     synchronized (stalledRelease)
                     {
                         stalledRelease.remove(entry.getKey());
+                    }
+                    synchronized (machineInstance)
+                    {
+                        if(!machineInstance.taken.get())
+                        {
+                            machineInstance.sanitizing.set(false);
+                            machineInstance.destroyed.set(true);
+                            machineInstance.taken.set(true);
+                        }else
+                            continue;
                     }
                     ResourceCoordinates coord = machineInstance.reservedResource.resource.getCoordinates();
                     List<AwsMachineInstance> instancesInTemplate = new ArrayList<AwsMachineInstance>();

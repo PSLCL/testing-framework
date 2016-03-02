@@ -44,6 +44,8 @@ public class AwsMachineInstance implements MachineInstance
     public final MachineConfigData mconfig;
     public final RunnerConfig rconfig;
     public final AtomicBoolean sanitizing;
+    public final AtomicBoolean destroyed;
+    public final AtomicBoolean taken;
     private long instantiationTime;
     
 
@@ -53,6 +55,8 @@ public class AwsMachineInstance implements MachineInstance
         this.mconfig = mconfig;
         this.rconfig = rconfig;
         sanitizing = new AtomicBoolean(false);
+        destroyed = new AtomicBoolean(false);
+        taken = new AtomicBoolean(false);
         ec2Instance = reservedResource.ec2Instance;
         instantiationTime = System.currentTimeMillis();
     }
