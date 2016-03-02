@@ -31,7 +31,7 @@ import com.pslcl.dtf.core.runner.resource.staf.futures.ConfigureFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.DeleteFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.RunFuture;
-import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
+import com.pslcl.dtf.test.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.test.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.test.resource.aws.provider.machine.MachineReservedResource;
 
@@ -110,9 +110,7 @@ public class AwsMachineInstance implements MachineInstance
     {
         AwsNetworkInstance instance = (AwsNetworkInstance) network;
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
-        // temporarily
-        return null;
-//        return instance.runnerConfig.blockingExecutor.submit(new ConnectFuture(this, (AwsNetworkInstance) network, pdelayData));
+        return instance.runnerConfig.blockingExecutor.submit(new ConnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
 
     @Override
@@ -193,9 +191,7 @@ public class AwsMachineInstance implements MachineInstance
     {
         AwsNetworkInstance instance = (AwsNetworkInstance) network;
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
-        // temporarily
-        return null;
-//      return instance.runnerConfig.blockingExecutor.submit(new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData));
+        return instance.runnerConfig.blockingExecutor.submit(new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
 
     public enum AwsInstanceState

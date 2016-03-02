@@ -36,8 +36,8 @@ import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.ClientType;
-import com.pslcl.dtf.resource.aws.provider.network.AwsNetworkProvider;
-import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
+import com.pslcl.dtf.test.resource.aws.provider.network.AwsNetworkProvider;
+import com.pslcl.dtf.test.resource.aws.provider.person.AwsPersonProvider;
 import com.pslcl.dtf.test.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.test.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.test.resource.aws.provider.SubnetManager;
@@ -62,17 +62,11 @@ public class AwsResourcesManager implements ResourcesManager
     {
         resourceProviders = new ArrayList<ResourceProvider>();
         machineProvider = new AwsMachineProvider(this);
-        // temporarily
-        networkProvider =
-                          null;
-//                        new AwsNetworkProvider(this);
-        // temporarily
-        personProvider =
-                         null;
-//                       new AwsPersonProvider(this);
+        networkProvider = new AwsNetworkProvider(this);
+        personProvider =  new AwsPersonProvider(this);
         resourceProviders.add(machineProvider);
-//      resourceProviders.add(networkProvider);
-//      resourceProviders.add(personProvider);
+        resourceProviders.add(networkProvider);
+        resourceProviders.add(personProvider);
     }
 
     private volatile int maxDelay;
@@ -221,11 +215,8 @@ public class AwsResourcesManager implements ResourcesManager
         subnetManager.init(config);
 
         machineProvider.init(config);
-        // temporarily
-        if (personProvider != null)
-        	personProvider.init(config);
-        if (networkProvider != null)
-        	networkProvider.init(config);
+       	personProvider.init(config);
+       	networkProvider.init(config);
         value = config.properties.getProperty(ResourceNames.StafLocalPingKey, ResourceNames.StafLocalPingDefault);
         value = StrH.trim(value);
         if(Boolean.parseBoolean(value))
@@ -268,11 +259,8 @@ public class AwsResourcesManager implements ResourcesManager
     public void release(long templateInstanceId, boolean isReusable)
     {
         machineProvider.release(templateInstanceId, isReusable);
-        // temporarily
-        if (networkProvider != null)
-            networkProvider.release(templateInstanceId, isReusable);
-        if (personProvider != null)
-            personProvider.release(templateInstanceId, isReusable);
+        networkProvider.release(templateInstanceId, isReusable);
+        personProvider.release(templateInstanceId, isReusable);
     }
 
     @Override
