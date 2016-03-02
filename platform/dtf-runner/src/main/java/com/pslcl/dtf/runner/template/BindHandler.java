@@ -291,7 +291,7 @@ public class BindHandler {
                 } catch (InterruptedException ie) {
                     allBindsSucceeded = false;
                     exception = ie;
-                    log.warn(simpleName + "waitComplete(), bind failed: ", ie);
+                    log.debug(simpleName + "waitComplete(), bind failed: ", ie);
                 } catch (ExecutionException ee) {
                     allBindsSucceeded = false;
                     exception = ee; // I have seen FatalServerException
@@ -299,7 +299,7 @@ public class BindHandler {
                     Throwable t = ee.getCause();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    log.warn(simpleName + "waitComplete(), bind failed: " + msg, ee);
+                    log.debug(simpleName + "waitComplete(), bind failed: " + msg, ee);
                 } catch (Exception e) {
                     // can happen with things like null pointer exception
                     exception = e;

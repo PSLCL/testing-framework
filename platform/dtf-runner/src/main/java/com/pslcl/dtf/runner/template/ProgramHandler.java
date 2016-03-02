@@ -223,9 +223,10 @@ public class ProgramHandler {
 		List<ProgramState> retList = new ArrayList<>();
         for (ProgramState programState : this.futuresOfProgramState) {
         	if (programState!=null) {
-	    		if (programState.getFutureRunnableProgram() != null) {
+        		Future<RunnableProgram> future = programState.getFutureRunnableProgram(); 
+	    		if (future != null) {
 	                try {
-	                	RunnableProgram runnableProgram = programState.getFutureRunnableProgram().get();
+	                	RunnableProgram runnableProgram = future.get();
 	                	programState.setRunnableProgram(runnableProgram);
 						retList.add(programState);
 					} catch (InterruptedException | ExecutionException ioreE) {
@@ -233,12 +234,16 @@ public class ProgramHandler {
 			            String msg = ioreE.getLocalizedMessage();
 			            if(t != null)
 			                msg = t.getLocalizedMessage();
-			            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out: " + msg + "; " + ioreE.getMessage());
+			            log.debug(simpleName + "waitComplete(), " + this.runType + " program failed future.get() with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
 			        	throw ioreE;
+	                } catch (Exception e) {
+	                    // can happen with things like null pointer exception
+			            log.debug(simpleName + "waitComplete(), " + this.runType + " program failed future.get() with msg: " + e.getMessage());
+			            throw e;			        	
 					}             
 	    		} else {
-		            log.warn(simpleName + "waitComplete(), " + this.runType + " program errored out with a failed future");
-	        		throw new Exception("Future.get() failed");
+		            log.warn(simpleName + "waitComplete(), " + this.runType + " program failed - future returned as null");
+	        		throw new Exception("future returned as null");
 	    		}
 	    	}
         } // end for()		
