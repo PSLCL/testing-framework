@@ -15,7 +15,7 @@
 **  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
 <ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd" xmlns:m="http://ant.apache.org/ivy/maven">
-  <info organisation="com.pslcl.testing-framework" module="dtf-ivy-artifact" revision="1.0">
+  <info organisation="com.pslcl.dtf" module="dtf-ivy-artifact" revision="1.0">
     <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
     <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
     <description homepage="https://github.com/PSLCL/testing-framework/">
@@ -41,7 +41,7 @@ The Distributed Test Framework Ivy artifact provider implementation.
     <artifact conf="javadoc" name="${jar.name}" type="javadoc" ext="jar" m:classifier="javadoc"/>
   </publications>
   <dependencies>
-    <dependency org="com.pslcl.testing-framework" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="org.apache.ivy" name="ivy" rev="[2.4,3)" conf="compile->master,compile;javadoc"/>
   </dependencies>
 </ivy-module>
