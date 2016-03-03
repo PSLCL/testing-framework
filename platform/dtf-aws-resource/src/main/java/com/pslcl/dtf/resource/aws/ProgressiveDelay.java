@@ -225,6 +225,11 @@ public class ProgressiveDelay
             return preFixMostName + "-" + midString + "-" + coord.resourceId + (post == null ? "" : " " + post);
         }
         
+        public String getKeyPairName(String midString)
+        {
+            return preFixMostName + "-" + midString + "default";
+        }
+        
         public String getFullTemplateIdName(String midString, String post)
         {
             return preFixMostName + "-" + midString + "-0x" + Long.toHexString(coord.templateInstanceId) + (post == null ? "" : " " + post);
