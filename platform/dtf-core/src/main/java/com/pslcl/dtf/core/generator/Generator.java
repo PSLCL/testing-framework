@@ -88,6 +88,18 @@ public class Generator
 
         parameterReferenceMap.put(uuid, parameter);
     }
+    
+    /**
+     * Get the parameter referenced by the specified uuid.
+     * @param uuid The reference to the parameter.
+     * @return A Parameter
+     */
+    public Parameter getReferencedParameter(String uuid){
+    	if (parameterReferenceMap == null)
+            throw new IllegalStateException("Test has not been started.");
+    	
+    	return parameterReferenceMap.get(uuid);
+    }
 
     //TODO: https://github.com/PSLCL/testing-framework/issues/43
 //    private static class StringContent implements Content

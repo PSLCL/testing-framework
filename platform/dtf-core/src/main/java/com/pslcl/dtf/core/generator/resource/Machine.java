@@ -292,7 +292,12 @@ public class Machine extends Resource
             parameters[1] = new Template.StringParameter(executable);
             for (int i = 0; i < params.length; i++)
             {
-                parameters[2 + i] = new Template.StringParameter(params[i]);
+            	Template.Parameter referenceParameter = machine.generator.getReferencedParameter(params[i]);
+            	if(referenceParameter != null){
+            		parameters[2 + i] = referenceParameter;
+            	} else{
+            		parameters[2 + i] = new Template.StringParameter(params[i]);
+            	}
             }
             actionDependencies = new ArrayList<Action>();
             
