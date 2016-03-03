@@ -212,9 +212,9 @@ public class InstancedTemplate {
     /**
      * 
      */
-    public void destroyNestedTemplates() {
+    public void releaseNestedTemplates() {
         for (InstancedTemplate nestedIT : mapStepReferenceToNestedTemplate.values()) {
-			log.debug(this.simpleName + ".destroyNestedTemplates() destroys nested template " + nestedIT.getTemplateID() + ", of uniqueMark " + nestedIT.getUniqueMark());
+			log.debug(this.simpleName + ".releaseNestedTemplates() submits, for release or reuse, nested template " + nestedIT.getTemplateID() + ", of uniqueMark " + nestedIT.getUniqueMark());
 			runnerMachine.getTemplateProvider().releaseTemplate(nestedIT);
         }
         mapStepReferenceToNestedTemplate.clear();
@@ -770,7 +770,7 @@ public class InstancedTemplate {
     	}
 	    	
 	   	// look at this iT's included templates- decide whether to release each of them, or not
-	    this.destroyNestedTemplates(); // TODO: decide whether to reuse any of these
+	    this.releaseNestedTemplates(); // TODO: decide whether to reuse any of these
     	
    		// inform resource providers that this template is released
    		this.templateReleased_InformResourceProviders();

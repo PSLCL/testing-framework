@@ -157,7 +157,6 @@ public class TemplateProvider implements ResourceStatusListener {
      */
     public void releaseTemplate(InstancedTemplate iT) {
 		boolean reuse = false;
-    	boolean found = false;
 		long templateUniqueMark = iT.getUniqueMark();
 		
     	// Use locking to avoid conflict: the same template can be released by normal template processing, or by us (TemplateProvider) being asked to go down, such as happens at dtf application exit.
@@ -171,12 +170,11 @@ public class TemplateProvider implements ResourceStatusListener {
     		if (reuse) {
     			byte[] templateHash = iT.getTemplateHash();
         		this.reusableInstancedTemplates.put(templateHash, iT);
-    			log.debug(this.simpleName + "releaseTemplate() found adds template of hash " + templateHash + " to reusableInstancedTemplates");
+    			log.debug(this.simpleName + "releaseTemplate() reuses templateID  " + iT.getTemplateID() +  ", of uniqueMark " + templateUniqueMark +  "; add it to reusableInstancedTemplates");
     		} else {
-    			// actually release iT
+        		// if no entry is found here, then this template had bound no resources
         		if (this.templateReleaseMap.containsKey(templateUniqueMark)) {
         			// as a setup for actual iT destroy(), below, remove iT from our 2 lists
-        			found = true;
         			InstancedTemplate removedIT = this.templateReleaseMap.remove(templateUniqueMark);
         			if (removedIT != null)
         	        	log.debug(this.simpleName + "releaseTemplate() removes template " + iT.getTemplateID() + ", from templateReleaseMap, of uniqueMark " + templateUniqueMark);
@@ -186,15 +184,9 @@ public class TemplateProvider implements ResourceStatusListener {
     	} // end synchronized()
 
     	// perform actual iT destroy, if indicated
-    	String templateID = iT.getTemplateID();
-    	if (found) {
-			log.debug(simpleName + "releaseTemplate() destroys template, for template hash " + templateID + ", uniqueMark " + templateUniqueMark);
+    	if (!reuse) {
+			log.debug(simpleName + "releaseTemplate() destroys template, for template hash " + iT.getTemplateID() + ", uniqueMark " + templateUniqueMark);
     		iT.destroy();
-    	} else if (!reuse){
-			log.debug(simpleName + "releaseTemplate() finds no entry in templateReleaseMap, for template hash " + templateID + ", uniqueMark " + templateUniqueMark);
-    		// no entry <= no resources were bound
-    	} else {
-    		log.debug("reuse");
     	}
     }
     

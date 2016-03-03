@@ -252,11 +252,11 @@ public class RunEntryCore {
      */
     private void writeRunEntryData() throws Exception {
         // temporarily, comment out these next 5 lines, to allow overwriting a past non-null result
-    	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, this.reNum);
-    	if (previousResultIsStored != null) { // this specific test is a fail-safe
-    		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
-    		throw new Exception("Database write not accomplished");
-    	} else
+//    	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, this.reNum);
+//    	if (previousResultIsStored != null) { // this specific test is a fail-safe
+//    		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
+//    		throw new Exception("Database write not accomplished");
+//    	} else
     		
     	{
     		if (!this.dbConnPool.getReadOnly()) {
@@ -415,7 +415,7 @@ public class RunEntryCore {
         	// Setup test run cancellation, prior to starting our test run.
         	// 	   While a test run is in progress, a user can cancel it, by entering a fail result in "our" run table entry.  
         	// Setup local task to watch for on the fly run cancellation. Place it as a member of RunEntryCore (ie: this), passed into and accessible while the test run executes its template steps.
-        	this.cancelTask = new CancelTask(this, runnerMachine);
+//        	this.cancelTask = new CancelTask(this, runnerMachine);
         	// temporarily, comment out the above line, to avoid CancelTask activity
         	
 			log.debug(this.simpleName + ".testRun() launches template instantiation for top level template " + DBTemplate.getId(this.topDBTemplate.hash));

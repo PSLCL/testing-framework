@@ -106,7 +106,7 @@ public class IncludeHandler {
 			log.debug(this.simpleName + ".instanceTemplates(), sees include failure while collecting template instantiation results; now cleans up successful nested templates");
         	
 			// cleanup whatever nested templates have been instantiated
-        	this.iT.destroyNestedTemplates();
+        	this.iT.releaseNestedTemplates();
             throw new Exception("IncludeHandler() finds one or more include steps failed");
         }
     }
