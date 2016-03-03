@@ -9,6 +9,7 @@ Resource attributes may be specified as part of the [Bind](template_commands.md#
 * `pslcl.dtf.resource.machine.disk-size=8.0` - Request that the returned machine instance has at least 8.0 GB of disk space. A range(inclusive) may also be specified(`8.0-16.0`) to request that the returned machine instance has at least 8.0 GB of system memory but no more than 16.0 GB.
 * `pslcl.dtf.resource.machine.image-id=`- Request a specific image id. For example, this attribute could be used to request a specific ec2 AMI or Docker image.
 * `pslcl.dtf.resource.machine.os=` - Request that the returned machine instance has the specified operating system such as `windows` or `linux`.
+* `pslcl.dtf.resource.machine.hostname` - May be used as an [Attribute Value Reference](value_references.md#attribute-values) by a test generator to use the hostname of a machine instance as a parameter in a program-based command.
 
 ##Person Attributes
 * `pslcl.dtf.resource.person.email=` - Request that the returned Person resource has the specified email address.
