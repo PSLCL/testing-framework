@@ -20,11 +20,11 @@ import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
+import com.pslcl.dtf.test.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetConfigData;
-import com.pslcl.dtf.resource.aws.provider.SubnetManager;
-import com.pslcl.dtf.test.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.test.resource.aws.provider.SubnetManager;
 
 @SuppressWarnings("javadoc")
 public class MachineConfigData
@@ -35,7 +35,7 @@ public class MachineConfigData
     public volatile String keyName;
     public volatile int ec2MaxDelay;
     public volatile int ec2MaxRetries;
-    public volatile String resoucePrefixName;
+    public volatile String resourcePrefixName;
     public volatile boolean windows;
     public volatile String linuxUserData;
     public volatile String winUserData;
@@ -56,7 +56,7 @@ public class MachineConfigData
 
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, defaultData.resoucePrefixName, resource, format);
+        data.resourcePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, defaultData.resourcePrefixName, resource, format);
         format.level.decrementAndGet();
         
         format.ttl("\nEc2 Instance:");
@@ -109,7 +109,7 @@ public class MachineConfigData
         
         config.initsb.ttl("Test name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ProviderNames.ResourcePrefixNameKey, ProviderNames.ResourcePrefixNameDefault);
+        data.resourcePrefixName = getAttribute(config, ProviderNames.ResourcePrefixNameKey, ProviderNames.ResourcePrefixNameDefault);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;

@@ -18,6 +18,7 @@ package com.pslcl.dtf.test.resource.aws.instance.machine;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.amazonaws.services.ec2.model.Instance;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
@@ -31,24 +32,32 @@ import com.pslcl.dtf.core.runner.resource.staf.futures.ConfigureFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.DeleteFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.RunFuture;
-import com.pslcl.dtf.test.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.test.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.test.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.test.resource.aws.provider.machine.MachineReservedResource;
 
 @SuppressWarnings("javadoc")
 public class AwsMachineInstance implements MachineInstance
 {
-    private final MachineReservedResource reservedResource;
+    public final MachineReservedResource reservedResource;
     public final Instance ec2Instance;
     public final MachineConfigData mconfig;
     public final RunnerConfig rconfig;
+    public final AtomicBoolean sanitizing;
+    public final AtomicBoolean destroyed;
+    public final AtomicBoolean taken;
+    public final long instantiationTime;
 
     public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
         this.reservedResource = reservedResource;
         this.mconfig = mconfig;
         this.rconfig = rconfig;
+        sanitizing = new AtomicBoolean(false);
+        destroyed = new AtomicBoolean(false);
+        taken = new AtomicBoolean(false);
         ec2Instance = reservedResource.ec2Instance;
+        instantiationTime = System.currentTimeMillis();
     }
 
     @Override
@@ -98,13 +107,13 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         DeployFuture deployFuture = new DeployFuture(
-                        ec2Instance.getPublicIpAddress(), 
-                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
+                        ec2Instance.getPublicIpAddress(),
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath,
                         partialDestPath, url, windows, reservedResource.resource.getCoordinates().getRunId());
         //@formatter:on
         return reservedResource.provider.config.blockingExecutor.submit(deployFuture);
     }
-    
+
     @Override
     public Future<CableInstance> connect(NetworkInstance network)// throws IncompatibleResourceException
     {
@@ -122,9 +131,9 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         RunFuture df = new RunFuture(
-                        ec2Instance.getPublicIpAddress(), 
-                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        command, null, windows, 
+                        ec2Instance.getPublicIpAddress(),
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath,
+                        command, null, windows,
                         reservedResource.resource.getCoordinates().getRunId(), this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
@@ -142,9 +151,9 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         ConfigureFuture cf = new ConfigureFuture(
-                        ec2Instance.getPublicIpAddress(), 
-                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        command, windows, 
+                        ec2Instance.getPublicIpAddress(),
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath,
+                        command, windows,
                         reservedResource.resource.getCoordinates().getRunId(), this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(cf);
@@ -161,9 +170,9 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         RunFuture df = new RunFuture(
-                        ec2Instance.getPublicIpAddress(), 
-                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        command, rconfig.blockingExecutor, windows, 
+                        ec2Instance.getPublicIpAddress(),
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath,
+                        command, rconfig.blockingExecutor, windows,
                         reservedResource.resource.getCoordinates().getRunId(), this);
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
         reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
@@ -179,8 +188,8 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         DeleteFuture df = new DeleteFuture(
-                        ec2Instance.getPublicIpAddress(), 
-                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
+                        ec2Instance.getPublicIpAddress(),
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath,
                         partialDestPath, windows, reservedResource.resource.getCoordinates().getRunId());
         //@formatter:on
         return reservedResource.provider.config.blockingExecutor.submit(df);
@@ -197,11 +206,11 @@ public class AwsMachineInstance implements MachineInstance
     public enum AwsInstanceState
     {
         //@formatter:off
-        Pending("pending"), 
-        Running("running"), 
-        ShuttingDown("shutting-down"), 
-        Terminated("terminated"), 
-        Stopping("stopping"), 
+        Pending("pending"),
+        Running("running"),
+        ShuttingDown("shutting-down"),
+        Terminated("terminated"),
+        Stopping("stopping"),
         Stopped("stopped");
         //@formatter:on
 
