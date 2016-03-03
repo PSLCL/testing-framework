@@ -137,6 +137,8 @@ public class DeployFuture implements Callable<Void>
         
         // deal with partialDestPath as if linux for now
         String path = null;
+        if(partialDestPath == null)
+            partialDestPath = "";
         String penultimate = partialDestPath.replace('\\', '/');        // lib/someApp.jar, topLevelFile, /opt/dtf/sandbox/doit.sh arg1 arg2
         String fileName = StrH.getAtomicName(penultimate, '/');         // someApp.jar, topLevelFile, doit.sh
         boolean fileOnly = penultimate.equals(fileName);                // false, true, false

@@ -17,6 +17,7 @@ package com.pslcl.dtf.resource.aws;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public class AwsResourcesManager implements ResourcesManager
     public final AwsMachineProvider machineProvider;
     public final AwsNetworkProvider networkProvider;
     public final AwsPersonProvider personProvider;
+    private volatile RunnerConfig config;
     public volatile SubnetManager subnetManager;
     public volatile AmazonEC2Client ec2Client;
     public volatile AwsClientConfig ec2cconfig;
@@ -185,6 +187,7 @@ public class AwsResourcesManager implements ResourcesManager
     @Override
     public void init(RunnerConfig config) throws Exception
     {
+        this.config = config;
         config.initsb.level.incrementAndGet();
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
@@ -256,14 +259,50 @@ public class AwsResourcesManager implements ResourcesManager
     @Override
     public void release(long templateInstanceId, boolean isReusable)
     {
-        machineProvider.release(templateInstanceId, isReusable);
-        networkProvider.release(templateInstanceId, isReusable);
-        personProvider.release(templateInstanceId, isReusable);
+        config.blockingExecutor.submit(new ReleaseFuture(templateInstanceId, isReusable));
     }
 
     @Override
     public void release(long templateInstanceId, long resourceId, boolean isReusable)
     {
         throw new RuntimeException("not implemented");
+    }
+    
+    private class ReleaseFuture implements Callable<Void>
+    {
+        private final long templateInstanceId;
+        private final boolean isReusable;
+        
+        private ReleaseFuture(long templateInstanceId, boolean isReusable)
+        {
+            this.templateInstanceId = templateInstanceId;
+            this.isReusable = isReusable;
+        }
+        
+        public Void call() throws Exception
+        {
+            try
+            {
+                personProvider.release(templateInstanceId, isReusable);
+            }catch(Exception e)
+            {
+                LoggerFactory.getLogger(getClass()).warn("personProvider.release failed", e);
+            }
+            try
+            {
+                networkProvider.release(templateInstanceId, isReusable);
+            }catch(Exception e)
+            {
+                LoggerFactory.getLogger(getClass()).warn("networkProvider.release failed", e);
+            }
+            try
+            {
+                machineProvider.release(templateInstanceId, isReusable);
+            }catch(Exception e)
+            {
+                LoggerFactory.getLogger(getClass()).warn("machineProvider.release failed", e);
+            }
+            return null;
+        }
     }
 }

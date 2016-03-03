@@ -96,6 +96,7 @@ public class ResourceNames
     public static final String ImageImageIdKey = MachineKeyBase + ".image-id";
     public static final String ImageOsKey = MachineKeyBase + ".os";
     public static final String ImageConfigKey = MachineKeyBase + ".image.config";
+    public static final String DnsHostKey = MachineKeyBase + ".hostname";
     
     public static final String MachineCoresDefault = "1";
     public static final String MachineMemoryDefault = "2.0";
@@ -142,6 +143,7 @@ public class ResourceNames
         keys.add(MachineMemoryKey);
         keys.add(MachineDiskKey);
         keys.add(ImageOsKey);
+        keys.add(DnsHostKey);
         return keys;
     }
     
