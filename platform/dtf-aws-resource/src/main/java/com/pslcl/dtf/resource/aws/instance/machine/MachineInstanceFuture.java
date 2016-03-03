@@ -192,12 +192,11 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             if (runResult != null) // get rid of possible null warning
                 reservedResource.ec2Instance = runResult.getReservation().getInstances().get(0);
         }
-        waitForState(pdelay, AwsInstanceState.Pending, AwsInstanceState.Running);
+        waitForState(pdelay, AwsInstanceState.Running);
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
         List<GroupIdentifier> sgs = reservedResource.ec2Instance.getSecurityGroups();
         reservedResource.groupId = sgs.get(0).getGroupId();
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
-        waitForState(pdelay, AwsInstanceState.Running);
         reservedResource.resource.getAttributes().put(ResourceNames.DnsHostKey, reservedResource.ec2Instance.getPublicDnsName());
         waitForStaf(pdelay);
     }
