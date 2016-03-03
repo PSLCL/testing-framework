@@ -739,7 +739,7 @@ public class InstancedTemplate {
             templateID = this.templateCleanupInfo.templateId;
             
             log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + templateID + ", templateInstanceID " + this.uniqueMark + " no longer needs its reserved or bound resources");
-            rm.release(this.uniqueMark, false);
+            rm.release(this.uniqueMark, true);
             log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + templateID + ", templateInstanceID " + this.uniqueMark + " no longer needs its reserved or bound resources");
             
         } else
