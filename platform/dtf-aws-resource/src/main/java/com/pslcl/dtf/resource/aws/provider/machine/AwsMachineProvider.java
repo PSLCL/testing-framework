@@ -181,7 +181,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 }
             } while (true);
             stalledRelease.remove(entry.getKey());
-            stalledInstance.setInstantiationTime();
+//            stalledInstance.setInstantiationTime();
             if (stalledInstance.destroyed.get())
                 return null;
             return stalledInstance;
@@ -246,9 +246,15 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     break;
                 }
                 long t1 = System.currentTimeMillis();
-                long delta = t1 - instance.getInstantiationTime();
+                long delta = t1 - instance.instantiationTime;
                 delta = TimeUnit.MINUTES.convert(delta, TimeUnit.MILLISECONDS);
-                if (delta >= instance.mconfig.stallReleaseMinutes)
+                long timeout = instance.mconfig.stallReleaseMinutes;
+                if(delta > instance.mconfig.stallReleaseMinutes)
+                {
+                    timeout += ((delta / instance.mconfig.stallReleaseMinutes) -1) * instance.mconfig.stallReleaseMinutes;
+                    timeout += instance.mconfig.stallReleaseMinutes - (delta % instance.mconfig.stallReleaseMinutes);
+                }
+                if (delta >= timeout)
                 {
                     isReusable = false;
                     break;
@@ -584,9 +590,15 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             for (Entry<Long, AwsMachineInstance> entry : stalledMap.entrySet())
             {
                 AwsMachineInstance machineInstance = entry.getValue();
-                long delta = t1 - machineInstance.getInstantiationTime();
+                long delta = t1 - machineInstance.instantiationTime;
                 delta = TimeUnit.MINUTES.convert(delta, TimeUnit.MILLISECONDS);
-                if (delta >= machineInstance.mconfig.stallReleaseMinutes)
+                long timeout = machineInstance.mconfig.stallReleaseMinutes;
+                if(delta > machineInstance.mconfig.stallReleaseMinutes)
+                {
+                    timeout += ((delta / machineInstance.mconfig.stallReleaseMinutes) -1) * machineInstance.mconfig.stallReleaseMinutes;
+                    timeout += machineInstance.mconfig.stallReleaseMinutes - (delta % machineInstance.mconfig.stallReleaseMinutes);
+                }
+                if (delta >= timeout)
                 {
                     synchronized (stalledRelease)
                     {

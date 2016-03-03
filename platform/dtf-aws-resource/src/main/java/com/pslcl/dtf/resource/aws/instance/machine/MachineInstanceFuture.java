@@ -44,6 +44,7 @@ import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
+import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalServerTimeoutException;
@@ -197,6 +198,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         reservedResource.groupId = sgs.get(0).getGroupId();
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
         waitForState(pdelay, AwsInstanceState.Running);
+        reservedResource.resource.getAttributes().put(ResourceNames.DnsHostKey, reservedResource.ec2Instance.getPublicDnsName());
         waitForStaf(pdelay);
     }
 
@@ -207,6 +209,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         pdelayData.maxRetries = config.ec2MaxRetries;
         pdelay.reset();
         String msg = pdelayData.getHumanName(Ec2MidStr, "describeInstances");
+        int count = 0;
         do
         {
             checkFutureCanceled();
@@ -237,9 +240,15 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 pdelay.retry(pdelayData.getHumanName(Ec2MidStr, "describeInstances"));
             } catch (Exception e)
             {
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if (fre instanceof FatalException)
-                    throw fre;
+                if(count++ < 3)
+                {
+                    pdelay.retry(pdelayData.getHumanName(Ec2MidStr, "describeInstances"));
+                }else
+                {
+                    FatalResourceException fre = pdelay.handleException(msg, e);
+                    if (fre instanceof FatalException)
+                        throw fre;
+                }
             }
         } while (true);
     }

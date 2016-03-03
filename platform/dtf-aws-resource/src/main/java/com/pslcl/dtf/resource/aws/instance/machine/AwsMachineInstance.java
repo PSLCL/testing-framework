@@ -46,7 +46,7 @@ public class AwsMachineInstance implements MachineInstance
     public final AtomicBoolean sanitizing;
     public final AtomicBoolean destroyed;
     public final AtomicBoolean taken;
-    private long instantiationTime;
+    public final long instantiationTime;
     
 
     public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
@@ -61,16 +61,6 @@ public class AwsMachineInstance implements MachineInstance
         instantiationTime = System.currentTimeMillis();
     }
 
-    public synchronized long getInstantiationTime()
-    {
-        return instantiationTime;
-    }
-    
-    public synchronized void setInstantiationTime()
-    {
-        instantiationTime = System.currentTimeMillis();
-    }
-    
     @Override
     public String getName()
     {
