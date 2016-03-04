@@ -15,9 +15,11 @@
  */
 package com.pslcl.dtf.runner.template;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
@@ -41,7 +43,7 @@ public class TemplateProvider implements ResourceStatusListener {
 	// template tracking is synchronized
 	private Object synchObj;
 	private final MultiValuedMap<byte[],InstancedTemplate> reusableInstancedTemplates; // MultiValuedMap: more than one template may exist for any one template hash key
-	private long uniqueMark;
+	private long templateInstanceID;
 	private final Map<Long,InstancedTemplate> templateReleaseMap; // tracks each instance by unique marker number key
 	// Note: Although Java is strictly pass by value, the value we store in this map is a reference to an InstancedTemplate object. The map does not hold the Java object itself.
 	//       When that value is eventually extracted from this map, it is still a reference to the original object; all transitory changes in that object are reflected.
@@ -52,15 +54,37 @@ public class TemplateProvider implements ResourceStatusListener {
     private final Logger log;
     private final String simpleName;
     
+    private Object[] getStoredReusableInstancedTemplates(byte [] templateHash) {
+		Collection<InstancedTemplate> collectionIT = this.reusableInstancedTemplates.get(templateHash);
+		Object[] arrayIT = collectionIT.toArray();
+
+		// Special workaround. After a test run allows a template to be stored, a new test run cannot find it. This odd technique finds it, after all.
+		if (arrayIT.length==0) {
+			// workaround to a bug with MultiValuedMap<byte[], InstancedTemplate>
+			Set<byte[]> heldHashKeys = this.reusableInstancedTemplates.keySet();
+			for (byte[] heldHashKey : heldHashKeys) {
+				if (Arrays.equals(heldHashKey, templateHash)) {
+					// the workaround is: use the byte[] key as extracted from the multimap; it seems to make it acceptable to the .get()
+					Collection<InstancedTemplate> localCollectionIT = this.reusableInstancedTemplates.get(heldHashKey);
+					arrayIT = localCollectionIT.toArray();
+					log.debug(this.simpleName + "getStoredReusableInstancedTemplates() <workaround kicks in> to find " + arrayIT.length + " reusableITs, for templateHash: " + TemplateProvider.bytesToHex(heldHashKey));
+				}
+			}
+		}
+		
+		return arrayIT;
+    }
+    
     /**
      * @note Call this only with this.synchObj locked 
      * @param templateHash
      * @return
      */
     private InstancedTemplate obtainOneReusableInstancedTemplate(byte[] templateHash) {
-    	// get the collection of matching but identical reusable InstancedTemplates, and pick one
-		Collection<InstancedTemplate> collectionIT = reusableInstancedTemplates.get(templateHash);
-		Object[] arrayIT = collectionIT.toArray();
+		// get the collection of matching but identical reusable InstancedTemplates, and pick one
+    	Object[] arrayIT = this.getStoredReusableInstancedTemplates(templateHash);
+		log.debug(this.simpleName + "obtainOneReusableInstancedTemplate() finds " + arrayIT.length + " reusableITs, for templateHash: " + TemplateProvider.bytesToHex(templateHash));
+		
 		InstancedTemplate retIT = null;
 		if (arrayIT.length > 0)
 			retIT = (InstancedTemplate)arrayIT[0];
@@ -71,20 +95,31 @@ public class TemplateProvider implements ResourceStatusListener {
      * @note Caller must lock on this.synchObj
      * @param templateHash
      */
-    private void removeOneEntry_reusableList(byte [] templateHash) {
+    private void removeOneEntry_reusableTemplateList(byte [] templateHash) {
 		// if in the reusable list, remove one entry having our key: 1st find all entries for our hash key, 2nd clear the list, 3rd remove one from the original list and store the smaller list back to the resuable list
-		Collection<InstancedTemplate> collectionIT = reusableInstancedTemplates.get(templateHash);
-		Object[] arrayIT = collectionIT.toArray();
+    	Object[] arrayIT = this.getStoredReusableInstancedTemplates(templateHash);
+		log.debug(this.simpleName + "removeOneEntry_reusableTemplateList() finds " + arrayIT.length + " reusableITs, for templateHash: " + TemplateProvider.bytesToHex(templateHash));
+		int lengthArrayIT = arrayIT.length;
 		
-		this.reusableInstancedTemplates.remove(templateHash); // removes all entries for the key
-		
-		for (int i=1; i < arrayIT.length; i++)
-			this.reusableInstancedTemplates.put(templateHash, (InstancedTemplate)(arrayIT[i]));
-		
-		if (arrayIT.length > 0)
-			log.debug(this.simpleName + "removeOneEntry)reusableList() found " + arrayIT.length + " entries in reusableInstancedTemplates, for template hash " + templateHash + "; 1 entry removed");
+		if (lengthArrayIT > 0) {
+			Collection<InstancedTemplate> collectionRemovedIT =	this.reusableInstancedTemplates.remove(templateHash); // removes all entries for the key
+			if (collectionRemovedIT.isEmpty()) {
+				// workaround to a bug with MultiValuedMap<byte[], InstancedTemplate>
+				Set<byte[]> heldHashKeys = this.reusableInstancedTemplates.keySet();
+				for (byte[] heldHashKey : heldHashKeys) {
+					if (Arrays.equals(heldHashKey, templateHash)) {
+						// the workaround is: use the byte[] key as extracted from the multimap; it seems to make it acceptable to the .remove()
+						Collection<InstancedTemplate> localCollectionRemovedIT = this.reusableInstancedTemplates.remove(heldHashKey); // removes all entries for the key
+						log.debug(this.simpleName + "removeOneEntry_reusableTemplateList() <workaround kicks in> to identify " + localCollectionRemovedIT.size() + " reusableITs, for templateHash: " + TemplateProvider.bytesToHex(heldHashKey));
+					}
+				}
+			}
+			
+			for (int i=1; i < lengthArrayIT; i++)
+				this.reusableInstancedTemplates.put(templateHash, (InstancedTemplate)(arrayIT[i]));
+			log.debug(this.simpleName + "removeOneEntry_reusuableList() found " + lengthArrayIT + " reusableITs held, for templateHash: " + TemplateProvider.bytesToHex(templateHash) + ((lengthArrayIT>0)?". 1 entry removed":""));
+		}
     }
-
 
     /**
      * 
@@ -93,7 +128,7 @@ public class TemplateProvider implements ResourceStatusListener {
     {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
-    	this.uniqueMark = 0;
+    	this.templateInstanceID = 0;
     	this.synchObj = new Object();
     	this.templateReleaseMap = new HashMap<>();
         this.reusableInstancedTemplates = new ArrayListValuedHashMap<byte[],InstancedTemplate>();
@@ -142,13 +177,26 @@ public class TemplateProvider implements ResourceStatusListener {
 	long addToReleaseMap(InstancedTemplate iT) {
     	synchronized(this.synchObj) {
     		// leave this.reusableInstancedTemplates alone (this method has nothing to do with that)
-    		long retUnique = this.uniqueMark++;
+    		long retUnique = this.templateInstanceID++;
     		this.templateReleaseMap.put(retUnique, iT);
-        	log.debug(this.simpleName + "addToReleaseMap() adds " + iT.getTemplateID() + " to templateReleaseMap, assigns uniqueMark " + retUnique);
+        	log.debug(this.simpleName + "addToReleaseMap() adds " + iT.getTemplateID() + " to templateReleaseMap, assigns templateInstanceID " + retUnique);
     		return retUnique;
 		} // end synchronized()
 	}
 
+    final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    private static String bytesToHex(byte[] bytes)
+    {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++)
+        {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+
+        return new String(hexChars);
+    }
 	
     /**
      * Release the template, or determine that it shall be reused.
@@ -157,7 +205,7 @@ public class TemplateProvider implements ResourceStatusListener {
      */
     public void releaseTemplate(InstancedTemplate iT) {
 		boolean reuse = false;
-		long templateUniqueMark = iT.getUniqueMark();
+		long templateInstanceID = iT.getTemplateInstanceID();
 		
     	// Use locking to avoid conflict: the same template can be released by normal template processing, or by us (TemplateProvider) being asked to go down, such as happens at dtf application exit.
     	synchronized(this.synchObj) {
@@ -169,23 +217,26 @@ public class TemplateProvider implements ResourceStatusListener {
     		
     		if (reuse) {
     			byte[] templateHash = iT.getTemplateHash();
-        		this.reusableInstancedTemplates.put(templateHash, iT);
-    			log.debug(this.simpleName + "releaseTemplate() reuses templateID  " + iT.getTemplateID() +  ", of uniqueMark " + templateUniqueMark +  "; add it to reusableInstancedTemplates");
+    	    	synchronized (this.synchObj) {
+            		this.reusableInstancedTemplates.put(templateHash, iT);
+        			log.debug(this.simpleName + "releaseTemplate() reuses templateID  " + iT.getTemplateID() +  ", of templateInstanceID " + templateInstanceID +  "; adds templateHash key to reusableInstancedTemplates: " + TemplateProvider.bytesToHex(templateHash));
+    	    	}
     		} else {
         		// if no entry is found here, then this template had bound no resources
-        		if (this.templateReleaseMap.containsKey(templateUniqueMark)) {
+        		if (this.templateReleaseMap.containsKey(templateInstanceID)) {
         			// as a setup for actual iT destroy(), below, remove iT from our 2 lists
-        			InstancedTemplate removedIT = this.templateReleaseMap.remove(templateUniqueMark);
+        			InstancedTemplate removedIT = this.templateReleaseMap.remove(templateInstanceID);
         			if (removedIT != null)
-        	        	log.debug(this.simpleName + "releaseTemplate() removes template " + iT.getTemplateID() + ", from templateReleaseMap, of uniqueMark " + templateUniqueMark);
-        			this.removeOneEntry_reusableList(iT.getTemplateHash());
+        	        	log.debug(this.simpleName + "releaseTemplate() removes template " + iT.getTemplateID() + ", from templateReleaseMap, of templateInstanceID " + templateInstanceID);
         		}
+        		// TODO: remove this entry only if this iT had been placed in this list, originally
+    			this.removeOneEntry_reusableTemplateList(iT.getTemplateHash());
     		}
     	} // end synchronized()
 
     	// perform actual iT destroy, if indicated
     	if (!reuse) {
-			log.debug(simpleName + "releaseTemplate() destroys template, for template hash " + iT.getTemplateID() + ", uniqueMark " + templateUniqueMark);
+			log.debug(simpleName + "releaseTemplate() destroys template, for template hash " + iT.getTemplateID() + ", templateInstanceID " + templateInstanceID);
     		iT.destroy();
     	}
     }
@@ -208,14 +259,17 @@ public class TemplateProvider implements ResourceStatusListener {
         // Note: At any one time, there can exist multiple instanced templates of the same templateID string. They differ only, or nearly only, in which test run (or parent template) had used each one.
         //       At some future time of dtf-runner shutdown, we release every template. To distinguish them, iT's constructor assigned each iT instance a unique mark number (a Long).
     	InstancedTemplate iT = null;
-    	byte [] templateHash = dbTemplate.hash;
-    	synchronized (this.synchObj) {
-    		iT = this.obtainOneReusableInstancedTemplate(templateHash); 
-            if (iT != null) {
-            	// reuse iT
-            	this.removeOneEntry_reusableList(templateHash);
-                // Note: This is early impl with no smarts to optimize anything. At this line, they asked for an instantiated template, they get it as a reused one, and now it is not available to another user for reuse.
-            }
+    	if (!dbTemplate.isTopLevelTemplate()) {
+	    	byte [] templateHash = dbTemplate.hash;
+	    	synchronized (this.synchObj) {
+	    		iT = this.obtainOneReusableInstancedTemplate(templateHash); 
+	            if (iT != null) {
+	            	// reuse iT
+		        	log.debug(this.simpleName + "getInstancedTemplate() obtains template by reuse: " + iT.getTemplateID() + ", of templateInstanceID " + iT.getTemplateInstanceID());
+	            	this.removeOneEntry_reusableTemplateList(templateHash);
+	                // Note: This is early impl with no smarts to optimize anything. At this line, they asked for an instantiated template, they get it as a reused one, and now it is not available to another user for reuse.
+	            }
+	    	}
     	}
         if (iT == null)
         	iT = new InstancedTemplate(reCore, dbTemplate, runnerMachine); // sets internal StepsParser object, assigns a Long unique marker number, and runs template steps
