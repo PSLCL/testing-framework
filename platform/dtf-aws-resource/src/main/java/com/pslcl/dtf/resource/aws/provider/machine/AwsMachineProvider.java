@@ -61,7 +61,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     private final HashMap<Long, MachineReservedResource> reservedMachines; // key is resourceId
     private final HashMap<Long, AwsMachineInstance> stalledRelease; // key is templateInstanceId
     private final List<Future<Void>> deleteInstanceFutures;
-    private final HashMap<Long, List<Future<RunnableProgram>>> runnablePrograms;
+    private final HashMap<Long, List<Future<RunnableProgram>>> runnablePrograms; //TODO: double check this is not leaking memory, all calling deleteInstance
     private final InstanceFinder instanceFinder;
     private final ImageFinder imageFinder;
     public volatile MachineConfigData defaultMachineConfigData;
@@ -142,6 +142,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
     public AwsMachineInstance checkForReuse(MachineReservedResource reservedResource)
     {
+        TabToLevel format = new TabToLevel();
+        format.ttl("\ncheckForReuse:");
+        format.level.incrementAndGet();
+        reservedResource.toString(format);
+        format.level.incrementAndGet();
         HashMap<Long, AwsMachineInstance> stalledMap;
         synchronized (stalledRelease)
         {
@@ -157,18 +162,19 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     continue;
                 stalledInstance.taken.set(true);
             }
-            InstanceType instanceType;
-            try
-            {
-                instanceType = instanceFinder.findInstance(stalledInstance.reservedResource.resource);
-            } catch (ResourceNotFoundException e1)
-            {
-                continue;
-            }
+            InstanceType instanceType = stalledInstance.reservedResource.instanceType;
+//            try
+//            {
+//                instanceType = instanceFinder.findInstance(stalledInstance.reservedResource.resource);
+//            } catch (ResourceNotFoundException e1)
+//            {
+//                continue;
+//            }
             if (instanceType != reservedResource.instanceType)
                 continue;
             if (!stalledInstance.reservedResource.imageId.equals(reservedResource.imageId))
                 continue;
+            format.ttl("found a matching instanceType/imageId may have to wait on sanitization complete");
             do
             {
                 if (!stalledInstance.sanitizing.get())
@@ -180,12 +186,22 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 {
                 }
             } while (true);
+            format.ttl("sanitization complete, returning object to use");
             stalledRelease.remove(entry.getKey());
-//            stalledInstance.setInstantiationTime();
+            //            stalledInstance.setInstantiationTime();
             if (stalledInstance.destroyed.get())
+            {
+                format.ttl("instance cleanup destroyed the intended, returning null");
+                log.debug(format.toString());
                 return null;
+            }
+            format.ttl("instance match found");
+            log.debug(format.toString());
+            stalledInstance.reservedResource = reservedResource; 
             return stalledInstance;
         }
+        format.ttl("no stalled instances to check right now");
+        log.debug(format.toString());
         return null;
     }
 
@@ -211,6 +227,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
          * 6. A repeating check stalled release task will check for timed out stalls and destroy them. 
          *********************************************************************/
 
+        TabToLevel format = new TabToLevel();
+        format.ttl("\n", getClass().getName() + ".release");
+        format.level.incrementAndGet();
+        format.ttl("templateInstanceId: " + templateInstanceId);
+        format.ttl("isReusable: " + isReusable);
         List<AwsMachineInstance> instancesInTemplate = new ArrayList<AwsMachineInstance>();
         synchronized (boundInstances)
         {
@@ -218,12 +239,18 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 List<Long> releaseList = new ArrayList<Long>();
                 releasePossiblePendings(templateInstanceId, isReusable); // this will clean up the reserved list for given template 
+                format.ttl("machine instances being released:");
+                format.level.incrementAndGet();
                 for (Entry<Long, AwsMachineInstance> entry : boundInstances.entrySet())
                 {
                     ResourceCoordinates coordinates = entry.getValue().getCoordinates();
                     if (coordinates.templateInstanceId == templateInstanceId)
+                    {
                         releaseList.add(entry.getKey());
+                        format.ttl(entry.getValue().toString(format));
+                    }
                 }
+                format.level.decrementAndGet();
                 for (Long key : releaseList)
                 {
                     AwsMachineInstance instance = boundInstances.remove(key);
@@ -235,47 +262,74 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             }
         }
         if (instancesInTemplate.size() == 0)
-            return;
-        if (isReusable)
         {
-            for (AwsMachineInstance instance : instancesInTemplate)
-            {
-                if (!instance.reservedResource.reusable.get())
-                {
-                    isReusable = false;
-                    break;
-                }
-                long t1 = System.currentTimeMillis();
-                long delta = t1 - instance.instantiationTime;
-                delta = TimeUnit.MINUTES.convert(delta, TimeUnit.MILLISECONDS);
-                long timeout = instance.mconfig.stallReleaseMinutes;
-                if(delta > instance.mconfig.stallReleaseMinutes)
-                {
-                    timeout += ((delta / instance.mconfig.stallReleaseMinutes) -1) * instance.mconfig.stallReleaseMinutes;
-                    timeout += instance.mconfig.stallReleaseMinutes - (delta % instance.mconfig.stallReleaseMinutes);
-                }
-                if (delta >= timeout)
-                {
-                    isReusable = false;
-                    break;
-                }
-            }
+            format.ttl("no machine instances in the given template");
+            log.debug(format.toString());
+            return;
         }
 
-        if (isReusable)
+        if (!isReusable)
         {
-            sanitizeInstance(templateInstanceId, instancesInTemplate);
+            format.ttl("called with isReusable false deleting any/all");
+            log.debug(format.toString());
+            synchronized (runnablePrograms)
+            {
+                runnablePrograms.remove(templateInstanceId);
+            }
+            deleteInstances(templateInstanceId, instancesInTemplate, null);
             return;
         }
-        synchronized (runnablePrograms)
+
+        List<AwsMachineInstance> adjustList = new ArrayList<AwsMachineInstance>();
+        format.ttl("Still viable tests: ");
+        format.level.incrementAndGet();
+        for (AwsMachineInstance instance : instancesInTemplate)
         {
-            runnablePrograms.remove(templateInstanceId);
+            if (!instance.reservedResource.reusable.get())
+            {
+                adjustList.add(instance);
+                format.ttl("invalid for reuse config was called on:");
+                format.level.incrementAndGet();
+                instance.toString(format);
+                format.level.decrementAndGet();
+                continue;
+            }
+            long t1 = System.currentTimeMillis();
+            long delta = t1 - instance.instantiationTime;
+            delta = TimeUnit.MINUTES.convert(delta, TimeUnit.MILLISECONDS);
+            long timeout = instance.mconfig.stallReleaseMinutes;
+            if (delta > instance.mconfig.stallReleaseMinutes)
+            {
+                timeout += ((delta / instance.mconfig.stallReleaseMinutes) - 1) * instance.mconfig.stallReleaseMinutes;
+                timeout += instance.mconfig.stallReleaseMinutes - (delta % instance.mconfig.stallReleaseMinutes);
+            }
+            if (delta >= timeout)
+            {
+                adjustList.add(instance);
+                format.ttl("stall release timed out on:");
+                format.level.incrementAndGet();
+                instance.toString(format);
+                format.level.decrementAndGet();
+            }
         }
-        deleteInstances(templateInstanceId, instancesInTemplate, null);
+        format.level.decrementAndGet();
+        for (AwsMachineInstance adjust : adjustList)
+        {
+            instancesInTemplate.remove(adjust);
+            deleteInstances(templateInstanceId, instancesInTemplate, adjust.getCoordinates());
+        }
+        format.ttl("reusable instances: ", instancesInTemplate.size());
+        log.debug(format.toString());
+        if (instancesInTemplate.size() > 0)
+            sanitizeInstance(templateInstanceId, instancesInTemplate);
+        return;
     }
 
     private void deleteInstances(long templateInstanceId, List<AwsMachineInstance> instancesInTemplate, ResourceCoordinates coordinates)
     {
+        TabToLevel format = new TabToLevel();
+        format.ttl("\n", getClass().getSimpleName(), ".deleteInstances");
+        format.level.incrementAndGet();
         for (AwsMachineInstance instance : instancesInTemplate)
         {
             if (coordinates != null)
@@ -283,6 +337,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 if (!instance.reservedResource.resource.getCoordinates().equals(coordinates))
                     continue;
             }
+            instance.destroyed.set(true);
             instance.sanitizing.set(false); // the checkReusable may be waiting on this, if so, drop it from its wait and let it error out on first use.
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
             ((AwsMachineProvider) instance.getResourceProvider()).instanceFinder.releaseInstance(instance.reservedResource.instanceType);
@@ -290,11 +345,15 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 deleteInstanceFutures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, null, pdelayData)));
             }
+            instance.toString(format);
+            format.ttl(" ");
         }
     }
 
     private void sanitizeInstance(long templateInstanceId, List<AwsMachineInstance> instancesInTemplate)
     {
+        TabToLevel format = new TabToLevel();
+        format.ttl("\nsanitizeInstance deleting sandbox");
         List<AwsMachineInstance> deletedList = new ArrayList<AwsMachineInstance>();
         for (AwsMachineInstance instance : instancesInTemplate)
             instance.sanitizing.set(true);
@@ -302,19 +361,24 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         {
             try
             {
+                instance.toString(format);
                 instance.delete(null).get();
             } catch (Exception e)
             {
+                format.ttl("delete sandbox failed, nuking this instance");
                 deletedList.add(instance);
                 deleteInstances(templateInstanceId, instancesInTemplate, instance.getCoordinates());
             }
         }
-
-        //        Map<Long, AwsMachineInstance> stalledList = new HashMap<Long, AwsMachineInstance>();
+        log.debug(format.toString());
+        
+        format = new TabToLevel();
+        format.ttl("\nchecking runnablePrograms from templateInstanceId: ", templateInstanceId);
+        format.level.incrementAndGet();
         List<Future<RunnableProgram>> rplist = null;
         synchronized (runnablePrograms)
         {
-            rplist = runnablePrograms.remove(templateInstanceId);
+            rplist = runnablePrograms.remove(templateInstanceId); // TODO: is this broken?, need to remove one at a time and nuke the whole when 0
         }
         if (rplist != null)
         {
@@ -327,9 +391,12 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     ResourceCoordinates coord = machineInstance.getCoordinates();
                     if (srp.isRunning())
                     {
+                        srp.toString(format);
+                        format.ttl(" ");
                         Integer ccode = srp.kill().get();
                         if (ccode != 0)
                         {
+                            format.ttl("cleanup of running application failed, nuking instance");
                             machineInstance.destroyed.set(true);
                             machineInstance.sanitizing.set(false);
                             machineInstance.taken.set(true);
@@ -337,9 +404,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                             deleteInstances(templateInstanceId, instancesInTemplate, coord);
                         }
                     }
+                    log.debug(format.toString());
                     machineInstance.sanitizing.set(false);
                 } catch (Exception e)
                 {
+                    format.ttl("cleanup of running application threw exception, manual cleanup may be required");
                     // nothing further we can really do if this fails, instead of warning for manual cleanup, nuke the whole template's worth
                     for (AwsMachineInstance instance : instancesInTemplate)
                     {
@@ -347,11 +416,13 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                         instance.sanitizing.set(false);
                         instance.taken.set(true);
                     }
-                    
+
                     deleteInstances(templateInstanceId, instancesInTemplate, null);
+                    log.debug(format.toString());
                     return;
                 }
             }
+            log.debug(format.toString());
         }
         for (AwsMachineInstance instance : instancesInTemplate)
         {
@@ -593,9 +664,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 long delta = t1 - machineInstance.instantiationTime;
                 delta = TimeUnit.MINUTES.convert(delta, TimeUnit.MILLISECONDS);
                 long timeout = machineInstance.mconfig.stallReleaseMinutes;
-                if(delta > machineInstance.mconfig.stallReleaseMinutes)
+                if (delta > machineInstance.mconfig.stallReleaseMinutes)
                 {
-                    timeout += ((delta / machineInstance.mconfig.stallReleaseMinutes) -1) * machineInstance.mconfig.stallReleaseMinutes;
+                    timeout += ((delta / machineInstance.mconfig.stallReleaseMinutes) - 1) * machineInstance.mconfig.stallReleaseMinutes;
                     timeout += machineInstance.mconfig.stallReleaseMinutes - (delta % machineInstance.mconfig.stallReleaseMinutes);
                 }
                 if (delta >= timeout)
@@ -606,12 +677,12 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     }
                     synchronized (machineInstance)
                     {
-                        if(!machineInstance.taken.get())
+                        if (!machineInstance.taken.get())
                         {
                             machineInstance.sanitizing.set(false);
                             machineInstance.destroyed.set(true);
                             machineInstance.taken.set(true);
-                        }else
+                        } else
                             continue;
                     }
                     ResourceCoordinates coord = machineInstance.reservedResource.resource.getCoordinates();
@@ -622,12 +693,16 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             }
             synchronized (deleteInstanceFutures)
             {
+                List<Future<Void>> completeList = new ArrayList<Future<Void>>();
                 for (Future<Void> future : deleteInstanceFutures)
                 {
                     try
                     {
                         if (future.isDone())
+                        {
                             future.get();
+                            completeList.add(future);
+                        }
                     } catch (Exception e)
                     {
                         // nothing further we can really do if these fail, futures should have logged error details
@@ -635,6 +710,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                         log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
                     }
                 }
+                for (Future<Void> future : completeList)
+                    deleteInstanceFutures.remove(future);
             }
         }
     }

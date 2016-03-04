@@ -15,6 +15,8 @@
  */
 package com.pslcl.dtf.resource.aws.instance.machine;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -32,6 +34,7 @@ import com.pslcl.dtf.core.runner.resource.staf.futures.ConfigureFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.DeleteFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.RunFuture;
+import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
@@ -39,7 +42,7 @@ import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 @SuppressWarnings("javadoc")
 public class AwsMachineInstance implements MachineInstance
 {
-    public final MachineReservedResource reservedResource;
+    public volatile MachineReservedResource reservedResource;
     public final Instance ec2Instance;
     public final MachineConfigData mconfig;
     public final RunnerConfig rconfig;
@@ -203,7 +206,31 @@ public class AwsMachineInstance implements MachineInstance
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
         return instance.runnerConfig.blockingExecutor.submit(new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
-
+    
+    public String toString()
+    {
+        TabToLevel format = new TabToLevel();
+        return toString(format).toString();
+    }
+    
+    public TabToLevel toString(TabToLevel format)
+    {
+        format.ttl(getClass().getSimpleName());
+        format.level.incrementAndGet();
+        format.ttl("sanitizing: ", sanitizing);
+        format.ttl("destroyed: ", destroyed);
+        format.ttl("taken: ", taken);
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        String time = sdf.format(new Date(instantiationTime));
+        format.ttl("instantiationTime:", time);
+        format.ttl("reservedResource:");
+        format.level.incrementAndGet();
+        reservedResource.toString(format);
+        format.level.decrementAndGet();
+        format.level.decrementAndGet();
+        return format;
+    }
+    
     public enum AwsInstanceState
     {
         //@formatter:off
