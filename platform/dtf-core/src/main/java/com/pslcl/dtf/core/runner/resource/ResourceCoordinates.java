@@ -127,6 +127,7 @@ public class ResourceCoordinates
         result = prime * result + ((templateId == null) ? 0 : templateId.hashCode());
         return result;
     }
+    
     // DO NOT include manager and provider in equals/hashCode
     @Override
     public boolean equals(Object obj)
@@ -160,11 +161,11 @@ public class ResourceCoordinates
         format.ttl("manager: ", (manager == null ? "null" : manager.getClass().getName()));
         format.ttl("provider: ", (provider == null ? "null" : provider.getClass().getName()));
         format.ttl("templateId: " + templateId);
+        format.ttl("templateInstanceId: " + templateId);
         format.ttl("runId: " + runId);
         format.level.decrementAndGet();
         return format;
     }
-
     
     @Override
     public String toString()

@@ -117,12 +117,13 @@ public class ResourceDescImpl implements ResourceDescription
     public String toString()
     {
         TabToLevel format = new TabToLevel();
+        format.ttl("\n");
         return toString(format).toString();
     }
     
     public TabToLevel toString(TabToLevel format)
     {
-        format.ttl("\nResourceDescImpl:");
+        format.ttl("ResourceDescImpl:");
         format.level.incrementAndGet();
         format.ttl("name: ", name);
         coordinates.toString(format);

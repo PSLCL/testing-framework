@@ -81,6 +81,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     @Override
     public MachineInstance call() throws FatalResourceException
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("MachineInstanceFuture");
         try
         {
             reservedResource.format.ttl("preFixMostName = ", pdelayData.preFixMostName);
@@ -101,16 +103,19 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             }
             ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, machineInstance);
             LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "- bound: " + reservedResource.format.toString());
+            Thread.currentThread().setName(tname);
             return machineInstance;
         } catch (CancellationException ie)
         {
+            Thread.currentThread().setName(tname);
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), ie);
         } catch (FatalResourceException e)
         {
-            //TODO: as you figure out forceCleanup and optimization of normal releaseFuture cleanup, need to to do possible cleanup on these exceptions
+            Thread.currentThread().setName(tname);
             throw e;
         } catch (Throwable t)
         {
+            Thread.currentThread().setName(tname);
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + " call method threw a non-FatalResourceException", t);
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), t);
         }

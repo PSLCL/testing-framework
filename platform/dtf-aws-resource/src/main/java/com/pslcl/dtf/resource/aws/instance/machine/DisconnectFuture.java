@@ -50,6 +50,8 @@ public class DisconnectFuture implements Callable<Void>
     @Override
     public Void call() throws FatalResourceException
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("DisconnectFuture");
         List<String> sgroups = new ArrayList<String>();
         List<GroupIdentifier> existingGroups = machineInstance.ec2Instance.getSecurityGroups();
         for (GroupIdentifier gid : existingGroups)
@@ -81,6 +83,7 @@ public class DisconnectFuture implements Callable<Void>
                     throw fre;
             }
         } while (true);
+        Thread.currentThread().setName(tname);
         return null;
     }
 }

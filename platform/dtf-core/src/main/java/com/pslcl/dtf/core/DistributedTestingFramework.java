@@ -356,9 +356,12 @@ public class DistributedTestingFramework
         @Override
         public void run()
         {
+            String tname = Thread.currentThread().getName();
+            Thread.currentThread().setName("GeneratorFuture");
             System.out.println("Script: " + this.toString() + " started.");
             process();
             System.out.println("Script: " + this.toString() + " completed.");
+            Thread.currentThread().setName(tname);
         }
 
         private void process()

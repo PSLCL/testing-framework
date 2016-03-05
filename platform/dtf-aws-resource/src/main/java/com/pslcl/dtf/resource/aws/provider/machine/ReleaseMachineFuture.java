@@ -57,6 +57,8 @@ public class ReleaseMachineFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("ReleaseMachineFuture");
         LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + coordinates.toString());
         terminateEc2Instance();
         deleteSubnet();
@@ -64,6 +66,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         
         provider.config.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
         LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + coordinates.toString());
+        Thread.currentThread().setName(tname);
         return null;
     }
     

@@ -44,14 +44,13 @@ public class AwsMachineInstance implements MachineInstance
 {
     public volatile MachineReservedResource reservedResource;
     public final Instance ec2Instance;
-    public final MachineConfigData mconfig;
+    public volatile MachineConfigData mconfig;
     public final RunnerConfig rconfig;
     public final AtomicBoolean sanitizing;
     public final AtomicBoolean destroyed;
     public final AtomicBoolean taken;
     public final long instantiationTime;
     
-
     public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
         this.reservedResource = reservedResource;
@@ -210,10 +209,11 @@ public class AwsMachineInstance implements MachineInstance
     public String toString()
     {
         TabToLevel format = new TabToLevel();
-        return toString(format).toString();
+        format.ttl("\n");
+        return toString(format, false).toString();
     }
     
-    public TabToLevel toString(TabToLevel format)
+    public TabToLevel toString(TabToLevel format, boolean brief)
     {
         format.ttl(getClass().getSimpleName());
         format.level.incrementAndGet();
@@ -223,10 +223,7 @@ public class AwsMachineInstance implements MachineInstance
         SimpleDateFormat sdf = new SimpleDateFormat();
         String time = sdf.format(new Date(instantiationTime));
         format.ttl("instantiationTime:", time);
-        format.ttl("reservedResource:");
-        format.level.incrementAndGet();
-        reservedResource.toString(format);
-        format.level.decrementAndGet();
+        reservedResource.toString(format, brief);
         format.level.decrementAndGet();
         return format;
     }
