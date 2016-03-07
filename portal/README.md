@@ -120,6 +120,7 @@ Using the chrome plugin for livereload and connecting to the server will reload 
 The Portal provides an Ivy repository containing the platform .jar files required to build test generators. Include the Portal's Ivy repository by adding the following two lines, setting the correct hostname for the portal, to your ivysettings.xml file:
 
 `<property name="com.pslcl.dtf.url" override="false" value="<hostname>"/>`
+
 `<include file="${com.pslcl.dtf.url}/ivysettings.pslcl-dtf.xml"/>`
     
 ## Style guide
