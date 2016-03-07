@@ -172,7 +172,6 @@ public class AwsResourcesManager implements ResourcesManager
         //@formatter:off
         DeleteTagsRequest dtr = new 
                         DeleteTagsRequest().withTags(
-                                        new Tag(SystemIdKey),
                                         new Tag(TagRunIdKey),
                                         new Tag(TagTemplateIdKey),
                                         new Tag(TagTemplateInstanceIdKey),
