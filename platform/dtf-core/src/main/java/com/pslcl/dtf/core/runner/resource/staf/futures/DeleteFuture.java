@@ -66,9 +66,6 @@ public class DeleteFuture implements Callable<Void>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("DeleteFuture");
-        String path = partialDestPath;
-        if(path == null)
-            path = "";
         ProcessCommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
         if(windows)
             issueRequest("rd " + commandData.getFdn() + " /s /q");

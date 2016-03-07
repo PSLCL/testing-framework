@@ -77,9 +77,9 @@ Template instantiation will fail if any steps are encountered which cannot be pa
 Consider each test run as equivalent to a template that forms the root of a tree. This top-level tree will not be equivalent to any 
 other template (because each test run is distinct), *but the templates used to form it may very well be reusable*.
 
-Results of a test run must not be changed by the reuse of a template. Consider the initial state of a template to be its state at 
-the moment it was fully instantiated. In order to keep template reuse from affecting the outcome of a test run, a template may only
-be reused if it is at its initial state.
+Results of a test run must not be changed by the reuse of a template. Consider the initial instatiated state of a template to be its state at 
+the moment it was fully instantiated. In order to keep template reuse from affecting the outcome of a new test run, a template may only
+be reused if it is at its initial instantiated state. Because the template has already been instantiated, none of its steps are executed again.
 
 In the simplest case, a parent template includes a child template but does not change its state. The [Run](template_commands.md#run), 
 [Run-Forever](template_commands.md#run-forever) and [Start](template_commands.md#start) commands, when completed, must leave the 

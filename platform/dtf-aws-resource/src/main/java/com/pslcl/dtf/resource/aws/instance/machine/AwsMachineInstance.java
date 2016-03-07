@@ -197,7 +197,7 @@ public class AwsMachineInstance implements MachineInstance
         //@formatter:on
         return reservedResource.provider.config.blockingExecutor.submit(df);
     }
-
+    
     @Override
     public Future<Void> disconnect(NetworkInstance network)
     {

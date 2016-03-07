@@ -163,17 +163,18 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         for (Entry<Long, AwsMachineInstance> entry : stalledMap.entrySet())
         {
             AwsMachineInstance stalledInstance = entry.getValue();
+            InstanceType instanceType = stalledInstance.reservedResource.instanceType;
+            if (instanceType != reservedResource.instanceType)
+                continue;
+            if (!stalledInstance.reservedResource.imageId.equals(reservedResource.imageId))
+                continue;
+            
             synchronized (stalledRelease)
             {
                 if (stalledInstance.taken.get())
                     continue;
                 stalledInstance.taken.set(true);
             }
-            InstanceType instanceType = stalledInstance.reservedResource.instanceType;
-            if (instanceType != reservedResource.instanceType)
-                continue;
-            if (!stalledInstance.reservedResource.imageId.equals(reservedResource.imageId))
-                continue;
             format.ttl("found a matching instanceType/imageId may have to wait on sanitization complete");
             log.debug(format.toString());
             do
@@ -204,6 +205,10 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 log.warn("failed to inject the new mconfig", e);
                 format.ttl("failed to inject the new mconfig");
                 log.debug(format.toString());
+                synchronized (stalledRelease)
+                {
+                    stalledInstance.taken.set(false);
+                }
                 return null;
             }
             pdelayData.preFixMostName = stalledInstance.mconfig.resourcePrefixName; 
