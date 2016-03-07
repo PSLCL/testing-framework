@@ -706,9 +706,9 @@ public class InstancedTemplate {
         }
         String templateID = this.getTemplateID();
         if (this.isTestRunCanceled())
-        	log.debug(this.simpleName + "runSteps() CANCELED, for template hash " + templateID);
+        	log.debug(this.simpleName + "runSteps() CANCELED, for templateID " + templateID);
         else
-        	log.debug(this.simpleName + "runSteps() completes without error, for template hash " + templateID);
+        	log.debug(this.simpleName + "runSteps() completes without error, for templateID " + templateID);
     }
 
     /**
@@ -744,7 +744,7 @@ public class InstancedTemplate {
             log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + templateID + ", templateInstanceID " + this.templateInstanceID + " no longer needs its reserved or bound resources");
             
         } else
-            log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "; Because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
     }
     
     /**

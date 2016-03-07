@@ -60,6 +60,16 @@ public class TemplateProvider implements ResourceStatusListener {
 
 		// Special workaround. After a test run allows a template to be stored, a new test run cannot find it. This odd technique finds it, after all.
 		if (arrayIT.length==0) {
+			// temporary: attempt to improve the workaround. Early testing shows this does not work.
+			boolean keyIsContained = this.reusableInstancedTemplates.containsKey(templateHash);
+			if (!keyIsContained) {
+				byte [] workaroundTemplateHash = Arrays.copyOf(templateHash, templateHash.length);
+				boolean keyIsContained_2ndTry = this.reusableInstancedTemplates.containsKey(workaroundTemplateHash);
+				if (keyIsContained) {
+					log.debug(this.simpleName + "getStoredReusableInstancedTemplates() <smoother workaround> succesfully looked up key workaroundTemplateHash " + DBTemplate.getId(workaroundTemplateHash));
+				}
+			}
+			
 			// workaround to a bug with MultiValuedMap<byte[], InstancedTemplate>
 			Set<byte[]> heldHashKeys = this.reusableInstancedTemplates.keySet();
 			for (byte[] heldHashKey : heldHashKeys) {
@@ -67,7 +77,7 @@ public class TemplateProvider implements ResourceStatusListener {
 					// the workaround is: use the byte[] key as extracted from the multimap; it seems to make it acceptable to the .get()
 					Collection<InstancedTemplate> localCollectionIT = this.reusableInstancedTemplates.get(heldHashKey);
 					arrayIT = localCollectionIT.toArray();
-					log.debug(this.simpleName + "getStoredReusableInstancedTemplates() <workaround kicks in> to find " + arrayIT.length + " reusableITs, for templateHash: " + TemplateProvider.bytesToHex(heldHashKey));
+					log.debug(this.simpleName + "getStoredReusableInstancedTemplates() <workaround kicks in> to find " + arrayIT.length + " reusableITs, for templateHash: " + DBTemplate.getId(heldHashKey));
 				}
 			}
 		}
@@ -83,7 +93,7 @@ public class TemplateProvider implements ResourceStatusListener {
     private InstancedTemplate obtainOneReusableInstancedTemplate(byte[] templateHash) {
 		// get the collection of matching but identical reusable InstancedTemplates, and pick one
     	Object[] arrayIT = this.getStoredReusableInstancedTemplates(templateHash);
-		log.debug(this.simpleName + "obtainOneReusableInstancedTemplate() finds " + arrayIT.length + " reusableITs, for templateHash: " + TemplateProvider.bytesToHex(templateHash));
+		log.debug(this.simpleName + "obtainOneReusableInstancedTemplate() finds " + arrayIT.length + " reusableITs, for templateHash: " + DBTemplate.getId(templateHash));
 		
 		InstancedTemplate retIT = null;
 		if (arrayIT.length > 0)
@@ -98,7 +108,7 @@ public class TemplateProvider implements ResourceStatusListener {
     private void removeOneEntry_reusableTemplateList(byte [] templateHash) {
 		// if in the reusable list, remove one entry having our key: 1st find all entries for our hash key, 2nd clear the list, 3rd remove one from the original list and store the smaller list back to the resuable list
     	Object[] arrayIT = this.getStoredReusableInstancedTemplates(templateHash);
-		log.debug(this.simpleName + "removeOneEntry_reusableTemplateList() finds " + arrayIT.length + " reusableITs, for templateHash: " + TemplateProvider.bytesToHex(templateHash));
+		log.debug(this.simpleName + "removeOneEntry_reusableTemplateList() finds " + arrayIT.length + " stored reusableITs, for templateHash: " + DBTemplate.getId(templateHash));
 		int lengthArrayIT = arrayIT.length;
 		
 		if (lengthArrayIT > 0) {
@@ -110,14 +120,14 @@ public class TemplateProvider implements ResourceStatusListener {
 					if (Arrays.equals(heldHashKey, templateHash)) {
 						// the workaround is: use the byte[] key as extracted from the multimap; it seems to make it acceptable to the .remove()
 						Collection<InstancedTemplate> localCollectionRemovedIT = this.reusableInstancedTemplates.remove(heldHashKey); // removes all entries for the key
-						log.debug(this.simpleName + "removeOneEntry_reusableTemplateList() <workaround kicks in> to identify " + localCollectionRemovedIT.size() + " reusableITs, for templateHash: " + TemplateProvider.bytesToHex(heldHashKey));
+						log.debug(this.simpleName + "removeOneEntry_reusableTemplateList() <workaround kicks in> to identify " + localCollectionRemovedIT.size() + " reusableITs, for templateHash: " + DBTemplate.getId(heldHashKey));
 					}
 				}
 			}
 			
 			for (int i=1; i < lengthArrayIT; i++)
 				this.reusableInstancedTemplates.put(templateHash, (InstancedTemplate)(arrayIT[i]));
-			log.debug(this.simpleName + "removeOneEntry_reusuableList() found " + lengthArrayIT + " reusableITs held, for templateHash: " + TemplateProvider.bytesToHex(templateHash) + ((lengthArrayIT>0)?". 1 entry removed":""));
+			log.debug(this.simpleName + "removeOneEntry_reusuableList() found " + lengthArrayIT + " reusableITs held, for templateHash: " + DBTemplate.getId(templateHash) + ((lengthArrayIT>0)?". 1 entry removed":""));
 		}
     }
 
@@ -183,20 +193,6 @@ public class TemplateProvider implements ResourceStatusListener {
     		return retUnique;
 		} // end synchronized()
 	}
-
-    final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
-    private static String bytesToHex(byte[] bytes)
-    {
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++)
-        {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-
-        return new String(hexChars);
-    }
 	
     /**
      * Release the template, or determine that it shall be reused.
@@ -211,15 +207,15 @@ public class TemplateProvider implements ResourceStatusListener {
     	synchronized(this.synchObj) {
     		if (!this.goingDown) {
         		// determine template reuse
-    			if (iT.isReusable()) // TODO: improve this obvious shortcut
-    				reuse = true;
+//    			if (iT.isReusable()) // temporarily TODO: improve this obvious shortcut
+//    				reuse = true;
     		}
     		
     		if (reuse) {
     			byte[] templateHash = iT.getTemplateHash();
     	    	synchronized (this.synchObj) {
             		this.reusableInstancedTemplates.put(templateHash, iT);
-        			log.debug(this.simpleName + "releaseTemplate() reuses templateID  " + iT.getTemplateID() +  ", of templateInstanceID " + templateInstanceID +  "; adds templateHash key to reusableInstancedTemplates: " + TemplateProvider.bytesToHex(templateHash));
+        			log.debug(this.simpleName + "releaseTemplate() will reuse templateID  " + iT.getTemplateID() +  ", of templateInstanceID " + templateInstanceID +  "; adds templateHash key to reusableInstancedTemplates: " + DBTemplate.getId(templateHash));
     	    	}
     		} else {
         		// if no entry is found here, then this template had bound no resources
@@ -236,7 +232,7 @@ public class TemplateProvider implements ResourceStatusListener {
 
     	// perform actual iT destroy, if indicated
     	if (!reuse) {
-			log.debug(simpleName + "releaseTemplate() destroys template, for template hash " + iT.getTemplateID() + ", templateInstanceID " + templateInstanceID);
+			log.debug(simpleName + "releaseTemplate() destroys template, for templateID " + iT.getTemplateID() + ", templateInstanceID " + templateInstanceID);
     		iT.destroy();
     	}
     }

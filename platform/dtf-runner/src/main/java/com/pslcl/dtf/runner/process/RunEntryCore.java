@@ -364,7 +364,7 @@ public class RunEntryCore {
                 retDBTemplate.steps = resultSet.getString("steps");
             }
         } catch (Exception e) {
-        	log.debug(this.simpleName + ".getTemplateInfo() does not find template for template hash " + templateHash);
+        	log.debug(this.simpleName + ".getTemplateInfo() does not find template for templateID " + DBTemplate.getId(retDBTemplate.hash));
         	throw e;
         } finally {
             safeClose( resultSet ); resultSet = null;
