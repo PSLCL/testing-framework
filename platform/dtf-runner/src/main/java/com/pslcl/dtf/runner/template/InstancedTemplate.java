@@ -48,7 +48,7 @@ public class InstancedTemplate {
     private DBTemplate dbTemplate; // holds templateID as a hash
     private RunnerMachine runnerMachine;
     private ResourceCoordinates templateCleanupInfo;
-    private long uniqueMark;
+    private long templateInstanceID;
     private boolean forceNullResult; // known use case is Person.Inspect()
     private boolean reusable;
     
@@ -96,7 +96,7 @@ public class InstancedTemplate {
         this.forceNullResult = false;
         this.reusable = this.isTopLevelTemplate() ? false : true; // false is never overwritten to true
 
-        this.uniqueMark = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
+        this.templateInstanceID = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
         this.runSteps();
     }
     
@@ -104,8 +104,8 @@ public class InstancedTemplate {
      * 
      * @return
      */
-    long getUniqueMark() {
-        return this.uniqueMark;
+    long getTemplateInstanceID() {
+        return this.templateInstanceID;
     }
     
     public ResourceProviders getResourceProviders() {
@@ -214,7 +214,7 @@ public class InstancedTemplate {
      */
     public void releaseNestedTemplates() {
         for (InstancedTemplate nestedIT : mapStepReferenceToNestedTemplate.values()) {
-			log.debug(this.simpleName + ".releaseNestedTemplates() submits, for release or reuse, nested template " + nestedIT.getTemplateID() + ", of uniqueMark " + nestedIT.getUniqueMark());
+			log.debug(this.simpleName + ".releaseNestedTemplates() submits, for release or reuse, nested template " + nestedIT.getTemplateID() + ", of templateInstanceID " + nestedIT.getTemplateInstanceID());
 			runnerMachine.getTemplateProvider().releaseTemplate(nestedIT);
         }
         mapStepReferenceToNestedTemplate.clear();
@@ -312,7 +312,7 @@ public class InstancedTemplate {
      * @return
      */
     private boolean isTopLevelTemplate() {
-    	boolean retBoolean = (this.dbTemplate.getReNum() >= 0) ? true : false;
+    	boolean retBoolean = this.dbTemplate.isTopLevelTemplate();
     	return retBoolean;
     }
     
@@ -349,7 +349,7 @@ public class InstancedTemplate {
 	            try {
 	            	includeHandler.instanceTemplates(); // blocking call; on error out, this cleans up successful nested templates 
 				} catch (Exception e1) {
-		            log.debug(this.simpleName + ".runSteps() sees nested template error out, and errors out itself,  for templateID " + this.getTemplateID() + ", of uniqueMark " + this.getUniqueMark() + "; msg: " + e1.getMessage());
+		            log.debug(this.simpleName + ".runSteps() sees nested template error out, and errors out itself,  for templateID " + this.getTemplateID() + ", of templateInstanceID " + this.getTemplateInstanceID() + "; msg: " + e1.getMessage());
 		            throw e1;
 				}
 			}
@@ -392,7 +392,7 @@ public class InstancedTemplate {
                         case "bind":
                             if (bindHandler == null) {
                                 bindHandler = new BindHandler(this, stepsOfSet, setStepCount);
-                                int consumedStepReferences = bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getUniqueMark(), this.getRunID());
+                                int consumedStepReferences = bindHandler.computeReserveRequests(currentStepReference, this.getTemplateID(), this.getTemplateInstanceID(), this.getRunID());
                                 setStepCount += consumedStepReferences;
                                 currentStepReference += consumedStepReferences;
                                 
@@ -695,7 +695,7 @@ public class InstancedTemplate {
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
         	this.reusable = false;
-            log.debug(this.simpleName + "runSteps() errors out for templateID " + this.getTemplateID() + ", uniqueMark " + this.getUniqueMark());
+            log.debug(this.simpleName + "runSteps() errors out for templateID " + this.getTemplateID() + ", templateInstanceID " + this.getTemplateInstanceID());
 			try {
 				this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT by informing resource providers
 			} catch (Exception ignoreE) {
@@ -706,9 +706,9 @@ public class InstancedTemplate {
         }
         String templateID = this.getTemplateID();
         if (this.isTestRunCanceled())
-        	log.debug(this.simpleName + "runSteps() CANCELED, for template hash " + templateID);
+        	log.debug(this.simpleName + "runSteps() CANCELED, for templateID " + templateID);
         else
-        	log.debug(this.simpleName + "runSteps() completes without error, for template hash " + templateID);
+        	log.debug(this.simpleName + "runSteps() completes without error, for templateID " + templateID);
     }
 
     /**
@@ -737,13 +737,14 @@ public class InstancedTemplate {
             // Tell the ResourcesManager (associated with every bind step of this specific instanced template), to release this template instance (the one associated with the relevant templateID). 
             ResourcesManager rm = this.templateCleanupInfo.getManager();
             templateID = this.templateCleanupInfo.templateId;
+            boolean likelyToAskForResourcesAgain = true; // REVIEW: Is there a situation where dtf-runner can ascertain that resources of a template are NOT likely to be needed again?
             
-            log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + templateID + ", templateInstanceID " + this.uniqueMark + " no longer needs its reserved or bound resources");
-            rm.release(this.uniqueMark, true);
-            log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + templateID + ", templateInstanceID " + this.uniqueMark + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "informResourceProviders() about to inform the resource provider system that template " + templateID + ", templateInstanceID " + this.templateInstanceID + " no longer needs its reserved or bound resources");
+            rm.release(this.templateInstanceID, likelyToAskForResourcesAgain);
+            log.debug(simpleName + "informResourceProviders()        informed the resource provider system that template " + templateID + ", templateInstanceID " + this.templateInstanceID + " no longer needs its reserved or bound resources");
             
         } else
-            log.debug(simpleName + "because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
+            log.debug(simpleName + "; Because there was no cleanup info, informResourceProviders() did NOT inform the resource provider system that template " + templateID + " no longer needs its reserved or bound resources");
     }
     
     /**

@@ -17,26 +17,32 @@ package com.pslcl.dtf.runner.process;
 
 import java.util.Date;
 
+/**
+ *
+ */
 public class DBTemplate {
+
+//	final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
+//	private static String bytesToHex(byte[] bytes)
+//	{
+//	    char[] hexChars = new char[bytes.length * 2];
+//	    for (int j = 0; j < bytes.length; j++)
+//	    {
+//	        int v = bytes[j] & 0xFF;
+//	        hexChars[j * 2] = hexArray[v >>> 4];
+//	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+//	    }
+//	    return new String(hexChars);
+//	}
 	
     /**
      * Return the value of the hash array as a hex String.
      * @return hex string value of the hash array
      */
-    static public String getId(byte [] hash)
+    static public String getId(byte [] templateHash)
     {
-        StringBuilder sb = new StringBuilder("0x");
-        for(int i=0; i < hash.length; i++)
-        {
-            String value = Integer.toHexString(hash[i]);
-            if(value.length() == 1)
-                sb.append("0");
-            sb.append(value);
-        }
-        String retString = sb.toString();
-        return retString;
+    	return new String(templateHash);
     }
-
     
     // instance members
     
@@ -65,6 +71,10 @@ public class DBTemplate {
     
     public boolean checkValidTemplateInfo() {
     	return (this.hash!=null && this.steps!=null && this.enabled);
+    }
+    
+    public boolean isTopLevelTemplate() {
+    	return this.reNum >= 0;
     }
     
 }
