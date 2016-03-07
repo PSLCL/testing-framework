@@ -34,4 +34,3 @@ Clone the repository and install the following two components in order to begin 
 
 * [Portal](portal/README.md)
 * [Platform](platform/README.md)
-* 
