@@ -28,8 +28,11 @@ class NestedTemplateTask implements Callable<ReferencedNestedTemplate> {
 	 */
 	@Override
 	public ReferencedNestedTemplate call() throws Exception {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("NestedTemplateFuture");
 		InstancedTemplate iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this.reCore, this.nestedDBTemplate, this.runnerMachine);
 		ReferencedNestedTemplate rnt = new ReferencedNestedTemplate(this.stepReference, iT);
+        Thread.currentThread().setName(tname);
 		return rnt;
 	}
 	

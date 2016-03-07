@@ -65,6 +65,8 @@ public class ConfigureFuture implements Callable<RunnableProgram>
     @Override
     public RunnableProgram call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("ConfigureFuture");
         ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
         cmdData.setHost(host);
         cmdData.setWait(true);
@@ -73,9 +75,12 @@ public class ConfigureFuture implements Callable<RunnableProgram>
         if (windows)
         {
             cmdData.setCommand(cmdData.getFileName());
+            Thread.currentThread().setName(tname);
             return  StafSupport.issueProcessShellRequest(cmdData);
         }
         cmdData.setCommand("sudo ./" + cmdData.getFileName());
-        return  StafSupport.issueProcessShellRequest(cmdData);
+        StafRunnableProgram srp = StafSupport.issueProcessShellRequest(cmdData);
+        Thread.currentThread().setName(tname);
+        return srp;
     }
 }

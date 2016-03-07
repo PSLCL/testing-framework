@@ -66,6 +66,8 @@ public class DeployFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("DeployFuture");
         ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
         cmdData.setUseWorkingDir(false);
         String urlFile = StrH.getAtomicName(sourceUrl, '/');            // hashname
@@ -92,6 +94,7 @@ public class DeployFuture implements Callable<Void>
             cmdData = new ProcessCommandData(cmdData);
             cmdData.setCommand("ren " + urlFile + " " + cmdData.getFileName());
             executeStafProcess(cmdData, false, true);
+            Thread.currentThread().setName(tname);
             return null;
         }
         // linux
@@ -110,6 +113,7 @@ public class DeployFuture implements Callable<Void>
         cmdData = new ProcessCommandData(cmdData);
         cmdData.setCommand("sudo chmod 777 " + cmdData.getFileName());
         executeStafProcess(cmdData, false, true);
+        Thread.currentThread().setName(tname);
         return null;
     }
 

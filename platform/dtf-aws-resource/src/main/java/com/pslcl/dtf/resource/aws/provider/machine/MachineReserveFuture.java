@@ -44,6 +44,8 @@ public class MachineReserveFuture implements Callable<List<ResourceReserveDispos
     @Override
     public List<ResourceReserveDisposition> call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("MachineReserveFuture");
         MachineQueryResult result = new MachineQueryResult();
         List<ResourceReserveDisposition> list = new ArrayList<ResourceReserveDisposition>();
         for (ResourceDescription resource : resources)
@@ -71,12 +73,14 @@ public class MachineReserveFuture implements Callable<List<ResourceReserveDispos
                     list.add(new ResourceReserveDisposition(resource));
             } catch (Exception e)
             {
+                Thread.currentThread().setName(tname);
                 ResourceReserveDisposition disposition = new ResourceReserveDisposition(resource);
                 disposition.setInvalidResource();
                 list.add(disposition);
                 LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".queryResourceAvailable failed: " + resource.toString(), e);
             }
         }
+        Thread.currentThread().setName(tname);
         return list;
     }
 }

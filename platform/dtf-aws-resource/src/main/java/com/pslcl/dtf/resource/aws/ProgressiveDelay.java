@@ -242,5 +242,9 @@ public class ProgressiveDelay
 //                tid = coord.templateId.substring(0, 12);
             return preFixMostName + "-" + midString + "-0x" + Long.toHexString(coord.templateInstanceId) + (post == null ? "" : " " + post);
         }
+        public String getIdleName(String midString)
+        {
+            return preFixMostName + "-" + midString + "-Idle";
+        }
     }
 }

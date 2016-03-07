@@ -266,6 +266,8 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
 
         public void run()
         {
+            String tname = Thread.currentThread().getName();
+            Thread.currentThread().setName("WaitForPersonTerminateFuture");
             // make sure they are all complete before deleting the key-pair
             for (Future<Void> future : futures)
             {
@@ -279,6 +281,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
                     log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
                 }
             }
+            Thread.currentThread().setName(tname);
         }
     }
 }

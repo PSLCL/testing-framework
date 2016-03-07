@@ -40,10 +40,13 @@ public class ReleasePersonFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("ReleasePersonFuture");
 //        LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + instance.getCoordinates().toString());
 //        provider.get
 //        provider.getConfig().statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
 //        LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + instance.getCoordinates().toString());
+        Thread.currentThread().setName(tname);
         return null;
     }
 }

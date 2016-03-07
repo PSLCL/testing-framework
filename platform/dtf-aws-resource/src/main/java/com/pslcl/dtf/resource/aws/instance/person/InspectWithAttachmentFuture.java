@@ -147,6 +147,8 @@ public class InspectWithAttachmentFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("InspectWithAttachmentFuture");
         synchronized (pdelayData.provider)
         {
             // since we can only send 1 per second synch the whole call thus simplifying the 
@@ -212,12 +214,14 @@ public class InspectWithAttachmentFuture implements Callable<Void>
                         LoggerFactory.getLogger(getClass()).debug(format.toString());
                         if(attachmentFile != null)
                             attachmentFile.delete();
+                        Thread.currentThread().setName(tname);
                         throw fre;
                     }
                 }
             } while (true);
             if(attachmentFile != null)
                 attachmentFile.delete();
+            Thread.currentThread().setName(tname);
             return null;
         }
     }

@@ -27,3 +27,10 @@ and schedule manual tests as well as automated tests.
 
 Once tests have been generated, a test executor prioritizes them, and then allocates resources and creates the necessary 
 networks to produce the test results. Tests may be prioritized based on a release schedule or even by availability of resources.
+
+##Installation
+
+Clone the repository and install the following two components in order to begin using the testing framework:
+
+* [Portal](portal/README.md)
+* [Platform](platform/README.md)

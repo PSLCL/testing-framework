@@ -309,6 +309,8 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
 
         public void run()
         {
+            String tname = Thread.currentThread().getName();
+            Thread.currentThread().setName("WaitForNetTerminateFuture");
             // make sure they are all complete before deleting the key-pair
             for (Future<Void> future : futures)
             {
@@ -322,8 +324,9 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                     log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
                 }
             }
+            Thread.currentThread().setName(tname);
 
-            //TODO: this should not be nuking keypair, but vpc?
+            //TODO: this should not be nuking vpc?
 //            if (coordinates != null)
 //            {
 //                ProgressiveDelayData pdelayData = new ProgressiveDelayData(AwsNetworkProvider.this, coordinates);

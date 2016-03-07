@@ -48,6 +48,8 @@ public class QAPortalAccess {
         @Override
         public void run() {
             
+            String tname = Thread.currentThread().getName();
+            Thread.currentThread().setName("PortalAccessFuture");
         	QAPaResponse qapaResponse = null;
             try {
                 Response response = this.qaPortalAccess.request(this.contentSpecifier);
@@ -57,6 +59,7 @@ public class QAPortalAccess {
             }
             // inform QAPortalAccess originator (inspectHandler) by setting its QAPaResponse
             this.inspectHandler.setQAPaResponse(qapaResponse);
+            Thread.currentThread().setName(tname);
         }
         
     }

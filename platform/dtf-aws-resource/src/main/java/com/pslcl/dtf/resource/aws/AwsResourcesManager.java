@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.CreateTagsRequest;
+import com.amazonaws.services.ec2.model.DeleteTagsRequest;
 import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
@@ -162,7 +163,42 @@ public class AwsResourcesManager implements ResourcesManager
             }
         } while (true);
     }
-
+    
+    public void createIdleNameTag(ProgressiveDelayData pdelayData, String name, String resourceId) throws FatalResourceException
+    {
+        pdelayData.maxDelay = maxDelay;
+        pdelayData.maxRetries = maxRetries;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        //@formatter:off
+        DeleteTagsRequest dtr = new 
+                        DeleteTagsRequest().withTags(
+                                        new Tag(SystemIdKey),
+                                        new Tag(TagRunIdKey),
+                                        new Tag(TagTemplateIdKey),
+                                        new Tag(TagTemplateInstanceIdKey),
+                                        new Tag(TagResourceIdKey))
+                                        .withResources(resourceId);
+        CreateTagsRequest ctr = new 
+                        CreateTagsRequest().withTags(
+                                        new Tag(TagNameKey, name))
+                                        .withResources(resourceId);
+        //@formatter:on
+        do
+        {
+            try
+            {
+                ec2Client.createTags(ctr);
+                ec2Client.deleteTags(dtr);
+                break;
+            } catch (Exception e)
+            {
+                FatalResourceException fre = pdelay.handleException(name + " createTags", e);
+                if (fre instanceof FatalException)
+                    throw fre;
+            }
+        } while (true);
+    }
+    
     @Override
     public List<ResourceProvider> getResourceProviders()
     {
@@ -281,6 +317,8 @@ public class AwsResourcesManager implements ResourcesManager
         
         public Void call() throws Exception
         {
+            String tname = Thread.currentThread().getName();
+            Thread.currentThread().setName("AwsReleaseFuture");
             try
             {
                 personProvider.release(templateInstanceId, isReusable);
@@ -302,6 +340,7 @@ public class AwsResourcesManager implements ResourcesManager
             {
                 LoggerFactory.getLogger(getClass()).warn("machineProvider.release failed", e);
             }
+            Thread.currentThread().setName(tname);
             return null;
         }
     }

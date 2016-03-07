@@ -38,6 +38,10 @@ public class NetworkReserveFuture implements Callable<List<ResourceReserveDispos
     @Override
     public List<ResourceReserveDisposition> call() throws Exception
     {
-        return provider.internalReserveIfAvailable(resources, timeoutSeconds);
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("NetworkReserveFuture");
+        List<ResourceReserveDisposition> list = provider.internalReserveIfAvailable(resources, timeoutSeconds);
+        Thread.currentThread().setName(tname);
+        return list;
     }
 }

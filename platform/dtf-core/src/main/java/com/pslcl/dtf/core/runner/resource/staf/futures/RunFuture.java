@@ -76,6 +76,8 @@ public class RunFuture implements Callable<RunnableProgram>
     @Override
     public RunnableProgram call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("RunFuture");
         ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
         cmdData.setHost(host);
         cmdData.setWait(executor == null);
@@ -88,12 +90,14 @@ public class RunFuture implements Callable<RunnableProgram>
             runnableProgram.setExecutorService(executor);
             if (executor != null)
                 return runnableProgram;
+            Thread.currentThread().setName(tname);
             return runnableProgram;
         }
         // linux
         cmdData.setCommand("./" + cmdData.getFileName());
         StafRunnableProgram runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
         runnableProgram.setExecutorService(executor);
+        Thread.currentThread().setName(tname);
         if (executor != null)
             return runnableProgram;
         //TODO: if we decide to support timeout

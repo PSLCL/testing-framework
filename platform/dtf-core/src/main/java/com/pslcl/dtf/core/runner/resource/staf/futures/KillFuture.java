@@ -47,8 +47,11 @@ public class KillFuture implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("KillFuture");
         StopResult result = StafSupport.processStop(runnableProgram);
         runnableProgram.setStopped(result);
+        Thread.currentThread().setName(tname);
         return result.ccode;
     }
 }

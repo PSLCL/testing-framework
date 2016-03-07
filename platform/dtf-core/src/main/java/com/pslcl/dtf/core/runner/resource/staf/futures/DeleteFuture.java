@@ -64,6 +64,8 @@ public class DeleteFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("DeleteFuture");
         String path = partialDestPath;
         if(path == null)
             path = "";
@@ -72,6 +74,7 @@ public class DeleteFuture implements Callable<Void>
             issueRequest("rd " + commandData.getFdn() + " /s /q");
         else
             issueRequest("sudo " + "rm -rf" + commandData.getFdn() + " ");
+        Thread.currentThread().setName(tname);
         return null;
     }
 

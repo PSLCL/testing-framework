@@ -47,6 +47,8 @@ public class PersonReserveFuture implements Callable<List<ResourceReserveDisposi
     @Override
     public List<ResourceReserveDisposition> call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("PersonReserveFuture");
         List<ResourceReserveDisposition> list = new ArrayList<ResourceReserveDisposition>();
 
         /*
@@ -85,6 +87,7 @@ public class PersonReserveFuture implements Callable<List<ResourceReserveDisposi
                 reservedMap.put(resource.getCoordinates().resourceId, rresource);
             }
         }
+        Thread.currentThread().setName(tname);
         return list;
     }
 

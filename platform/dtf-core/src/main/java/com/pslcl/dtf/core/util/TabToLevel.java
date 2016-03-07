@@ -20,12 +20,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SuppressWarnings("javadoc")
 public class TabToLevel
 {
-    public final StringBuilder sb;
+    public volatile StringBuilder sb;
     public final AtomicInteger level;
     
     public TabToLevel()
     {
         this(null);
+    }
+    
+    public void clear()
+    {
+        level.set(0);
+        sb = new StringBuilder();
     }
     
     public TabToLevel(StringBuilder sbIn)
