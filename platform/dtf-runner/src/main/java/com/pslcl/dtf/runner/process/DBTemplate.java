@@ -67,4 +67,8 @@ public class DBTemplate {
     	return (this.hash!=null && this.steps!=null && this.enabled);
     }
     
+    public boolean isTopLevelTemplate() {
+    	return this.reNum >= 0;
+    }
+    
 }
