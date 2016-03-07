@@ -342,7 +342,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         for (AwsMachineInstance adjust : adjustList)
         {
             instancesInTemplate.remove(adjust);
-            deleteInstances(templateInstanceId, instancesInTemplate, adjust.getCoordinates());
+            deleteInstances(templateInstanceId, adjustList, adjust.getCoordinates());
         }
         format.ttl("reusable instances: ", instancesInTemplate.size());
         log.debug(format.toString());
