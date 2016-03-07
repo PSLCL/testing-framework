@@ -225,17 +225,26 @@ public class ProgressiveDelay
             return preFixMostName + "-" + midString + "-" + coord.resourceId + (post == null ? "" : " " + post);
         }
         
+        public String getKeyPairName(String midString)
+        {
+            return preFixMostName + "-" + midString + "default";
+        }
+        
         public String getFullTemplateIdName(String midString, String post)
         {
-            return preFixMostName + "-" + midString + "-" + coord.templateId + (post == null ? "" : " " + post);
+            return preFixMostName + "-" + midString + "-0x" + Long.toHexString(coord.templateInstanceId) + (post == null ? "" : " " + post);
         }
         
         public String getHumanName(String midString, String post)
         {
-            String tid = coord.templateId;
-            if(coord.templateId.length() > 12)
-                tid = coord.templateId.substring(0, 12);
-            return preFixMostName + "-" + midString + "-" + tid + (post == null ? "" : " " + post);
+//            String tid = coord.templateId;
+//            if(coord.templateId.length() > 12)
+//                tid = coord.templateId.substring(0, 12);
+            return preFixMostName + "-" + midString + "-0x" + Long.toHexString(coord.templateInstanceId) + (post == null ? "" : " " + post);
+        }
+        public String getIdleName(String midString)
+        {
+            return preFixMostName + "-" + midString + "-Idle";
         }
     }
 }

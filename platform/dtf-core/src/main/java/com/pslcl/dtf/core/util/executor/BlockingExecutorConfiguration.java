@@ -31,7 +31,7 @@ public class BlockingExecutorConfiguration
     public static final String AllowCoreThreadTimeoutKey = "pslcl.service.util.executor.core-timeout";
     public static final String StatusNameKey = "pslcl.service.util.executor.status-name";
 
-    public static final String CorePoolSizeDefault = "8";
+    public static final String CorePoolSizeDefault = "128";
     public static final String MaximumQueueSizeDefault = "128";
     public static final String MaxBlockingTimeDefault = "120000";
     public static final String ThreadNamePrefixDefault = "PslclBlockingExecutor";

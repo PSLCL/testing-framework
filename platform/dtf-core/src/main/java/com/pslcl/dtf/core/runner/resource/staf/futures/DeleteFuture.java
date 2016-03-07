@@ -36,14 +36,16 @@ public class DeleteFuture implements Callable<Void>
     private final String winSandbox;
     private final String partialDestPath;
     private final boolean windows;
+    private final long runId;
 
-    public DeleteFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows)
+    public DeleteFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, long runId)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
         this.winSandbox = winSandbox;
         this.partialDestPath = partialDestPath;
         this.windows = windows;
+        this.runId = runId;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
         {
@@ -62,20 +64,14 @@ public class DeleteFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
-        if(partialDestPath != null)
-        {
-            ProcessCommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
-            if (windows)
-                issueRequest("del " + commandData.getFdn());
-            else
-                issueRequest("sudo " + "rm " + commandData.getFdn());
-            return null;
-        }
-        
-        if (windows)
-            issueRequest("rd " + winSandbox + " /s /q");
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("DeleteFuture");
+        ProcessCommandData commandData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
+        if(windows)
+            issueRequest("rd " + commandData.getFdn() + " /s /q");
         else
-            issueRequest("sudo " + "rm -rf" + linuxSandbox + " ");
+            issueRequest("sudo " + "rm -rf" + commandData.getFdn() + " ");
+        Thread.currentThread().setName(tname);
         return null;
     }
 

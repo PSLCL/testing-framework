@@ -61,11 +61,11 @@ public interface ResourcesManager
      * <p>
      * The manager should set the runId for all <code>ResourceInstances</code> that it has
      * which are associated with the given templateId. 
-     * @param templateId the template containing all <code>ResourceInstances</code> 
+     * @param templateInstanceId the template containing all <code>ResourceInstances</code> 
      * which should be set to the given runId.  Must never be null.
      * @param runId the current run identifier that should be associated with the given templateId. 
      */
-    public void setRunId(String templateId, long runId);
+    public void setRunId(long templateInstanceId, long runId);
     
     /**
      * Release all resources associated with the given templateId.
@@ -74,11 +74,11 @@ public interface ResourcesManager
      * If isResusable is true the <code>TemplateProvider</code> is indicating 
      * that it will likely be asking for the same template resources again soon.  
      * The implementation should then optimize these resources where possible.
-     * @param templateId The templateId to release all resources for.  Must never be null.
+     * @param templateInstanceId The templateId to release all resources for.  Must never be null.
      * @param isReusable If true, the implementation should optimize, otherwise it 
      * should destroy the resources. 
      */
-    public void release(String templateId, boolean isReusable);
+    public void release(long templateInstanceId, boolean isReusable);
     
     /**
      * Release the given resource.
@@ -92,7 +92,7 @@ public interface ResourcesManager
      * @param isReusable If true, the implementation should optimize, otherwise it 
      * should destroy the resource. 
      */
-    public void release(String templateId, long resourceId, boolean isReusable);
+    public void release(long templateInstanceId, long resourceId, boolean isReusable);
 
     /**
      * Catastrophic call for cleanup.

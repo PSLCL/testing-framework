@@ -109,11 +109,11 @@ public class InstanceNames
     public static final String Ec2IamArnKey = InstanceKeyBase + ".iam-arn";
     public static final String Ec2IamNameKey = InstanceKeyBase + ".iam-name";
     public static final String Ec2KeyPairNameKey = InstanceKeyBase + ".keypair-name";
-    public static final String Ec2StallReleaseKey = InstanceKeyBase + ".stall-release";
+    public static final String Ec2StallReleaseKey = InstanceKeyBase + ".stall-release";     // in minutes
     
     public static final String Ec2MaxDelayDefault = ProviderNames.LongMaxDelayDefault;
     public static final String Ec2MaxRetriesDefault = ProviderNames.LongMaxRetriesDefault;
-    public static final String Ec2StallReleaseDefault = "50"; // in minutes
+    public static final String Ec2StallReleaseDefault = "60"; // in minutes
     
     public static List<String> getInstanceKeys()
     {

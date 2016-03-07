@@ -50,7 +50,7 @@ public class MachineReservedResource implements Runnable
     public volatile Subnet subnet;
     public volatile String net;
     public volatile Instance ec2Instance;
-    public volatile Long reservedTimestamp;
+    private Long reservedTimestamp;
     public volatile int timeout;
     
     private ScheduledFuture<?> timerFuture;
@@ -82,7 +82,7 @@ public class MachineReservedResource implements Runnable
         timerFuture = future;
         this.timeout = timeout;
         reservedTimestamp = System.currentTimeMillis();
-        toString(format);
+        toString(format, false);
     }
 
     synchronized ScheduledFuture<?> getTimerFuture()
@@ -117,21 +117,28 @@ public class MachineReservedResource implements Runnable
     public String toString()
     {
         TabToLevel format = new TabToLevel();
-        return toString(format).toString(); 
+        format.ttl("\n");
+        return toString(format, false).toString(); 
     }
     
-    public TabToLevel toString(TabToLevel format)
+    public TabToLevel toString(TabToLevel format, boolean brief)
     {
-        format.ttl("\n", getClass().getSimpleName(), ":");
+        format.ttl(getClass().getSimpleName(), ":");
         format.level.incrementAndGet();
-        if(resource instanceof ResourceDescImpl)
-            ((ResourceDescImpl)resource).toString(format);
-        else
-            format.ttl("resource = ", resource.toString());
+        if(!brief)
+        {
+            if(resource instanceof ResourceDescImpl)
+                ((ResourceDescImpl)resource).toString(format);
+            else
+                format.ttl("resource = ", resource.toString());
+        }else
+            resource.getCoordinates().toString(format);
         format.ttl("instanceType = ", instanceType.toString());
         format.ttl("imageId = ", imageId);
         format.ttl("bindFutureCanceled = ", bindFutureCanceled);
         format.ttl("reusable = ", reusable);
+        if(brief)
+            return format;
         format.ttl("vpc = ", vpc);
         format.ttl("subnet = ", subnet);
         format.ttl("net = ", net);

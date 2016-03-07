@@ -35,8 +35,9 @@ public class DeployFuture implements Callable<Void>
     private final String partialDestPath;
     private final String sourceUrl;
     private final boolean windows;
+    private final long runId;
 
-    public DeployFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, String sourceUrl, boolean windows)
+    public DeployFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, String sourceUrl, boolean windows, long runId)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
@@ -44,6 +45,7 @@ public class DeployFuture implements Callable<Void>
         this.partialDestPath = partialDestPath;
         this.sourceUrl = sourceUrl;
         this.windows = windows;
+        this.runId = runId;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
         {
@@ -56,6 +58,7 @@ public class DeployFuture implements Callable<Void>
             format.ttl("partialDestPath = ", partialDestPath);
             format.ttl("sourceUrl = ", sourceUrl);
             format.ttl("windows = ", windows);
+            format.ttl("runId = ", runId);
             log.debug(format.toString());
         }
     }
@@ -63,7 +66,9 @@ public class DeployFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
-        ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows);
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("DeployFuture");
+        ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
         cmdData.setUseWorkingDir(false);
         String urlFile = StrH.getAtomicName(sourceUrl, '/');            // hashname
         
@@ -75,13 +80,6 @@ public class DeployFuture implements Callable<Void>
         {
             cmdData.setCommand("md \"" + cmdData.getBasePath() + "\"");
             StafSupport.issueProcessShellRequest(cmdData);  // if sandbox exists we ignore the error
-//            if(!cmdData.isFileOnly())
-//            {
-//                cmdData = new ProcessCommandData(cmdData);
-//                cmdData.setUseWorkingDir(true);
-//                cmdData.setCommand("md \"" + cmdData.getBasePath() + "\"");
-//                executeStafProcess(cmdData, false);
-//            }
             cmdData = new ProcessCommandData(cmdData);
             cmdData.setUseWorkingDir(true);
             
@@ -96,6 +94,7 @@ public class DeployFuture implements Callable<Void>
             cmdData = new ProcessCommandData(cmdData);
             cmdData.setCommand("ren " + urlFile + " " + cmdData.getFileName());
             executeStafProcess(cmdData, false, true);
+            Thread.currentThread().setName(tname);
             return null;
         }
         // linux
@@ -114,6 +113,7 @@ public class DeployFuture implements Callable<Void>
         cmdData = new ProcessCommandData(cmdData);
         cmdData.setCommand("sudo chmod 777 " + cmdData.getFileName());
         executeStafProcess(cmdData, false, true);
+        Thread.currentThread().setName(tname);
         return null;
     }
 
@@ -132,7 +132,7 @@ public class DeployFuture implements Callable<Void>
         }
     }
     
-    public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows) throws Exception
+    public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows, long runId) throws Exception
     {
         // where partialDestPath is one of these three
         // 1. lib/someApp.jar arg1 arg2
@@ -140,7 +140,9 @@ public class DeployFuture implements Callable<Void>
         // 3. fdn given don't prepend sandbox arg1 arg2
         
         // deal with partialDestPath as if linux for now
-        String path = partialDestPath;                                  // lib/someApp.jar, topLevelFile, /opt/dtf/sandbox/doit.sh or c:\opt\dtf\sandbox\doit.sh
+        String path = null;
+        if(partialDestPath == null)
+            partialDestPath = "";
         String penultimate = partialDestPath.replace('\\', '/');        // lib/someApp.jar, topLevelFile, /opt/dtf/sandbox/doit.sh arg1 arg2
         String fileName = StrH.getAtomicName(penultimate, '/');         // someApp.jar, topLevelFile, doit.sh
         boolean fileOnly = penultimate.equals(fileName);                // false, true, false
@@ -157,9 +159,9 @@ public class DeployFuture implements Callable<Void>
             if(windows)
             {
                 penultimate = penultimate.replace('/', '\\');           // lib\someApp.jr, topLevelFile 
-                path = StrH.addTrailingSeparator(winSandbox, '\\');     // c:\opt\dtf\sandbox\
+                path = StrH.addTrailingSeparator(winSandbox + "\\" + runId, '\\');     // c:\opt\dtf\sandbox\
             }else
-                path = StrH.addTrailingSeparator(linuxSandbox, '/');     // /opt/dtf/sandbox\
+                path = StrH.addTrailingSeparator(linuxSandbox + "/" + runId, '/');     // /opt/dtf/sandbox\
                 
             if (!fileOnly)
                 path = StrH.addTrailingSeparator(path + penultimate, '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/

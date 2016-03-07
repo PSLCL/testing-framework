@@ -24,6 +24,7 @@ public class ResourceCoordinates
     private ResourcesManager manager;
     private ResourceProvider provider;
     public final String templateId;
+    public final long templateInstanceId;
     public final long resourceId;
     private long runId;
     
@@ -35,13 +36,14 @@ public class ResourceCoordinates
      * @param resourceId must always be a valid unique ID for a given resource for the life of the runner.
      * @param runId -1 if unknown, otherwise the unique ID that identifies an individual test run.
      */
-    public ResourceCoordinates(ResourcesManager manager, ResourceProvider provider, String templateId, long resourceId, long runId)
+    public ResourceCoordinates(ResourcesManager manager, ResourceProvider provider, String templateId, long templateInstanceId, long resourceId, long runId)
     {
         if(templateId == null)
             throw new IllegalArgumentException("templateId == null");
         this.manager = manager;
         this.provider = provider;
         this.templateId = templateId;
+        this.templateInstanceId = templateInstanceId;
         this.resourceId = resourceId;
         this.runId = runId;
     }
@@ -61,6 +63,7 @@ public class ResourceCoordinates
         this.manager = manager;
         this.provider = provider;
         this.templateId = coordinates.templateId;
+        this.templateInstanceId = coordinates.templateInstanceId;
         this.resourceId = coordinates.resourceId;
         this.runId = coordinates.runId;
     }
@@ -71,13 +74,14 @@ public class ResourceCoordinates
      * @param resourceId must always be a valid unique ID for a given resource for the life of the runner.
      * @param runId -1 if unknown, otherwise the unique ID that identifies an individual test run.
      */
-    public ResourceCoordinates(String templateId, long resourceId, long runId)
+    public ResourceCoordinates(String templateId, long templateInstanceId, long resourceId, long runId)
     {
         if(templateId == null)
             throw new IllegalArgumentException("templateId == null");
         this.manager = null;
         this.provider = null;
         this.templateId = templateId;
+        this.templateInstanceId = templateInstanceId;
         this.resourceId = resourceId;
         this.runId = runId;
     }
@@ -119,9 +123,11 @@ public class ResourceCoordinates
         int result = 1;
         result = prime * result + (int) (resourceId ^ (resourceId >>> 32));
         result = prime * result + (int) (runId ^ (runId >>> 32));
+        result = prime * result + (int) (templateInstanceId ^ (runId >>> 32));
         result = prime * result + ((templateId == null) ? 0 : templateId.hashCode());
         return result;
     }
+    
     // DO NOT include manager and provider in equals/hashCode
     @Override
     public boolean equals(Object obj)
@@ -143,6 +149,8 @@ public class ResourceCoordinates
                 return false;
         } else if (!templateId.equals(other.templateId))
             return false;
+        if(templateInstanceId != other.templateInstanceId)
+            return false;
         return true;
     }
     
@@ -153,11 +161,11 @@ public class ResourceCoordinates
         format.ttl("manager: ", (manager == null ? "null" : manager.getClass().getName()));
         format.ttl("provider: ", (provider == null ? "null" : provider.getClass().getName()));
         format.ttl("templateId: " + templateId);
+        format.ttl("templateInstanceId: " + templateInstanceId);
         format.ttl("runId: " + runId);
         format.level.decrementAndGet();
         return format;
     }
-
     
     @Override
     public String toString()

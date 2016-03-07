@@ -65,21 +65,21 @@ public enum Action implements Actions {
             // TODO. Determine a priority
             // int priority = determineAndStorePriority(reNum, reState);
             // TODO: assess other things, feed this run entry to the prioritizer. The prioritizer could be a new state between ANAYZE and DO.
-            reState.setAction(DO);
+            reState.setAction(TESTRUN);
             return reState.getAction();
         }
     },
     
 //  PRIORITIZE,    // useful here?    
     
-    DO {
+    TESTRUN {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             try {
                 // initiate a test run, then block until the test run completes, its result is gathered, and its result is stored
                 /*boolean result =*/ reCore.testRun(runnerService.runnerMachine);
             } catch (Exception e) {
-                System.out.println("Action.DO() sees testRun() exception: " + e);
+                System.out.println("Action.TESTRUN() sees testRun() exception: " + e);
             }
             // exception or not, we remove reNum from active consideration- its test result is stored (unless the exception is from the database storage call)
             reState.setAction(REMOVE);

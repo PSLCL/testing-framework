@@ -220,27 +220,37 @@ public class ConnectHandler {
         //       We expect full connect success, and otherwise we back out and disconnect whatever other connections had been put in place, along the way.
 		
 		// Gather all results from futuresOfConnects, a list of Futures. This thread yields, in waiting for each of the multiple asynch connect calls to complete.
-		List<CableInstance> retList = new ArrayList<>();
-    	ConnectInfo.markAllConnectedSuccess(true); // this required setup allow negation by any pass through the loop 
-        for (Future<? extends CableInstance> future : this.futuresOfConnects) {
-        	if (future != null) { // null: connect failed early so move along; do not add to retList
-                try {
-					CableInstance cableInstance = future.get(); // blocks until asynch answer comes, or exception, or timeout
-					retList.add(cableInstance);
-				} catch (InterruptedException | ExecutionException ioreE) {
-                    Throwable t = ioreE.getCause();
-                    String msg = ioreE.getLocalizedMessage();
-                    if(t != null)
-                        msg = t.getLocalizedMessage();
-                	log.warn(simpleName + "waitComplete(), connect failed: " + msg, ioreE);
-                    ConnectInfo.markAllConnectedSuccess(false);
+		List<CableInstance> retList;
+		try {
+			retList = new ArrayList<>();
+			ConnectInfo.markAllConnectedSuccess(true); // this required setup allow negation by any pass through the loop 
+			for (Future<? extends CableInstance> future : this.futuresOfConnects) {
+				if (future != null) { // null: connect failed early so move along; do not add to retList
+			        try {
+						CableInstance cableInstance = future.get(); // blocks until asynch answer comes, or exception, or timeout
+						retList.add(cableInstance);
+					} catch (InterruptedException | ExecutionException ioreE) {
+			            Throwable t = ioreE.getCause();
+			            String msg = ioreE.getLocalizedMessage();
+			            if(t != null)
+			                msg = t.getLocalizedMessage();
+			            log.debug(simpleName + "waitComplete(), connect failed future.get() with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
+			            ConnectInfo.markAllConnectedSuccess(false);
+	                } catch (Exception e) {
+	                    // can happen with things like null pointer exception
+			            log.debug(simpleName + "waitComplete(), connect failed future.get() with msg: " + e.getMessage());
+			            ConnectInfo.markAllConnectedSuccess(false);
+			            throw e;			            
+					}
+				} else {
+		            log.debug(simpleName + "waitComplete(), connect failed- future returned as null");
+					ConnectInfo.markAllConnectedSuccess(false);
+			    	// stay in loop to gather other futures
 				}
-        	} else {
-        		ConnectInfo.markAllConnectedSuccess(false);
-	            log.warn(simpleName + "waitComplete(), connect errored out with a failed future");
-        		throw new Exception("Future.get() failed");
-        	}
-        }
+			}
+		} catch (Exception e) {
+			throw e;
+		}
         
 //      boolean allConnected = (retList.size() == this.futuresOfConnects.size()); // this catches the case of future==null
 //      if (!allConnected) {

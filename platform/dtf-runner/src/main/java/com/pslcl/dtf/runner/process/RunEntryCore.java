@@ -364,7 +364,7 @@ public class RunEntryCore {
                 retDBTemplate.steps = resultSet.getString("steps");
             }
         } catch (Exception e) {
-        	log.debug(this.simpleName + ".getTemplateInfo() does not find template for template hash " + templateHash);
+        	log.debug(this.simpleName + ".getTemplateInfo() does not find template for templateID " + DBTemplate.getId(retDBTemplate.hash));
         	throw e;
         } finally {
             safeClose( resultSet ); resultSet = null;
@@ -483,8 +483,10 @@ public class RunEntryCore {
      */
     private void storeResultAndAckMessageQueue(RunnerService runnerService) throws Exception {
     	boolean resultNowStored = false;
-    	Boolean storedResult = RunEntryCore.getResult(this.dbConnPool, reNum);
-    	if (storedResult == null) {
+    	Boolean foundResult = RunEntryCore.getResult(this.dbConnPool, reNum);
+    	// Note: When a test run actually fails or succeeds, this is the only path that writes the result portion of the run entry. To see foundResult not null, right now, might indicate some sort of double run of the test run 
+
+    	if (foundResult == null) {
     		// note: we do not get here when test run is canceled
         	try {
     			storeResultRunEntryData();
@@ -498,18 +500,18 @@ public class RunEntryCore {
            	log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum);
     	}
 
-    	if (storedResult!=null || resultNowStored) {
+    	if (foundResult!=null || resultNowStored) {
            	// ack the message queue
     		
             // temporarily, comment out these next 9 lines, to prevent acking the message queue
-           	try {
+    		try {
     			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
     			Object message = reState.getMessage();
     			runnerService.ackRunEntry(message);
-               	log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
+    			log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
     		} catch (Exception e) {
     			// swallow this exception, it does not relate to the actual test run
-                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue");
+    			log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue. The attempt to ack gives this message: " + e.getMessage());
     		}
     	}
     }

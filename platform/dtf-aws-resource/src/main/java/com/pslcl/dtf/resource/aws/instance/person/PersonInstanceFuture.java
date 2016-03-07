@@ -43,6 +43,8 @@ public class PersonInstanceFuture implements Callable<PersonInstance>
     @Override
     public PersonInstance call() throws FatalResourceException
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("PersonInstanceFuture");
         try
         {
             checkFutureCanceled();
@@ -51,18 +53,17 @@ public class PersonInstanceFuture implements Callable<PersonInstance>
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsPersonProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, personInstance);
             checkFutureCanceled();
+            Thread.currentThread().setName(tname);
             return personInstance;
         }
-//        catch (FatalResourceException e)
-//        {
-//            throw e;
-//        } 
         catch(CancellationException ie)
         {
+            Thread.currentThread().setName(tname);
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), ie);
         }
         catch (Throwable t)
         {
+            Thread.currentThread().setName(tname);
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + " call method threw a non-FatalResourceException", t);
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), t);
         }

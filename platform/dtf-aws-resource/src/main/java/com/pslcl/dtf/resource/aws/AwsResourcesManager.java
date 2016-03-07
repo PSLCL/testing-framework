@@ -17,11 +17,13 @@ package com.pslcl.dtf.resource.aws;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.CreateTagsRequest;
+import com.amazonaws.services.ec2.model.DeleteTagsRequest;
 import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
@@ -50,6 +52,7 @@ public class AwsResourcesManager implements ResourcesManager
     public final AwsMachineProvider machineProvider;
     public final AwsNetworkProvider networkProvider;
     public final AwsPersonProvider personProvider;
+    private volatile RunnerConfig config;
     public volatile SubnetManager subnetManager;
     public volatile AmazonEC2Client ec2Client;
     public volatile AwsClientConfig ec2cconfig;
@@ -118,7 +121,7 @@ public class AwsResourcesManager implements ResourcesManager
         pdelayData.statusTracker.setStatus(StatusPrefixStr+pdelayData.coord.resourceId, status);
         pdelayData.statusTracker.fireResourceStatusChanged(
                         pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, status));
-        pdelayData.statusTracker.removeStatus(pdelayData.coord.templateId);
+        pdelayData.statusTracker.removeStatus("0x"+Long.toHexString(pdelayData.coord.templateInstanceId));
     }
     
     
@@ -127,6 +130,7 @@ public class AwsResourcesManager implements ResourcesManager
     public static final String SystemIdKey = "dtfSystemId";
     public static final String TagRunIdKey = "runId";
     public static final String TagTemplateIdKey = "templateId";
+    public static final String TagTemplateInstanceIdKey = "templateInstanceId";
     public static final String TagResourceIdKey = "resourceId";
     
     public void createNameTag(ProgressiveDelayData pdelayData, String name, String resourceId) throws FatalResourceException
@@ -140,7 +144,8 @@ public class AwsResourcesManager implements ResourcesManager
                                         new Tag(TagNameKey, name),
                                         new Tag(SystemIdKey, systemId),
                                         new Tag(TagRunIdKey, Long.toString(pdelayData.coord.getRunId())),
-                                        new Tag(TagTemplateIdKey, pdelayData.coord.templateId),
+                                        new Tag(TagTemplateIdKey, "0x"+Long.toHexString(pdelayData.coord.templateInstanceId)),
+                                        new Tag(TagTemplateInstanceIdKey, "0x"+Long.toHexString(pdelayData.coord.templateInstanceId)),
                                         new Tag(TagResourceIdKey, "0x"+Long.toHexString(pdelayData.coord.resourceId)))
                                         .withResources(resourceId);
         //@formatter:on
@@ -158,7 +163,41 @@ public class AwsResourcesManager implements ResourcesManager
             }
         } while (true);
     }
-
+    
+    public void createIdleNameTag(ProgressiveDelayData pdelayData, String name, String resourceId) throws FatalResourceException
+    {
+        pdelayData.maxDelay = maxDelay;
+        pdelayData.maxRetries = maxRetries;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        //@formatter:off
+        DeleteTagsRequest dtr = new 
+                        DeleteTagsRequest().withTags(
+                                        new Tag(TagRunIdKey),
+                                        new Tag(TagTemplateIdKey),
+                                        new Tag(TagTemplateInstanceIdKey),
+                                        new Tag(TagResourceIdKey))
+                                        .withResources(resourceId);
+        CreateTagsRequest ctr = new 
+                        CreateTagsRequest().withTags(
+                                        new Tag(TagNameKey, name))
+                                        .withResources(resourceId);
+        //@formatter:on
+        do
+        {
+            try
+            {
+                ec2Client.createTags(ctr);
+                ec2Client.deleteTags(dtr);
+                break;
+            } catch (Exception e)
+            {
+                FatalResourceException fre = pdelay.handleException(name + " createTags", e);
+                if (fre instanceof FatalException)
+                    throw fre;
+            }
+        } while (true);
+    }
+    
     @Override
     public List<ResourceProvider> getResourceProviders()
     {
@@ -183,6 +222,7 @@ public class AwsResourcesManager implements ResourcesManager
     @Override
     public void init(RunnerConfig config) throws Exception
     {
+        this.config = config;
         config.initsb.level.incrementAndGet();
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
@@ -240,9 +280,9 @@ public class AwsResourcesManager implements ResourcesManager
     }
 
     @Override
-    public void setRunId(String templateId, long runId)
+    public void setRunId(long templateInstanceId, long runId)
     {
-        machineProvider.setRunId(templateId, runId);
+        machineProvider.setRunId(templateInstanceId, runId);
     }
 
     @Override
@@ -252,16 +292,55 @@ public class AwsResourcesManager implements ResourcesManager
     }
 
     @Override
-    public void release(String templateId, boolean isReusable)
+    public void release(long templateInstanceId, boolean isReusable)
     {
-        machineProvider.release(templateId, isReusable);
-        networkProvider.release(templateId, isReusable);
-        personProvider.release(templateId, isReusable);
+        config.blockingExecutor.submit(new ReleaseFuture(templateInstanceId, isReusable));
     }
 
     @Override
-    public void release(String templateId, long resourceId, boolean isReusable)
+    public void release(long templateInstanceId, long resourceId, boolean isReusable)
     {
         throw new RuntimeException("not implemented");
+    }
+    
+    private class ReleaseFuture implements Callable<Void>
+    {
+        private final long templateInstanceId;
+        private final boolean isReusable;
+        
+        private ReleaseFuture(long templateInstanceId, boolean isReusable)
+        {
+            this.templateInstanceId = templateInstanceId;
+            this.isReusable = isReusable;
+        }
+        
+        public Void call() throws Exception
+        {
+            String tname = Thread.currentThread().getName();
+            Thread.currentThread().setName("AwsReleaseFuture");
+            try
+            {
+                personProvider.release(templateInstanceId, isReusable);
+            }catch(Exception e)
+            {
+                LoggerFactory.getLogger(getClass()).warn("personProvider.release failed", e);
+            }
+            try
+            {
+                networkProvider.release(templateInstanceId, isReusable);
+            }catch(Exception e)
+            {
+                LoggerFactory.getLogger(getClass()).warn("networkProvider.release failed", e);
+            }
+            try
+            {
+                machineProvider.release(templateInstanceId, isReusable);
+            }catch(Exception e)
+            {
+                LoggerFactory.getLogger(getClass()).warn("machineProvider.release failed", e);
+            }
+            Thread.currentThread().setName(tname);
+            return null;
+        }
     }
 }

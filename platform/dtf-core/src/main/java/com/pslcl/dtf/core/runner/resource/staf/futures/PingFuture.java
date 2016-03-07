@@ -47,7 +47,10 @@ public class PingFuture implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("PingFuture");
         STAFResult result = StafSupport.processPing(runnableProgram);
+        Thread.currentThread().setName("PingFuture");
         if(result == null)
             return null;
         return result.rc;

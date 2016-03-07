@@ -223,7 +223,7 @@ public class SubnetManager
         //@formatter:off
         CreateSecurityGroupRequest request = new CreateSecurityGroupRequest()
             .withGroupName(pdelayData.getFullResourceIdName(SgMidStr, null))
-            .withDescription(pdelayData.getFullTemplateIdName(SgMidStr, " templateId: " + pdelayData.coord.templateId))
+            .withDescription(pdelayData.getFullTemplateIdName(SgMidStr, " templateInstanceId: " + pdelayData.coord.templateInstanceId))
             .withVpcId(vpcId);
         //@formatter:on
 

@@ -39,6 +39,8 @@ public class CancelTask implements Runnable {
 	
 	@Override
 	public void run() {
+	    String tname = Thread.currentThread().getName();
+	    Thread.currentThread().setName("CancelTask");
 		while (running) {
 			// check run table for our reNum; all cancel action is handled in this call
 			this.reCore.checkForRunCancel();
@@ -61,6 +63,7 @@ public class CancelTask implements Runnable {
 //			}
 		}
 		log.debug(this.simpleName + "TERMINATES run-cancel checking for reNum " + this.reCore.getRENum());
+        Thread.currentThread().setName(tname);
 	}
 
 }

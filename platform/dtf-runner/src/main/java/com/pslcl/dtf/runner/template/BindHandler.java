@@ -90,7 +90,7 @@ public class BindHandler {
      * 
      * @return
      */
-    int computeReserveRequests(int currentStepReference, String templateId, long runId) throws Exception {
+    int computeReserveRequests(int currentStepReference, String templateId, long templateInstanceID, long runId) throws Exception {
         try {
 			reserveResourceRequests = new ArrayList<>();
 	        int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
@@ -126,7 +126,7 @@ public class BindHandler {
 			    	}
 			    	
 			    	long resourceid = ResourceDescription.resourceIdMaster.incrementAndGet();
-			        ResourceCoordinates coord = new ResourceCoordinates(templateId, resourceid, runId);
+			        ResourceCoordinates coord = new ResourceCoordinates(templateId, templateInstanceID, resourceid, runId);
 			        this.iT.markStepReference(coord, bindStepReference);
 			        ResourceDescription rd = new ResourceDescImpl(resourceName, // resourceName comes from the bind step, as string "machine", "person" or "network"
 			        		                                      coord, attributeMap);
@@ -291,7 +291,7 @@ public class BindHandler {
                 } catch (InterruptedException ie) {
                     allBindsSucceeded = false;
                     exception = ie;
-                    log.warn(simpleName + "waitComplete(), bind failed: ", ie);
+                    log.debug(simpleName + "waitComplete(), bind failed: ", ie);
                 } catch (ExecutionException ee) {
                     allBindsSucceeded = false;
                     exception = ee; // I have seen FatalServerException
@@ -299,7 +299,7 @@ public class BindHandler {
                     Throwable t = ee.getCause();
                     if(t != null)
                         msg = t.getLocalizedMessage();
-                    log.warn(simpleName + "waitComplete(), bind failed: " + msg, ee);
+                    log.debug(simpleName + "waitComplete(), bind failed: " + msg, ee);
                 } catch (Exception e) {
                     // can happen with things like null pointer exception
                     exception = e;

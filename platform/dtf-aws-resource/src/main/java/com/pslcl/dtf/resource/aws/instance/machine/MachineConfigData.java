@@ -15,8 +15,6 @@
  */
 package com.pslcl.dtf.resource.aws.instance.machine;
 
-import org.slf4j.LoggerFactory;
-
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
@@ -37,7 +35,7 @@ public class MachineConfigData
     public volatile String keyName;
     public volatile int ec2MaxDelay;
     public volatile int ec2MaxRetries;
-    public volatile String resoucePrefixName;
+    public volatile String resourcePrefixName;
     public volatile boolean windows;
     public volatile String linuxUserData;
     public volatile String winUserData;
@@ -58,7 +56,7 @@ public class MachineConfigData
 
         format.ttl("Test name prefix:");
         format.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, defaultData.resoucePrefixName, resource, format);
+        data.resourcePrefixName = getAttribute(ProviderNames.ResourcePrefixNameKey, defaultData.resourcePrefixName, resource, format);
         format.level.decrementAndGet();
         
         format.ttl("\nEc2 Instance:");
@@ -111,7 +109,7 @@ public class MachineConfigData
         
         config.initsb.ttl("Test name prefix:");
         config.initsb.level.incrementAndGet();
-        data.resoucePrefixName = getAttribute(config, ProviderNames.ResourcePrefixNameKey, ProviderNames.ResourcePrefixNameDefault);
+        data.resourcePrefixName = getAttribute(config, ProviderNames.ResourcePrefixNameKey, ProviderNames.ResourcePrefixNameDefault);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         return data;

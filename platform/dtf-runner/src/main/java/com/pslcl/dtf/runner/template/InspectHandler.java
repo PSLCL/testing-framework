@@ -321,26 +321,33 @@ public class InspectHandler {
 
         // Gather all results from this.resultInspectInfos, a list of inspectInfo, each holding a future. This thread yields, in waiting for each of the multiple asynch inspect calls to complete.
         boolean allInspects = true;
-        for (InspectInfo inspectInfo : this.resultInspectInfos) {
-            Future<? extends Void> future = inspectInfo.getInspectFuture();
-            if (future != null) {
-                try {
-                    future.get(); // blocks until asynch answer comes, or exception, or timeout
-                } catch (InterruptedException | ExecutionException ioreE) {
-                    Throwable t = ioreE.getCause();
-                    String msg = ioreE.getLocalizedMessage();
-                    if(t != null)
-                        msg = t.getLocalizedMessage();
-                    log.warn(simpleName + "waitComplete(), inspect failed: " + msg, ioreE);
-                    allInspects = false;
-                }                    
-            } else {
-                allInspects = false;
-            }
-            InputStream contentStream = inspectInfo.getContentStream();
-            if (contentStream != null)
-            	contentStream.close(); // cleanup original InputStream, regardless of our success or failure
-        }
+        try {
+			for (InspectInfo inspectInfo : this.resultInspectInfos) {
+			    Future<? extends Void> future = inspectInfo.getInspectFuture();
+			    if (future != null) {
+			        try {
+			            future.get(); // blocks until asynch answer comes, or exception, or timeout
+			        } catch (InterruptedException | ExecutionException ioreE) {
+			            Throwable t = ioreE.getCause();
+			            String msg = ioreE.getLocalizedMessage();
+			            if(t != null)
+			                msg = t.getLocalizedMessage();
+			            log.debug(simpleName + "waitComplete(), inspect failed future.get() with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
+			            allInspects = false;
+				    	// stay in loop to gather other futures
+			        }                    
+			    } else {
+			        allInspects = false;
+		            log.debug(simpleName + "waitComplete(), one inspect failed- future returned as null");
+			    	// stay in loop to gather other futures
+			    }
+			    InputStream contentStream = inspectInfo.getContentStream();
+			    if (contentStream != null)
+			    	contentStream.close(); // cleanup original InputStream, regardless of our success or failure
+			}
+		} catch (Exception e) {
+			throw e;
+		}
 
         if (!allInspects) {
             throw new Exception("InspectHandler.waitComplete() finds one or more inspect steps failed");

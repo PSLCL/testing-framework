@@ -15,47 +15,52 @@
  */
 package com.pslcl.dtf.resource.aws.instance.machine;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.amazonaws.services.ec2.model.Instance;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
-import com.pslcl.dtf.core.runner.resource.exception.FatalServerTimeoutException;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.instance.NetworkInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
-import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.futures.ConfigureFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.DeleteFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.DeployFuture;
-import com.pslcl.dtf.core.runner.resource.staf.futures.PingFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.RunFuture;
-import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
-import com.pslcl.dtf.resource.aws.ProgressiveDelay;
+import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
-import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 
 @SuppressWarnings("javadoc")
 public class AwsMachineInstance implements MachineInstance
 {
-    private final MachineReservedResource reservedResource;
+    public volatile MachineReservedResource reservedResource;
     public final Instance ec2Instance;
-    public final MachineConfigData mconfig;
+    public volatile MachineConfigData mconfig;
     public final RunnerConfig rconfig;
+    public final AtomicBoolean sanitizing;
+    public final AtomicBoolean destroyed;
+    public final AtomicBoolean taken;
+    public final long instantiationTime;
     
     public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
         this.reservedResource = reservedResource;
         this.mconfig = mconfig;
         this.rconfig = rconfig;
+        sanitizing = new AtomicBoolean(false);
+        destroyed = new AtomicBoolean(false);
+        taken = new AtomicBoolean(false);
         ec2Instance = reservedResource.ec2Instance;
+        instantiationTime = System.currentTimeMillis();
     }
 
     @Override
@@ -83,7 +88,7 @@ public class AwsMachineInstance implements MachineInstance
             map.put(key, value);
         }
     }
-    
+
     @Override
     public ResourceProvider getResourceProvider()
     {
@@ -97,11 +102,27 @@ public class AwsMachineInstance implements MachineInstance
     }
 
     @Override
+    public Future<Void> deploy(String partialDestPath, String url) throws Exception
+    {
+        String platform = ec2Instance.getPlatform();
+        boolean windows = false;
+        if (platform != null && platform.length() > 0)
+            windows = true;
+        //@formatter:off
+        DeployFuture deployFuture = new DeployFuture(
+                        ec2Instance.getPublicIpAddress(), 
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
+                        partialDestPath, url, windows, reservedResource.resource.getCoordinates().getRunId());
+        //@formatter:on
+        return reservedResource.provider.config.blockingExecutor.submit(deployFuture);
+    }
+    
+    @Override
     public Future<CableInstance> connect(NetworkInstance network)// throws IncompatibleResourceException
     {
         AwsNetworkInstance instance = (AwsNetworkInstance) network;
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
-        return  instance.runnerConfig.blockingExecutor.submit(new ConnectFuture(this, (AwsNetworkInstance) network, pdelayData));
+        return instance.runnerConfig.blockingExecutor.submit(new ConnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
 
     @Override
@@ -109,10 +130,18 @@ public class AwsMachineInstance implements MachineInstance
     {
         String platform = ec2Instance.getPlatform();
         boolean windows = false;
-        if(platform != null && platform.length() > 0)
+        if (platform != null && platform.length() > 0)
             windows = true;
-        RunFuture df = new RunFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, command, null, windows, this);
-        return reservedResource.provider.config.blockingExecutor.submit(df);
+        //@formatter:off
+        RunFuture df = new RunFuture(
+                        ec2Instance.getPublicIpAddress(), 
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
+                        command, null, windows, 
+                        reservedResource.resource.getCoordinates().getRunId(), this);
+        //@formatter:on
+        Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
+        reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
+        return rpf;
     }
 
     @Override
@@ -121,10 +150,18 @@ public class AwsMachineInstance implements MachineInstance
         reservedResource.reusable.set(false);
         String platform = ec2Instance.getPlatform();
         boolean windows = false;
-        if(platform != null && platform.length() > 0)
+        if (platform != null && platform.length() > 0)
             windows = true;
-        ConfigureFuture cf = new ConfigureFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, command, windows, this);
-        return reservedResource.provider.config.blockingExecutor.submit(cf);
+        //@formatter:off
+        ConfigureFuture cf = new ConfigureFuture(
+                        ec2Instance.getPublicIpAddress(), 
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
+                        command, windows, 
+                        reservedResource.resource.getCoordinates().getRunId(), this);
+        //@formatter:on
+        Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(cf);
+        reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
+        return rpf;
     }
 
     @Override
@@ -132,62 +169,17 @@ public class AwsMachineInstance implements MachineInstance
     {
         String platform = ec2Instance.getPlatform();
         boolean windows = false;
-        if(platform != null && platform.length() > 0)
+        if (platform != null && platform.length() > 0)
             windows = true;
-        RunFuture df = new RunFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, command, rconfig.blockingExecutor, windows, this);
-        return reservedResource.provider.config.blockingExecutor.submit(df);
-    }
-
-    @Override
-    public Future<Void> deploy(String partialDestPath, String url) throws Exception
-    {
-        String platform = ec2Instance.getPlatform();
-        boolean windows = false;
-        if(platform != null && platform.length() > 0)
-            windows = true;
-        ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false);
-        StafRunnableProgram runnableProgram = new StafRunnableProgram(null, cmdData);
-        cmdData.setHost(ec2Instance.getPublicIpAddress());
-        cmdData.setWait(true);
-        
         //@formatter:off
-        ProgressiveDelayData pdelayData = new ProgressiveDelayData(
-                        (AwsResourceProvider)reservedResource.resource.getCoordinates().getProvider(), 
-                        reservedResource.resource.getCoordinates());
-        //@formatter:on
-        pdelayData.maxDelay = mconfig.ec2MaxDelay;
-        pdelayData.maxRetries = mconfig.ec2MaxRetries;
-        pdelayData.preFixMostName = mconfig.resoucePrefixName;
-        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-        String msg = pdelayData.getHumanName(MachineInstanceFuture.Ec2MidStr, "stafPing");
-        do
-        {
-            if (reservedResource.bindFutureCanceled.get())
-                throw new CancellationException();
-            try
-            {
-                PingFuture pingFuture = new PingFuture(runnableProgram);
-                Integer rc = reservedResource.provider.config.blockingExecutor.submit(pingFuture).get();
-                if(rc != null && rc == 0)
-                    break;
-                pdelay.retry(msg);
-            }catch(FatalServerTimeoutException fstoe)
-            {
-                throw fstoe;
-            }
-            catch (Exception e)
-            {
-                try
-                {
-                    pdelay.retry(msg);
-                }catch(FatalServerTimeoutException fstoe)
-                {
-                    throw fstoe;
-                }
-            }
-        } while (true);
-        DeployFuture deployFuture = new DeployFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, partialDestPath, url, windows);
-        return reservedResource.provider.config.blockingExecutor.submit(deployFuture);
+        RunFuture df = new RunFuture(
+                        ec2Instance.getPublicIpAddress(), 
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
+                        command, rconfig.blockingExecutor, windows, 
+                        reservedResource.resource.getCoordinates().getRunId(), this);
+        Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
+        reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
+        return rpf;
     }
 
     @Override
@@ -195,9 +187,14 @@ public class AwsMachineInstance implements MachineInstance
     {
         String platform = ec2Instance.getPlatform();
         boolean windows = false;
-        if(platform != null && platform.length() > 0)
+        if (platform != null && platform.length() > 0)
             windows = true;
-        DeleteFuture df = new DeleteFuture(ec2Instance.getPublicIpAddress(), mconfig.linuxSandboxPath, mconfig.winSandboxPath, partialDestPath, windows);
+        //@formatter:off
+        DeleteFuture df = new DeleteFuture(
+                        ec2Instance.getPublicIpAddress(), 
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
+                        partialDestPath, windows, reservedResource.resource.getCoordinates().getRunId());
+        //@formatter:on
         return reservedResource.provider.config.blockingExecutor.submit(df);
     }
     
@@ -206,9 +203,31 @@ public class AwsMachineInstance implements MachineInstance
     {
         AwsNetworkInstance instance = (AwsNetworkInstance) network;
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
-        return  instance.runnerConfig.blockingExecutor.submit(new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData));
+        return instance.runnerConfig.blockingExecutor.submit(new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData));
     }
-
+    
+    public String toString()
+    {
+        TabToLevel format = new TabToLevel();
+        format.ttl("\n");
+        return toString(format, false).toString();
+    }
+    
+    public TabToLevel toString(TabToLevel format, boolean brief)
+    {
+        format.ttl(getClass().getSimpleName());
+        format.level.incrementAndGet();
+        format.ttl("sanitizing: ", sanitizing);
+        format.ttl("destroyed: ", destroyed);
+        format.ttl("taken: ", taken);
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        String time = sdf.format(new Date(instantiationTime));
+        format.ttl("instantiationTime:", time);
+        reservedResource.toString(format, brief);
+        format.level.decrementAndGet();
+        return format;
+    }
+    
     public enum AwsInstanceState
     {
         //@formatter:off

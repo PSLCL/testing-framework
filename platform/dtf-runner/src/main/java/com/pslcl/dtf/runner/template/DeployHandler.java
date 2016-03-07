@@ -213,18 +213,24 @@ public class DeployHandler {
 			            String msg = ioreE.getLocalizedMessage();
 			            if(t != null)
 			                msg = t.getLocalizedMessage();
-			            log.warn(simpleName + "waitComplete(), deploy failed: " + msg + "; " + ioreE.getMessage());
+			            log.debug(simpleName + "waitComplete(), deploy failed future.get() with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
 			        	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
 			        	throw ioreE;
+	                } catch (Exception e) {
+	                    // can happen with things like null pointer exception
+			            log.debug(simpleName + "waitComplete(), deploy failed future.get() with msg: " + e.getMessage());
+			        	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
+			            throw e;
 					}
 			    } else {
+		            log.debug(simpleName + "waitComplete(), deploy failed- future returned as null");
 			    	deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
+			    	// stay in loop to gather other futures
 			    }
 			}
 		} catch (Exception e) {
 			throw e;
 		}
-        	
         return this.futuresOfDeploys;
 	}
 

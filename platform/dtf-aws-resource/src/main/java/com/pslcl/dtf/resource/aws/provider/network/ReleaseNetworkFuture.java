@@ -46,10 +46,13 @@ public class ReleaseNetworkFuture implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("ReleaseNetworkFuture");
         LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + coordinates.toString());
         pdelayData.provider.manager.subnetManager.releaseSecurityGroup(pdelayData);
         provider.getConfig().statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Down));
         LoggerFactory.getLogger(getClass()).debug("Releasing resource complete: " + coordinates.toString());
+        Thread.currentThread().setName(tname);
         return null;
     }
 }

@@ -47,6 +47,8 @@ public class NetworkInstanceFuture implements Callable<NetworkInstance>
     @Override
     public NetworkInstance call() throws FatalResourceException
     {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("NetworkInstanceFuture");
         try
         {
             checkFutureCanceled();
@@ -59,6 +61,7 @@ public class NetworkInstanceFuture implements Callable<NetworkInstance>
             AwsNetworkInstance networkInstance = new AwsNetworkInstance(reservedResource, groupIdentifier, pdelayData.provider.config);
             pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             ((AwsNetworkProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, networkInstance);
+            Thread.currentThread().setName(tname);
             return networkInstance;
         } catch (FatalResourceException e)
         {
