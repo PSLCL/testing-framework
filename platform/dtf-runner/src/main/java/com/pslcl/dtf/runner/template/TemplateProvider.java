@@ -60,15 +60,15 @@ public class TemplateProvider implements ResourceStatusListener {
 
 		// Special workaround. After a test run allows a template to be stored, a new test run cannot find it. This odd technique finds it, after all.
 		if (arrayIT.length==0) {
-			// temporary: attempt to improve the workaround. Early testing shows this does not work.
-			boolean keyIsContained = this.reusableInstancedTemplates.containsKey(templateHash);
-			if (!keyIsContained) {
-				byte [] workaroundTemplateHash = Arrays.copyOf(templateHash, templateHash.length);
-				boolean keyIsContained_2ndTry = this.reusableInstancedTemplates.containsKey(workaroundTemplateHash);
-				if (keyIsContained) {
-					log.debug(this.simpleName + "getStoredReusableInstancedTemplates() <smoother workaround> succesfully looked up key workaroundTemplateHash " + DBTemplate.getId(workaroundTemplateHash));
-				}
-			}
+			// temporary: this first attempt is a smoother workaround. Needs more testing, but appears not to be sufficient.
+//			boolean keyIsContained = this.reusableInstancedTemplates.containsKey(templateHash);
+//			if (!keyIsContained) {
+//				byte [] workaroundTemplateHash = Arrays.copyOf(templateHash, templateHash.length);
+//				boolean keyIsContained_2ndTry = this.reusableInstancedTemplates.containsKey(workaroundTemplateHash);
+//				if (keyIsContained_2ndTry) {
+//					log.debug(this.simpleName + "getStoredReusableInstancedTemplates() <smoother workaround> succesfully looked up key workaroundTemplateHash " + DBTemplate.getId(workaroundTemplateHash));
+//				}
+//			}
 			
 			// workaround to a bug with MultiValuedMap<byte[], InstancedTemplate>
 			Set<byte[]> heldHashKeys = this.reusableInstancedTemplates.keySet();
