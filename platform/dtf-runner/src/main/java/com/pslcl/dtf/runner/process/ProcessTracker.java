@@ -36,8 +36,8 @@ public class ProcessTracker {
     	boolean retBoolean = false;
 
         // temporarily, comment out these two lines, to allow local testing to proceed, even if a result is already stored
-// 		Boolean result = RunEntryCore.getResult(dbConnPool, reNum);
-// 		retBoolean = (result != null);
+ 		Boolean result = RunEntryCore.getResult(dbConnPool, reNum);
+ 		retBoolean = (result != null);
    		
         return retBoolean;
     }
