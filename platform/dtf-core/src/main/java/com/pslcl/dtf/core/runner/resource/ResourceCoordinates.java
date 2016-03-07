@@ -161,7 +161,7 @@ public class ResourceCoordinates
         format.ttl("manager: ", (manager == null ? "null" : manager.getClass().getName()));
         format.ttl("provider: ", (provider == null ? "null" : provider.getClass().getName()));
         format.ttl("templateId: " + templateId);
-        format.ttl("templateInstanceId: " + templateId);
+        format.ttl("templateInstanceId: " + templateInstanceId);
         format.ttl("runId: " + runId);
         format.level.decrementAndGet();
         return format;

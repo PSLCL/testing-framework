@@ -342,7 +342,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         for (AwsMachineInstance adjust : adjustList)
         {
             instancesInTemplate.remove(adjust);
-            deleteInstances(templateInstanceId, instancesInTemplate, adjust.getCoordinates());
+            deleteInstances(templateInstanceId, adjustList, adjust.getCoordinates());
         }
         format.ttl("reusable instances: ", instancesInTemplate.size());
         log.debug(format.toString());
@@ -728,12 +728,12 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 format.ttl("delta: ", delta);
                 long timeout = configuredTimeout;
                 long div = delta / configuredTimeout;
-                if(div < 2) // 1 is the first period, 2 is modulus only
-                    div = 0;
-                else
-                    --div;  // modulus to this next period 
+//                if(div < 2) // 1 is the first period, 2 is modulus only
+//                    div = 0;
+//                else
+//                    --div;  // modulus to this next period 
                 timeout += div * configuredTimeout;
-                timeout += configuredTimeout - (delta % configuredTimeout);
+//                timeout += configuredTimeout - (delta % configuredTimeout);
                 timeout -= 2; // keep/give it two minutes within the period to cleanup
                 format.ttl("timeout: ", timeout);
                 if(delta >= timeout)

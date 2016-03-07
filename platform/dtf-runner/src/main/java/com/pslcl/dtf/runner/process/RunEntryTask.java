@@ -66,6 +66,8 @@ public class RunEntryTask implements Runnable {
      */
     @Override
     public void run() {
+        String tname = Thread.currentThread().getName();
+        Thread.currentThread().setName("RunEntryTask");
         // this thread blocks while waiting for the test run to return a test result and otherwise complete itself (if needed, block could be for days at a time)
         log.debug(simpleName + "run() opens reNum " + reNum);
     	RunnerService rs = this.runnerMachine.getService();
@@ -86,6 +88,7 @@ public class RunEntryTask implements Runnable {
         }
  
         log.debug(simpleName + "run() closes reNum " + reNum);
+        Thread.currentThread().setName(tname);
     }
     
 }
