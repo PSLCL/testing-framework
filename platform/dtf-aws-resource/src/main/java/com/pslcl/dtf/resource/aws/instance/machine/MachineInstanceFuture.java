@@ -262,7 +262,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         StafRunnableProgram runnableProgram;
         try
         {
-            runnableProgram = new StafRunnableProgram(null, cmdData);
+            runnableProgram = new StafRunnableProgram(cmdData);
         } catch (Exception e1)
         {
             throw new FatalResourceException(reservedResource.resource.getCoordinates(), "failed to obtain StafRunnableProgram", e1);

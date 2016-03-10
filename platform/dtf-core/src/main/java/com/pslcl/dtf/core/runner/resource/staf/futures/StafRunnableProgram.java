@@ -37,6 +37,11 @@ public class StafRunnableProgram implements RunnableProgram
     private ExecutorService executor;
     private boolean stopped;
     
+    public StafRunnableProgram(ProcessCommandData commandData) throws Exception
+    {
+    	this(null, commandData);
+    }
+    
     public StafRunnableProgram(STAFResult result, ProcessCommandData commandData) throws Exception
     {
         this.commandData = commandData;
