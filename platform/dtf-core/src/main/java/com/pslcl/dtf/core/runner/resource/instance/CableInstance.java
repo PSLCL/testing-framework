@@ -24,14 +24,14 @@ public interface CableInstance extends ResourceInstance {
 	/**
 	 * The IP address associated with this cable.
 	 * 
-	 * @return
+	 * @return the IP address.
 	 */
 	public String getIPAddress();
 	
 	/**
 	 * The machine that this cable connects to a network.
 	 *   
-	 * @return
+	 * @return the machine instance.
 	 */
 	public MachineInstance getMachineInstance();
 
@@ -39,7 +39,7 @@ public interface CableInstance extends ResourceInstance {
 	/**
 	 * The network that this cable connect a machine to.
 	 *   
-	 * @return
+	 * @return the network instance.
 	 */
 	public NetworkInstance getNetworkInstance();
 }

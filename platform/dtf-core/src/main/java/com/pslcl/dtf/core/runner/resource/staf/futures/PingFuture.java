@@ -50,7 +50,7 @@ public class PingFuture implements Callable<Integer>
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("PingFuture");
         STAFResult result = StafSupport.processPing(runnableProgram);
-        Thread.currentThread().setName("PingFuture");
+        Thread.currentThread().setName(tname);
         if(result == null)
             return null;
         return result.rc;

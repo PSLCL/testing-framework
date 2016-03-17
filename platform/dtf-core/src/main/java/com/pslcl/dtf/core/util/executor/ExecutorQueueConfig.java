@@ -26,14 +26,14 @@ public interface ExecutorQueueConfig
 {
     /**
      * Get the queues core pool size.
-     * </p>
+     * <p>
      * @return size the core pool size.
      */
     public int getCorePoolSize();
 
     /**
      * Get the thread name prefix for pool threads.
-     * </p>
+     * <p>
      * @return name the thread prefix name to use.  Must not be null.
      * @throws IllegalArgumentException if name is null.
      */
@@ -41,7 +41,7 @@ public interface ExecutorQueueConfig
 
     /**
      * Get the <code>StatusTracker</code> to use.
-     * </p>
+     * <p>
      * @return the <code>StatusTracker</code> to use.  Must not return null.
      * @see DtfStatusTracker
      */

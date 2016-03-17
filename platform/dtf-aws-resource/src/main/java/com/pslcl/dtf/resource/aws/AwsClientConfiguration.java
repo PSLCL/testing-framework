@@ -17,10 +17,6 @@ package com.pslcl.dtf.resource.aws;
 
 import java.net.InetAddress;
 
-import javax.jms.JMSException;
-
-import org.apache.commons.daemon.DaemonInitException;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -40,9 +36,7 @@ public class AwsClientConfiguration
 
     /**
      * Establish connection to a specific AWS SQS message queue in a specific AWS region
-     * @throws DaemonInitException 
-     * 
-     * @throws JMSException 
+     * @throws Exception if configuration can not be obtained. 
      */
     public static AwsClientConfig getClientConfiguration(RunnerConfig config, ClientType type) throws Exception
     {

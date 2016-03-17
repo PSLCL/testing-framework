@@ -87,7 +87,7 @@ public interface ResourcesManager
      * If isResusable is true the <code>TemplateProvider</code> is indicating 
      * that it will likely be asking for the same resource again soon.  
      * The implementation should then optimize this resource where possible.
-     * @param templateId The templateId associated with the resource.  Must never be null.
+     * @param templateInstanceId The template instance id associated with the resource.  Must never be null. 
      * @param resourceId the resource to be released.
      * @param isReusable If true, the implementation should optimize, otherwise it 
      * should destroy the resource. 

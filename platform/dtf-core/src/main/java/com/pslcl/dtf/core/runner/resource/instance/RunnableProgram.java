@@ -18,17 +18,14 @@ package com.pslcl.dtf.core.runner.resource.instance;
 import java.util.concurrent.Future;
 
 /**
- * 
- * 
- *
  */
 public interface RunnableProgram
 {
     /**
-	 * Stop the program command on a machine and return a Future with the {@link Future<Integer>} result of the corresponding stop command, or the exit code of
+	 * Stop the program command on a machine and return a Future with the {@link Future} result of the corresponding stop command, or the exit code of
 	 * the stop script, being set once the stop script has completed.
      * 
-     * @return a Future with the {@link Future<Integer>} result of the corresponding stop command, or the exit code of
+     * @return a Future with the {@link Future} result of the corresponding stop command, or the exit code of
 	 * the stop script, being set once the stop script has completed.
      */
     public Future<Integer> kill();
@@ -43,9 +40,9 @@ public interface RunnableProgram
     /**
      * Return a program run result, if available.
      * 
-     * @note Null return indicates that the program run result was not available.
-     * @note Zero return indicates that the program completed with a successful result. 
-     * @note Non-zero return indicates that the program completed with a failed result.
+     * <p>Null return indicates that the program run result was not available.
+     * <p>Zero return indicates that the program completed with a successful result. 
+     * <p>Non-zero return indicates that the program completed with a failed result.
      * 
      * @return The program run result, or null.
      */

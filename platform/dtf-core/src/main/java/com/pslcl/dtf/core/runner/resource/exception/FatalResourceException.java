@@ -30,6 +30,7 @@ public class FatalResourceException extends Exception
      * Constructs a new exception with {@code null} as its detail message.
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
+     * @param coordinates the resource coordinates.  Must not be null;
      */
     public FatalResourceException(ResourceCoordinates coordinates)
     {
@@ -42,6 +43,7 @@ public class FatalResourceException extends Exception
      * cause is not initialized, and may subsequently be initialized by
      * a call to {@link #initCause}.
      *
+     * @param coordinates the resource coordinates.  Must not be null;
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
@@ -57,6 +59,7 @@ public class FatalResourceException extends Exception
      * {@code cause} is <i>not</i> automatically incorporated in
      * this exception's detail message.
      *
+     * @param coordinates the resource coordinates.  Must not be null;
      * @param  message the detail message (which is saved for later retrieval
      *         by the {@link #getMessage()} method).
      * @param  cause the cause (which is saved for later retrieval by the
@@ -79,6 +82,7 @@ public class FatalResourceException extends Exception
      * wrappers for other throwables (for example, {@link
      * java.security.PrivilegedActionException}).
      *
+     * @param coordinates the resource coordinates.  Must not be null;
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method).  (A <tt>null</tt> value is
      *         permitted, and indicates that the cause is nonexistent or
