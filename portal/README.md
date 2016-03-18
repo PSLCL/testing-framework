@@ -4,7 +4,7 @@ Node.js application using [express.js](http://expressjs.com), MySQL, [bootstrap]
 ## Requirements
 The following tools must be installed on production systems (or be accessible), and Node.js should be installed on development machines.
 
-1. [Node.js](http://nodejs.org) version 'v0.10.26'. Note that on Windows, you need to disable path modifications because it corrupts your environment.
+1. [Node.js](http://nodejs.org) version 'v0.10.26' or newer. Note that on Windows, you need to disable path modifications because it corrupts your environment.
 2. Git
 3. [MySQL](http://mysql.com) version 5.7 or newer.
 4. ports 80 and/or 443 should be accessible

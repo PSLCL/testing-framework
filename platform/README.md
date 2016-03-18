@@ -61,8 +61,8 @@ The service is launched with jsvc.
 The following must be installed or configured on production systems
 
 1. jsvc
-2. [STAF](http://prdownloads.sourceforge.net/staf/STAF3424-setup-linux-amd64-NoJVM.bin?download) version 'v3.4.24'.
-3. Amazon AWS IAM role
+2. [STAF](http://prdownloads.sourceforge.net/staf/STAF3424-setup-linux-amd64-NoJVM.bin?download) version 3.4.24 or newer.
+3. Amazon AWS IAM role configured with the policies listed in this document.
 4. ports 6500 and 6550 should be available
 
 ### AWS IAM Policy
