@@ -51,11 +51,11 @@ The following environment variables can be used to setup database properties for
 connectivity is not available that the server will fail to start. The values shown are the defaults set
 in `testing-framework/portal/config/config.js`.
 
- - MYSQL_HOST = localhost
- - MYSQL_PORT = 3306
- - MYSQL_USER = root
- - MYSQL_PASS =
- - MYSQL_DB   = qa_portal
+ - `DTF_DB_HOST     = localhost`
+ - `DTF_DB_PORT     = 3306`
+ - `DTF_DB_USER     = root`
+ - `DTF_DB_PASSWORD =`
+ - `DTF_DB_SCHEMA   = qa_portal`
 
 These can be added to the command line call to run the server, or added to `~/.bash_profile`.
 
