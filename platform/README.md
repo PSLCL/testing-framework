@@ -187,5 +187,5 @@ Note: SES by default limits the number of emails that may be sent per 24 hour pe
  
 ###Test Runner Service Configuration
 
-The default configuration file path is testing-framework/platform/config/dtf.properties. Example configuration files may be found at testing-platform/platform/example-config/. See the example configuration for additional config documentation.
+The default configuration file path is testing-framework/platform/config/dtf.properties. Example configuration files dtf.properties and logback.xml may be found at testing-platform/platform/example-config/. See the example configuration for additional config documentation.
 
