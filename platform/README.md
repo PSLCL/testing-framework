@@ -165,7 +165,7 @@ Multiple images will likely need to be created depending on the needs of the tes
 
 For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ami-create-standard.html before saving the image.
 
-    1. Bring up a remote desktop client to the EC2 image establish in the above steps.
+    1. Bring up a remote desktop client to the EC2 image established in the above steps.
     2. Run the "EC2ConfigService Settings" application
     3. In the "General" tab	
 	  a. select "Set Computer Name" check box.

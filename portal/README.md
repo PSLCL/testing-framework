@@ -73,7 +73,7 @@ file.
 The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
 
 ## Running the server
-Windows does not fully support npm scripts, and so the process to launch a development server differ
+Windows does not fully support npm scripts, and so the process to launch a development server differs
 on Windows and Linux.
 
 ### Windows

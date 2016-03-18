@@ -24,7 +24,7 @@ deployed artifact.
 
 ###A Developer Connects a Machine to a Network
 
-A [Test Generator](test_generators.md) developer Requests That a machine [Resource](resources.md) be Attached to a 
+A [Test Generator](test_generators.md) developer requests that a machine [Resource](resources.md) be attached to a 
 network resource by issuing a [Connect](template_commands.md#connect) command. When the [Templates](templates.md) are 
 generated, connect commands are automatically prioritized over other commands which require that the machine
 be connected to the network(e.g. A program-based command which takes the machine's IP Address as a parameter).
