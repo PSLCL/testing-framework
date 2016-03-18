@@ -330,8 +330,8 @@ public class Core
 
     /**
      * Open the database connection if it is not already open. Environment variables are used
-     * to determine the DB host, user, and password. The DTF_TEST_DB_HOST variable is required.
-     * DTF_TEST_DB_USER and DTF_TEST_DB_PASSWORD are optional, and if not specified then a guest
+     * to determine the DB host, user, and password. The DTF_DB_HOST variable is required.
+     * DTF_DB_USER and DTF_DB_PASSWORD are optional, and if not specified then a guest
      * account with no password is used. This sets the 'read_only' flag, which disables all
      * database modifications.
      */
