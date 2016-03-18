@@ -36,10 +36,20 @@ The following can be used to resolve it: (Ubuntu)
 sudo mv /usr/lib/python2.7/dist-packages/gyp /usr/lib/python2.7/dist-packages/gyp_backup
 ```
 
-## Configure database
+## Configuration 
+
+The following example configuration files can be found under the directory /testing-framework/portal/example-config:
+
+* config.js - Portal configuration
+* server.pfx-readme - 
+* ivysettings.xml - Ivy artifact provider configuration
+
+Each of these files should be copied to the /testing-framework/portal/config/ directory and edited appropriately.
+
+### Configure Database
 The following environment variables can be used to setup database properties for MySQL. Note that if database
 connectivity is not available that the server will fail to start. The values shown are the defaults set
-in 'server/config/config.js'.
+in '/testing-framework/portal/config/config.js'.
 
  - MYSQL_HOST = localhost
  - MYSQL_PORT = 3306
@@ -47,8 +57,11 @@ in 'server/config/config.js'.
  - MYSQL_PASS =
  - MYSQL_DB   = qa_portal
 
-These can be added to the command line call to run the server, or added to `~/.bash_profile`. A sample config.js
-may be copied from 'example-config/config.js'.
+These can be added to the command line call to run the server, or added to `~/.bash_profile`.
+
+### Configure Ivy Artifact Provider
+
+The Ivy artifact provider is configured using an ivysettings.xml file in the /testing-framework/portal/config/ directory. On synchronize, the Ivy Artifact Provider will download artifacts provided by included resolvers.
 
 ## Build the platform
 The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
