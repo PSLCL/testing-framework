@@ -36,7 +36,7 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
 /**
  * InstancedTemplate is all information about a previously instantiated template, to maintain its operation and to allow it to be reused.
  * 
- * @note The test runner should re-use templates, when possible, but should not attempt to re-use individual resources.
+ * Note: The test runner should re-use templates, when possible, but should not attempt to re-use individual resources.
  *       Instead, when a template is no longer needed, all resources should be released to their resource provider.
  *       The resource provider is responsible for individual resource reuse.
  */
@@ -142,8 +142,8 @@ public class InstancedTemplate {
     
     /**
      * 
-     * @param coord
-     * @param stepReference
+     * @param coord The ResourceCoordinates object
+     * @param stepReference String representation of the resource reference (as found in the steps of the template)
      */
     public void markStepReference(ResourceCoordinates coord, int stepReference) {
         mapResourceCoordinatesToStepReference.put(coord, stepReference);
@@ -154,8 +154,8 @@ public class InstancedTemplate {
 
     /**
      *     
-     * @param stepReference
-     * @param resourceInstance
+     * @param stepReference String representation of the resource reference (as found in the steps of the template)
+     * @param resourceInstance The resource instance
      */
     public void markResourceInstance(int stepReference, ResourceInstance resourceInstance) {
         mapStepReferenceToResourceInstance.put(stepReference, resourceInstance);
@@ -165,10 +165,10 @@ public class InstancedTemplate {
     }    
 
     /**
-     * @note recursive
-     * @param strResourceReference
-     * @return
-     * @throws Exception 
+     * Note: Recursive
+     * @param strResourceReference String representation of the resource reference (as found in the steps of the template)
+     * @return The ResourceInstance
+     * @throws Exception on any error
      */
     public ResourceInstance getResourceInstance(String strResourceReference) throws Exception {
     	ResourceInstance retResourceInstance = null;
@@ -199,8 +199,8 @@ public class InstancedTemplate {
     
     /**
      *  
-     * @param stepReference
-     * @param instancedTemplate
+     * @param stepReference The step reference
+     * @param instancedTemplate The InstancedTemplate
      */
     public void markNestedTemplate(int stepReference, InstancedTemplate instancedTemplate) {
         mapStepReferenceToNestedTemplate.put(stepReference, instancedTemplate);

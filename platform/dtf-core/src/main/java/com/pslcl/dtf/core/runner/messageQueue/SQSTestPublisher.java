@@ -25,6 +25,7 @@ public class SQSTestPublisher {
 	 * @param credentialsProvider
 	 *            The def
 	 * @param clientConfig
+	 *            The ClientConguration
 	 * @param queueName
 	 *            The name of the queue. Must not be null.
 	 */
@@ -55,6 +56,9 @@ public class SQSTestPublisher {
 
 	/**
 	 * Request that a test run be executed by the Test Runner Service.
+	 * 
+	 * @param runID
+	 * 			The runID
 	 */
 	public void publishTestRunRequest(long runID) throws AmazonClientException {
 		SendMessageRequest sendRequest = new SendMessageRequest(queueUrl, Long.toString(runID));

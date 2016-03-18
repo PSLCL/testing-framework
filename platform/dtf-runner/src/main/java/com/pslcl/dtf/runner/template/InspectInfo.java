@@ -21,9 +21,9 @@ public class InspectInfo {
 	
 	/**
 	 * 
-	 * @param resourceInstance
-	 * @param strInstructionsHash
-	 * @param artifacts
+	 * @param resourceInstance The ResourceInstance
+	 * @param strInstructionsHash Hash of the instructions
+	 * @param artifacts The artifacts
 	 */
 	public InspectInfo(ResourceInstance resourceInstance, String strInstructionsHash, Map<String, String> artifacts) {
 		this.resourceInstance = resourceInstance;

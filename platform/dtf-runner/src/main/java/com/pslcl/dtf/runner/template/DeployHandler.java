@@ -46,12 +46,13 @@ public class DeployHandler {
     private final Logger log;
     private final String simpleName;
 
-	/**
-	 * Constructor: Identify consecutive deploy steps in a set of steps
-	 * @param iT
-	 * @param setSteps
-	 */
-	public DeployHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
+    /**
+     * Constructor: Identify consecutive deploy steps in a set of steps
+     * @param iT The InstancedTemplate
+     * @param setSteps List of steps in the step set
+     * @param initialSetStepCount The offset of the first deploy step in the steps of @param setSteps
+     */
+	public DeployHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -85,7 +86,7 @@ public class DeployHandler {
 
     /**
      * 
-     * @return
+     * @return true if done; false if not done
      */
 	public boolean isDone() {
 		return done;
@@ -188,10 +189,10 @@ public class DeployHandler {
 	 * Wait for all deploys to complete, for the single setID that is being processed.
 	 * Mark deploy errors in the returned DeployInfo list
 	 * 
-	 * @note thread blocks
-	 * @note No checked exceptions are thrown. The caller must catch Exception to handle unchecked exceptions
-	 * 
-	 * throws Exception
+	 * Note: Thread blocks
+	 * Note: No checked exceptions are thrown. The caller must catch Exception to handle unchecked exceptions
+	 * @return The list of completed DeployInfo objects
+	 * @throws Exception on any error
 	 */
 	public List<DeployInfo> waitComplete() throws Exception {
 		try {

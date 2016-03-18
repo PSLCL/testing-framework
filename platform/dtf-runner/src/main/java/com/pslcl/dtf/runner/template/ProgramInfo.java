@@ -17,9 +17,9 @@ public class ProgramInfo {
 
 	/**
 	 * 
-	 * @param resourceInstance
-	 * @param strProgramName
-	 * @param parameters
+	 * @param resourceInstance The ResourceInstance
+	 * @param strProgramName The program name
+	 * @param parameters The list of parameters
 	 */
 	public ProgramInfo(ResourceInstance resourceInstance, String strProgramName, List<String> parameters) {
 		this.resourceInstance = resourceInstance;

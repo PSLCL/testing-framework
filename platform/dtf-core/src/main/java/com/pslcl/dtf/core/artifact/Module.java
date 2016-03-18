@@ -48,7 +48,7 @@ public interface Module
      * Return the status of the module. This will likely have meaning to the module or the organization,
      * but no particular meaning is given by the testing framework. The information is available to
      * the generator and may influence the level of testing required.
-     * @return
+     * @return The status
      */
     public String getStatus();
 
@@ -65,7 +65,7 @@ public interface Module
      * to search for different modules. For example, if there is an associated platform for a module
      * then there could be a "platform" attribute. In general the attributes have meaning only between
      * a provider and the generators associated with that provider.
-     * @return
+     * @return The attributes
      */
     public Map<String, String> getAttributes();
 

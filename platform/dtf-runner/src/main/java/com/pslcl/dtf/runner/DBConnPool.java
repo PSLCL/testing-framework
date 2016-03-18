@@ -42,9 +42,9 @@ public class DBConnPool {
 	/**
 	 * Determine the DB host, user, and password, and setup the MySQL connection pool.
 	 * 
-     * @note Host configuration is required.
-     * @note User and password configurations are optional, and if not specified then a guest account is used. This sets the 'read_only' flag, which disables all database modifications.
-	 * @note This init() call must be paired with the destroy() call
+     * Note: Host configuration is required.
+     * Note: User and password configurations are optional, and if not specified then a guest account is used. This sets the 'read_only' flag, which disables all database modifications.
+	 * Note: This init() call must be paired with the destroy() call
 	 * 
 	 * @param config Must not be null
 	 */

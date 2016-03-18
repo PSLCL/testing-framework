@@ -40,7 +40,7 @@ public class ResourceReserveDisposition
     }
 
     /**
-     * @note This establishes that resource is unavailable; follow this with .setInvalidResource() to establish invalid resource, instead. 
+     * Note: This establishes that resource is unavailable; follow this with .setInvalidResource() to establish invalid resource, instead. 
      * @param inputResourceDescription the requested resource.
      */
     public ResourceReserveDisposition(ResourceDescription inputResourceDescription)

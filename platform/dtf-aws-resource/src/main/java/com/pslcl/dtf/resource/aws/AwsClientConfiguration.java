@@ -35,7 +35,11 @@ public class AwsClientConfiguration
     }
 
     /**
-     * Establish connection to a specific AWS SQS message queue in a specific AWS region
+     * Establish connection to a specific AWS SQS message queue in a specific AWS region, and return the resulting AwsClientConfig object
+     * 
+     * @param config The RunnerConfig
+     * @param type The ClientType
+     * @return The AwsClientConfig object
      * @throws Exception if configuration can not be obtained. 
      */
     public static AwsClientConfig getClientConfiguration(RunnerConfig config, ClientType type) throws Exception

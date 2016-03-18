@@ -24,7 +24,7 @@ public class RunEntryState {
     
     /**
      * Constructor
-     * @param reNum
+     * @param reNum The run entry number
      * @param message Opaque object used eventually to ack the templateNumber held in the QueueStore
      */
     public RunEntryState(long reNum, Object message) {
@@ -51,7 +51,7 @@ public class RunEntryState {
     }
     
     /**
-     * @note blocks until Action has changed; calling this.setAction() is required 
+     * Note: blocks until Action has changed; calling this.setAction() is required 
      * @return
      * @throws InterruptedException
      */

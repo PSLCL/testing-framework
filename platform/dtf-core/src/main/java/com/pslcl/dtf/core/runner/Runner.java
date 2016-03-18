@@ -31,7 +31,7 @@ public interface Runner extends Daemon, UncaughtExceptionHandler
      * 
      * @param strRunEntryNumber String representation of the run entry number, or reNum (pk_run of this entry in table run).
      * @param message JMS message associated with reNum, used for eventual message ack
-     * @throws Exception
+     * @throws Throwable on submit error
      */
     public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Throwable;
 

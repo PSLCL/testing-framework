@@ -26,11 +26,13 @@ public class ProcessTracker {
 	
     /**
      * 
-     * @note This is a static method, because there is only one database.
-     * @note Timeout at five seconds by throwing TimeoutException
-     * @param dtNum
-     * @return
-     * @throws Exception
+     * Note: This is a static method, because there is only one database.
+     * Note: Timeout at five seconds by throwing TimeoutException
+     * @param dbConnPool The database connection pool
+     * @param reNum The run entry number
+     * @return true if result is stored (as true or false); false if result is not stored
+     * @throws TimeoutException on timeout
+     * @throws Exception on any error
      */
     static public boolean isResultStored(DBConnPool dbConnPool, long reNum) throws TimeoutException, Exception {
     	boolean retBoolean = false;
@@ -53,10 +55,11 @@ public class ProcessTracker {
     
     /**
      * 
-     * @note Timeout at five seconds by throwing TimeoutException
-     * @param instanceNumber
-     * @return
-     * @throws Exception
+     * Note: Timeout at five seconds by throwing TimeoutException
+     * @param reNum The run entry number
+     * @return true if running; false if not running
+     * @throws TimeoutException on timeout
+     * @throws Exception on any error
      */
     public boolean isRunning(long reNum) throws TimeoutException, Exception {
     	// return true if reNum if found in runEntryState storage

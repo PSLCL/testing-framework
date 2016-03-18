@@ -118,7 +118,7 @@ public interface StatusTracker
     
     /**
      * An enumeration of all possible Status states.
-     * <p>The value is associated with a user determined severity where <code> Ok less-than Warn less-than Error. 
+     * <p>The value is associated with a user determined severity where <code>Ok</code> less-than <code>Warn</code> less-than <code>Error</code>. 
      */
     public enum Status
     {

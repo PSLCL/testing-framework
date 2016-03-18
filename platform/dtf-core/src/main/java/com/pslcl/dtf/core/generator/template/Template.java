@@ -140,9 +140,9 @@ public class Template implements Comparable<Template>
         }
 
         /**
-         * Get the value of the attribute. If the value of the attribute is known, then it will be returned. 
+         * Get the value of the attribute. If the value of the attribute is known, then it will be returned.
          * If the value of the attribute will not be known until the test is run, then a value reference in the 
-         * form of $(attribute <resource-ref> <attribute-name>) will be returned instead.
+         * form of $(attribute resource-ref attribute-name) will be returned instead.
          * 
          * @return The value or value reference.
          */
@@ -225,6 +225,7 @@ public class Template implements Comparable<Template>
      * @param core The core used to synchronize the Template.
      * @param actions The actions that the template will perform.
      * @param dependencies Any dependent templates. May be null or an empty list if none.
+     * @throws Exception on constructor error
      */
     public Template(Core core, List<TestInstance.Action> actions, List<DescribedTemplate> dependencies) throws Exception
     {

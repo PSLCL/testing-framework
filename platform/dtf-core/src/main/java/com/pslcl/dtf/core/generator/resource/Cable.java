@@ -93,7 +93,7 @@ public class Cable
      * This reference will be resolved by the Generator when the Template is generated. If the value of
      * the IP address is known at that time, then the reference will be replaced by the value. If the value
      * of the IP address will not be known until the test is run, then the reference will be replaced by
-     * a value reference in the form of $(ip <machine-ref> <network-ref>).
+     * a value reference in the form of $(ip machine-ref network-ref).
      * .
      * @return a String reference to the IP address.
      */

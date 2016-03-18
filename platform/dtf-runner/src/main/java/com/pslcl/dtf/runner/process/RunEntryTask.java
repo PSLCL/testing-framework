@@ -37,11 +37,12 @@ public class RunEntryTask implements Runnable {
     /**
      * Constructor: From a given run entry number, initiate execution of its test run.
      * 
-     * @note Step 1 Check to see if first time setup is accomplished; if not, setup our testrunExecutor.
-     * @note Step 2 Submit this test instance to the testRunExecutorService for future execution.
-     * @note Every thread or task created by this class closes itself automatically, whether seconds or days from instantiation.
-     * @param core The database and business logic class
-     * @param testInstanceNumber identifies test instance to execute
+     * Note: Step 1 Check to see if first time setup is accomplished; if not, setup our testrunExecutor.
+     * Note: Step 2 Submit this test instance to the testRunExecutorService for future execution.
+     * Note: Every thread or task created by this class closes itself automatically, whether seconds or days from instantiation.
+     * @param runnerMachine The RunnerMachine
+     * @param reNum The run entry number
+     * @throws Exception on any error
      */
     public RunEntryTask(RunnerMachine runnerMachine, long reNum) throws Exception {
         this.log = LoggerFactory.getLogger(getClass());
@@ -62,7 +63,7 @@ public class RunEntryTask implements Runnable {
     /**
      * Execute one test run
      * 
-     * @note Efforts to exit this thread early require cooperation of whatever code this method calls.
+     * Note: Efforts to exit this thread early require cooperation of whatever code this method calls.
      */
     @Override
     public void run() {

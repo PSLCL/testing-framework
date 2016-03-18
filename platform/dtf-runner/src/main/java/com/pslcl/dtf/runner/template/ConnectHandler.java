@@ -59,10 +59,12 @@ public class ConnectHandler {
     
 	/**
 	 * Constructor: Identify consecutive connect steps in a set of steps
-	 * @param iT
-	 * @param setSteps
+	 * 
+	 * @param iT The InstancedTemplate
+     * @param setSteps List of steps in the step set
+     * @param initialSetStepCount The offset of the first connect step in the steps of @param setSteps
 	 */
-	public ConnectHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
+	public ConnectHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -207,10 +209,11 @@ public class ConnectHandler {
 	 * Wait for all connects to complete, for the single setID that is being processed.
 	 * Mark connect errors in the returned CableInstance list.
 	 * 
-	 * @note thread blocks
- 	 * @note No checked exceptions are thrown. The caller must catch Exception to handle unchecked exceptions
+	 * Note: thread blocks
+ 	 * Note: No checked exceptions are thrown. The caller must catch Exception to handle unchecked exceptions
  	 * 
- 	 * @throws Exception
+ 	 * @return The list of newly available CableInstance objects
+	 * @throws Exception on any error
 	 */
 	public List<CableInstance> waitComplete() throws Exception {
 		// At this moment, this.futuresOfConnects is filled. It's Future's each give us a CableInstance. Our API is with each of these extracted CableInstance's.

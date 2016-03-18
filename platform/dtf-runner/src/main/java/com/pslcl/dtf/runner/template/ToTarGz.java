@@ -111,7 +111,7 @@ public class ToTarGz {
 	/**
 	 * Add a file or directory to the TarArchiveOutputStream
 	 * 
-	 * @note params must not be null
+	 * Note: Params must not be null
 	 * @param taos The tar archive output stream to hold the submitted directory or file
 	 * @param addFile the directory or file to add
 	 * @param parentDir Within taos, the name of the directory to hold the submitted directory or file, such as "."

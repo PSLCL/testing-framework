@@ -40,8 +40,9 @@ public class ProgramHandler {
 	/**
 	 * Constructor: Identify consecutive program steps [configure or run or start] in a set of steps
 	 * 
-	 * @param iT
-	 * @param setSteps List of steps to process. Must not be null. Must not be empty. First step must be [configure or run or start] 
+	 * @param iT The InstanceTemplate
+	 * @param setSteps List of steps to process. Must not be null. Must not be empty. First step must be [configure or run or start]
+	 * @param initialSetStepCount The offset of the first program step in the steps of @param setSteps
 	 */
 	public ProgramHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws IllegalArgumentException, NumberFormatException {
         this.log = LoggerFactory.getLogger(getClass());
@@ -76,7 +77,7 @@ public class ProgramHandler {
 	
     /**
      * 
-     * @return
+     * @return true if done; false if not done
      */
 	public boolean isDone() {
 		return done;
@@ -147,6 +148,7 @@ public class ProgramHandler {
     /**
      * Proceed to apply this.programInfos to bound machines, then return. Set done when the programs, of this set, complete or error out.
      *
+     * @return The list of completed ProgramState objects
      * @throws Exception
      */
     List<ProgramState> proceed() throws Exception {
@@ -210,6 +212,9 @@ public class ProgramHandler {
     
 	/**
 	 * thread blocks
+	 * 
+	 * @return The list of completed ProgramState objects
+	 * @throws Exception on any error
 	 */
 	public List<ProgramState> waitComplete() throws Exception {
 		// At this moment, this.futuresOfProgramState is filled. Its embedded Future's each give us an Integer, or a RunnableProgram. Our API is with these extracted objects.

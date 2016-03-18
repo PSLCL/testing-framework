@@ -25,7 +25,7 @@ import java.util.TreeMap;
  * This class represents a set of attributes that can be encoded as a string. Each attribute
  * can appear only once in an instance. In order to preserve hashing, the string representation
  * is always sorted by increasing attribute.
- * The format of the string is always attribute=value&attribute=value where each value is URL encoded.
+ * The format of the string is always (attribute=value)&amp;(attribute=value), where each value is URL encoded.
  */
 public class Attributes
 {

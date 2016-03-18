@@ -20,7 +20,7 @@ import com.pslcl.dtf.runner.RunnerService;
 /**
  * 
  * 
- * @note This is static code, with no variables
+ * Note: This is static code, with no variables
  */
 public enum Action implements Actions {
     // note: enums are static
