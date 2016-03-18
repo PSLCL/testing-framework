@@ -73,17 +73,16 @@ file.
 The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
 
 ## Running the server
-Windows does not fully support npm scripts, and so the process to launch a development server differs
-on Windows and Linux.
+Windows does not fully support npm scripts, and so the process to launch a development server differs on Windows and Linux. For both linux and Windows change directory to `testing-framework/portal`.
 
-### Windows
+### Windows Development
 There are two programs that must be run:
 
 `$ npm run watch`
 
 `$ nodemon app`
 
-### Linux
+### Linux Development
 A single program will both run and watch for changes.
 
 `$ npm run`
@@ -92,7 +91,7 @@ This now uses nodemon to run the server. It refreshes files when they change, an
 `./client` into a `client.js` file.  Files can then be required like 'require('controllers/my_controller.js');'
 this uses Browserify to compile the assets into one minified file.
 
-### Production
+### Linux Production
 Production systems must be Linux. To keep the server running even if there are failures the 'forever' program is
 used. The following lines can be used in the directory that contains 'app.js':
 
