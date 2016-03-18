@@ -33,6 +33,7 @@ public class ResourceCoordinates
      * @param manager may be null for various contexts and states.
      * @param provider may be null for various contexts and states.
      * @param templateId must never be null.
+     * @param templateInstanceId  must never be null.
      * @param resourceId must always be a valid unique ID for a given resource for the life of the runner.
      * @param runId -1 if unknown, otherwise the unique ID that identifies an individual test run.
      */
@@ -53,8 +54,6 @@ public class ResourceCoordinates
      * @param manager may be null for various contexts and states.
      * @param provider may be null for various contexts and states.
      * @param coordinates must never be null.
-     * @param resourceId must always be a valid unique ID for a given resource for the life of the runner.
-     * @param runId -1 if unknown, otherwise the unique ID that identifies an individual test run.
      */
     public ResourceCoordinates(ResourcesManager manager, ResourceProvider provider, ResourceCoordinates coordinates)
     {
@@ -71,6 +70,7 @@ public class ResourceCoordinates
     /**
      * Construct a Resource ID's only Coordinates
      * @param templateId must never be null.
+     * @param templateInstanceId must never be null.
      * @param resourceId must always be a valid unique ID for a given resource for the life of the runner.
      * @param runId -1 if unknown, otherwise the unique ID that identifies an individual test run.
      */

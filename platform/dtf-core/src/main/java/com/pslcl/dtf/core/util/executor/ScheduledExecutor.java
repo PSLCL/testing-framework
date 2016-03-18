@@ -26,14 +26,14 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 
 /**
  * An EMIT application friendly <code>ScheduledThreadPoolExecutor</code>.
- * </p>
+ * <p>
  * Java's <code>java.util.Timer</code> has fallen in disfavor based on badly behaving timer tasks
  * being able to take down all tasks in the timer.  It is now suggested that a <code>ScheduledThreadPoolExecutor</code>
  * with at least two threads is used in the place of old timer.
- * </p>
+ * <p>
  * Typically a <code>org.emitdo.service.util.Service</code> implementation's System Level will 
  * create an instance of this class as a singleton object to the whole application and include its reference
- * in the <code>Service<T></code>'s configuration object, which in turn is typically made available to all 
+ * in the <code>Service</code>'s configuration object, which in turn is typically made available to all 
  * subsystems of the application, where they can utilize this timer as needed.
  */
 //@ThreadSafe
@@ -43,7 +43,7 @@ public class ScheduledExecutor extends ScheduledThreadPoolExecutor
     
     /**
      * The default constructor.
-     * </p>
+     * <p>
      * This call will initialize a usable ScheduledThreadPoolExecutor with a core size of 2 threads.
      * However, to enable the custom thread pool factory and status tracking extensions to 
      * the queue the user must call the <code>init</code> method before utilizing 
@@ -58,7 +58,7 @@ public class ScheduledExecutor extends ScheduledThreadPoolExecutor
 
     /**
      * Initialize our custom extended functionality of the SceduledThreadPoolExecutor.
-     * </p>
+     * <p>
      * This will initialize the thread pool with our thread pool factory functionality, and 
      * status tracking functionality.
      * @param config the configuration parameters used to configure the extended queue functionality.

@@ -34,11 +34,7 @@ import com.pslcl.dtf.core.util.executor.ScheduledExecutor;
 import com.pslcl.dtf.core.util.executor.ScheduledExecutorConfiguration;
 import com.pslcl.dtf.core.util.executor.ScheduledExecutorConfiguration.ScheduledExecutorConfig;
 
-/**
- * Global configuration object
- * 
- */
-
+@SuppressWarnings("javadoc")
 public class RunnerConfig
 {
     public final TabToLevel initsb;

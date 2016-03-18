@@ -37,6 +37,11 @@ public class StafRunnableProgram implements RunnableProgram
     private ExecutorService executor;
     private boolean stopped;
     
+    public StafRunnableProgram(ProcessCommandData commandData) throws Exception
+    {
+    	this(null, commandData);
+    }
+    
     public StafRunnableProgram(STAFResult result, ProcessCommandData commandData) throws Exception
     {
         this.commandData = commandData;
@@ -125,6 +130,7 @@ public class StafRunnableProgram implements RunnableProgram
         return result.getServiceCcode();
     }
     
+    @Override
     public synchronized String toString()
     {
         TabToLevel format = new TabToLevel();

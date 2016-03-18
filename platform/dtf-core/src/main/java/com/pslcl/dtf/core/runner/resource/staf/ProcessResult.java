@@ -127,6 +127,7 @@ public class ProcessResult
         return true;
     }
 
+    @Override
     public String toString()
     {
         TabToLevel format = new TabToLevel();
@@ -170,6 +171,7 @@ public class ProcessResult
             this.streamIdx = streamIdx;
         }
 
+        @Override
         public String toString()
         {
             TabToLevel format = new TabToLevel();

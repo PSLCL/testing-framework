@@ -86,6 +86,7 @@ public class QueryResult
         return endTimestamp == null;
     }
     
+    @Override
     public String toString()
     {
         TabToLevel format = new TabToLevel();

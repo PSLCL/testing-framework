@@ -150,11 +150,12 @@ public class RunFuture implements Callable<RunnableProgram>
          * <p>starting delay is 200ms, thus any sourceValue given under 1400ms will return count=3, max delay=1ms.
          * Similar errors will be seen through out the range with totalTimes exceeding the target by a fair amount.
          * i.e. 5 minutes will be 6.8 minutes  
-         * @param value
-         * @param targetUnit
-         * @param targetMaxDelay
-         * @param maxDelayUnit
-         * @return
+         * @param targetValue target value
+         * @param targetUnit target unit
+         * @param targetMaxDelay target max delay
+         * @param targetMaxDelayUnit target max delay unit
+         * @param minMs min milliseconds.
+         * @return timeout data object.
          */
         public static TimeoutData getTimeoutData(long targetValue, TimeUnit targetUnit, int targetMaxDelay, TimeUnit targetMaxDelayUnit, long minMs)
         {
@@ -194,6 +195,7 @@ public class RunFuture implements Callable<RunnableProgram>
             } while (true);
         }
 
+        @Override
         public String toString()
         {
             TabToLevel format = new TabToLevel();
