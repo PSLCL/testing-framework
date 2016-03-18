@@ -38,18 +38,18 @@ sudo mv /usr/lib/python2.7/dist-packages/gyp /usr/lib/python2.7/dist-packages/gy
 
 ## Configuration 
 
-The following example configuration files can be found under the directory /testing-framework/portal/example-config:
+The following example configuration files can be found under the directory `testing-framework/portal/example-config`:
 
-* config.js - Portal configuration
-* server.pfx-readme - 
-* ivysettings.xml - Ivy artifact provider configuration
+* `config.js` - Portal configuration
+* `server.pfx-readme` - 
+* `ivysettings.xml` - Ivy artifact provider configuration
 
-Each of these files should be copied to the /testing-framework/portal/config/ directory and edited appropriately.
+Each of these files should be copied to the `testing-framework/portal/config/` directory and edited appropriately.
 
 ### Configure Database
 The following environment variables can be used to setup database properties for MySQL. Note that if database
 connectivity is not available that the server will fail to start. The values shown are the defaults set
-in '/testing-framework/portal/config/config.js'.
+in `testing-framework/portal/config/config.js`.
 
  - MYSQL_HOST = localhost
  - MYSQL_PORT = 3306
@@ -61,7 +61,13 @@ These can be added to the command line call to run the server, or added to `~/.b
 
 ### Configure Ivy Artifact Provider
 
-The Ivy artifact provider is configured using an ivysettings.xml file in the /testing-framework/portal/config/ directory. On synchronize, the Ivy Artifact Provider will download artifacts provided by included resolvers.
+The Ivy artifact provider is configured using an `ivysettings.xml` file in the `testing-framework/portal/config/` directory. On synchronize, the Ivy Artifact Provider will download artifacts provided by included resolvers.
+
+### Configure Server Certificate
+
+You will need to generate a server certificate appropriate to your
+site/hostname and place it in `testing-framework/portal/config/server.pfx`. Additionally you will need to set the password for your certificate in the `testing-framework/portal/config/config.js`
+file.
 
 ## Build the platform
 The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
