@@ -119,16 +119,20 @@ Using the chrome plugin for livereload and connecting to the server will reload 
     - This folder contains Client output js from [Browserify](http://browserify.org/), and any static resources.
  - `./server`
  	- Contains all server side source files.
- 	- `./config`
- 		- `./config.js`
- 			- Contains configuration variables for MYSQL, LDAP, page load size etc. Associated by `development` or `production` for a production server which uses LDAP instead of local. This is set by using the NODE_ENV parameter example: `export NODE_ENV=production` otherwise it uses development as its environment.
     - `./lib`
-    	- Custom JavaScript Libraries used for the application. (Not for UI, those belong in `./
+    	- Custom JavaScript Libraries used for the application. (Not for UI, those belong in `
 	 - `./routes`
 	    - All files used to handle routing of pages within the application.
 	    Each page is named for the `objects` it contains routes for.
 	 - `./views`
 	    - There are only three [Jade](http://jade-lang.com/) HTML templates, a layout, index and error.  Layout contains the main Angular index page setup.	    
+- `./config`
+ 	- `./config.js`
+ 		- Contains configuration variables for MYSQL, LDAP, page load size etc. Associated by `development` or `production` for a production server which uses LDAP instead of local. This is set by using the NODE_ENV parameter example: `export NODE_ENV=production` otherwise it uses development as its environment.
+	- `./ivysettings.xml`
+		- Contains Ivy artifact provider settings.
+	- `./server.pfx`
+		- The server certificate.
  - `./app.js`
     - Main Application, contains Express config, routes, and listener for application.
  - `./package.json`
