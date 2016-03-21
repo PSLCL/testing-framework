@@ -4,9 +4,10 @@ Node.js application using [express.js](http://expressjs.com), MySQL, [bootstrap]
 ## Requirements
 The following tools must be installed on production systems (or be accessible), and Node.js should be installed on development machines.
 
-1. [Node.js](http://nodejs.org) version 'v0.10.26'. Note that on Windows, you need to disable path modifications because it corrupts your environment.
-2. [MySQL](http://mysql.com) version 5.7 or newer.
-3. ports 80 and/or 443 should be accessible
+1. [Node.js](http://nodejs.org) version 'v0.10.26' or newer. Note that on Windows, you need to disable path modifications because it corrupts your environment.
+2. Git
+3. [MySQL](http://mysql.com) version 5.7 or newer.
+4. ports 80 and/or 443 should be accessible
 
 ## Install packages
 Packages are installed automatically based on the 'package.json' file.
@@ -35,35 +36,55 @@ The following can be used to resolve it: (Ubuntu)
 sudo mv /usr/lib/python2.7/dist-packages/gyp /usr/lib/python2.7/dist-packages/gyp_backup
 ```
 
-## Configure database
+## Configuration 
+
+The following example configuration files can be found under the directory `testing-framework/portal/example-config`:
+
+* `config.js` - Portal configuration
+* `server.pfx-readme` - 
+* `ivysettings.xml` - Ivy artifact provider configuration
+
+Each of these files should be copied to the `testing-framework/portal/config/` directory and edited appropriately.
+
+### Configure Database
 The following environment variables can be used to setup database properties for MySQL. Note that if database
 connectivity is not available that the server will fail to start. The values shown are the defaults set
-in 'server/config/config.js'.
+in `testing-framework/portal/config/config.js`.
 
- - MYSQL_HOST = localhost
- - MYSQL_PORT = 3306
- - MYSQL_USER = root
- - MYSQL_PASS =
- - MYSQL_DB   = qa_portal
+ - `DTF_DB_HOST     = localhost`
+ - `DTF_DB_PORT     = 3306`
+ - `DTF_DB_USER     = root`
+ - `DTF_DB_PASSWORD =`
+ - `DTF_DB_SCHEMA   = qa_portal`
 
-These can be added to the command line call to run the server, or added to `~/.bash_profile`. A sample config.js
-may be copied from 'example-config/config.js'.
+These can be added to the command line call to run the server, or added to `~/.bash_profile`.
+
+### Configure Ivy Artifact Provider
+
+The Ivy artifact provider is configured using an `ivysettings.xml` file in the `testing-framework/portal/config/` directory. On synchronize, the Ivy Artifact Provider will download artifacts provided by included resolvers.
+
+### Configure Server Certificate
+
+You will need to generate a server certificate appropriate to your
+site/hostname and place it in `testing-framework/portal/config/server.pfx`. Additionally you will need to set the password for your certificate in the `testing-framework/portal/config/config.js`
+file.
 
 ## Build the platform
 The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
 
 ## Running the server
-Windows does not fully support npm scripts, and so the process to launch a development server differ
-on Windows and Linux.
+Windows does not fully support npm scripts, and so the process to launch a development server differs on Windows and Linux. For both linux and Windows change directory to `testing-framework/portal` and run the following commands:
 
-### Windows
+`$ npm run build`
+
+### Windows Development
 There are two programs that must be run:
 
 `$ npm run watch`
 
 `$ nodemon app`
 
-### Linux
+### Linux Development
 A single program will both run and watch for changes.
 
 `$ npm run`
@@ -72,7 +93,7 @@ This now uses nodemon to run the server. It refreshes files when they change, an
 `./client` into a `client.js` file.  Files can then be required like 'require('controllers/my_controller.js');'
 this uses Browserify to compile the assets into one minified file.
 
-### Production
+### Linux Production
 Production systems must be Linux. To keep the server running even if there are failures the 'forever' program is
 used. The following lines can be used in the directory that contains 'app.js':
 
@@ -100,16 +121,20 @@ Using the chrome plugin for livereload and connecting to the server will reload 
     - This folder contains Client output js from [Browserify](http://browserify.org/), and any static resources.
  - `./server`
  	- Contains all server side source files.
- 	- `./config`
- 		- `./config.js`
- 			- Contains configuration variables for MYSQL, LDAP, page load size etc. Associated by `development` or `production` for a production server which uses LDAP instead of local. This is set by using the NODE_ENV parameter example: `export NODE_ENV=production` otherwise it uses development as its environment.
     - `./lib`
-    	- Custom JavaScript Libraries used for the application. (Not for UI, those belong in `./
+    	- Custom JavaScript Libraries used for the application. (Not for UI, those belong in `
 	 - `./routes`
 	    - All files used to handle routing of pages within the application.
 	    Each page is named for the `objects` it contains routes for.
 	 - `./views`
 	    - There are only three [Jade](http://jade-lang.com/) HTML templates, a layout, index and error.  Layout contains the main Angular index page setup.	    
+- `./config`
+ 	- `./config.js`
+ 		- Contains configuration variables for MYSQL, LDAP, page load size etc. Associated by `development` or `production` for a production server which uses LDAP instead of local. This is set by using the NODE_ENV parameter example: `export NODE_ENV=production` otherwise it uses development as its environment.
+	- `./ivysettings.xml`
+		- Contains Ivy artifact provider settings.
+	- `./server.pfx`
+		- The server certificate.
  - `./app.js`
     - Main Application, contains Express config, routes, and listener for application.
  - `./package.json`
@@ -125,35 +150,4 @@ The Portal provides an Ivy repository containing the platform .jar files require
     
 ## Style guide
 
-The following is taken from [Node.js Style Guide](https://github.com/felixge/node-style-guide/blob/master/Readme.md) as a starting point for the project.
-
-### 2 Spaces for indention
-
-Use 2 spaces for indenting your code and swear an oath to never mix tabs and
-spaces - a special kind of hell is awaiting you otherwise.
-
-### Newlines
-
-Use UNIX-style newlines (`\n`), and a newline character as the last character
-of a file. Windows-style newlines (`\r\n`) are forbidden inside any repository.
-
-### No trailing whitespace
-
-Just like you brush your teeth after every meal, you clean up any trailing
-whitespace in your JS files before committing. Otherwise the rotten smell of
-careless neglect will eventually drive away contributors and/or co-workers.
-
-### Use Semicolons
-
-According to [scientific research][hnsemicolons], the usage of semicolons is
-a core values of our community. Consider the points of [the opposition][], but
-be a traditionalist when it comes to abusing error correction mechanisms for
-cheap syntactic pleasures.
-
-[the opposition]: http://blog.izs.me/post/2353458699/an-open-letter-to-javascript-leaders-regarding
-[hnsemicolons]: http://news.ycombinator.com/item?id=1547647
-
-### 80 characters per line
-
-Limit your lines to 80 characters. Yes, screens have gotten much bigger over the
-last few years, but your brain has not. Use the additional room for split screen.
+Use the [Node.js Style Guide](https://github.com/felixge/node-style-guide/blob/master/Readme.md) as a starting point for the project.

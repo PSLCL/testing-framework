@@ -20,11 +20,11 @@ var E = env.NODE_ENV || 'production';
 var all = {
   // MySQL configuration
   mysql: {
-    host: env.DTF_TEST_DB_HOST || 'localhost',
-    port: env.DTF_TEST_DB_PORT || 3306,
-    user: env.DTF_TEST_DB_USER || 'root',
-    password: env.DTF_TEST_DB_PASSWORD || '',
-    db: env.DTF_TEST_DB_SCHEMA || 'qa_portal'
+    host: env.DTF_DB_HOST || 'localhost',
+    port: env.DTF_DB_PORT || 3306,
+    user: env.DTF_DB_USER || 'root',
+    password: env.DTF_DB_PASSWORD || '',
+    db: env.DTF_DB_SCHEMA || 'qa_portal'
   },
   
   // AWS SQS configuration
@@ -36,9 +36,9 @@ var all = {
   },
   
   home_dir: home_dir,
-  artifacts_dir: env.DTF_TEST_ARTIFACTS || home_dir + '/artifacts',
-  generators_dir: env.DTF_TEST_GENERATORS || home_dir + '/generators',
-  shell: env.DTF_TEST_SHELL || '/bin/bash',
+  artifacts_dir: env.DTF_ARTIFACTS || home_dir + '/artifacts',
+  generators_dir: env.DTF_GENERATORS || home_dir + '/generators',
+  shell: env.DTF_SHELL || '/bin/bash',
   
   // Page size for infinite scrolling default
   page_limit: 200,

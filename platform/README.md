@@ -61,8 +61,8 @@ The service is launched with jsvc.
 The following must be installed or configured on production systems
 
 1. jsvc
-2. [STAF](http://prdownloads.sourceforge.net/staf/STAF3424-setup-linux-amd64-NoJVM.bin?download) version 'v3.4.24'.
-3. Amazon AWS IAM role
+2. [STAF](http://prdownloads.sourceforge.net/staf/STAF3424-setup-linux-amd64-NoJVM.bin?download) version 3.4.24 or newer.
+3. Amazon AWS IAM role configured with the policies listed in this document.
 4. ports 6500 and 6550 should be available
 
 ### AWS IAM Policy
@@ -165,7 +165,7 @@ Multiple images will likely need to be created depending on the needs of the tes
 
 For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ami-create-standard.html before saving the image.
 
-    1. Bring up a remote desktop client to the EC2 image establish in the above steps.
+    1. Bring up a remote desktop client to the EC2 image established in the above steps.
     2. Run the "EC2ConfigService Settings" application
     3. In the "General" tab	
 	  a. select "Set Computer Name" check box.
@@ -187,5 +187,5 @@ Note: SES by default limits the number of emails that may be sent per 24 hour pe
  
 ###Test Runner Service Configuration
 
-The default configuration file path is testing-framework/platform/config/dtf.properties. Example configuration files may be found at testing-platform/platform/example-config/. See the example configuration for additional config documentation.
+The default configuration file path is testing-framework/platform/config/dtf.properties. Example configuration files dtf.properties and logback.xml may be found at testing-platform/platform/example-config/. See the example configuration for additional config documentation.
 

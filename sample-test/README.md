@@ -16,6 +16,8 @@ The included ivysettings-example.xml is configured to publish the platform to th
 Using the Portal website, create a test plan with tests for each of the following included generator scripts:
 
 * TestRunGenerator.sh
+* TestConfigGenerator.sh
+* TestInspectGenerator.sh
 
 The generator scripts will be executed on the next 'synchronize' which will create the individual test instances.
 
