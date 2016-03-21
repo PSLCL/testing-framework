@@ -255,9 +255,9 @@ public class RunnerService implements Runner, RunnerServiceMBean
 
     /**
      *
-     * @note Classes that do not know about the JMS library's Message class, can call this instead.
+     * Note: Classes that do not know about the JMS library's Message class, can call this instead.
      * @param message Original opaque message associated with a run entry number, used now to ack the message
-     * @throws Exception 
+     * @throws Exception on any error
      */
     public void ackRunEntry(Object message) throws Exception {
     	if (!javax.jms.Message.            // javax.jms.Message is a Java interface

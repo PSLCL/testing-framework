@@ -35,9 +35,8 @@ public interface MachineInstance extends ResourceInstance
      * @param url
      *            The URL of the artifact.
      * 
-     * @return A Future<Void> which returns once the deploy is complete. The Future will throw an exception if the deploy fails.
+     * @return A Future which returns once the deploy is complete. The Future will throw an exception if the deploy fails.
      * @throws Exception  if deploy fails
-     * @see com.pslcl.dtf.core.runner.resource#DeployDestSandboxKey 
      */
     Future<Void> deploy(String partialDestPath, String url) throws Exception;
 
@@ -53,7 +52,7 @@ public interface MachineInstance extends ResourceInstance
      * @param partialDestPath if non-null the partial destination file to be deleted from the destination sandbox
      * otherwise the sandbox is deleted.
      * @throws Exception  if delete fails
-     * @return A Future<Void> which returns once the delete is complete. The Future will throw an exception if the delete fails. 
+     * @return A Future which returns once the delete is complete. The Future will throw an exception if the delete fails. 
      */
     Future<Void> delete(String partialDestPath) throws Exception;
 
@@ -63,7 +62,7 @@ public interface MachineInstance extends ResourceInstance
      * @param network
      *            The NetworkInstance to which the machine should connect.
      *            
-     * @return A Future<CableInstance> which returns once the machine is connected to the network.
+     * @return A Future which returns once the machine is connected to the network.
      */
     Future<CableInstance> connect(NetworkInstance network);// throws IncompatibleResourceException;
 
@@ -73,7 +72,7 @@ public interface MachineInstance extends ResourceInstance
      * @param network
      *            The NetworkInstance to which the machine should be disconnected.
      * 
-     * @return a Future<Void> which returns once the machine is disconnected from the network.
+     * @return a Future which returns once the machine is disconnected from the network.
      */
     Future<Void> disconnect(NetworkInstance network);
 

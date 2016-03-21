@@ -24,26 +24,26 @@ import com.pslcl.dtf.core.util.executor.ScheduledExecutor;
 
 /**
  * An in-memory implementation of the <code>StatusTracker</code> interface.
- * </p>
+ * <p>
  * This class implements the <code>StatusTracker</code> and <code>StatusTrackerMBean</code>
  * interfaces with a simple in-memory <code>HashMap</code> that captures the 
  * various <code>StatusTracker.Status enum</code> values for named subsystems of an application.
- * </p>
+ * <p>
  * This class also supports the ENC interface registry <code>DeviceStatus interface</code>
  *  "[1:{01}]" by optionally being able to startup a provider which will reflect the 
  *  consolidated status of the application to external EMIT requestors. 
- *  </p>
+ *  <p>
  *  The consolidated status (highest level of concern) of all the named subsystems is therefore 
  *  made available via direct API, the DeviceStatus ENC interface and via Java JMX.
  *  The individual current status of any of the named subsystems is also available via
  *  direct API or Java JMX. 
- *  </p>
+ *  <p>
  *  Typically a <code>org.emitdo.service.util.Service</code> implementation's System Level will 
  *  instantiate an instance of this class as a singleton object to the whole application and include its reference
- *  in the <code>Service<T></code>'s configuration object, which in turn is typically made available to all 
+ *  in the <code>Service</code>'s configuration object, which in turn is typically made available to all 
  *  subsystems of the application. This provides a single source of status for the whole
  *  application which each subsystem of the application can register it's individual status by name.  
- *  </p>
+ *  <p>
  *  For an example of use, the following optional service utility subsystems require a <code>StatusTracker</code>
  *  <ul>
  *  <li>StatusConnectionStateListener</li>

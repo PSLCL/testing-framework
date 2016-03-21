@@ -20,25 +20,25 @@ import java.util.List;
 
 /**
  * An application status tracking interface.
- * </p>
+ * <p>
  * This interface is patterned after the ENC interface registry <code>DeviceStatus interface "[1:{01}]"</code>
  *  An <code>enum</code> declaring ok, warn and error states which correspond to the DeviceStatus property 
  *  values is provided. 
- *  </p>
+ *  <p>
  *  The implementer of this interface should able to handle the individual status of multiple named application
  *  subsystems.  It should also provide a consolidated status (highest level of concern) of all the 
  *  named subsystems. 
- *  </p>
+ *  <p>
  *  Typically a <code>org.emitdo.service.util.Service</code> implementation's System Level will 
  *  instantiate an instance of a given implementation of this interface as a singleton object 
- *  to the whole application and include its reference in the <code>Service<T></code>'s configuration 
+ *  to the whole application and include its reference in the <code>Service</code>'s configuration 
  *  object, which in turn is typically made available to all subsystems of the application. 
  *  This provides a single source of status for the whole application where each subsystem of the application 
  *  can register it's individual status by name.
- *  </p>
- *  Because some implementations of this interface might require configuration information, the <code>Service<T></code> 
+ *  <p>
+ *  Because some implementations of this interface might require configuration information, the <code>Service</code> 
  *  custom configuration object is also declared and handed into the init method.   
- *  </p>
+ *  <p>
  *  The service utilities provides the <code>MemoryStatusTracker</code> implementation of this interface.
  * @see DtfStatusTracker
  */
@@ -46,7 +46,7 @@ public interface StatusTracker
 {
     /**
      * Set the named subsystem's status. 
-     * </p>
+     * <p>
      * if the name is new, it is added, otherwise the named subsystems status is updated to the given value.
      * @param name the subsystem to set the status for.  Must not be null.
      * @param status the status to be set. Must not be null.
@@ -56,7 +56,7 @@ public interface StatusTracker
     /**
      * Remove the named subsystem from the <code>StatusTracker</code>'s state. 
      * @param name the subsystem to be removed.  Must not be null.
-     * </p>if the given name does not exist, no action is taken.
+     * <p>if the given name does not exist, no action is taken.
      */
     public void removeStatus(String name);
     
@@ -77,14 +77,14 @@ public interface StatusTracker
     /**
      * Return the consolidated status of all known subsystems.
      * @return the consolidated status.  Must not return null.
-     * </p>If there are no registered subsystems <code>Status.Ok</code>
+     * <p>If there are no registered subsystems <code>Status.Ok</code>
      * is returned.
      */
     public Status getStatus();
     
     /**
      * Begin Providing the Status interface on the given <code>DOFObject</code>.
-     * </p>
+     * <p>
      * Start providing the ENC interface registry <code>DeviceStatus interface</code>
      *  "[1:{01}]".  The consolidated status of all reporting subsystems will be made 
      *  available with any changes to the consolidated status firing a notification to
@@ -118,7 +118,7 @@ public interface StatusTracker
     
     /**
      * An enumeration of all possible Status states.
-     * </p>The value is associated with a user determined severity where Ok < Warn < Error. 
+     * <p>The value is associated with a user determined severity where <code>Ok</code> less-than <code>Warn</code> less-than <code>Error</code>. 
      */
     public enum Status
     {

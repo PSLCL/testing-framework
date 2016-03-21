@@ -28,8 +28,8 @@ public interface PersonInstance extends ResourceInstance {
 	 * 
 	 * This method is equivalent to a template Inspect command.
 	 * 
-	 * @note The name of the archive file to send to the person is nominally attachments.tar.gzip.
-	 * @note This call blocks until the instructions and archive file are deemed to have been sent to the person.
+	 * <p>The name of the archive file to send to the person is nominally attachments.tar.gzip.
+	 * <p>This call blocks until the instructions and archive file are deemed to have been sent to the person.
 	 * 
 	 * @param instructions
 	 *            An HTML-formatted list of instructions to be sent to the person. This must not be null.
@@ -40,7 +40,7 @@ public interface PersonInstance extends ResourceInstance {
 	 * @param fileName
 	 *            Name of the archive file to include. This must not be null unless fileContent is null.
      *
-	 * @return A Future<Void> which returns once the message has been sent to the person. The Future will throw an exception if the message cannot be sent. 
+	 * @return A Future which returns once the message has been sent to the person. The Future will throw an exception if the message cannot be sent. 
 	 */
 	Future<Void> inspect(String instructions, InputStream fileContent, String fileName);
 

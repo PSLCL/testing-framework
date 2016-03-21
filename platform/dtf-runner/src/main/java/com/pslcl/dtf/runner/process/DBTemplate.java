@@ -36,8 +36,10 @@ public class DBTemplate {
 //	}
 	
     /**
-     * Return the value of the hash array as a hex String.
-     * @return hex string value of the hash array
+     * Return the value of the hash byte array as a hex String.
+     * 
+     * @param templateHash The hash array
+     * @return Hex String representation of the hash array
      */
     static public String getId(byte [] templateHash)
     {
@@ -60,6 +62,8 @@ public class DBTemplate {
     
     /**
      *  Constructor
+     *  
+     *  @param reNum The run entry number
      */
     public DBTemplate(Long reNum) {
         this.reNum = reNum;

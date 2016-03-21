@@ -50,10 +50,11 @@ public class BindHandler {
     
 	/**
 	 * Constructor: Identify consecutive bind steps in a set of steps
-	 * @param iT
-	 * @param setSteps
+     * @param iT The InstancedTemplate
+     * @param setSteps List of steps in the step set
+     * @param initialSetStepCount The offset of the first bind step in the steps of @param setSteps
 	 */
-	public BindHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
+	public BindHandler(InstancedTemplate iT, List<String> setSteps, int initialSetStepCount) {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
 		this.iT = iT;
@@ -148,7 +149,7 @@ public class BindHandler {
     /**
      * Proceed to reserve and then bind resources, as far as possible, then return. Set done only when binds complete or error out.
      * 
-     * @note First, reserve resources by sequentially calling independent ResourceProvider's, with yielding. Last, make a single call to bind all reserved resources, in parallel.  
+     * Note: First, reserve resources by sequentially calling independent ResourceProvider's, with yielding. Last, make a single call to bind all reserved resources, in parallel.  
      * 
      * @throws Exception
      */

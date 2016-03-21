@@ -46,7 +46,8 @@ public class RunnerMachine {
 
     /** Constructor
      * 
-     * @param runnerService
+     * @param dbConnPool The database connection pool
+     * @throws Exception on any error
      */
     public RunnerMachine(DBConnPool dbConnPool) throws Exception {
         this.log = LoggerFactory.getLogger(getClass());
@@ -81,9 +82,9 @@ public class RunnerMachine {
     }
     
     /**
-     * @note Pair init() with a destroy() call
-     * @param config
-     * @throws Exception
+     * Note: Pair init() with a destroy() call
+     * @param config The RunnerConfig
+     * @throws Exception on any error
      */
     public void init(RunnerConfig config) throws Exception
     {
@@ -104,10 +105,10 @@ public class RunnerMachine {
     /**
      * Initiate a new test run, corresponding to a top level template that has an entry in table run).
      * 
-     * @note When this call succeeds, runnerService.ackQueueStoreEntry() must be called. This can happen in the future from a distant thread, or very quickly. 
-     * @oaram reNum
+     * Note: When this call succeeds, runnerService.ackQueueStoreEntry() must be called. This can happen in the future from a distant thread, or very quickly. 
+     * @param reNum The run entry number 
      * @param message An opaque Java object, used to acknowledge the message when processing is complete
-     * @throws Throwable
+     * @throws Throwable on any error
      */
     public void initiateProcessing(long reNum, Object message) throws Throwable {
         try {
@@ -122,7 +123,7 @@ public class RunnerMachine {
     }
     
     /**
-     * @note For possible detected conditions, this can potentially drop reNum, the given run entry number.
+     * Note: For possible detected conditions, this can potentially drop reNum, the given run entry number.
      * @param reNum
      */
     void engageRunEntry(long reNum, RunEntryState reState) throws Exception {

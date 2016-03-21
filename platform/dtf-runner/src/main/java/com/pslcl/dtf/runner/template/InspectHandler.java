@@ -53,10 +53,12 @@ public class InspectHandler {
 
     /**
      * Constructor: Identify consecutive inspect steps in a set of steps
-     * @param iT
-     * @param setSteps
+     * @param iT The InstancedTemplate
+     * @param runnerMachine The RunnerMachine
+     * @param setSteps List of steps in the step set
+     * @param initialSetStepCount The offset of the first inspect step in the steps of @param setSteps
      */
-    InspectHandler(InstancedTemplate iT, RunnerMachine runnerMachine, List<String> setSteps, int initialSetStepCount) throws NumberFormatException {
+    InspectHandler(InstancedTemplate iT, RunnerMachine runnerMachine, List<String> setSteps, int initialSetStepCount) {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
         this.iT = iT;
@@ -73,7 +75,7 @@ public class InspectHandler {
     
     /**
      * 
-     * @param qapaResponse
+     * @param qapaResponse The QAPAResponse
      */
     public void setQAPaResponse(QAPaResponse qapaResponse) {
         this.qapaResponse = qapaResponse;
@@ -95,7 +97,7 @@ public class InspectHandler {
 
     /**
      * 
-     * @return
+     * @return The RunnerMachine
      */
     public RunnerMachine getRunnerMachine() {
         return this.runnerMachine;
@@ -311,6 +313,8 @@ public class InspectHandler {
     
     /**
      * thread blocks
+     * 
+     * @throws Exception on any error
      */
     public void waitComplete() throws Exception {
         // At this moment, this.resultInspectInfos is filled. It's Future's each give us a Void.

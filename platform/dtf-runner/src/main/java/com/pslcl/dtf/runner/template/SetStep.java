@@ -3,7 +3,7 @@ package com.pslcl.dtf.runner.template;
 /**
  * Represent a template step of the type used in step sets
  * 
- * @note A set step has this wire format: setID command spaceSeparatedParam1 spaceSeparatedParam2 ...
+ * Note: A set step has this wire format: setID command spaceSeparatedParam1 spaceSeparatedParam2 ...
  */
 public class SetStep {
 	
@@ -24,8 +24,8 @@ public class SetStep {
 	/**
 	 * Constructor
 	 * 
-	 * @note param step is composed of space separated elements, including certain elements that are URL encoded (meaning spaces are replaced with alternate characters). We separate elements by spaces, as given to us.    
-	 * @note    The end result is that the URL encoded elements preserve their integrity as a single element of this template step, yet they also preserve their included (but encoded) spaces.  
+	 * Note: Param step is composed of space separated elements, including certain elements that are URL encoded (meaning spaces are replaced with alternate characters). We separate elements by spaces, as given to us.    
+	 * Note: The end result is that the URL encoded elements preserve their integrity as a single element of this template step, yet they also preserve their included (but encoded) spaces.  
 	 * @param step Must not be null
 	 */
 	public SetStep(String step) {
@@ -33,9 +33,10 @@ public class SetStep {
 	}
 	
 	/**
+	 * Return the setID of this SetStep
 	 * 
-	 * @return
-	 * @throws NumberFormatException
+	 * @return The setID
+	 * @throws NumberFormatException if this stepStep's setID string does not represent a number
 	 */
 	public int getSetID() throws NumberFormatException {
 		return Integer.valueOf(setStep[0]).intValue(); // [0] always exists, NumberFormatException thrown if it is an empty string or for other numeric problems
@@ -43,7 +44,7 @@ public class SetStep {
 	
 	/**
 	 * 
-	 * @return
+	 * @return The command string
 	 */
 	public String getCommand() throws ArrayIndexOutOfBoundsException {
 		return setStep[1];
@@ -51,8 +52,8 @@ public class SetStep {
 	
 	/**
 	 * Get count of space-separated Strings that follow this step's setID and command  
-	 * @return
-	 * @throws Exception
+	 * @return The count
+	 * @throws Exception on invalid data in the SetStep
 	 */
 	public int getParameterCount() throws Exception {
 		int retCount = setStep.length-2;
@@ -64,8 +65,8 @@ public class SetStep {
 	/**
 	 * 
 	 * @param parameterIndex 0-based index to requested space-separated Strings that follow this step's setID and command
-	 * @return
-	 * @throws Exception
+	 * @return The parameter as a String
+	 * @throws IndexOutOfBoundsException on invalid parameterIndex
 	 */
 	public String getParameter(int parameterIndex) throws IndexOutOfBoundsException {
 		return setStep[2+parameterIndex];

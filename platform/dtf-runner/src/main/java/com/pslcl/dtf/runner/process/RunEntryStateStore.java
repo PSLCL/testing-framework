@@ -32,7 +32,7 @@ public class RunEntryStateStore {
     
     /**
      * 
-     * @note put to an existing Long key overwrites previous the previously held InstanceState
+     * Note: Put to an existing Long key overwrites previous the previously held InstanceState
      * @param iNum
      * @param reState
      * @return Previously stored InstanceState when put overwrites it, null otherwise. 

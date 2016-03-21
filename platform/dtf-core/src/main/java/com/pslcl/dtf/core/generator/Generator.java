@@ -255,6 +255,10 @@ public class Generator
     /**
      * Declare the running times of a particular result. This would never be used except
      * when populating test data.
+     * 
+     * @param start The start time
+     * @param ready The ready time
+     * @param complete The complete time
      */
     public void setRunTimes(Date start, Date ready, Date complete)
     {

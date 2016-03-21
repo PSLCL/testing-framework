@@ -21,9 +21,9 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker.Status;
 
 /**
  * A complementary JMX interface to the <code>StatusTrackerProvider</code> implementation.
- * </p>
+ * <p>
  * This interface defines the set of methods for reporting status information to JMX.
- *  </p>
+ *  <p>
  *  The consolidated status (highest level of concern) of all the named subsystems 
  *  as well as a list of all subsystem names, and ability to obtain the individual 
  *  status of each named subsystem is provided.

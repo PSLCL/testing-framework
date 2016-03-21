@@ -10,13 +10,13 @@ import com.pslcl.dtf.core.util.TabToLevel;
  *     An invalid resource.
  *     A reserved resource.
  *
- * @note Invalid is returned for encountered situations that prevent reservation. Two known cases are:
+ * <p>Invalid is returned for encountered situations that prevent reservation. Two known cases are:
  *           The .reserve() call parameters not able to be interpreted.
  *           The reserve is denied because an identical reservation already exists, having identical identifiers. This uniqueness is offered in normal operation, but testbeds can produce non-unique reserve requests.  
- * @note Unavailable is returned if the reserve request is both:
+ * <p>Unavailable is returned if the reserve request is both:
  *           Not invalid.
  *           Not able to be reserved by this ResourceProvider. Examples: attributes not recognized or not supported, or request is for person when the provider is for a machine.
- * @note ReserverResource is returned when a resource instance can be reserved. This means that the request is not invalid, and not unavailable. 
+ * <p>ReserverResource is returned when a resource instance can be reserved. This means that the request is not invalid, and not unavailable. 
  * 
  *
  */
@@ -40,7 +40,7 @@ public class ResourceReserveDisposition
     }
 
     /**
-     * @note This establishes that resource is unavailable; follow this with .setInvalidResource() to establish invalid resource, instead. 
+     * Note: This establishes that resource is unavailable; follow this with .setInvalidResource() to establish invalid resource, instead. 
      * @param inputResourceDescription the requested resource.
      */
     public ResourceReserveDisposition(ResourceDescription inputResourceDescription)

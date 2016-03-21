@@ -117,9 +117,9 @@ public class QAPortalAccess {
     
     /**
      * 
-     * @param contentSpecifier
-     * @return
-     * @throws Exception
+     * @param contentSpecifier The string that identifies the content
+     * @return The content as a String
+     * @throws Exception on any error
      */
     public String getContentAsString(String contentSpecifier) throws Exception {
         String retString = null;
@@ -135,9 +135,9 @@ public class QAPortalAccess {
     
     /**
      * 
-     * @param contentSpecifier
-     * @return
-     * @throws Exception
+     * @param contentSpecifier The string that identifies the content
+     * @return The content as an InputStream
+     * @throws Exception on any error
      */
     public InputStream getContentAsStream(String contentSpecifier) throws Exception {
         InputStream retStream = null;
@@ -153,9 +153,9 @@ public class QAPortalAccess {
 
     /**
      * 
-     * @note Does not block.
-     * @param inspectHandler
-     * @param contentHash
+     * Note: Does not block.
+     * @param inspectHandler The InspectHandler
+     * @param contentHash The hash of the content
      */
     public void launchReadContent(InspectHandler inspectHandler, String contentHash) {
         // launch independent thread to request and receive content, then to notify dtf-runner
@@ -164,9 +164,9 @@ public class QAPortalAccess {
 	
     /**
      * 
-     * @param artifactHash
-     * @return
-     * @throws Exception
+     * @param artifactHash The hash of the artifact
+     * @return The URL
+     * @throws Exception on any error
      */
     public URL formArtifactHashSpecifiedURL(String artifactHash) throws Exception {
         URIBuilder b = new URIBuilder(this.hostQAPortal);

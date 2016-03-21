@@ -30,9 +30,9 @@ public class ResourceDescImpl implements ResourceDescription
 
     /**
      * Construct a ResourceDescription object.
-     * @param name
-     * @param coordinatates
-     * @param attributes
+     * @param name must not be null.
+     * @param coordinates must not be null.
+     * @param attributes must not be null, may be empty.
      */
     public ResourceDescImpl(String name, ResourceCoordinates coordinates,  Map<String, String> attributes)
     {

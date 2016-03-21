@@ -21,12 +21,12 @@ public class ArtifactInfo {
     
     /**
      * 
-     * @param strInstructionsHash
-     * @return
+     * @param strInstructionsHash The Hash of the instructions
+     * @return The content, as a String
      */
     public static String getContent(String strInstructionsHash) {
         String retString = new String("");
-        retString = strInstructionsHash; // REVIEW: go instead to Artifact provider to retrieve file contents 
+        retString = strInstructionsHash; // REVIEW: We go instead to Artifact provider to retrieve file contents; this is broken and not called 
         return retString;
     }
 

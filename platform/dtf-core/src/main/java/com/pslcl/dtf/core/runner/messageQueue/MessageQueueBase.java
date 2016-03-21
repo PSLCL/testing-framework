@@ -41,10 +41,10 @@ public abstract class MessageQueueBase implements MessageQueue
     }
 
     /**
-     * @note if return true, must eventually call ack.
-     * @param strQueueStoreEntryNumber
-     * @param message
-     * @return
+     * Note: If returns true, must eventually call ack.
+     * @param strQueueStoreEntryNumber String representation of the run entry number, or reNum (pk_run of this entry in table run).
+     * @param message The message
+     * @throws Throwable on submit error
      */
     public void submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Throwable
     {

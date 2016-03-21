@@ -193,7 +193,7 @@ public abstract class Resource
      * This reference will be resolved by the Generator when the Template is generated. If the value of
      * the attribute is known at that time, then the reference will be replaced by the value. If the value
      * of the attribute will not be known until the test is run, then the reference will be replaced by
-     * a value reference in the form of $(attribute <resource-ref> <attribute-name>).
+     * a value reference in the form of $(attribute resource-ref attribute-name).
      * 
      * @param attributeName The name of the attribute.
      * @return a String reference to the attribute.

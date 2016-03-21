@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import com.ibm.staf.STAFException;
 import com.ibm.staf.STAFHandle;
 import com.ibm.staf.STAFResult;
-import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
 import com.pslcl.dtf.core.util.TabToLevel;
 
@@ -168,6 +167,7 @@ public class StafSupport
         return queryResult;
     }
     
+    @SuppressWarnings("null")
     public static STAFResult processPing(StafRunnableProgram runnableProg) throws Exception
     {
         TabToLevel format = null;
@@ -209,6 +209,7 @@ public class StafSupport
         return issueProcessRequest(commandData, true);
     }
     
+    @SuppressWarnings("null")
     private static StafRunnableProgram issueProcessRequest(ProcessCommandData commandData, boolean powershell) throws Exception
     {
         TabToLevel format = null;

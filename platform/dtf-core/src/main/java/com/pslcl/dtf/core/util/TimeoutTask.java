@@ -61,7 +61,7 @@ public class TimeoutTask implements Callable<Void>
     /**
      * 
      * @return false if timed out, true if completed normally
-     * @throws InterruptedException 
+     * @throws InterruptedException if threadpool shuts down 
      */
     public boolean waitForComplete() throws InterruptedException
     {

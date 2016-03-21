@@ -32,6 +32,7 @@ public class FatalTimeoutException extends FatalResourceException
      * Constructs a new exception with {@code null} as its detail message.
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
+     * @param coordinates the resource coordinates.  Must not be null;
      */
     public FatalTimeoutException(ResourceCoordinates coordinates)
     {
@@ -43,6 +44,7 @@ public class FatalTimeoutException extends FatalResourceException
      * cause is not initialized, and may subsequently be initialized by
      * a call to {@link #initCause}.
      *
+     * @param coordinates the resource coordinates.  Must not be null;
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
@@ -57,6 +59,7 @@ public class FatalTimeoutException extends FatalResourceException
      * {@code cause} is <i>not</i> automatically incorporated in
      * this exception's detail message.
      *
+     * @param coordinates the resource coordinates.  Must not be null;
      * @param  message the detail message (which is saved for later retrieval
      *         by the {@link #getMessage()} method).
      * @param  cause the cause (which is saved for later retrieval by the
@@ -78,6 +81,7 @@ public class FatalTimeoutException extends FatalResourceException
      * wrappers for other throwables (for example, {@link
      * java.security.PrivilegedActionException}).
      *
+     * @param coordinates the resource coordinates.  Must not be null;
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method).  (A <tt>null</tt> value is
      *         permitted, and indicates that the cause is nonexistent or
@@ -108,31 +112,52 @@ public class FatalTimeoutException extends FatalResourceException
         super(message, cause, enableSuppression, writableStackTrace);
     }
 
+    /**
+     * 
+     * @return Maximum Delay.
+     */
     public synchronized Integer getMaxDelay()
     {
         return maxDelay;
     }
     
+    /**
+     * 
+     * @return Maximum Retries.
+     */
     public synchronized Integer getMaxRetries()
     {
         return maxRetries;
     }
     
+    /**
+     * 
+     * @return total wait time.
+     */
     public synchronized String getTotalWaitTime()
     {
         return totalTime;
     }
     
+    /**
+     * @param value the maximum delay value.  
+     */
     public synchronized void setMaxDelay(int value)
     {
         maxDelay = value;
     }
     
+    /**
+     * @param value the maximum retries value.  
+     */
     public synchronized void setMaxRetries(int value)
     {
         maxRetries = value;
     }
     
+    /**
+     * @param value the total wait time value.  
+     */
     public synchronized void setTotalWaitTime(String value)
     {
         totalTime = value;

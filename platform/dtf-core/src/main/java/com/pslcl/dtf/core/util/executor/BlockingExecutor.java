@@ -31,19 +31,19 @@ import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 
 /**
  * A <code>ThreadPoolExecutor</code> that allows for blocking submits.
- * </p>
+ * <p>
  * It is desirable that where possible, EMIT applications do not block OAL callback threads.
  * Typically a <code>org.emitdo.service.util.Service</code> implementation's System Level will 
  * create an instance of this class as a singleton object to the whole application and include its reference
- * in the <code>Service<T></code>'s configuration object, which in turn is typically made available to all 
+ * in the <code>Service</code>'s configuration object, which in turn is typically made available to all 
  * subsystems of the application, where they can utilize this thread pool to avoid blocking OAL callbacks as
  * well as for other custom worker task requirements.
- * </p>
+ * <p>
  * Java's <code>ThreadPoolExecutor</code> implementation throws an exception
  * if the number of outstanding threads equals the core pool size.  Instead of failing hard and losing input data
  * if the queue becomes full, this implementation has modified the default behavior and will block the submission
  * of new requests instead of immediately throwing an exception.
- * </p> 
+ * <p> 
  * The maximum amount of time to allow for blocking can be specified.  This allows for the application to throttle 
  * the input source and try to catch up before giving up and throwing an exception.
  */
@@ -57,7 +57,7 @@ public class BlockingExecutor extends ThreadPoolExecutor
 
     /**
      * The default constructor.
-     * </p>
+     * <p>
      * This call will initialize a usable ThreadPoolExecutor with a core size of 3 threads and a 
      * maximum pool size of 10 threads.  However, to enable the blocking functionality, thread pool
      * factory and status tracking the user must call the <code>init</code> method before utilizing 
@@ -72,7 +72,7 @@ public class BlockingExecutor extends ThreadPoolExecutor
 
     /**
      * Initialize our custom extended functionality of the ThreadPoolExecutor.
-     * </p>
+     * <p>
      * This will initialize the thread pool with our blocking queue submission functionality,
      * thread pool factory functionality, and status tracking functionality.
      * @param config the configuration parameters used to configure the extended queue functionality.

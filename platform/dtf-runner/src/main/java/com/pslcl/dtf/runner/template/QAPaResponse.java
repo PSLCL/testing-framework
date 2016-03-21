@@ -19,7 +19,7 @@ public class QAPaResponse {
     
     /**
      * 
-     * @param qaPortalResponse
+     * @param qaPortalResponse The org.apache.http.client.fluent.Response
      */
     public QAPaResponse(Response qaPortalResponse) {
         this.qaPortalResponse = qaPortalResponse;

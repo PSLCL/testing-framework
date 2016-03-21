@@ -465,7 +465,9 @@ public class Core
     }
 
     /**
-     * From a given test instance number, execute the corresponding test instance (aka test run). 
+     * From a given test instance number, execute the corresponding test instance (aka test run).
+     * 
+     *  @param testInstanceNumber The test instance number
      */
     public void executeTestInstance(long testInstanceNumber)
     {
@@ -808,10 +810,11 @@ public class Core
     }
 
     /**
-     * Add content given a hash and inputstream. If the contents exist then the file is assumed to be correct
+     * Add content given an inputstream. If the content exist then the file is assumed to be correct
      * and the database is still updated.
-     * @param is An input stream for the contents.
+     * @param is An input stream for the content.
      * @param length The length of the stream, or -1 if the entire stream is to be added.
+     * @return Hash of the added content 
      */
     public Hash addContent(InputStream is, long length)
     {
@@ -931,7 +934,7 @@ public class Core
      * @param merge_source True if the artifact is associated with a merged module.
      * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
      * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from. 
-     * @return
+     * @return The primary key of the added artifact, as stored in the artifact table
      */
     public long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module)
     {
@@ -1301,7 +1304,7 @@ public class Core
 
     /**
      * Return a set of all modules known to the database.
-     * @return
+     * @return The set of modules
      */
     public Iterable<Module> createModuleSet()
     {
@@ -1500,7 +1503,7 @@ public class Core
      * @param required A parameter set or null. Any module considered for artifacts must contain at least these attributes.
      * @param configuration the configuration to check, or null. 
      * @param name Artifact names, including MySQL REGEXP patterns.
-     * @return
+     * @return The set of artifacts
      */
     public Iterable<Artifact[]> createArtifactSet(Attributes required, String configuration, String... name)
     {
@@ -2245,6 +2248,7 @@ public class Core
      * those that need to be created, and updating those that need to be updated.
      * Updates are limited to documentation changes.
      * @param allTestInstances A list of all test instances, which refer to all the test instances.
+     * @throws Exception on any error
      */
     public void syncDescribedTemplates(List<TestInstance> allTestInstances) throws Exception
     {
@@ -2798,7 +2802,7 @@ public class Core
      * these match then no further work is done.
      * @param sync The test instance to synchronize.
      * @param pk_test The test that the instance is related to.
-     * @return
+     * @return The test instance number
      */
     public long syncTestInstance(TestInstance sync, long pk_test)
     {

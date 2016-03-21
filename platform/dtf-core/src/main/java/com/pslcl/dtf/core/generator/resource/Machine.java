@@ -52,7 +52,6 @@ public class Machine extends Resource
 
     /**
      * Bind a machine to a particular platform.
-     * @param platform The platform of the machine.
      * @throws Exception The bind is invalid.
      */
     @Override
@@ -64,7 +63,6 @@ public class Machine extends Resource
 
     /**
      * Bind a machine to a particular platform and with the specified attributes.
-     * @param platform The platform of the machine.
      * @param attributes Other attributes that the machine must satisfy.
      * @throws Exception The bind is invalid.
      */
@@ -183,7 +181,7 @@ public class Machine extends Resource
      * 
      * @param network The network to connect to.
      * @return A {@link Cable} which serves as a logical connection between the machine and the network.
-     * @throws Any error.
+     * @throws Exception on any error.
      */
     public Cable connect(Network network) throws Exception
     {

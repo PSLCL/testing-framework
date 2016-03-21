@@ -28,7 +28,7 @@ public class StepsParser {
      * starts at the next non space char, and
      * ends at the char before next follow-on space char, or at last char of the full Step String.
      * 
-     * @note Internal state is not available for this static method.
+     * Note: Internal state is not available for this static method.
      * @param step The full String being parsed.
      * @param offset Begin point of the step String; a negative offset eliminates processing. 
      * @return null for negative offset or offset beyond step length
@@ -173,7 +173,7 @@ public class StepsParser {
 // static methods eliminated by outside refactoring
     
 //	/**
-//	 * @note param step must not be null
+//	 * Note: param step must not be null
 //	 * @param step
 //	 * @return
 //	 */
@@ -195,7 +195,7 @@ public class StepsParser {
    
 //   /**
 //    * 
-//    * @note Internal state is not available for this static method.
+//    * Note: Internal state is not available for this static method.
 //    * @param strResourceAttributes Must be space terminated; must follow K=V&K=V%K=V pattern; expecting no duplicate K (or if so only 1 is stored); empty K or V not expected but allowed
 //    * @return KVP Map, possibly empty, but without a null key entry
 //    */

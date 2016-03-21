@@ -50,7 +50,7 @@ public class ResourceInfo implements Comparable<ResourceInfo> {
     
     /**
      * Constructor
-     * @param resourceInstance
+     * @param resourceInstance The ResourceInstance
      */
     public ResourceInfo(ResourceInstance resourceInstance) {
         this.resourceInstance = resourceInstance;

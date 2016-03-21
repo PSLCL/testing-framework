@@ -54,7 +54,7 @@ public interface ArtifactProvider
 
     /**
      * Initialize the artifact provider. This should be paired with a call to {@link #close()}. The same instance may be reused if {@link #close()}
-     * is called and then followed by another call to {@link #init()}. The provider may maintain state between calls to {@link #open()} and {@link #close()}.
+     * is called and then followed by another call to {@link #init()}. The provider may maintain state between calls to {@link #init()} and {@link #close()}.
      * @throws Exception Thrown if the artifact provider cannot be initialized. This can indicate either permanent or temporary failures.
      */
     void init() throws Exception;
@@ -70,7 +70,7 @@ public interface ArtifactProvider
 
     /**
      * Determine whether a module's artifacts should be merged into another. This call is triggered
-     * by passing a non-null merge parameter in {@link ModuleNotifier#module(Module, String)} call. If set,
+     * by passing a non-null merge parameter in {@link ModuleNotifier#module(ArtifactProvider, Module, String)} call. If set,
      * and after all other modules have been learned, then this call is made to determine if the module should
      * be merged. If the result is true then the test harness will do the merge.
      * @param merge The parameter passed out to the test harness during module discovery.

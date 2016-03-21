@@ -86,7 +86,7 @@ public class TemplateProvider implements ResourceStatusListener {
     }
     
     /**
-     * @note Call this only with this.synchObj locked 
+     * Note: Call this only with this.synchObj locked 
      * @param templateHash
      * @return
      */
@@ -102,7 +102,7 @@ public class TemplateProvider implements ResourceStatusListener {
     }
     
     /**
-     * @note Caller must lock on this.synchObj
+     * Note: Caller must lock on this.synchObj
      * @param templateHash
      */
     private void removeOneEntry_reusableTemplateList(byte [] templateHash) {
@@ -182,7 +182,7 @@ public class TemplateProvider implements ResourceStatusListener {
     
 	/**
 	 * 
-	 * @param iT
+	 * @param iT The InstancedTemplate
 	 */
 	long addToReleaseMap(InstancedTemplate iT) {
     	synchronized(this.synchObj) {
@@ -197,7 +197,7 @@ public class TemplateProvider implements ResourceStatusListener {
     /**
      * Release the template, or determine that it shall be reused.
      * 
-     * @param iT
+     * @param iT The InstancedTemplate
      */
     public void releaseTemplate(InstancedTemplate iT) {
 		boolean reuse = false;
@@ -244,11 +244,12 @@ public class TemplateProvider implements ResourceStatusListener {
      *     By instantiating a new template and running its steps for the first time, or
      *     By reusing a template and not running any of its steps.
      * 
-     * @param reCore
-     * @param dbTemplate
-     * @param runnerMachine
-     * @return
-     * @throws Exception
+     * Note: Blocking call
+     * @param reCore The RunEntryCore object
+     * @param dbTemplate The DBTemplate object that described the template
+     * @param runnerMachine The RunnerMachine
+     * @return The InstancedTemplate
+     * @throws Exception on any error
      */
     public InstancedTemplate getInstancedTemplate(RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) throws Exception {
         // First check our tracking- is a matching reusable template available?

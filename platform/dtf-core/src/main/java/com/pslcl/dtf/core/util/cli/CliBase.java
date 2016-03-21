@@ -325,7 +325,7 @@ public class CliBase extends Thread
      * <p>The given command line <code>args</code> are validated against the
      * custom <code>CliCommand</code>'s added by the application.  Help is 
      * displayed and the application exits if there are errors.  Otherwise, the 
-     * specified <code>activeCommand<code> is set, making its commons-cli 
+     * specified <code>activeCommand</code> is set, making its commons-cli 
      * <code>CommandLine</code> available for the application.
      * @return the selected <code>CliCommand</code>
      */
@@ -485,7 +485,7 @@ public class CliBase extends Thread
     /**
      * Add reserved cli switches.
      * <p>Base reserved switches are added to the given commons-cli <code>Options</code>.
-     * <p>Note that -v and --version are reserved switches at the <code>args[0]<code>
+     * <p>Note that -v and --version are reserved switches at the <code>args[0]</code>
      * level, but are manually handled instead of using commons-cli.  Version is always 
      * supported but is only valid for the executable.  Thus these values are available 
      * for other uses in other command leafs.

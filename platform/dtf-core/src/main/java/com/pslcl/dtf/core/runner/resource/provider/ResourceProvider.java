@@ -93,7 +93,7 @@ public interface ResourceProvider
     /**
      * Helper to obtain a Provider type name.
      * @param provider the provider to report type name of.  Must not be null.
-     * @return the provider type name. Will return null if provider is not of type; <code></code>
+     * @return the provider type name. Will return null if provider is not of type; <code>MachineProvider</code> or <code>PersonProvider</code> or <code>NetworkProvider</code>
      */
     public static String getTypeName(ResourceProvider provider)
     {

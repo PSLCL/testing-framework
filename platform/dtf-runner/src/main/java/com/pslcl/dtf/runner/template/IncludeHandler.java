@@ -35,7 +35,7 @@ public class IncludeHandler {
 	
     /**
      * 
-     * @note This method does not cause actions that need to be cleaned up
+     * Note: This method does not cause actions that need to be cleaned up
      * @return
      * @throws Exception
      */

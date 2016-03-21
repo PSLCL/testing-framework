@@ -38,9 +38,10 @@ public class RunEntryCore {
 	
     /**
      *
-     * @param dbConnPool
-     * @param reNum
+     * @param dbConnPool The database connection pool
+     * @param reNum The run entry number
      * @return null if no if no result is stored, or true or false
+     * @throws Exception on any error
      */
     static public Boolean getResult(DBConnPool dbConnPool, long reNum) throws Exception {
     	Boolean retBoolean = null;
@@ -245,9 +246,9 @@ public class RunEntryCore {
     }
 
     /**
-     * @note: if reNum.result field has a value (is not null), this does not overwrite anything
-     * @note: does not overwrite run.pk_run, run.fk_template, run.start_time; dtf-runner does not own these
-     * @note: dtf-runner also do not own table template, and does not write it
+     * Note: If reNum.result field has a value (is not null), this does not overwrite anything
+     * Note: Does not overwrite run.pk_run, run.fk_template, run.start_time; dtf-runner does not own these
+     * Note: dtf-runner also do not own table template, and does not write it
      *
      */
     private void writeRunEntryData() throws Exception {
@@ -311,8 +312,9 @@ public class RunEntryCore {
 
     /** constructor
      *
-     * @param pk_described_template
-     * @throws Exception 
+     *@param dbConnPool The database connection pool
+     * @param reNum The run entry number
+     * @throws Exception on any area
      */
     public RunEntryCore(DBConnPool dbConnPool, Long reNum) throws Exception {
     	this.log = LoggerFactory.getLogger(getClass());
@@ -341,8 +343,9 @@ public class RunEntryCore {
     
     /**
      * 
-     * @param templateHash
-     * @return
+     * @param templateHash String representation of the Hash of the template
+     * @return The DBTemplate object
+     * @throws Exception on any error
      */
     public DBTemplate getTemplateInfo(String templateHash) throws Exception {
     	DBTemplate retDBTemplate = new DBTemplate(-1L);
@@ -382,7 +385,10 @@ public class RunEntryCore {
     
     /**
      * Execute the test run specified by the run entry number.
+     * 
+     * @param runnerMachine The RunnerMachine
      * @return the result of this test run; result is stored already
+     * @throws Exception on any error
      */
     public boolean testRun(RunnerMachine runnerMachine) throws Exception {
         // We are an independent process in our own thread. We have access
@@ -465,8 +471,8 @@ public class RunEntryCore {
     
     /**
      * 
-     * @param runnerService
-     * @param result
+     * @param runnerService The RunnerService
+     * @param result Result of the test run
      * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
      */
     public void closeCancelTaskStoreResultAckMessageQueue(RunnerService runnerService, Boolean result) throws Exception {

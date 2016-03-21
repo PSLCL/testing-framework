@@ -64,9 +64,9 @@ public class ResourceProviders
     }
 
     /**
-     * @note Pair init() with a destroy() call
-     * @param config
-     * @throws Exception
+     * Note: Pair init() with a destroy() call
+     * @param config The RunnerConfig
+     * @throws Exception on any error
      */
     public void init(RunnerConfig config) throws Exception
     {

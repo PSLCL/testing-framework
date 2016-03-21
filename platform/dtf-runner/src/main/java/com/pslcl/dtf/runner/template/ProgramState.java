@@ -44,8 +44,8 @@ public class ProgramState {
 	/**
 	 * Constructor
 	 * 
-	 * @param futureRunnableProgram
-	 * @param machineInstance
+	 * @param futureRunnableProgram The Future of type RunnableProgram 
+	 * @param machineInstance The MachineInstance
 	 */
 	public ProgramState(Future<RunnableProgram> futureRunnableProgram, MachineInstance machineInstance) {
 		this.futureRunnableProgram = futureRunnableProgram;
