@@ -63,6 +63,10 @@ These can be added to the command line call to run the server, or added to `~/.b
 
 The Ivy artifact provider is configured using an `ivysettings.xml` file in the `testing-framework/portal/config/` directory. On synchronize, the Ivy Artifact Provider will download artifacts provided by included resolvers.
 
+The database also needs to be configured with the class name of the Ivy Artifact Provider. From the MySQL console, run the following SQL command in the qa_portal database:
+
+`INSERT INTO artifact_provider (classname) VALUES ('com.pslcl.dtf.artifact.ivy.IvyArtifactProvider');`
+
 ### Configure Server Certificate
 
 You will need to generate a server certificate appropriate to your
