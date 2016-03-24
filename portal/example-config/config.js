@@ -47,7 +47,7 @@ var all = {
   cookiesecret: 'randomly-generate-me',
   
   // Default schedule is to synchronize every 15 minutes, and to prune
-  // modules missing modules after 40 successful synchronizes without finding the module.
+  // missing modules after 40 successful synchronizes without finding the module.
   synchronize_schedule: '*/15 * * * *',
   
   // The number of synchronize runs without finding the module at which to prune, or null
