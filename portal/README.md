@@ -41,7 +41,7 @@ sudo mv /usr/lib/python2.7/dist-packages/gyp /usr/lib/python2.7/dist-packages/gy
 The following example configuration files can be found under the directory `testing-framework/portal/example-config`:
 
 * `config.js` - Portal configuration
-* `server.pfx-readme` - 
+* `server.pfx-readme` - Server certificate file
 * `ivysettings.xml` - Ivy artifact provider configuration
 
 Each of these files should be copied to the `testing-framework/portal/config/` directory and edited appropriately.
