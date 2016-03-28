@@ -22,14 +22,14 @@ app.controller('DashboardCtrl',
         var username = user.email;
         if ( user.isAdmin )
             username = null;
-            
-        ReportUserTests.query( { username }, function ( result ) {
+
+        ReportUserTests.query( { 'user':username }, function ( result ) {
             $scope.usertests = result;
         });
     });
-        
+
     var sidebarIsHidden = false;
-    $scope.hideSidebar = function(){ 
+    $scope.hideSidebar = function(){
       if (!sidebarIsHidden) {
         $scope.sidebarClass = 'collapsed';
         sidebarIsHidden = true;
