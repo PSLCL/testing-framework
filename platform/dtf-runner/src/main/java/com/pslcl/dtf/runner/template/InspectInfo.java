@@ -40,10 +40,10 @@ public class InspectInfo {
      * @param indexNextInspectInfo
      * @throws IOException
      */
-	void setupArchiveTopDirectory(int indexNextInspectInfo) throws IOException {
+	void setupArchiveTopDirectory(int indexNextInspectInfo, long runID) throws IOException {
         if (this.fileArchiveTopDirectory == null) {
             // place new empty temporary directory for this particular inspectInfo, with delete if needed, to hold all specified artifacts to inspect
-            this.fileArchiveTopDirectory = new File(InspectHandler.tempArtifactDirectory + indexNextInspectInfo);
+            this.fileArchiveTopDirectory = new File(InspectHandler.tempArtifactDirectory + indexNextInspectInfo + "_" + runID);
             FileUtils.deleteDirectory(this.fileArchiveTopDirectory); // whether directory is present, or not, this operates without exception
             this.fileArchiveTopDirectory.mkdirs();
         }

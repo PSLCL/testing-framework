@@ -30,7 +30,8 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
  * 
  */
 public class InspectHandler {
-    static String tempArtifactDirectory = new String("tempArtifactDirectory");
+    static String inspectTempFilesDirectory = new String("inspectTempFiles");
+    static String tempArtifactDirectory = new String(inspectTempFilesDirectory + "/" + "tempArtifactDirectory");
     static String archiveFilename = new String("attachments.tar.gzip"); // hard coded per design docs for PersonInstance
     static String archiveTopDirectory = new String("attachments");    // implied by design docs; impl chooses "attachments" anyway, when archiveTopDirectory is an empty string
 
@@ -187,7 +188,7 @@ public class InspectHandler {
                         while (this.indexNextInspectInfo < this.inspectInfos.size()) {
                             // for this one inspectInfo . . .
                             InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
-                            inspectInfo.setupArchiveTopDirectory(this.indexNextInspectInfo);
+                            inspectInfo.setupArchiveTopDirectory(this.indexNextInspectInfo, this.iT.getRunID());
                             
                             if (inspectInfo.getInstructions() == null) {
                                 if (!this.qapaResponseLaunched) {
@@ -261,7 +262,7 @@ public class InspectHandler {
                                     // setContentStream
                                     
                                     // create a tarGz of .archiveFilename, place it in dtf-runner's local directory, then fill it with the directory structure under the local temp directory (just filled) 
-                                    ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename+this.indexNextInspectInfo, fileArchiveTopDirectory.getName());
+                                    ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename+this.indexNextInspectInfo, fileArchiveTopDirectory.getPath());
                                     File fileTarGz = toTarGz.CreateTarGz();
                                     // fileTarGz (attachments.tar.gzip) is placed and filled, using GzipCompressorOutputStream and TarArchiveOutputStream
                                   
