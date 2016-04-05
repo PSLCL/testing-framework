@@ -622,6 +622,7 @@ public class InstancedTemplate {
                         if (inspectHandler.isDone()) {
                         	this.forceNullResult = true; // a person must enter the final result
                             log.debug(simpleName + "inspectHandler() completes " + inspectHandler.getInspectRequestCount() + " inspect(s) for setID " + setID);
+                            inspectHandler.cleanup();
                         }
                     }
                     if (runHandler!=null && !runHandler.isDone() && !this.isTestRunCanceled()) {

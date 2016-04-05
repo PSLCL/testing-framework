@@ -2,6 +2,7 @@ package com.pslcl.dtf.runner.template;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +16,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +32,8 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
  * 
  */
 public class InspectHandler {
-    static String inspectTempFilesDirectory = new String("inspectTempFiles");
-    static String tempArtifactDirectory = new String(inspectTempFilesDirectory + "/" + "tempArtifactDirectory");
+    static String inspectWorkDir = new String("inspectTemp");
+    static String tempArtifactDir = new String(inspectWorkDir + "/" + "tempArtifactDirectory");
     static String archiveFilename = new String("attachments.tar.gzip"); // hard coded per design docs for PersonInstance
     static String archiveTopDirectory = new String("attachments");    // implied by design docs; impl chooses "attachments" anyway, when archiveTopDirectory is an empty string
 
@@ -46,6 +48,10 @@ public class InspectHandler {
     private List<InspectInfo> resultInspectInfos;
     private List<InspectInfo> inspectInfos = null;
     
+    private File topWorkDir = null;
+    private File reNumWorkDir = null;
+    private File inspectInfoIndexWorkDir = null;
+   
     private StepSetOffsets stepSetOffsets; 
     private int indexNextInspectInfo = 0;
     private boolean done;
@@ -180,6 +186,13 @@ public class InspectHandler {
 
         try {
             QAPortalAccess qapa = this.iT.getQAPortalAccess();
+            
+            // establish working directory for forming (possibly parallel) collections of files to inspect
+            if (this.topWorkDir == null) {
+            	this.topWorkDir = new File(InspectHandler.inspectWorkDir);
+            	this.topWorkDir.mkdirs(); // does not blow away existing content, which is work from other test runs
+            }
+            
             while (!done) {
                 if (this.resultInspectInfos.isEmpty())
                 {
@@ -188,7 +201,6 @@ public class InspectHandler {
                         while (this.indexNextInspectInfo < this.inspectInfos.size()) {
                             // for this one inspectInfo . . .
                             InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
-                            inspectInfo.setupArchiveTopDirectory(this.indexNextInspectInfo, this.iT.getRunID());
                             
                             if (inspectInfo.getInstructions() == null) {
                                 if (!this.qapaResponseLaunched) {
@@ -218,7 +230,17 @@ public class InspectHandler {
                                 }
                                 if (this.currArtifact==null && this.artifactEntriesIterator.hasNext())
                                         this.currArtifact = this.artifactEntriesIterator.next();
-                                File fileArchiveTopDirectory = inspectInfo.getFileArchiveTopDirectory();
+                                
+                                if (this.reNumWorkDir == null) {
+                                	this.reNumWorkDir = new File(this.topWorkDir.getAbsolutePath() + File.separator + "reNum"+ this.iT.getRunID());
+                                    FileUtils.deleteDirectory(this.reNumWorkDir); // whether directory is present, or not, this operates without exception
+                                	this.reNumWorkDir.mkdirs();
+                                }
+                                if (this.inspectInfoIndexWorkDir == null) {
+                                	this.inspectInfoIndexWorkDir = new File(this.reNumWorkDir.getAbsolutePath() + File.separator + "iii"+ this.indexNextInspectInfo);
+                                	this.inspectInfoIndexWorkDir.mkdirs();
+                                }
+
                                 if (this.currArtifact != null) {
                                     if (!this.qapaResponseLaunched) {
                                         // request file content of currArtifact
@@ -244,13 +266,13 @@ public class InspectHandler {
                                         int finalSlash = (finalBackSlash > finalForwardSlash) ? finalBackSlash : finalForwardSlash;
                                         if (finalSlash >= 0) {
                                             String dirString = contentFilename.substring(0, finalSlash);
-                                            File destPath = new File((fileArchiveTopDirectory.getPath() + File.separator), dirString); // appends a path of directories to the top directory
+                                            File destPath = new File((this.inspectInfoIndexWorkDir.getAbsolutePath() + File.separator), dirString); // appends a path of directories
                                             destPath.mkdirs(); // does not blow away existing content in these directories
                                         }
                                         
                                         // copy actual content to the content file
                                         File contentFile = new File(contentFilename); // empty File
-                                        Path dest = Paths.get(fileArchiveTopDirectory.getPath() + File.separator + contentFile.getPath());
+                                        Path dest = Paths.get(this.inspectInfoIndexWorkDir + File.separator + contentFile.getPath());
                                         // It should never happen that a file is copied over a file of the same filename, because:
                                         //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.   
                                         Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
@@ -259,13 +281,14 @@ public class InspectHandler {
                                         continue;
                                     }
                                 } else {
-                                    // setContentStream
-                                    
-                                    // create a tarGz of .archiveFilename, place it in dtf-runner's local directory, then fill it with the directory structure under the local temp directory (just filled) 
-                                    ToTarGz toTarGz = new ToTarGz(InspectHandler.archiveFilename+this.indexNextInspectInfo, fileArchiveTopDirectory.getPath());
+                                    // create a tarGz of .archiveFilename, specified with its full path; the output file has filename .archiveFilename, but is placed at the fully specified path
+                                	// fill the tarGz file with the directory structure found under this.inspectInfoIndexWorkDir
+                                	String tarGzipFullPathFilename = this.reNumWorkDir + File.separator + InspectHandler.archiveFilename;
+                                    ToTarGz toTarGz = new ToTarGz(tarGzipFullPathFilename, this.inspectInfoIndexWorkDir.getAbsolutePath());
                                     File fileTarGz = toTarGz.CreateTarGz();
                                     // fileTarGz (attachments.tar.gzip) is placed and filled, using GzipCompressorOutputStream and TarArchiveOutputStream
                                   
+                                    // setContentStream
                                     FileInputStream fis = toTarGz.getFileInputStream(fileTarGz);
                                     inspectInfo.setContentStream(fis);
                                 }
@@ -355,8 +378,19 @@ public class InspectHandler {
 		}
 
         if (!allInspects) {
+			if (false) // true: temporarily for test
+				this.cleanup();
             throw new Exception("InspectHandler.waitComplete() finds one or more inspect steps failed");
         }
+    }
+    
+    void cleanup() {
+    	try {
+			FileUtils.deleteDirectory(this.reNumWorkDir);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
     
 }

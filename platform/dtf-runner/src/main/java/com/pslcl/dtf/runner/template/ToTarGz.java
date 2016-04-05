@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class ToTarGz {
 	
-	private String tarGzipFilename;
+	private String tarGzipFullPathFilename;
 	private String sourceDirectory;
 
     private final Logger log;
@@ -34,20 +34,11 @@ public class ToTarGz {
 	 * @return
 	 * @throws IOException
 	 */
-	private File CreateTarGz(String tarGzipFilename, String sourceDirectory) throws IOException {
-		// place empty file tarGzFilename.tar.gzip at .
-		
-		// get absolute path of where this application resides
-		//String tarGzipAbsoluteFilePath = new File("").getAbsolutePath(); // does not supply the trailing '\' that we need
-		String tarGzipAbsoluteFilePath = new File(".").getAbsolutePath(); // add the '.' then delete it: final result has our needed trailing '\' 
-		if (tarGzipAbsoluteFilePath.endsWith("."))
-			tarGzipAbsoluteFilePath = tarGzipAbsoluteFilePath.substring(0, tarGzipAbsoluteFilePath.length()-1);
-		File retFileTarGzip = new File(tarGzipFilename);
-		log.trace(simpleName + "created new empty file " + tarGzipFilename + " at directory " + tarGzipAbsoluteFilePath);
-		
-		// tar and compress sourceDirectory to tarGzip file
-		sourceDirectory = tarGzipAbsoluteFilePath + sourceDirectory;
+	private File CreateTarGz(String tarGzipFullPathFilename, String sourceDirectory) throws IOException {
+		// tar and compress sourceDirectory to a tarGzip file, by
+        // creating a tarGz of InspectHandler.archiveFilename, specified with its full path; the output file has filename InspectHandler.archiveFilename, but is placed at the fully specified path
 		File sourceFile = new File(sourceDirectory);
+		File retFileTarGzip = new File(tarGzipFullPathFilename);
 		this.tarCompressFile(sourceFile, retFileTarGzip);
 		return retFileTarGzip;
 	}
@@ -78,7 +69,7 @@ public class ToTarGz {
 		TarArchiveOutputStream taos = null;
 		try {
 			// add to file tarGzipOut whatever directories and files exist in param files, with full directory nesting  
-			log.trace(this.simpleName + "tarGzipCompress() adds " + files.size() + " directory or file to " + tarGzipOut.getName());
+			log.trace(this.simpleName + "tarGzipCompress() adds " + files.size() + " directory or file to " + tarGzipOut.getName() + ", placed at " + tarGzipOut.getAbsolutePath());
 			fos = new FileOutputStream(tarGzipOut); // if this is the same name as a previous directory or file, then, when this is eventually written, it will blow away the previous
 			gzipOS = new GZIPOutputStream(fos); // wrap fos gzip behavior
 			taos = new TarArchiveOutputStream(gzipOS); // wrap fos with tar behavior
@@ -150,10 +141,10 @@ public class ToTarGz {
 
 	/**
 	 * Constructor
-	 * @param tarGzipFilename name of tarGzip file to create, e.g. attachments.tar.gzip
+	 * @param tarGzipFullPathFilename name of tarGzip file to create, e.g. attachments.tar.gzip
 	 */
-	ToTarGz(String tarGzipFilename, String sourceDirectory) {
-		this.tarGzipFilename = tarGzipFilename;
+	ToTarGz(String tarGzipFullPathFilename, String sourceDirectory) {
+		this.tarGzipFullPathFilename = tarGzipFullPathFilename;
 		this.sourceDirectory = sourceDirectory;
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
@@ -164,7 +155,7 @@ public class ToTarGz {
 	 * @throws IOException 
 	 */
 	File CreateTarGz() throws IOException {
-		return this.CreateTarGz(this.tarGzipFilename, this.sourceDirectory);  
+		return this.CreateTarGz(this.tarGzipFullPathFilename, this.sourceDirectory);  
 	}
 	
 	/**
