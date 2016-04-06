@@ -76,7 +76,6 @@ public class InstanceNames
     ******************************************************************************/    
     public static final String SgKeyBase = InstanceKeyBase + ".sg";
     
-    public static final String SgNameKey = SgKeyBase + ".group-name";
     public static final String SgIdKey = SgKeyBase + ".group-id";
     public static final String SgMaxDelayKey = SgKeyBase + ".max-delay";       
     public static final String SgMaxRetriesKey = SgKeyBase + ".max-retries";   

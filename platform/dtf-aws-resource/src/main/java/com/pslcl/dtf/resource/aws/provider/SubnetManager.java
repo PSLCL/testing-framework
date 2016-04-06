@@ -37,6 +37,7 @@ import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.amazonaws.services.ec2.model.IpPermission;
 import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.Subnet;
+import com.amazonaws.services.ec2.model.UserIdGroupPair;
 import com.amazonaws.services.ec2.model.Vpc;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
@@ -85,16 +86,16 @@ public class SubnetManager
         synchronized (reservedResources)
         {
             reservedResources.remove(resourceId);
-        }   
+        }
     }
-    
+
     public void releaseSecurityGroup(ProgressiveDelayData pdelayData)
     {
         GroupIdentifier groupId = null;
         synchronized (sgMap)
         {
             groupId = sgMap.remove(pdelayData.coord.resourceId);
-            if(groupId == null)
+            if (groupId == null)
                 return;
         }
         releaseSecurityGroup(pdelayData, groupId.getGroupId());
@@ -104,7 +105,7 @@ public class SubnetManager
     @SuppressWarnings("null")
     public Vpc getVpc(ProgressiveDelayData pdelayData, SubnetConfigData config) throws FatalResourceException
     {
-        synchronized(vpcMap)
+        synchronized (vpcMap)
         {
             if (vpcMap.size() == 0) // not been called yet 
             {
@@ -168,10 +169,8 @@ public class SubnetManager
             }
         }
 
-        CreateSubnetRequest request = new CreateSubnetRequest()
-            .withVpcId(vpcId).withCidrBlock(config.vpcCidr)
-            .withAvailabilityZone(manager.ec2cconfig.availabilityZone);
-        
+        CreateSubnetRequest request = new CreateSubnetRequest().withVpcId(vpcId).withCidrBlock(config.vpcCidr).withAvailabilityZone(manager.ec2cconfig.availabilityZone);
+
         pdelayData.maxDelay = config.sgMaxDelay;
         pdelayData.maxRetries = config.sgMaxRetries;
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
@@ -209,17 +208,18 @@ public class SubnetManager
     }
 
     @SuppressWarnings("null")
-    public GroupIdentifier getSecurityGroup(ProgressiveDelayData pdelayData, List<IpPermission> permissions, SubnetConfigData config) throws FatalResourceException
+    public GroupIdentifier getSecurityGroup(ProgressiveDelayData pdelayData, SubnetConfigData config) throws FatalResourceException
     {
         String vpcId = null;
         synchronized (vpcMap)
         {
-            if(config.vpcName == null)
+            if (config.vpcName == null)
                 vpcId = defaultVpc.getVpcId();
             else
                 vpcId = vpcMap.get(config.vpcName).getVpcId();
         }
-        
+
+        // Create SG3
         //@formatter:off
         CreateSecurityGroupRequest request = new CreateSecurityGroupRequest()
             .withGroupName(pdelayData.getFullResourceIdName(SgMidStr, null))
@@ -248,12 +248,29 @@ public class SubnetManager
         } while (true);
         groupId = new GroupIdentifier().withGroupId(sgResult.getGroupId()).withGroupName(pdelayData.getFullResourceIdName(SgMidStr, null));
 
-        getSecureGroup(pdelayData, groupId.getGroupId());
+        getSecureGroup(pdelayData, groupId.getGroupId()); // give it time to actually exist before continuing.
 
         manager.createNameTag(pdelayData, pdelayData.getHumanName(SgMidStr, null), groupId.getGroupId());
 
-        AuthorizeSecurityGroupIngressRequest ingressRequest = new AuthorizeSecurityGroupIngressRequest().withIpPermissions(permissions).withGroupId(groupId.getGroupId());
-
+        UserIdGroupPair uidpair = new UserIdGroupPair().withGroupId(groupId.getGroupId());
+        //@formatter:off
+        IpPermission perm = new IpPermission()
+                        .withIpProtocol("-1")
+                        .withFromPort(0)
+                        .withToPort(65535)
+                        .withUserIdGroupPairs(uidpair);
+        //@formatter:off
+        // add in the configured external rules mixed with subnet sg permissions here
+        List<IpPermission> permissions = new ArrayList<IpPermission>(); 
+        permissions.add(perm);
+        
+        AuthorizeSecurityGroupIngressRequest ingressRequest = null;
+        //@formatter:off
+        ingressRequest = new AuthorizeSecurityGroupIngressRequest()
+                        .withIpPermissions(permissions)
+                        .withGroupId(groupId.getGroupId());
+        //@formatter:on
+            
         pdelay.reset();
         msg = pdelayData.getHumanName(SgMidStr, "authorizeSecurityGroupIngress" + groupId.getGroupId());
         do
@@ -269,7 +286,6 @@ public class SubnetManager
                     throw fre;
             }
         } while (true);
-        
         synchronized (sgMap)
         {
             sgMap.put(pdelayData.coord.resourceId, groupId);
@@ -277,7 +293,7 @@ public class SubnetManager
         }
         return groupId;
     }
-    
+
     @SuppressWarnings("null")
     // vps will never be null
     private void discoverExistingVpcs(ProgressiveDelayData pdelayData, SubnetConfigData config) throws FatalResourceException
@@ -395,20 +411,19 @@ public class SubnetManager
 
         if (sgs != null)
         {
-            for (SecurityGroup sg: sgs)
+            for (SecurityGroup sg : sgs)
             {
                 if (sg.getGroupName().equals("default"))
                     continue;
                 if (AwsResourcesManager.isDtfObject(sg.getTags()))
                 {
                     releaseSecurityGroup(pdelayData, sg.getGroupId());
-                }else
+                } else
                     availableSgs.decrementAndGet();
             }
         }
     }
-    
-    
+
     private void releaseSecurityGroup(ProgressiveDelayData pdelayData, String groupId)
     {
         DeleteSecurityGroupRequest dsgr = new DeleteSecurityGroupRequest().withGroupId(groupId);
@@ -422,37 +437,39 @@ public class SubnetManager
                 break;
             } catch (Exception e)
             {
+                if(e.getMessage().contains("has a dependent object"))
+                    return;
                 FatalResourceException fre = pdelay.handleException(msg, e);
                 if (fre instanceof FatalException)
                 {
-                    break;  // best try
-//                    throw fre;
+                    break; // best try
+                    //                    throw fre;
                 }
             }
         } while (true);
     }
 
-//    public void setSgPermissions(ProgressiveDelayData pdelayData, String groupId, List<IpPermission> permissions) throws FatalResourceException
-//    {
-//        AuthorizeSecurityGroupIngressRequest ingressRequest = new AuthorizeSecurityGroupIngressRequest().withIpPermissions(permissions).withGroupId(groupId);
-//
-//        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-//        String msg = pdelayData.getHumanName(SgMidStr, "authorizeSecurityGroupIngress" + groupId);
-//        do
-//        {
-//            try
-//            {
-//                manager.ec2Client.authorizeSecurityGroupIngress(ingressRequest);
-//                break;
-//            } catch (Exception e)
-//            {
-//                FatalResourceException fre = pdelay.handleException(msg, e);
-//                if (fre instanceof FatalException)
-//                    throw fre;
-//            }
-//        } while (true);
-//    }
-//
+    //    public void setSgPermissions(ProgressiveDelayData pdelayData, String groupId, List<IpPermission> permissions) throws FatalResourceException
+    //    {
+    //        AuthorizeSecurityGroupIngressRequest ingressRequest = new AuthorizeSecurityGroupIngressRequest().withIpPermissions(permissions).withGroupId(groupId);
+    //
+    //        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+    //        String msg = pdelayData.getHumanName(SgMidStr, "authorizeSecurityGroupIngress" + groupId);
+    //        do
+    //        {
+    //            try
+    //            {
+    //                manager.ec2Client.authorizeSecurityGroupIngress(ingressRequest);
+    //                break;
+    //            } catch (Exception e)
+    //            {
+    //                FatalResourceException fre = pdelay.handleException(msg, e);
+    //                if (fre instanceof FatalException)
+    //                    throw fre;
+    //            }
+    //        } while (true);
+    //    }
+    //
     public SecurityGroup getSecureGroup(ProgressiveDelayData pdelayData, String groupId) throws FatalResourceException
     {
         DescribeSecurityGroupsRequest dsgRequest = new DescribeSecurityGroupsRequest().withGroupIds(groupId);

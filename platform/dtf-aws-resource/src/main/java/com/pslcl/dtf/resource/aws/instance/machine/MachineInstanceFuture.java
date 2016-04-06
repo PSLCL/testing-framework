@@ -45,6 +45,7 @@ import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
+import com.pslcl.dtf.core.runner.resource.exception.FatalClientException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalServerTimeoutException;
@@ -97,7 +98,13 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 checkFutureCanceled();
                 reservedResource.subnet = pdelayData.provider.manager.subnetManager.getSubnet(pdelayData, config.subnetConfigData);
                 checkFutureCanceled();
-                createInstance(reservedResource.subnet.getSubnetId());
+                String sgDefaultVpcOverrideId = config.subnetConfigData.sgDefaultVpcOverrideId;
+                if(sgDefaultVpcOverrideId != null)
+                {
+                    pdelayData.provider.manager.subnetManager.getSecureGroup(pdelayData, sgDefaultVpcOverrideId);
+                    checkFutureCanceled();
+                }
+                createInstance(reservedResource.subnet.getSubnetId(), sgDefaultVpcOverrideId);
                 machineInstance = new AwsMachineInstance(reservedResource, config, pdelayData.provider.config);
                 pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
             }
@@ -127,7 +134,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             throw new CancellationException();
     }
 
-    private void createInstance(String subnetId) throws FatalResourceException
+    private void createInstance(String subnetId, String sgDefaultVpcOverrideId) throws FatalResourceException
     {
         //http://stackoverflow.com/questions/22365470/launching-instance-vpc-security-groups-may-not-be-used-for-a-non-vpc-launch
         if (config.keyName == null)
@@ -151,6 +158,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             volumeSize = rootBlockDeviceInfo.minDeviceSize;
         EbsBlockDevice ebsBlockDevice = new EbsBlockDevice().withVolumeSize(volumeSize);
         BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping().withDeviceName(rootBlockDeviceInfo.deviceName).withEbs(ebsBlockDevice);
+        
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
             .withImageId(reservedResource.imageId)
             .withInstanceType(reservedResource.instanceType)
@@ -162,6 +170,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             .withBlockDeviceMappings(blockDeviceMapping)
             .withPlacement(placement);
         //@formatter:on
+        if(sgDefaultVpcOverrideId != null)
+            runInstancesRequest.withSecurityGroupIds(sgDefaultVpcOverrideId);
 
         if (config.iamArn != null)// && config.iamName != null)
         {
@@ -199,9 +209,6 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         }
         waitForState(pdelay, AwsInstanceState.Running);
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
-        List<GroupIdentifier> sgs = reservedResource.ec2Instance.getSecurityGroups();
-        reservedResource.groupId = sgs.get(0).getGroupId();
-        pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(SubnetManager.SgMidStr, null), reservedResource.groupId);
         reservedResource.resource.getAttributes().put(ResourceNames.DnsHostKey, reservedResource.ec2Instance.getPublicDnsName());
         waitForStaf(pdelay);
     }
@@ -256,6 +263,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             }
         } while (true);
     }
+    
     private void waitForStaf(ProgressiveDelay pdelay) throws FatalResourceException
     {
         ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false);
@@ -267,7 +275,10 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         {
             throw new FatalResourceException(reservedResource.resource.getCoordinates(), "failed to obtain StafRunnableProgram", e1);
         }
-        cmdData.setHost(reservedResource.ec2Instance.getPublicIpAddress());
+        String address = reservedResource.ec2Instance.getPublicIpAddress();
+        if(address == null || address.length() < 1)
+            throw new FatalClientException(reservedResource.resource.getCoordinates(), " No public IP Address on new EC2 instance, check default SG or configured SG rules.");
+        cmdData.setHost(address);
         cmdData.setWait(true);
 
         //@formatter:off
