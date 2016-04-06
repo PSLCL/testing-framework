@@ -36,6 +36,10 @@ The following can be used to resolve it: (Ubuntu)
 sudo mv /usr/lib/python2.7/dist-packages/gyp /usr/lib/python2.7/dist-packages/gyp_backup
 ```
 
+## Install Database Schema
+
+The MySQL database schema can be found at `testing-framework/database/qa_portal.mwb`. Using the MySQL Workbench import the schema into the MySQL database.
+
 ## Configuration 
 
 The following example configuration files can be found under the directory `testing-framework/portal/example-config`:
