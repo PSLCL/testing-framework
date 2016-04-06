@@ -105,12 +105,6 @@ used. The following lines can be used in the directory that contains 'app.js':
  - `forever stop app.js`
  - `forever list`
  
-## Test Login
-To login to the app use the example:
-
- - username: **test**
- - password: **test**
- 
 ## Live Reload (development)
 Use the `./config.js` variable `config.enable_livereload` to enable or disable live reload.
 Using the chrome plugin for livereload and connecting to the server will reload the browser every change.
