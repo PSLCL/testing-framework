@@ -149,14 +149,32 @@ Using the chrome plugin for livereload and connecting to the server will reload 
  - `./package.json`
     - The packages that are installed when running `npm install` and version information for the project.
 
-## Build Using Ivy Repository
+## Build Test Generators Using Ivy Repository
 
 The Portal provides an Ivy repository containing the platform .jar files required to build test generators. Include the Portal's Ivy repository by adding the following two lines, setting the correct hostname for the portal, to your ivysettings.xml file:
 
 `<property name="com.pslcl.dtf.url" override="false" value="<hostname>"/>`
 
 `<include file="${com.pslcl.dtf.url}/ivysettings.pslcl-dtf.xml"/>`
+
+Add the following dependency and configuration to your generator's `ivy.xml`:
     
+	<configurations>
+		...
+		<conf name="dtf_test_generator" visibility="public" description="test generators"/>
+	</configurations>
+	<dependencies>
+      <dependency org="com.pslcl.dtf" name="dtf-core" rev="1.0" conf="dtf_test_generator->master"/>
+	</dependencies>
+
+Ensure that your ivy repository has been configured as a resolver in the portal Ivy Artifact Provider's settings file at `testing-framework/portal/config/ivysettings.xml`
+
+Create a Test Plan and Test with the name of your generator's script artifact.
+
+After the generator has been built and published to your ivy repository, the next synchronize will execute the generator and create test instances.
+
+See `testing-framework/sample-test` for sample test generators. 
+
 ## Style guide
 
 Use the [Node.js Style Guide](https://github.com/felixge/node-style-guide/blob/master/Readme.md) as a starting point for the project.
