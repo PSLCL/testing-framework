@@ -55,7 +55,7 @@ If a dependency shares any part of their module reference, version or name with 
 
 Consider an artifact named 'artifact.jar' and corresponding dependency artifact named 'artifact.jar.dep' with the following possible dependencies listed.
 
-1. `artfact2.jar` - artifact.jar depends on artifact2.jar in the same module.
+1. `artifact2.jar` - artifact.jar depends on artifact2.jar in the same module.
 2. `org.mycompany#mymodule#,1.0/,artifact3.jar` - artifact.jar depends on artifact3.jar in the module mymodule with organization org.mycompany and version 1.0.
 3. `$#mymodule2#,$/$,artifact4.jar` - artifact.jar depends on artifact4.jar in the module mymodule2 with artifact.jar's same organization, version and configuration.
 
