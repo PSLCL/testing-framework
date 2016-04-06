@@ -73,6 +73,10 @@ You will need to generate a server certificate appropriate to your
 site/hostname and place it in `testing-framework/portal/config/server.pfx`. Additionally you will need to set the password for your certificate in the `testing-framework/portal/config/config.js`
 file.
 
+### Configure the Logo
+
+The logo that should be displayed by the portal should be copied to the `testing-framework/portal/skin/` directory and named `logo.png`.
+
 ## Build the platform
 The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
 
@@ -126,13 +130,16 @@ Using the chrome plugin for livereload and connecting to the server will reload 
 	    Each page is named for the `objects` it contains routes for.
 	 - `./views`
 	    - There are only three [Jade](http://jade-lang.com/) HTML templates, a layout, index and error.  Layout contains the main Angular index page setup.	    
-- `./config`
+ - `./config`
  	- `./config.js`
  		- Contains configuration variables for MYSQL, LDAP, page load size etc. Associated by `development` or `production` for a production server which uses LDAP instead of local. This is set by using the NODE_ENV parameter example: `export NODE_ENV=production` otherwise it uses development as its environment.
 	- `./ivysettings.xml`
 		- Contains Ivy artifact provider settings.
 	- `./server.pfx`
 		- The server certificate.
+ - `./skin`
+	- `./logo.png`
+		- The logo displayed by the portal 
  - `./app.js`
     - Main Application, contains Express config, routes, and listener for application.
  - `./package.json`
