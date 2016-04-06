@@ -49,7 +49,7 @@ Dependency artifact names are matched using the MySQL REGEXP comparitor. See the
 
 ### Artifact Field Substitution
 
-If a dependency shares any part of their module reference, version or name with the dependent artifact, it may be substituted using the `$'` character.
+If a dependency shares any part of their module reference, version or name with the dependent artifact, it may be substituted using the `$` character.
 
 ### Dependency Examples:
 
