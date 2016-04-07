@@ -166,13 +166,14 @@ Multiple images will likely need to be created depending on the needs of the tes
 For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ami-create-standard.html before saving the image.
 
     1. Bring up a remote desktop client to the EC2 image established in the above steps.
-    2. Run the "EC2ConfigService Settings" application
-    3. In the "General" tab	
+    2. If Windows Firewall is enabled, ensure that inbound traffic from ports 6500 and 6550 is allowed.
+    3. Run the "EC2ConfigService Settings" application
+    4. In the "General" tab	
 	  a. select "Set Computer Name" check box.
 	  b. select "User Data" check box.
 	  c. select "Event Log" check box.
 	  d. select "Wallpaper Information" check box.
-    4. In the "Image" tab:
+    5. In the "Image" tab:
 	  a. create another user and assign that user administrator rights.
 	  b. select "Keep Existing" radio button.
 	  c. click the "Shutdown with Sysprep" button.
