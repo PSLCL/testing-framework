@@ -281,8 +281,7 @@ public class ProviderNames
         keys.add(InstanceNames.SubnetNameKey);
         keys.add(InstanceNames.SubnetCidrKey);
         keys.add(InstanceNames.SubnetVpcIdKey);
-        keys.add(InstanceNames.SgNameKey);
-        keys.add(InstanceNames.SgIdKey);
+        keys.add(InstanceNames.SgGroupIdKey);
         keys.add(InstanceNames.SgMaxDelayKey);
         keys.add(InstanceNames.SgMaxRetriesKey);
         keys.add(InstanceNames.PermProtocolKey);

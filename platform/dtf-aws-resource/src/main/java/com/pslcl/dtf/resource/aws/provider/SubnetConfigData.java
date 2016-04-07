@@ -76,7 +76,7 @@ public class SubnetConfigData
 
         format.ttl("SecurityGroup:");
         format.level.incrementAndGet();
-        data.sgDefaultVpcOverrideId = getAttribute(InstanceNames.SgIdKey, defaultData.sgDefaultVpcOverrideId, resource, format);
+        data.sgDefaultVpcOverrideId = getAttribute(InstanceNames.SgGroupIdKey, defaultData.sgDefaultVpcOverrideId, resource, format);
         data.sgMaxDelay = Integer.parseInt(getAttribute(InstanceNames.SgMaxDelayKey, "" + defaultData.sgMaxDelay, resource, format));
         data.sgMaxRetries = Integer.parseInt(getAttribute(InstanceNames.SgMaxRetriesKey, "" + defaultData.sgMaxRetries, resource, format));
         format.level.decrementAndGet();
@@ -107,7 +107,7 @@ public class SubnetConfigData
 
         config.initsb.ttl("SecurityGroup defaults init:");
         config.initsb.level.incrementAndGet();
-        data.sgDefaultVpcOverrideId = getAttribute(config, InstanceNames.SgIdKey, InstanceNames.SgIdDefault);
+        data.sgDefaultVpcOverrideId = getAttribute(config, InstanceNames.SgGroupIdKey, InstanceNames.SgIdDefault);
         data.sgMaxDelay = Integer.parseInt(getAttribute(config, InstanceNames.SgMaxDelayKey, InstanceNames.SgMaxDelayDefault));
         data.sgMaxRetries = Integer.parseInt(getAttribute(config, InstanceNames.SgMaxRetriesKey, InstanceNames.SgMaxRetriesDefault));
         config.initsb.level.decrementAndGet();
