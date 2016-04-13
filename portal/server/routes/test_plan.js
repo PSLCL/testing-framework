@@ -239,8 +239,6 @@ exports.new_report = function( req, res ) {
     /**
      * Get Modules
      */
-     //SELECT DISTINCT tp.pk_test_plan, tp.name, tp.description FROM test_plan `tp` INNER JOIN test ON (tp.pk_test_plan = test.fk_test_plan) INNER JOIN test_instance `ti` ON (test.pk_test = ti.fk_test) INNER JOIN module_to_test_instance `mtti` ON (ti.pk_test_instance = mtti.fk_test_instance) WHERE (mtti.fk_module IN (32));
-
     q.on(
           'result',
           function( c_res ) {
@@ -250,12 +248,14 @@ exports.new_report = function( req, res ) {
               pk_module: c_res.pk_module,
               test_plans: []
             };
-            var tp_q = squel.select().field( 'DISTINCT test_plan.pk_test_plan' )
-                    .field( 'test_plan.name' ).field( 'test_plan.description' )
-                    .from( 'test_plan' )
-                    .join( 'module_to_test_plan', 'cttp',
-                           'cttp.fk_test_plan = test_plan.pk_test_plan' )
-                    .where( 'cttp.fk_module = ?', module.pk_module );
+            var tp_q = squel.select().field( 'DISTINCT tp.pk_test_plan' )
+                    .field( 'tp.name' ).field( 'tp.description' )
+                    .from( 'test_plan', 'tp' )
+                    .join( 'test', null, 'tp.pk_test_plan = test.fk_test_plan')
+                    .join( 'test_instance', 'ti', 'test.pk_test = ti.fk_test')
+                    .join( 'module_to_test_instance', 'mtti',
+                      'ti.pk_test_instance = mtti.fk_test_instance' )
+                    .where( 'mtti.fk_module = ?', module.pk_module );
 
             mysql.getConnection( function( err, conn2 ) {
               var tpq = conn2.query( tp_q.toString() );
