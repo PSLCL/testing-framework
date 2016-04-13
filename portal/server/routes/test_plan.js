@@ -63,7 +63,7 @@ exports.list = function( req, res ) {
   }
 
   sql_query.order( 'pk_test_plan' );
-  
+
   /**
    * Limit of records by global page_limit All parameter being true means no
    * limit
@@ -84,7 +84,7 @@ exports.list = function( req, res ) {
     sql_query.offset( 0 + req.param( 'offset' ) );
 
   var query_string = sql_query.toString();
-  
+
   mysql.getConnection( function( err, conn ) {
     conn.query( query_string, function( err, result ) {
       if ( err )
@@ -239,6 +239,8 @@ exports.new_report = function( req, res ) {
     /**
      * Get Modules
      */
+     //SELECT DISTINCT tp.pk_test_plan, tp.name, tp.description FROM test_plan `tp` INNER JOIN test ON (tp.pk_test_plan = test.fk_test_plan) INNER JOIN test_instance `ti` ON (test.pk_test = ti.fk_test) INNER JOIN module_to_test_instance `mtti` ON (ti.pk_test_instance = mtti.fk_test_instance) WHERE (mtti.fk_module IN (32));
+
     q.on(
           'result',
           function( c_res ) {

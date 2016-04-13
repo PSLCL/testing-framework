@@ -179,8 +179,36 @@ exports.report = function( req, res ) {
   } );
 };
 
+function export_report(req, res, module) {
+  var file_id = new Util().guid();
+  phantom.create({ path: require('phantomjs').path }, function( err, ph ) {
+    ph.createPage( function( err, page ) {
+      page.set( 'paperSize', {
+        format: 'A4',
+        orientation: 'portrait'
+      } );
+      var url = req.protocol + '://' + req.get( 'host' )
+                + '/api/v2/report_test_plans?filter='
+                + module;
+      page.open( url, function() {
+        var file_path = '../../public/reports/' + file_id + '.pdf';
+        page.render( path.join( __dirname, file_path), function() {
+          ph.exit();
+          res.redirect( '/reports/' + file_id + '.pdf' );
+        } );
+      } );
+    } );
+  } );
+}
+
 exports.report_print = function( req, res ) {
   var pk = req.param( 'id' );
+
+  if ( req.param( 'export' ) ) {
+    export_report(req, res, pk);
+    return;
+  }
+
   var results = [];
   var query = squel.select().field( 'module.pk_module' ).field( 'module.name' )
           .from( 'module' ).where( 'module.pk_module = ' + pk );
@@ -250,50 +278,17 @@ exports.report_print = function( req, res ) {
     }).on('end', function() {
       conn_q.release();
       join_tpq.then(function () {
-        /**
-         * If exporting generate a pdf of the same url via HTML
-         */
-        if ( req.param( 'export' ) ) {
-          var file_id = new Util().guid();
-          phantom.create( function( ph ) {
-            ph.createPage( function( page ) {
-              page.set( 'paperSize', {
-                format: 'A4',
-                orientation: 'portrait'
-              } );
-              var url = req.protocol + '://' + req.get( 'host' )
-                        + '/api/v2/report_test_plans?filter='
-                        + filter_str;
-              page.open( url, function() {
-                page
-                        .render( path.join( __dirname,
-                                            '../../public/reports/'
-                                                    + file_id
-                                                    + '.pdf' ),
-                                 function() {
-                                   ph.exit();
-                                   res
-                                           .redirect( '/reports/'
-                                                      + file_id
-                                                      + '.pdf' );
-                                 } );
-              } );
+        res.format( {
+          'text/html': function() {
+            console.log( JSON.stringify( results ) );
+            res.render( 'reports/module_tests', {
+              modules: results
             } );
-          } );
-        }
-        else {
-          res.format( {
-            'text/html': function() {
-              console.log( JSON.stringify( results ) );
-              res.render( 'reports/module_tests', {
-                modules: results
-              } );
-            },
-            'application/json': function() {
-              res.send( results );
-            }
-          } );
-        }
+          },
+          'application/json': function() {
+            res.send( results );
+          }
+        } );
       });
     });
   });
