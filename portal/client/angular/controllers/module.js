@@ -65,7 +65,7 @@ app.controller( 'ModuleListCtrl',
 
                   /**
                    * Setup sort by for modules
-                   * 
+                   *
                    * @type {Sort}
                    */
                   $scope.sort = new Sort( function( order ) {
@@ -100,13 +100,13 @@ app
                        }, function success( result ) {
                          $scope.module = result.module;
                        } );
-                       
+
                        Artifacts.query( {
                          moduleId: $routeParams.moduleId
                        }, function success( result ) {
                          $scope.artifacts = result;
                        })
-                       
+
                       // Filter list of modules
                       $scope.getData = function( artifacts, filter ) {
                         $scope.filter = filter;
@@ -122,9 +122,9 @@ app
                             'order': $scope.order
                           };
                         }
-                        
+
                         params.moduleId = $routeParams.moduleId;
-                        
+
                         Artifacts.query( params, function success( results ) {
                           $scope.artifacts = results;
                         } );
@@ -167,7 +167,7 @@ app
 
                        /**
                         * Setup sort by for modules
-                        * 
+                        *
                         * @type {Sort}
                         */
                        $scope.sort = new Sort( function( order ) {
@@ -200,7 +200,7 @@ app.controller( 'ModuleReportCtrl',
                           ModuleReport ) {
                   $scope.exportReport = function() {
                     $window.open( '/api/v1/modules/' + $scope.module.pk_module
-                                  + '/report_print' );
+                                  + '/report_print?export=true' );
                   };
 
                   Module.get( {
