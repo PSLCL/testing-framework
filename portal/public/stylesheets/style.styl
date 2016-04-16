@@ -1,15 +1,15 @@
 /* Style Design and Color Scheme
  =============================*/
- 
+
  /* Master applies universally */
  $master-color = #F2F2F2
  $master-font-size = 14px
  $master-font-family = 'Roboto', sans-serif
  $master-font = $master-font-size $master-font-family
- 
+
  /* Header relates to the top horizontal navigation bar */
  $header-height = 50px
- 
+
  /* Navigation relates to the main left navigation bar */
  $navigation-width = 250px
  $navigation-height = 50px
@@ -22,12 +22,12 @@
  $navigation-glyph-border = 9px
  $navigation-glyph-size = 1.7em
  $navigation-gutter = 20px
- 
+
  /*Header background: #f4f4f4;
  Header foreground: #3D3D3D;
  Navigation background: #3D3D3D;
  Sidebar diminished text: #666666;
- 
+
  =============================*/
 /* Resets and Overrides
  =============================*/
@@ -188,12 +188,12 @@ nav.navbar-side a
         -moz-transition:all .5s ease;
         -webkit-transition:all .5s ease;
     }
-    
+
     .main-content.collapsed {
         margin-right:-210px;
         margin-left:250px;
     }
-    
+
     /* TODO: Is this needed? */
     .main-content.sidebar-inactive {
         margin-left:0;
@@ -232,7 +232,7 @@ nav.navbar-side a
     .page-header h1 {
         font-size:2em;
     }
-    
+
     .page-header .back-btn {
         top:0;
         left:3.1%;
@@ -439,19 +439,19 @@ nav.navbar-side a
     padding 2px
     margin-left 3px
     color green
-    
+
 .report-module span.id::before
     content "ID: "
-    
+
 .report-module h2
     color blue
-    
+
 .report-module h3
     color blue
-    
+
 .report-module h4
     color blue
-    
+
 .report-module div.graph-block
     width 100%
     overflow hidden
@@ -459,39 +459,69 @@ nav.navbar-side a
 .report-module div.graph
     width 110px
     float left
-    
+
 .report-module div.legend
     margin-left 110px
-    
-.report-module .legend p.pass
-    color #00CC00
-    
+
 .report-module .legend p.total
     font-weight bold
-   
-.report-module .legend .total span.count::before
-    content "Total: "
-    
-.report-module .legend .pass span.count::before
-    content "Pass: "
-    
-.report-module .legend .fail span.count::before
-    content "Fail: "
-    
-.report-module .legend .pending span.count::before
-    content "Pending: "
-    
-.report-module .legend span.percent::before
-    content " ("
-    
-.report-module .legend span.percent::after
-    content "%)"
-    
+
+.report-module .legend p.pass
+    color #00CC00
+
 .report-module .legend p.fail
     color #FF0000
-    
+
 .report-module .legend p.pending
     color #A0A0A0
+
+.report-module .legend .total span.count::before
+    content "Total: "
+
+.report-module .legend .pass span.count::before
+    content "Pass: "
+
+.report-module .legend .fail span.count::before
+    content "Fail: "
+
+.report-module .legend .pending span.count::before
+    content "Pending: "
+
+.report-module .legend span.percent::before
+    content " ("
+
+.report-module .legend span.percent::after
+    content "%)"
+
+.results p.total
+    font-weight bold
+
+.results p.pass
+    color #00CC00
+
+.results p.fail
+    color #FF0000
+
+.results p.pending
+    color #A0A0A0
+
+.results .total span.count::before
+    content "Total: "
+
+.results .pass span.count::before
+    content "Pass: "
+
+.results .fail span.count::before
+    content "Fail: "
+
+.results .pending span.count::before
+    content "Pending: "
+
+.results span.percent::before
+    content " ("
+
+.results span.percent::after
+    content "%)"
 
 .report-module ul.list-module
     margin 0 0 0 0
@@ -502,22 +532,22 @@ nav.navbar-side a
 .report-module .list-module li
     display inline-block
     margin 0 5px 5px 0
-   
+
 .module-list li h1
     font-size 1.5em
-    
+
 .module-list .organization
     color green
 
 .module-list .module
     color blue
-    
+
 .module-list .attributes
     color purple
-    
+
 .module-list .version
     color gray
-    
+
 .module-list .sequence
     color blue
 
@@ -868,7 +898,7 @@ i.display-create
 	padding-left:5px;
 	height:50px;
 	border: 1px solid #ddd;
-.create-module-form .help-block, .create-plan-form .help-block, 
+.create-module-form .help-block, .create-plan-form .help-block,
 .general-form .help-block, .create-test-form .help-block
 	color:#D30724;
 /* adding a module switch styles */
@@ -896,7 +926,7 @@ i.display-create
 	-moz-box-shadow:1px 1px 1px rgba(0,0,0,.25)
 	-webkit-box-shadow:1px 1px 1px rgba(0,0,0,.25)
 	z-index:1;
-.switch-left 
+.switch-left
 	position: absolute;
 	width: 15px;
 	height: 15px;
@@ -917,7 +947,7 @@ i.display-create
 .general-form .blue
 	font-weight:inherit;
 	float:left;
-.general-form button 
+.general-form button
 	font-size:10px;
 	float:left;
 	margin-left:2%;
@@ -1094,7 +1124,7 @@ i.display-create
 	font-weight:100;
 }
 @media only screen and (max-width: 860px) {
-	
+
 }
 @media only screen and (max-width: 768px) {
 	.col-4 {
@@ -1156,7 +1186,7 @@ i.display-create
 }
 @media only screen and (max-width: 550px) {
 	.box-left, .box-right {
-		width:100%;		
+		width:100%;
 	}
 	.move-arrows {
 		width:100%;
@@ -1199,4 +1229,3 @@ i.display-create
 		height:35px;
 	}
 }
-

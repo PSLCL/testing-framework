@@ -4,7 +4,6 @@ var squel = require( 'squel' );
 var Util = require('../lib/util');
 var phantom = require('node-phantom-simple');
 var path = require('path');
-var Join = require('join').Join;
 var instances = require('../models/instances');
 
 // [GET] List of modules
@@ -225,6 +224,8 @@ exports.report_print = function( req, res ) {
       var module = {
         name: c_res.name,
         pk_module: c_res.pk_module,
+        summary: {},
+        chart: {},
         test_plans: []
       };
 
@@ -235,20 +236,26 @@ exports.report_print = function( req, res ) {
           return;
         }
 
+        module.summary = result.summary;
+        module.chart = result.chart;
+
         _.each(result.instances, function(plan){
           var test_plan = {
             name: plan.name,
             pk_test_plan: plan.key,
             description: plan.description,
+            chart: plan.chart,
             summary: plan.summary,
             tests: []
           };
 
           _.each(plan.values, function(ptest){
             var test = {
-              pk_test: ptest.pk_test,
+              pk_test: ptest.key,
               name: ptest.name,
               description: ptest.description,
+              chart: ptest.chart,
+              summary: ptest.summary,
               test_instances: []
             }
 
@@ -258,8 +265,9 @@ exports.report_print = function( req, res ) {
                 result_text: test_instance.result_text,
                 modules: test_instance.module_list
               }
+              test.test_instances.push(test);
             });
-            test.test_instances.push(test);
+            test_plan.tests.push(test);
           });
           module.test_plans.push( test_plan );
         });
