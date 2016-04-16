@@ -7,7 +7,6 @@ var path    = require('path');
 var phantom = require('node-phantom');
 var async   = require('async');
 var _        = require('underscore');
-var d3      = require('d3');
 var instances = require('../models/instances');
 
 exports.view = function( req, res ) {

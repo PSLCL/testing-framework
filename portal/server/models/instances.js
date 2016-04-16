@@ -179,11 +179,9 @@ module.exports.list_instances = function( plan, test, module_str, against, callb
         R.chart = chart;
 
         R.descriptions = result[1];
-
       }
 
       return callback(null, R);
-
     });
   });
 }

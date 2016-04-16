@@ -5,6 +5,7 @@ var Util = require('../lib/util');
 var phantom = require('node-phantom-simple');
 var path = require('path');
 var Join = require('join').Join;
+var instances = require('../models/instances');
 
 // [GET] List of modules
 exports.list = function( req, res ) {
@@ -188,8 +189,8 @@ function export_report(req, res, module) {
         orientation: 'portrait'
       } );
       var url = req.protocol + '://' + req.get( 'host' )
-                + '/api/v2/report_test_plans?filter='
-                + module;
+                + '/api/v1/modules/' + module + '/report_print';
+
       page.open( url, function() {
         var file_path = '../../public/reports/' + file_id + '.pdf';
         page.render( path.join( __dirname, file_path), function() {
@@ -215,81 +216,68 @@ exports.report_print = function( req, res ) {
 
   mysql.getConnection( function(err, conn_q){
     var q = conn_q.query( query.toString() );
-    var join_tpq = Join.create();
 
     /**
      * Get Modules
      */
     q.on('result', function( c_res ) {
+      conn_q.pause();
       var module = {
         name: c_res.name,
         pk_module: c_res.pk_module,
         test_plans: []
       };
-      var tp_q = squel.select().field( 'test_plan.pk_test_plan' )
-        .field( 'test_plan.name' ).field( 'test_plan.description' )
-        .from( 'test_plan' );
-      var tpq_end_callback = join_tpq.add();
 
+      instances.list_instances( null, null, module.pk_module, '', function(err, result){
+        if(err){
+          console.log("Error getting test instances: " + err);
+          conn_q.resume();
+          return;
+        }
 
-      mysql.getConnection( function(err, conn_tpq){
-        var join_tq = Join.create();
-
-        var tpq = conn_tpq.query( tp_q.toString() );
-
-        /**
-        * Get test plans for module
-        */
-        tpq.on( 'error', function( err ) {
-          console.log( 'ERROR: ' + err );
-        }).on('result', function( tp_res ) {
+        _.each(result.instances, function(plan){
           var test_plan = {
-            name: tp_res.name,
-            pk_test_plan: tp_res.pk_test_plan,
+            name: plan.name,
+            pk_test_plan: plan.key,
+            description: plan.description,
+            summary: plan.summary,
             tests: []
           };
-          var t_q = squel.select().field( 'test.pk_test' )
-            .field( 'test.name' )
-            .field( 'test.description' ).from( 'test' )
-            .where( 'test.fk_test_plan = ?',
-                    test_plan.pk_test_plan );
 
-          var tq_end_callback = join_tq.add();
+          _.each(plan.values, function(ptest){
+            var test = {
+              pk_test: ptest.pk_test,
+              name: ptest.name,
+              description: ptest.description,
+              test_instances: []
+            }
 
-          mysql.getConnection( function(err, conn_tq) {
-
-            var tq = conn_tq.query( t_q.toString() );
-            tq.on( 'result', function( test ) {
-              test_plan.tests.push( test );
-            } ).on( 'end', function() {
-              conn_tq.release();
-              module.test_plans.push( test_plan );
-              tq_end_callback();
-            } );
+            _.each(ptest.values, function(test_instance){
+              var instance = {
+                pk_test_instance: test_instance.pk_test_instance,
+                result_text: test_instance.result_text,
+                modules: test_instance.module_list
+              }
+            });
+            test.test_instances.push(test);
           });
-        } ).on( 'end', function() {
-          results.push( module );
-          conn_tpq.release();
-          join_tq.then(function(){
-            tpq_end_callback();
-          });
+          module.test_plans.push( test_plan );
         });
+        results.push(module);
+        conn_q.resume();
       });
     }).on('end', function() {
       conn_q.release();
-      join_tpq.then(function () {
-        res.format( {
-          'text/html': function() {
-            console.log( JSON.stringify( results ) );
-            res.render( 'reports/module_tests', {
-              modules: results
-            } );
-          },
-          'application/json': function() {
-            res.send( results );
-          }
-        } );
-      });
+      res.format( {
+        'text/html': function() {
+          res.render( 'reports/module_tests', {
+            modules: results
+          } );
+        },
+        'application/json': function() {
+          res.send( results );
+        }
+      } );
     });
   });
 };
