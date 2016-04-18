@@ -5,6 +5,7 @@ var Util = require('../lib/util');
 var phantom = require('node-phantom-simple');
 var path = require('path');
 var instances = require('../models/instances');
+var _ = require('underscore');
 
 // [GET] List of modules
 exports.list = function( req, res ) {
