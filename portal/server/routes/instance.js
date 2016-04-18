@@ -50,6 +50,7 @@ exports.view = function( req, res ) {
 
 exports.lines = function( req, res ) {
   var instance_id = req.param('id');
+  //TODO fix ER_WRONG_FIELD_WITH_GROUP: Expression #1 of SELECT list is not in GROUP BY clause
   var sql_query = squel
     .select()
     .field( 'pk_dt_line' )
