@@ -149,7 +149,7 @@ public class AwsResourcesManager implements ResourcesManager
                                         new Tag(TagNameKey, name),
                                         new Tag(SystemIdKey, systemId),
                                         new Tag(TagRunIdKey, Long.toString(pdelayData.coord.getRunId())),
-                                        new Tag(TagTemplateIdKey, "0x"+Long.toHexString(pdelayData.coord.templateInstanceId)),
+                                        new Tag(TagTemplateIdKey, pdelayData.coord.templateIdToHexString()),
                                         new Tag(TagTemplateInstanceIdKey, "0x"+Long.toHexString(pdelayData.coord.templateInstanceId)),
                                         new Tag(TagResourceIdKey, "0x"+Long.toHexString(pdelayData.coord.resourceId)))
                                         .withResources(resourceId);
