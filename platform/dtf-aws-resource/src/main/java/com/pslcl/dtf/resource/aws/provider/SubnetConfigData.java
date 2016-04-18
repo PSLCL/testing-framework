@@ -26,9 +26,7 @@ import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 public class SubnetConfigData
 {
 //    public volatile String availabilityZone;
-    public volatile String vpcName;
-    public volatile String vpcCidr;
-    public volatile String vpcTenancy;
+    public volatile String vpcId;
     public volatile int vpcMaxDelay;
     public volatile int vpcMaxRetries;
 
@@ -63,9 +61,7 @@ public class SubnetConfigData
         format.ttl("VPC/Subnet: ");
         format.level.incrementAndGet();
 //        data.availabilityZone = getAttribute(InstanceNames.AvailabilityZoneKey, defaultData.availabilityZone, resource, format);
-        data.vpcName = getAttribute(InstanceNames.VpcNameKey, defaultData.vpcName, resource, format);
-        data.vpcCidr = getAttribute(InstanceNames.VpcCidrKey, defaultData.vpcCidr, resource, format);
-        data.vpcTenancy = getAttribute(InstanceNames.VpcTenancyKey, defaultData.vpcTenancy, resource, format);
+        data.vpcId = getAttribute(InstanceNames.VpcIdKey, defaultData.vpcId, resource, format);
         data.vpcMaxDelay = Integer.parseInt(getAttribute(InstanceNames.VpcMaxDelayKey, "" + defaultData.vpcMaxDelay, resource, format));
         data.vpcMaxRetries = Integer.parseInt(getAttribute(InstanceNames.VpcMaxRetriesKey, "" + defaultData.vpcMaxRetries, resource, format));
         data.subnetCidr = getAttribute(InstanceNames.SubnetCidrKey, defaultData.subnetCidr, resource, format);
@@ -94,9 +90,7 @@ public class SubnetConfigData
         config.initsb.level.incrementAndGet();
         config.initsb.ttl("VPC/Subnet defaults init: ");
         config.initsb.level.incrementAndGet();
-        data.vpcName = getAttribute(config, InstanceNames.VpcNameKey, InstanceNames.VpcNameDefault);
-        data.vpcCidr = getAttribute(config, InstanceNames.VpcCidrKey, InstanceNames.VpcCidrDefault);
-        data.vpcTenancy = getAttribute(config, InstanceNames.VpcTenancyKey, InstanceNames.VpcTenancyDefault);
+        data.vpcId = getAttribute(config, InstanceNames.VpcIdKey, InstanceNames.VpcNameDefault);
         data.vpcMaxDelay = Integer.parseInt(getAttribute(config, InstanceNames.VpcMaxDelayKey, InstanceNames.VpcMaxDelayDefault));
         data.vpcMaxRetries = Integer.parseInt(getAttribute(config, InstanceNames.VpcMaxRetriesKey, InstanceNames.VpcMaxRetriesDefault));
         data.subnetCidr = getAttribute(config, InstanceNames.SubnetCidrKey, InstanceNames.SubnetCidrDefault);
