@@ -266,7 +266,7 @@ exports.report_print = function( req, res ) {
                 result_text: test_instance.result_text,
                 modules: test_instance.module_list
               }
-              test.test_instances.push(test);
+              test.test_instances.push(instance);
             });
             test_plan.tests.push(test);
           });
