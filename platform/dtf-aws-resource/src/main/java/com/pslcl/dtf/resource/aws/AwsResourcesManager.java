@@ -90,9 +90,9 @@ public class AwsResourcesManager implements ResourcesManager
         return null;
     }
     
-    public static boolean isDtfObject(List<Tag> tags)
+    public static boolean isDtfObject(List<Tag> tags, String systemId)
     {
-        boolean[] expected = new boolean[4];
+        boolean[] expected = new boolean[5];
         for(Tag tag : tags)
         {
             if(tag.getKey().equals(TagNameKey))
@@ -103,6 +103,11 @@ public class AwsResourcesManager implements ResourcesManager
                 expected[2] = true;
             else if(tag.getKey().equals(TagRunIdKey))
                 expected[3] = true;
+            else if(tag.getKey().equals(SystemIdKey))
+            {
+                if(tag.getValue().equals(systemId))
+                    expected[4] = true;
+            }
         }
         boolean dtfResource = true;
         for(int i=0; i < expected.length; i++)

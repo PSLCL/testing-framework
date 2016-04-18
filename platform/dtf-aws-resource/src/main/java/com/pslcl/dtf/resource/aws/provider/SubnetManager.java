@@ -325,7 +325,7 @@ public class SubnetManager
                 String name = AwsResourcesManager.getTagValue(vpc.getTags(), AwsResourcesManager.TagNameKey);
                 if (InstanceNames.VpcNameAwsDefault.equals(name))
                     defaultVpc = vpc;
-                if (AwsResourcesManager.isDtfObject(vpc.getTags()))
+                if (AwsResourcesManager.isDtfObject(vpc.getTags(), pdelayData.provider.manager.systemId))
                     vpcMap.put(AwsResourcesManager.getTagValue(vpc.getTags(), AwsResourcesManager.TagNameKey), vpc);
             }
         }
@@ -415,7 +415,7 @@ public class SubnetManager
             {
                 if (sg.getGroupName().equals("default"))
                     continue;
-                if (AwsResourcesManager.isDtfObject(sg.getTags()))
+                if (AwsResourcesManager.isDtfObject(sg.getTags(), pdelayData.provider.manager.systemId))
                 {
                     releaseSecurityGroup(pdelayData, sg.getGroupId());
                 } else
