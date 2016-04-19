@@ -192,3 +192,13 @@ Note: SES by default limits the number of emails that may be sent per 24 hour pe
 
 The default configuration file path is testing-framework/platform/config/dtf.properties. Example configuration files dtf.properties and logback.xml may be found at testing-platform/platform/example-config/. See the example configuration for additional config documentation.
 
+#### Create AWS Security Groups
+
+**Test Runner Service**
+
+Create a security group that allows inbound TCP traffic on ports 6550 and 6500 and attach it to the aws instance running the test runner service.
+
+**Test Instances**
+
+Create a security group that allows inbound TCP traffic on ports 6550 and 6500 from the test runner service instance. Use this security group to configure the `pslcl.dtf.aws.ec2instance.sg.group-id` property in the dtf.properties file.
+
