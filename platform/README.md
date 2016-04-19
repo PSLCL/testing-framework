@@ -53,9 +53,11 @@ This policy should be assigned to the AWS IAM User or Role that the system is co
 ##Test Runner Service  
 The platform includes the Test Runner Service which handles requests to start tests. Once the platform has been built, the Test Runner Service can be launched by executing the following command from the testing-framework/platform directory:
 
-`$ bin/dtfrunner`
+`$ bin/dtfrunner start`
 
-The service is launched with jsvc.
+The service is launched with jsvc. Stop the service by executing the command with the 'stop' option instead:
+
+`$ bin/dtfrunner stop`
 
 ### Runtime Requirements
 The following must be installed or configured on production systems
