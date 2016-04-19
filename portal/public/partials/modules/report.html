@@ -10,13 +10,13 @@
                 <i class="fa fa-external-link btn-icon"></i>Export to
                 PDF
             </button>
-    
+
 </div>
 
 <div class='report-module results' ng-switch on="result.instances.length">
     <span ng-switch-when="0"> <em>No test instances.</em>
     </span>
-    
+
     <div class='graph-block'>
         <div class='graph'>
             <chart value="result.chart" type="Pie" width="100" height="100"></chart>
@@ -27,12 +27,12 @@
             <p class='fail'><span class='count'>{{result.summary.failed}}</span><span class='percent'>{{ 100 * result.summary.failed / result.summary.total | number:0 }}</span></p>
             <p class='pending'><span class='count'>{{result.summary.pending }}</span><span class='percent'>{{ 100 * result.summary.pending / result.summary.total | number:0 }}</span></p>
         </div>
-    </div>           
-    
+    </div>
+
     <div class='report-module test-plan'
         ng-repeat="plan in result.instances track by $index">
         <h1>{{plan.name}}<span class="id">{{plan.key}}</span></h1>
-        
+
         <div class='graph-block'>
             <div class='graph'>
                 <chart value="plan.chart" type="Pie" width="100" height="100"></chart>
@@ -44,7 +44,7 @@
                 <p class='pending'><span class='count'>{{plan.summary.pending }}</span><span class='percent'>{{ 100 * plan.summary.pending / plan.summary.total | number:0 }}</span></p>
             </div>
         </div>
-            
+
         <div class='report-module test'
         ng-repeat="test in plan.values track by $index">
             <h2>{{test.name}}<span class="id">{{test.key}}</span></h2>
@@ -60,17 +60,17 @@
                     <p class='pending'><span class='count'>{{test.summary.pending }}</span><span class='percent'>{{ 100 * test.summary.pending / test.summary.total | number:0 }}</span></p>
                 </div>
             </div>
-           
+
             <div class='report-module instance'
             ng-repeat="instance in test.values track by $index">
-            <h3>{{instance.description}}<span class="id">{{instance.pk_test_instance}}</span><a href="#/instance/{{instance.pk_test_instance}}">
+            <h3>{{instance.description}}<span class="id">{{instance.pk_test_instance}}</span><!--a href="#/instance/{{instance.pk_test_instance}}">
                     <i class='fa fa-pencil-square-o' title='View'></i>
-                  </a>
+                  </a-->
             </h3>
                 <h4>Modules Used:</h4>
                 <ul class='list-module'><li ng-repeat="m in instance.module_list">{{m}}</ul>
                 <h4>Test Result:</h4><p>{{instance.result_text}}</p>
-                
+
                 <h4>Test Completed At:</h4><p>{{instance.end_time | date:'medium'}}</p>
             </div>
         </div>

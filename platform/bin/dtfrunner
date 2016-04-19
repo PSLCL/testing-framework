@@ -12,5 +12,10 @@ if [[ `uname` =~ ^MINGW.* ]]; then
     CP=${CP//:/;}
 fi
 
-
-/usr/bin/jsvc -cp "$CP" com.pslcl.dtf.runner.RunnerService -c $CONFIG $@ 
+if [ "$1" = "start" ]; then
+    /usr/bin/jsvc -pidfile /var/run/dtf.pid -cp "$CP" com.pslcl.dtf.runner.RunnerService -c $CONFIG $@
+elif [ "$1" = "stop" ]; then
+    /usr/bin/jsvc -stop -pidfile /var/run/dtf.pid -cp "$CP" com.pslcl.dtf.runner.RunnerService
+else
+    echo "Correct usage: bin/dtfrunner [start|stop]"
+fi

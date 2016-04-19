@@ -1,6 +1,11 @@
 var mysql = require( '../lib/mysql' );
 var config = require( '../../config/config' );
 var squel = require( 'squel' );
+var Util = require('../lib/util');
+var phantom = require('node-phantom-simple');
+var path = require('path');
+var instances = require('../models/instances');
+var _ = require('underscore');
 
 // [GET] List of modules
 exports.list = function( req, res ) {
@@ -78,7 +83,7 @@ exports.list = function( req, res ) {
   }
 
   sql_query.order( 'module.pk_module' );
-  
+
   /**
    * Limit of records by global page_limit All parameter being true means no
    * limit
@@ -138,7 +143,7 @@ exports.show = function( req, res ) {
         throw err;
 
       conn.release();
-      
+
       res.format( {
         'text/html': function() {
           res.send( {
@@ -175,123 +180,113 @@ exports.report = function( req, res ) {
   } );
 };
 
+function export_report(req, res, module) {
+  var file_id = new Util().guid();
+  phantom.create({ path: require('phantomjs').path }, function( err, ph ) {
+    ph.createPage( function( err, page ) {
+      page.set( 'paperSize', {
+        format: 'A4',
+        orientation: 'portrait'
+      } );
+      var url = req.protocol + '://' + req.get( 'host' )
+                + '/api/v1/modules/' + module + '/report_print';
+
+      page.open( url, function() {
+        var file_path = '../../public/reports/' + file_id + '.pdf';
+        page.render( path.join( __dirname, file_path), function() {
+          ph.exit();
+          res.redirect( '/reports/' + file_id + '.pdf' );
+        } );
+      } );
+    } );
+  } );
+}
+
 exports.report_print = function( req, res ) {
   var pk = req.param( 'id' );
+
+  if ( req.param( 'export' ) ) {
+    export_report(req, res, pk);
+    return;
+  }
+
   var results = [];
   var query = squel.select().field( 'module.pk_module' ).field( 'module.name' )
           .from( 'module' ).where( 'module.pk_module = ' + pk );
 
-  mysql.getConnection( function( err, conn ) {
-    if ( err ) {
-      console.log( 'ERROR: ' + err );
-      throw err;
-    }
+  mysql.getConnection( function(err, conn_q){
+    var q = conn_q.query( query.toString() );
 
-    var q = conn.query( query.toString() );
     /**
      * Get Modules
      */
-    q.on(
-          'result',
-          function( c_res ) {
-            var module = {
-              name: c_res.name,
-              pk_module: c_res.pk_module,
-              test_plans: []
-            };
-            var tp_q = squel.select().field( 'test_plan.pk_test_plan' )
-                    .field( 'test_plan.name' ).field( 'test_plan.description' )
-                    .from( 'test_plan' );
+    q.on('result', function( c_res ) {
+      conn_q.pause();
+      var module = {
+        name: c_res.name,
+        pk_module: c_res.pk_module,
+        summary: {},
+        chart: {},
+        test_plans: []
+      };
 
-            mysql.getConnection( function( err, conn2 ) {
-              if ( err ) {
-                console.log( 'ERROR: ' + err );
-                throw err;
+      instances.list_instances( null, null, module.pk_module, '', function(err, result){
+        if(err){
+          console.log("Error getting test instances: " + err);
+          conn_q.resume();
+          return;
+        }
+
+        module.summary = result.summary;
+        module.chart = result.chart;
+
+        _.each(result.instances, function(plan){
+          var test_plan = {
+            name: plan.name,
+            pk_test_plan: plan.key,
+            description: plan.description,
+            chart: plan.chart,
+            summary: plan.summary,
+            tests: []
+          };
+
+          _.each(plan.values, function(ptest){
+            var test = {
+              pk_test: ptest.key,
+              name: ptest.name,
+              description: ptest.description,
+              chart: ptest.chart,
+              summary: ptest.summary,
+              test_instances: []
+            }
+
+            _.each(ptest.values, function(test_instance){
+              var instance = {
+                pk_test_instance: test_instance.pk_test_instance,
+                result_text: test_instance.result_text,
+                modules: test_instance.module_list
               }
-
-              var tpq = conn2.query( tp_q.toString() );
-              /**
-               * Get test plans for module
-               */
-              tpq.on( 'error', function( err ) {
-                console.log( 'ERROR: ' + err );
-              } ).on(
-                      'result',
-                      function( tp_res ) {
-                        var test_plan = {
-                          name: tp_res.name,
-                          pk_test_plan: tp_res.pk_test_plan,
-                          tests: []
-                        };
-                        var t_q = squel.select().field( 'test.pk_test' )
-                                .field( 'test.name' )
-                                .field( 'test.description' ).from( 'test' )
-                                .where( 'test.fk_test_plan = ?',
-                                        test_plan.pk_test_plan );
-
-                        mysql.getConnection( function( err, conn3 ) {
-                          var tq = conn3.query( t_q.toString() );
-                          tq.on( 'result', function( test ) {
-                            test_plan.tests.push( test );
-                          } ).on( 'end', function() {
-                            module.test_plans.push( test_plan );
-                          } );
-                          conn3.release();
-                        } );
-                      } ).on( 'end', function() {
-                // Add module to results
-                results.push( module );
-              } );
-              conn2.release();
-            } );
-          } ).on(
-                  'end',
-                  function() {
-                    /**
-                     * If exporting generate a pdf of the same url via HTML
-                     */
-                    if ( req.param( 'export' ) ) {
-                      var file_id = new Util().guid();
-                      phantom.create( function( ph ) {
-                        ph.createPage( function( page ) {
-                          page.set( 'paperSize', {
-                            format: 'A4',
-                            orientation: 'portrait'
-                          } );
-                          var url = req.protocol + '://' + req.get( 'host' )
-                                    + '/api/v2/report_test_plans?filter='
-                                    + filter_str;
-                          page.open( url, function() {
-                            page
-                                    .render( path.join( __dirname,
-                                                        '../../public/reports/'
-                                                                + file_id
-                                                                + '.pdf' ),
-                                             function() {
-                                               ph.exit();
-                                               res
-                                                       .redirect( '/reports/'
-                                                                  + file_id
-                                                                  + '.pdf' );
-                                             } );
-                          } );
-                        } );
-                      } );
-                    }
-                    else {
-                      res.format( {
-                        'text/html': function() {
-                          console.log( JSON.stringify( results ) );
-                          res.render( 'reports/module_tests', {
-                            modules: results
-                          } );
-                        },
-                        'application/json': function() {
-                          res.send( results );
-                        }
-                      } );
-                    }
-                  } );
-    conn.release();
-  } );
+              test.test_instances.push(instance);
+            });
+            test_plan.tests.push(test);
+          });
+          module.test_plans.push( test_plan );
+        });
+        results.push(module);
+        conn_q.resume();
+      });
+    }).on('end', function() {
+      conn_q.release();
+      res.format( {
+        'text/html': function() {
+          res.render( 'reports/module_tests', {
+            modules: results
+          } );
+        },
+        'application/json': function() {
+          res.send( results );
+        }
+      } );
+    });
+  });
 };

@@ -1,21 +1,70 @@
-extends layout
+extends ./layout.jade
 block content
   each module in modules
     .row
       .col-xs-12
         h3= '#' + module.pk_module + ' ' + module.name
-          small Test Plans
+          small  Test Plans
+        .report-module.results
+          p(class='total')
+            span(class='count') #{module.summary.total}
+          p(class='pass')
+            span(class='count') #{module.summary.passed}
+            span(class='percent') #{100 * module.summary.passed / module.summary.total}
+          p(class='fail')
+            span(class='count') #{module.summary.failed}
+            span(class='percent') #{100 * module.summary.failed / module.summary.total}
+          p(class='pending')
+            span(class='count') #{module.summary.pending}
+            span(class='percent') #{100 * module.summary.pending / module.summary.total}
         hr
+
         each test_plan in module.test_plans
           .row
             .col-xs-12
               h3= '#' + test_plan.pk_test_plan + ' ' + test_plan.name
-                small Tests
               small= test_plan.description
-              hr
-              .list-group
+              .report-module.results
+                p(class='total')
+                  span(class='count') #{test_plan.summary.total}
+                p(class='pass')
+                  span(class='count') #{test_plan.summary.passed}
+                  span(class='percent') #{100 * test_plan.summary.passed / test_plan.summary.total}
+                p(class='fail')
+                  span(class='count') #{test_plan.summary.failed}
+                  span(class='percent') #{100 * test_plan.summary.failed / test_plan.summary.total}
+                p(class='pending')
+                  span(class='count') #{test_plan.summary.pending}
+                  span(class='percent') #{100 * test_plan.summary.pending / test_plan.summary.total}
+              br
+              ul.list-group
                 each test in test_plan.tests
-                  a.list-group-item(href="javascript:void(0)")
+                  li.list-group-item
                     h5.list-group-item-heading
                       = '#' + test.pk_test + ' ' + test.name
                     p.list-group-item-text= test.description
+                    .report-module.results
+                      p(class='total')
+                        span(class='count') #{test.summary.total}
+                      p(class='pass')
+                        span(class='count') #{test.summary.passed}
+                        span(class='percent') #{100 * test.summary.passed / test.summary.total}
+                      p(class='fail')
+                        span(class='count') #{test.summary.failed}
+                        span(class='percent') #{100 * test.summary.failed / test.summary.total}
+                      p(class='pending')
+                        span(class='count') #{test.summary.pending}
+                        span(class='percent') #{100 * test.summary.pending / test.summary.total}
+                    br
+
+                    ul.list-group
+                      each test_instance in test.test_instances
+                        li.list-group-item
+                          h5.list-group-item-heading
+                            = 'Instance #' + test_instance.pk_test_instance
+                          p.list-group-item-text= test_instance.result_text
+                          p.list-group-item-text= 'Modules: '
+                          ul.list-group
+                            each module in test_instance.modules
+                              li.list-group-item
+                                p.list-group-item-text= module

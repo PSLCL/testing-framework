@@ -1,4 +1,4 @@
-// Mysql Connection
+/// Mysql Connection
 var mysql    = require('../lib/mysql');
 var config  = require('../../config/config');
 var squel   = require('squel');
@@ -7,7 +7,7 @@ var path    = require('path');
 var phantom = require('node-phantom');
 var async   = require('async');
 var _        = require('underscore');
-var d3      = require('d3');
+var instances = require('../models/instances');
 
 exports.view = function( req, res ) {
   var instance_id = req.param('id');
@@ -26,16 +26,16 @@ exports.view = function( req, res ) {
     .left_join( 'described_template', null, 'described_template.pk_described_template = test_instance.fk_described_template' )
     .left_join( 'template', null, 'template.pk_template = described_template.fk_template' )
     .where( 'pk_test_instance = ?', instance_id );
-  
+
   var query_string = sql_query.toString();
-  
+
   mysql.getConnection( function( err, conn ) {
     conn.query( query_string, function( err, result ) {
       conn.release();
-      
+
       if ( err )
         throw err;
-      
+
       res.format( {
         'text/html': function() {
           res.send( result[0] );
@@ -50,6 +50,7 @@ exports.view = function( req, res ) {
 
 exports.lines = function( req, res ) {
   var instance_id = req.param('id');
+  //TODO fix ER_WRONG_FIELD_WITH_GROUP: Expression #1 of SELECT list is not in GROUP BY clause
   var sql_query = squel
     .select()
     .field( 'pk_dt_line' )
@@ -61,16 +62,16 @@ exports.lines = function( req, res ) {
     .where( 'fk_described_template = ?', instance_id )
     .group( 'line' )
     .order( 'line', true );
-  
+
   var query_string = sql_query.toString();
-  
+
   mysql.getConnection( function( err, conn ) {
     conn.query( query_string, function( err, result ) {
       conn.release();
-      
+
       if ( err )
         throw err;
-      
+
       res.format( {
         'text/html': function() {
           res.send( result );
@@ -81,26 +82,6 @@ exports.lines = function( req, res ) {
       } );
     } );
   } );
-};
-
-function buildModules( m ) {
-    m.sort(function(a,b) { return a.offset - b.offset; });
-    return _.map( m, function(mod) {
-        var s = mod.organization + '#' + mod.name + ';' + mod.version + '(' + mod.sequence + ')';
-        if ( mod.attributes )
-            s += '[' + mod.attributes + ']';
-        
-        return s;
-    });
-};
-
-function expandModules( m, ls ) {
-	if(!ls)
-		return null;
-    var la = ls.split(',');
-    return _.map( la, function(i) {
-        return m[i];
-    });
 };
 
 exports.user_tests = function (req, res) {
@@ -125,7 +106,7 @@ exports.user_tests = function (req, res) {
   else {
     sql_query.where( 'owner IS NOT NULL' );
   }
-  
+
   sql_query.where( 'end_time IS NULL' );
 
   var query_string = sql_query.toString();
@@ -133,7 +114,7 @@ exports.user_tests = function (req, res) {
   mysql.getConnection( function( err, conn ) {
     conn.query( query_string, function( err, result ) {
       conn.release();
-      
+
       if ( err )
         throw err;
       res.format( {
@@ -150,159 +131,24 @@ exports.user_tests = function (req, res) {
 
 // [GET] List of instances
 exports.list = function (req, res) {
-    var plan_str = req.param('plan') || null;
-    var test_str = req.param('test') || null;
-    var module_str = req.param('module') || null;
-    var against_str = req.param('against') || '';
-    
-    mysql.getConnection(function(err,conn) {
-        var statement = 'call get_instance_list('+ plan_str + ',' + test_str + ',' + module_str + ',"' + against_str + '");';
-        console.log( statement );
-        conn.query(statement,
-          function (err, result) {
-            var R = { instances: [],
-                    descriptions: []
-            }
-            if ( err == null && result != null && result.length > 1 ) {
-                // Build a list of module names
-                var modules = buildModules( result[3] );
-                
-                // The list is returned in sorted order by test plan name and test name.
-                R.instances = d3.nest()
-                    .key( function(d) { return d.pk_test_plan } )
-                    .key( function(d) { return d.pk_test } )
-                    .entries(result[0]);
-                R.instances = _.map( R.instances, function( test_plan ) {
-                    var docs = _.find( result[1], function(e) { return e.pk_test_plan == test_plan.key; } );
-                    var vals = _.map( test_plan.values, function( test ) {
-                        var docs = _.find( result[2], function(e) { return e.pk_test == test.key; } );
-                        var summary = _.countBy(test.values, function(i) {
-                            if ( i.result == null ) return 'pending';
-                            return i.result == 0 ? 'failed' : 'passed';
-                        });
-                        
-                        if ( summary.passed == undefined )
-                            summary.passed = 0;
-                        if ( summary.failed == undefined )
-                            summary.failed = 0;
-                        if ( summary.pending == undefined )
-                            summary.pending = 0;
-                        summary.total = summary.passed + summary.failed + summary.pending;
-                        
-                        var data = [
-                                    {
-                                      value: summary.passed,
-                                      color:"#00CC00"
-                                    },
-                                    {
-                                      value : summary.failed,
-                                      color : "#FF0000"
-                                    },
-                                    {
-                                      value : summary.pending,
-                                      color : "#A0A0A0"
-                                    }
-                                    ];
-                        var chart = { "data": data, "options": { "animation": false, "animateRotate": false, "segmentShowStroke": false } };
-                        
-                        var items = _.map( test.values, function(v) {
-                            v.module_list = expandModules( modules, v.modules );
-                            if ( v.result == null )
-                                v.result_text = "Pending";
-                            else if ( v.result == 0 )
-                                v.result_text = "Failed";
-                            else
-                                v.result_text = "Passed";
-                            
-                            return v;
-                        });
-                        
-                        return {
-                            key: test.key,
-                            name: docs.name,
-                            description: docs.description,
-                            'summary': summary,
-                            'chart': chart,
-                            values: items
-                        };
-                    });
-                    
-                    var summary = { passed: 0, failed: 0, pending: 0, total: 0 };
-                    _.each( vals, function(e) {
-                        this.passed += e.summary.passed;
-                        this.failed += e.summary.failed;
-                        this.pending += e.summary.pending;
-                        this.total += e.summary.total;
-                    }, summary );
+  var plan_str = req.param('plan') || null;
+  var test_str = req.param('test') || null;
+  var module_str = req.param('module') || null;
+  var against_str = req.param('against') || '';
 
-                    var data = [
-                                {
-                                  value: summary.passed,
-                                  color:"#00CC00"
-                                },
-                                {
-                                  value : summary.failed,
-                                  color : "#FF0000"
-                                },
-                                {
-                                  value : summary.pending,
-                                  color : "#A0A0A0"
-                                }
-                                ];
-                    var chart = { "data": data, "options": { "animation": false, "animateRotate": false, "segmentShowStroke": false } };
-                    
-                    return {
-                        key: test_plan.key,
-                        name: docs.name,
-                        description: docs.description,
-                        'summary': summary,
-                        'chart': chart,
-                        values: vals
-                    };
-                });
-
-                var summary = { passed: 0, failed: 0, pending: 0, total: 0 };
-                _.each( R.instances, function(e) {
-                    this.passed += e.summary.passed;
-                    this.failed += e.summary.failed;
-                    this.pending += e.summary.pending;
-                    this.total += e.summary.total;
-                }, summary );
-                
-                var data = [
-                            {
-                              value: summary.passed,
-                              color:"#00CC00"
-                            },
-                            {
-                              value : summary.failed,
-                              color : "#FF0000"
-                            },
-                            {
-                              value : summary.pending,
-                              color : "#A0A0A0"
-                            }
-                            ];
-                var chart = { "data": data, "options": { "animation": false, "animateRotate": false, "segmentShowStroke": false } };
-                
-                R.summary = summary;
-                R.chart = chart;
-                
-                R.descriptions = result[1];
-            }
-
-            res.format({
-                'text/html': function () {
-                  res.send(JSON.stringify(R));
-                },
-                'application/json': function () {
-                  res.send(R);
-                }
-              });
-        });
+  instances.list_instances( plan_str, test_str, module_str, against_str, function(err, result){
+    res.format({
+      'text/html': function () {
+        res.send(JSON.stringify(result));
+      },
+      'application/json': function () {
+        res.send(result);
+      }
     });
+  });
+
   return;
-  
+
   var after_id = 0;
   var filter_str = req.param('filter');
   if (req.param('after')) {
@@ -413,7 +259,7 @@ exports.name_report = function (req, res) {
 // Break the descriptions array into nested groups
 function process_descriptions( descriptions ) {
   var nested = [];
-  
+
   descriptions.forEach( function (d) {
     var D = findPK( nested, d.fk_described_template ) || {
       pk: d.fk_described_template,
@@ -422,10 +268,10 @@ function process_descriptions( descriptions ) {
     if ( nested.indexOf(D) == -1 ) {
       nested.push(D);
     }
-    
+
     D.lines.push( d );
   })
-  
+
   return nested;
 }
 
@@ -444,7 +290,7 @@ function process_report( incl_passed, incl_failed, incl_pending, summaries, resu
     if ( nested.indexOf(C) == -1 ) {
         nested.push(C);
     }
-    
+
     var V = findPK(C.versions, ti.pk_version ) || {
       pk: ti.pk_version,
       name: ti.version,
@@ -453,7 +299,7 @@ function process_report( incl_passed, incl_failed, incl_pending, summaries, resu
     };
     if (C.versions.indexOf(V) == -1 )
         C.versions.push(V);
-    
+
     var TP = findPK(V.test_plans, ti.pk_test_plan ) || {
       pk: ti.pk_test_plan,
       name: ti.test_plan_name,
@@ -462,13 +308,13 @@ function process_report( incl_passed, incl_failed, incl_pending, summaries, resu
     };
     if (V.test_plans.indexOf(TP) == -1 )
         V.test_plans.push(TP);
-    
+
     V.summary.total += ti.total;
     V.summary.pass += ti.passed;
     V.summary.fail += ti.failed;
     V.summary.pending += ti.pending;
   });
-  
+
   results.forEach(function (ti) {
     var C = findPK( nested, ti.pk_module ) || {
         pk: ti.pk_module,
@@ -525,7 +371,7 @@ function process_report( incl_passed, incl_failed, incl_pending, summaries, resu
         }
     }
   });
-  
+
   return nested;
 }
 
@@ -540,7 +386,7 @@ exports.report = function (req, res) {
   var incl_passed = req.param('incl_passed');
   var incl_failed = req.param('incl_failed');
   var incl_pending = req.param('incl_pending');
-  
+
   if ( req.param('export') ) {
     var file_id = new Util().guid();
     phantom.create(
@@ -588,7 +434,7 @@ exports.report = function (req, res) {
     }, {parameters:{'ignore-ssl-errors':'yes'}});
     return;
   }
-  
+
   /**
    * Get list of test result data by versions
    */
@@ -596,7 +442,7 @@ exports.report = function (req, res) {
   var results_query = "call get_detail_by_version('" + select_str.replace(/["']/g, "") + "',"+incl_passed+","+incl_failed+","+incl_pending+");";
   var descriptions_query = "call get_descriptions_by_version('" + select_str.replace(/["']/g, "") + "',"+incl_passed+","+incl_failed+","+incl_pending+");";
   var resource_query = "call get_resources_by_version('" + select_str.replace(/["']/g, "") + "',"+incl_passed+","+incl_failed+","+incl_pending+");";
-  
+
   mysql.getConnection(function(err,conn) {
     conn.query(summary_query,
       function (err, summary) {
@@ -605,7 +451,7 @@ exports.report = function (req, res) {
           conn.query(results_query,
             function(err, results) {
               if (err) throw err;
-              
+
               conn.query(descriptions_query,
                 function (err, descriptions) {
                   if (err) throw err;
@@ -614,7 +460,7 @@ exports.report = function (req, res) {
                       function (err, resources) {
                     var nested_details = process_report(incl_passed, incl_failed, incl_pending, summary[0], results[0] );
                     var nested_descriptions = process_descriptions( descriptions[0] );
-                    
+
                     res.format({
                       'text/html': function () {
                         res.render('reports/version_report', {items: nested_details});

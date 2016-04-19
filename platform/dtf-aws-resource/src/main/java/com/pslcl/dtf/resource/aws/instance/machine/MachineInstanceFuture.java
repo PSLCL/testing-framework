@@ -34,7 +34,6 @@ import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsRequest;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsResult;
 import com.amazonaws.services.ec2.model.EbsBlockDevice;
-import com.amazonaws.services.ec2.model.GroupIdentifier;
 import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
 import com.amazonaws.services.ec2.model.Image;
 import com.amazonaws.services.ec2.model.Instance;
@@ -57,7 +56,6 @@ import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanceState;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
-import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 

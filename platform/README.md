@@ -53,9 +53,11 @@ This policy should be assigned to the AWS IAM User or Role that the system is co
 ##Test Runner Service  
 The platform includes the Test Runner Service which handles requests to start tests. Once the platform has been built, the Test Runner Service can be launched by executing the following command from the testing-framework/platform directory:
 
-`$ bin/dtfrunner`
+`$ bin/dtfrunner start`
 
-The service is launched with jsvc.
+The service is launched with jsvc. Stop the service by executing the command with the 'stop' option instead:
+
+`$ bin/dtfrunner stop`
 
 ### Runtime Requirements
 The following must be installed or configured on production systems
@@ -189,4 +191,14 @@ Note: SES by default limits the number of emails that may be sent per 24 hour pe
 ###Test Runner Service Configuration
 
 The default configuration file path is testing-framework/platform/config/dtf.properties. Example configuration files dtf.properties and logback.xml may be found at testing-platform/platform/example-config/. See the example configuration for additional config documentation.
+
+#### Create AWS Security Groups
+
+**Test Runner Service**
+
+Create a security group that allows inbound TCP traffic on ports 6550 and 6500 and attach it to the aws instance running the test runner service.
+
+**Test Instances**
+
+Create a security group that allows inbound TCP traffic on ports 6550 and 6500 from the test runner service instance. Use this security group to configure the `pslcl.dtf.aws.ec2instance.sg.group-id` property in the dtf.properties file.
 

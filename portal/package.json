@@ -34,7 +34,8 @@
     "supervisor": "^0.5.7",
     "tar-stream": "*",
     "underscore": "^1.8.3",
-    "d3": "^3.5.6"
+    "d3": "^3.5.6",
+    "node-phantom-simple": "~2.2.4"
   },
   "devDependencies": {
     "express-livereload": "*",

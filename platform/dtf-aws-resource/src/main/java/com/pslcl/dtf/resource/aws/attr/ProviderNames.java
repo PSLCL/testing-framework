@@ -272,7 +272,7 @@ public class ProviderNames
     public static List<String> getNetworkKeys()
     {
         List<String> keys = new ArrayList<String>();
-        keys.add(InstanceNames.VpcNameKey);  
+        keys.add(InstanceNames.VpcIdKey);  
         keys.add(InstanceNames.VpcCidrKey);
         keys.add(InstanceNames.VpcTenancyKey);
         keys.add(InstanceNames.VpcMaxDelayKey);       
