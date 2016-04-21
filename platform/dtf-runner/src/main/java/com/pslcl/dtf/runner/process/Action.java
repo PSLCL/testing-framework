@@ -94,7 +94,7 @@ public enum Action implements Actions {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
-            log.warn("Action.REMOVE() removes reNum " + reNum);
+            log.debug("Action.REMOVE() removes reNum " + reNum);
             
             // temporarily, comment out this line, to allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
             runnerService.getRunnerMachine().disengageRunEntry(reNum);
