@@ -310,7 +310,7 @@ public class InstancedTemplate {
     }
     
     private boolean isTestRunFailed() {
-    	return result == null || !result;
+    	return result != null && !result;
     }
     
     /**
