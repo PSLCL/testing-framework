@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.runner.process;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.pslcl.dtf.runner.RunnerService;
 
 /**
@@ -45,7 +48,7 @@ public enum Action implements Actions {
 					runnerService.runnerMachine.engageRunEntry(reNum, reState);
 					reState.setAction(ANALYZE);
 				} catch (Exception e) {
-					System.out.println("Action.INITIALIZE() sees exception message " + e);
+					log.warn("Action.INITIALIZE() sees exception message " + e);
 					throw e;
 				}
             } else {
@@ -79,7 +82,7 @@ public enum Action implements Actions {
                 // initiate a test run, then block until the test run completes, its result is gathered, and its result is stored
                 /*boolean result =*/ reCore.testRun(runnerService.runnerMachine);
             } catch (Exception e) {
-                System.out.println("Action.TESTRUN() sees testRun() exception: " + e);
+            	log.warn("Action.TESTRUN() sees testRun() exception: " + e);
             }
             // exception or not, we remove reNum from active consideration- its test result is stored (unless the exception is from the database storage call)
             reState.setAction(REMOVE);
@@ -91,7 +94,7 @@ public enum Action implements Actions {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             long reNum = reState.getRunEntryNumber();
-            System.out.println("Action.REMOVE() removes reNum " + reNum);
+            log.warn("Action.REMOVE() removes reNum " + reNum);
             
             // temporarily, comment out this line, to allow reNum to remain in the RunEntryState map, so next message queue pull, of the same reNum, will be bypassed
             runnerService.getRunnerMachine().disengageRunEntry(reNum);
@@ -115,5 +118,8 @@ public enum Action implements Actions {
     };
 
     abstract Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) throws Exception;
+    
+
+	private static Logger log = LoggerFactory.getLogger(Action.class);
     
 }

@@ -28,6 +28,8 @@ import com.pslcl.dtf.core.runner.resource.ResourcesManager;
 import com.pslcl.dtf.core.runner.resource.instance.CableInstance;
 import com.pslcl.dtf.core.runner.resource.instance.ResourceInstance;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
+import com.pslcl.dtf.core.runner.resource.staf.ProcessResult;
+import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
 import com.pslcl.dtf.runner.QAPortalAccess;
 import com.pslcl.dtf.runner.process.DBTemplate;
 import com.pslcl.dtf.runner.process.RunEntryCore;
@@ -565,7 +567,7 @@ public class InstancedTemplate {
                                         break;
                                     }
                                     
-                                    Integer programRunResult = runnableProgram.getRunResult();
+                                    Integer programRunResult = runnableProgram.getRunResult();                                    
                                     if (programRunResult==null || programRunResult!=0) {
                                         configureStepErroredOut = true;
                                         log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
@@ -641,6 +643,7 @@ public class InstancedTemplate {
                                         break;
                                     }
                                     
+                                    logProgramResults(runnableProgram, getRunID());
                                     Integer programRunResult = runnableProgram.getRunResult();
                                     if (programRunResult==null || programRunResult!=0) {
                                         runStepErroredOut = true;
@@ -710,6 +713,22 @@ public class InstancedTemplate {
         	log.debug(this.simpleName + "runSteps() CANCELED, for templateID " + templateID);
         else
         	log.debug(this.simpleName + "runSteps() completes without error, for templateID " + templateID);
+    }
+    
+    private void logProgramResults(RunnableProgram runnableProgram, long runID){
+        String syserr = null;
+        String sysout = null;
+        String command = null;
+        Integer result = runnableProgram.getRunResult();
+        if(runnableProgram instanceof StafRunnableProgram){
+        	ProcessResult processResult = ((StafRunnableProgram)runnableProgram).getResult();
+        	if(processResult != null){
+        		syserr = processResult.getCompletionSysErr();
+        		sysout = processResult.getCompletionSysOut();
+        	}
+        	command = ((StafRunnableProgram)runnableProgram).getCommandData().getCommand();
+        }
+        log.info("Executed run command for test run {}. Command: {}, result: {}, sysout: {}, syserr: {}", runID, command, result, sysout, syserr );
     }
 
     /**
