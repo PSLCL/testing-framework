@@ -51,7 +51,7 @@ public class InstancedTemplate {
     private RunnerMachine runnerMachine;
     private ResourceCoordinates templateCleanupInfo;
     private long templateInstanceID;
-    private Boolean result = null; // known use case is Person.Inspect()
+    private Boolean result; // known use case is Person.Inspect()
     private boolean reusable;
     
     private StepsParser stepsParser;
@@ -95,7 +95,7 @@ public class InstancedTemplate {
         this.boundResourceInstances = new ArrayList<>();
         this.deployedInfos = new ArrayList<>();
         this.cableInstances = new ArrayList<>();
-        this.result = false;
+        this.result = null;
         this.reusable = this.isTopLevelTemplate() ? false : true; // false is never overwritten to true
 
         this.templateInstanceID = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
@@ -626,7 +626,6 @@ public class InstancedTemplate {
 
                         inspectHandler.proceed();
                         if (inspectHandler.isDone()) {
-                        	this.result = true; // a person must enter the final result
                             log.debug(simpleName + "inspectHandler() completes " + inspectHandler.getInspectRequestCount() + " inspect(s) for setID " + setID);
                             inspectHandler.cleanup();
                         }
