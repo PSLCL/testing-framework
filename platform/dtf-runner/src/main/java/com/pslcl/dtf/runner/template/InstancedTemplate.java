@@ -574,7 +574,7 @@ public class InstancedTemplate {
                                     }
                                     
                                     Integer programRunResult = runnableProgram.getRunResult();                                    
-                                    if (programRunResult==null) {
+                                    if (programRunResult==null || programRunResult!=0) {
                                         configureStepErroredOut = true;
                                         log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
                                         break;
