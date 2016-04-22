@@ -428,7 +428,7 @@ public class RunEntryCore {
 			log.debug(this.simpleName + ".testRun() launches template instantiation for top level template " + DBTemplate.getId(this.topDBTemplate.hash));
         	// Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
-            result = !iT.getResult(); //True = passed, false = failed, null = no result(inspect). 
+            result = iT.getResult(); //True = passed, false = failed, null = no result(inspect). 
             
             log.info("Test run " + reNum + " completed with result " + result);
             testRunSuccess = true;
