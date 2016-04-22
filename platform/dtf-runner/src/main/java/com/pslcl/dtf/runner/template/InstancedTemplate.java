@@ -51,7 +51,8 @@ public class InstancedTemplate {
     private RunnerMachine runnerMachine;
     private ResourceCoordinates templateCleanupInfo;
     private long templateInstanceID;
-    private Boolean result; // known use case is Person.Inspect()
+    private Boolean result;
+    private boolean waitForInspect;
     private boolean reusable;
     
     private StepsParser stepsParser;
@@ -96,6 +97,7 @@ public class InstancedTemplate {
         this.deployedInfos = new ArrayList<>();
         this.cableInstances = new ArrayList<>();
         this.result = null;
+        this.waitForInspect = false;
         this.reusable = this.isTopLevelTemplate() ? false : true; // false is never overwritten to true
 
         this.templateInstanceID = this.runnerMachine.getTemplateProvider().addToReleaseMap(this);
@@ -572,7 +574,7 @@ public class InstancedTemplate {
                                     }
                                     
                                     Integer programRunResult = runnableProgram.getRunResult();                                    
-                                    if (programRunResult==null) {
+                                    if (programRunResult==null || programRunResult!=0) {
                                         configureStepErroredOut = true;
                                         log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
                                         break;
@@ -626,6 +628,7 @@ public class InstancedTemplate {
 
                         inspectHandler.proceed();
                         if (inspectHandler.isDone()) {
+                        	this.waitForInspect = true;
                             log.debug(simpleName + "inspectHandler() completes " + inspectHandler.getInspectRequestCount() + " inspect(s) for setID " + setID);
                             inspectHandler.cleanup();
                         }
@@ -655,9 +658,7 @@ public class InstancedTemplate {
                                     }else if (programRunResult != 0){
                                     	result = false;
                                     	break;
-                                    }else{
-                                    	result = true;
-                                    }                                    
+                                    }                                  
                                 }
                                 if (!runStepErroredOut)
                                     fail = false;
@@ -716,6 +717,9 @@ public class InstancedTemplate {
 				log.warn(this.simpleName + "after runSteps() fails out, problem reported for releasing the template, msg: " + ignoreE.getMessage());
 			}
             throw e; // e is the actual template errors-out exception
+        }
+        if(result == null && !waitForInspect){
+        	result = true;
         }
         String templateID = this.getTemplateID();
         if (this.isTestRunCanceled())
