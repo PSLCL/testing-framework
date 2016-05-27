@@ -491,6 +491,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 format.ttl("MachineConfigData.init failed, continuing anyway");
             }
             
+            instance.disconnect(null);
+            
             pdelayData.preFixMostName = mconfig.resourcePrefixName; 
             try
             {
