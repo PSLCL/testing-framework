@@ -1378,7 +1378,7 @@ public class Core
      * distributed.
      * The '.dep' file contains artifact references, one per line, with the following formats:
      * First, a line with a single field. This field is a name regex (defined my MySQL) for other artifacts in the same module.
-     * Second, a line with three fields separated by a comma. The first field is a module reference and the second is a version.
+     * Second, a line with two fields separated by a comma. The first field is a module reference and the second is a version.
      * The module reference is specified as 'org#module#attributes' and the version as 'version/configuration'. In all fields
      * a dollar sign can be used to substitute the value from the artifact that dependencies are being found from. This
      * means that '$#$#$,$/,$.dep' is used to search for the '.dep' file. If any of the fields is empty then it will not be used

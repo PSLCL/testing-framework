@@ -436,15 +436,15 @@ public class ImageFinder
 
         private boolean isHit(Map<String, String> attrs)
         {
-            for (Entry<String, String> entry : attrs.entrySet())
+            if (attrMap.size() != attrs.size())
+                return false;
+            for (Entry<String, String> entry : attrMap.entrySet())
             {
                 String key = entry.getKey();
-                if(!attrMap.containsKey(key))
-                    return false;
                 String givenValue = attrs.get(key);
                 if (givenValue == null)
                     return false;
-                if (!attrMap.get(key).equals(givenValue))
+                if (!entry.getValue().equals(givenValue))
                     return false;
             }
             return true;
