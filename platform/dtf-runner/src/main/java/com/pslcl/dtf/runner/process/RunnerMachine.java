@@ -141,8 +141,6 @@ public class RunnerMachine {
             this.getService().runEntryStateStore.put(reNum, reState);
         }
         
-        log.info("Starting test run " + reNum);
-        
         try {
             // launch independent thread
             new RunEntryTask(this, reNum);

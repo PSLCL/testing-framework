@@ -28,42 +28,37 @@ public class CancelTask implements Runnable {
 	}
 	
 	void close() {
-		if (this.running == true) {
-			this.running = false;
-			log.debug(this.simpleName + ".close() called to halt CancelTask for reNum " + this.reCore.getRENum());
-			synchronized (this.syncObject) {
+		synchronized (this.syncObject) {
+			if (this.running) {
+				this.running = false;
 				this.syncObject.notifyAll();
 			}
-		}
+		} // end synchronized()
 	}
 	
 	@Override
 	public void run() {
 	    String tname = Thread.currentThread().getName();
 	    Thread.currentThread().setName("CancelTask");
-		while (running) {
-			// check run table for our reNum; all cancel action is handled in this call
-			this.reCore.checkForRunCancel();
-			
+		while (true) {
 			synchronized (this.syncObject) {
+				if (!this.running)
+					break; // java ok to break out of synchronized block this way
+			
+				// check run table for our reNum; all cancel action is set up in this call, or at least scheduled
+				this.reCore.checkRunCancel();
+			
 				try {
-					if (running)
+					if (this.running)
 						syncObject.wait(CancelTask.SLEEPTIME);
 				} catch (InterruptedException e) {
-					log.debug(this.simpleName + ".run() exits as test run concludes, with exception msg: " + e.getMessage());
+					log.debug(this.simpleName + ".run() exits with exception msg: " + e.getMessage());
 					break;
 				}
 			} // end synchronized()
-			
-//			try {
-//				Thread.sleep(CancelTask.SLEEPTIME);
-//			} catch (InterruptedException e) {
-//				log.debug(this.simpleName + ".run() sleep exits with exception msg: " + e.getMessage());
-//				break;
-//			}
 		}
 		log.debug(this.simpleName + "TERMINATES run-cancel checking for reNum " + this.reCore.getRENum());
-        Thread.currentThread().setName(tname);
+        Thread.currentThread().setName(tname); // overwrite "CancelTask"
 	}
 
 }

@@ -15,8 +15,16 @@
  */
 package com.pslcl.dtf.resource.aws.provider;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import com.amazonaws.services.ec2.model.IpPermission;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.resource.ResourceDescription;
+import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
@@ -26,7 +34,9 @@ import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 public class SubnetConfigData
 {
 //    public volatile String availabilityZone;
-    public volatile String vpcId;
+    public volatile String vpcName;
+    public volatile String vpcCidr;
+    public volatile String vpcTenancy;
     public volatile int vpcMaxDelay;
     public volatile int vpcMaxRetries;
 
@@ -35,7 +45,9 @@ public class SubnetConfigData
     public volatile int subnetSize;
     public volatile String subnetVpcId;
 
-    public volatile String sgDefaultVpcOverrideId;
+    public final List<IpPermission> permissions;
+    public volatile String sgGroupName;
+    public volatile String sgGroupId;
     public volatile int sgMaxDelay;
     public volatile int sgMaxRetries;
     
@@ -43,6 +55,7 @@ public class SubnetConfigData
 
     private SubnetConfigData()
     {
+        permissions = new ArrayList<IpPermission>();
     }
 
     public static SubnetConfigData init(ResourceDescription resource, TabToLevel format, SubnetConfigData defaultData) throws Exception
@@ -61,7 +74,9 @@ public class SubnetConfigData
         format.ttl("VPC/Subnet: ");
         format.level.incrementAndGet();
 //        data.availabilityZone = getAttribute(InstanceNames.AvailabilityZoneKey, defaultData.availabilityZone, resource, format);
-        data.vpcId = getAttribute(InstanceNames.VpcIdKey, defaultData.vpcId, resource, format);
+        data.vpcName = getAttribute(InstanceNames.VpcNameKey, defaultData.vpcName, resource, format);
+        data.vpcCidr = getAttribute(InstanceNames.VpcCidrKey, defaultData.vpcCidr, resource, format);
+        data.vpcTenancy = getAttribute(InstanceNames.VpcTenancyKey, defaultData.vpcTenancy, resource, format);
         data.vpcMaxDelay = Integer.parseInt(getAttribute(InstanceNames.VpcMaxDelayKey, "" + defaultData.vpcMaxDelay, resource, format));
         data.vpcMaxRetries = Integer.parseInt(getAttribute(InstanceNames.VpcMaxRetriesKey, "" + defaultData.vpcMaxRetries, resource, format));
         data.subnetCidr = getAttribute(InstanceNames.SubnetCidrKey, defaultData.subnetCidr, resource, format);
@@ -72,13 +87,15 @@ public class SubnetConfigData
 
         format.ttl("SecurityGroup:");
         format.level.incrementAndGet();
-        data.sgDefaultVpcOverrideId = getAttribute(InstanceNames.SgGroupIdKey, defaultData.sgDefaultVpcOverrideId, resource, format);
+        data.sgGroupName = getAttribute(InstanceNames.SgNameKey, defaultData.sgGroupName, resource, format);
+        data.sgGroupId = getAttribute(InstanceNames.SgIdKey, defaultData.sgGroupId, resource, format);
         data.sgMaxDelay = Integer.parseInt(getAttribute(InstanceNames.SgMaxDelayKey, "" + defaultData.sgMaxDelay, resource, format));
         data.sgMaxRetries = Integer.parseInt(getAttribute(InstanceNames.SgMaxRetriesKey, "" + defaultData.sgMaxRetries, resource, format));
         format.level.decrementAndGet();
         
         format.ttl("SecurityGroup Permissions:");
         format.level.incrementAndGet();
+        addPermissions(null, resource, format, data.permissions, defaultData);
         format.level.decrementAndGet();
         return data;
     }
@@ -90,7 +107,9 @@ public class SubnetConfigData
         config.initsb.level.incrementAndGet();
         config.initsb.ttl("VPC/Subnet defaults init: ");
         config.initsb.level.incrementAndGet();
-        data.vpcId = getAttribute(config, InstanceNames.VpcIdKey, InstanceNames.VpcNameDefault);
+        data.vpcName = getAttribute(config, InstanceNames.VpcNameKey, InstanceNames.VpcNameDefault);
+        data.vpcCidr = getAttribute(config, InstanceNames.VpcCidrKey, InstanceNames.VpcCidrDefault);
+        data.vpcTenancy = getAttribute(config, InstanceNames.VpcTenancyKey, InstanceNames.VpcTenancyDefault);
         data.vpcMaxDelay = Integer.parseInt(getAttribute(config, InstanceNames.VpcMaxDelayKey, InstanceNames.VpcMaxDelayDefault));
         data.vpcMaxRetries = Integer.parseInt(getAttribute(config, InstanceNames.VpcMaxRetriesKey, InstanceNames.VpcMaxRetriesDefault));
         data.subnetCidr = getAttribute(config, InstanceNames.SubnetCidrKey, InstanceNames.SubnetCidrDefault);
@@ -101,13 +120,15 @@ public class SubnetConfigData
 
         config.initsb.ttl("SecurityGroup defaults init:");
         config.initsb.level.incrementAndGet();
-        data.sgDefaultVpcOverrideId = getAttribute(config, InstanceNames.SgGroupIdKey, InstanceNames.SgIdDefault);
+        data.sgGroupName = getAttribute(config, InstanceNames.SgNameKey, InstanceNames.SgNameDefault);
+        data.sgGroupId = getAttribute(config, InstanceNames.SgIdKey, InstanceNames.SgIdDefault);
         data.sgMaxDelay = Integer.parseInt(getAttribute(config, InstanceNames.SgMaxDelayKey, InstanceNames.SgMaxDelayDefault));
         data.sgMaxRetries = Integer.parseInt(getAttribute(config, InstanceNames.SgMaxRetriesKey, InstanceNames.SgMaxRetriesDefault));
         config.initsb.level.decrementAndGet();
 
         config.initsb.ttl("Permissions:");
         config.initsb.level.incrementAndGet();
+        addPermissions(config, null, null, data.permissions, null);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
         
@@ -136,5 +157,104 @@ public class SubnetConfigData
         } else
             format.ttl(key, " = ", value);
         return value;
+    }
+
+    private static void addPermissions(
+                    RunnerConfig config, ResourceDescription resource, TabToLevel format, 
+                    List<IpPermission> permissions, SubnetConfigData defaultData) throws Exception
+    {
+        String[] protocols = null;
+        String[] ipRanges = null;
+        String[] ports = null;
+
+        Map<String, String> attrs;
+        if (config != null)
+        {
+            format = config.initsb;
+            attrs = new HashMap<String, String>();
+            for (Entry<Object, Object> entry : config.properties.entrySet())
+            {
+                if(entry.getValue() instanceof String)
+                    attrs.put((String) entry.getKey(), (String) entry.getValue());
+            }
+        } else
+            attrs = resource.getAttributes();
+
+        List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermProtocolKey, attrs);
+        int size = list.size();
+        if (size == 0)
+        {
+            if (config != null) // setting up defaultData
+            {
+                //@formatter:off
+                IpPermission perm = new IpPermission()
+                    .withIpProtocol(InstanceNames.PermProtocolDefault)
+                    .withIpRanges(InstanceNames.PermIpRangeDefault)
+                    .withFromPort(Integer.parseInt(InstanceNames.PermPortDefault))
+                    .withToPort(Integer.parseInt(InstanceNames.PermPortDefault));
+                //@formatter:on
+                permissions.add(perm);
+                format.ttl(InstanceNames.PermProtocolKey, "0", " = ", perm.getIpProtocol());
+                format.ttl(InstanceNames.PermIpRangeKey, "0", " = ", perm.getIpRanges());
+                format.ttl(InstanceNames.PermPortKey, "0", " = ", perm.getToPort());
+            } else
+            { // actual call
+                int count = 0;
+                for (IpPermission value : defaultData.permissions)
+                {
+                    permissions.add(value);
+                    format.ttl(InstanceNames.PermProtocolKey + count, " = ", value.getIpProtocol(), " (default injected)");
+                    format.ttl(InstanceNames.PermIpRangeKey + count, " = ", value.getIpRanges(), " (default injected)");
+                    format.ttl(InstanceNames.PermPortKey + count, " = ", value.getToPort(), " (default injected)");
+                    ++count;
+                }
+            }
+            return;
+        }
+        protocols = new String[size];
+        ipRanges = new String[size];
+        ports = new String[size];
+
+        for (int i = 0; i < size; i++)
+        {
+            Entry<String, String> entry = list.get(i);
+            protocols[i] = entry.getValue();
+        }
+
+        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermIpRangeKey, attrs);
+        if (list.size() != size)
+            throw new Exception("Permissions, number of IpRanges does not match number of Protocols, exp: " + size + " rec: " + list.size());
+        for (int i = 0; i < size; i++)
+        {
+            Entry<String, String> entry = list.get(i);
+            ipRanges[i] = entry.getValue();
+        }
+
+        list = PropertiesFile.getPropertiesForBaseKey(InstanceNames.PermPortKey, attrs);
+        if (list.size() != size)
+            throw new Exception("Permissions, number of ports does not match number of Protocols, exp: " + size + " rec: " + list.size());
+        for (int i = 0; i < size; i++)
+        {
+            Entry<String, String> entry = list.get(i);
+            ports[i] = entry.getValue();
+        }
+
+        for (int i = 0; i < size; i++)
+        {
+            //@formatter:off
+                IpPermission perm = new IpPermission()
+                    .withIpProtocol(protocols[i])
+                    .withIpRanges(ipRanges[i])
+                    .withFromPort(Integer.parseInt(ports[i]))
+                    .withToPort(Integer.parseInt(ports[i]));
+                //@formatter:on
+            permissions.add(perm);
+            format.ttl("perm-" + i);
+            format.level.incrementAndGet();
+            format.ttl(InstanceNames.PermProtocolKey, " = ", protocols[i]);
+            format.ttl(InstanceNames.PermIpRangeKey, " = ", ipRanges[i]);
+            format.ttl(InstanceNames.PermPortKey, " = ", ports[i]);
+            format.level.decrementAndGet();
+        }
     }
 }

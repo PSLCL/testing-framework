@@ -90,9 +90,9 @@ public class AwsResourcesManager implements ResourcesManager
         return null;
     }
     
-    public static boolean isDtfObject(List<Tag> tags, String systemId)
+    public static boolean isDtfObject(List<Tag> tags)
     {
-        boolean[] expected = new boolean[5];
+        boolean[] expected = new boolean[4];
         for(Tag tag : tags)
         {
             if(tag.getKey().equals(TagNameKey))
@@ -103,11 +103,6 @@ public class AwsResourcesManager implements ResourcesManager
                 expected[2] = true;
             else if(tag.getKey().equals(TagRunIdKey))
                 expected[3] = true;
-            else if(tag.getKey().equals(SystemIdKey))
-            {
-                if(tag.getValue().equals(systemId))
-                    expected[4] = true;
-            }
         }
         boolean dtfResource = true;
         for(int i=0; i < expected.length; i++)
@@ -149,7 +144,7 @@ public class AwsResourcesManager implements ResourcesManager
                                         new Tag(TagNameKey, name),
                                         new Tag(SystemIdKey, systemId),
                                         new Tag(TagRunIdKey, Long.toString(pdelayData.coord.getRunId())),
-                                        new Tag(TagTemplateIdKey, pdelayData.coord.templateIdToHexString()),
+                                        new Tag(TagTemplateIdKey, "0x"+Long.toHexString(pdelayData.coord.templateInstanceId)),
                                         new Tag(TagTemplateInstanceIdKey, "0x"+Long.toHexString(pdelayData.coord.templateInstanceId)),
                                         new Tag(TagResourceIdKey, "0x"+Long.toHexString(pdelayData.coord.resourceId)))
                                         .withResources(resourceId);
@@ -319,7 +314,6 @@ public class AwsResourcesManager implements ResourcesManager
             this.isReusable = isReusable;
         }
         
-        @Override
         public Void call() throws Exception
         {
             String tname = Thread.currentThread().getName();

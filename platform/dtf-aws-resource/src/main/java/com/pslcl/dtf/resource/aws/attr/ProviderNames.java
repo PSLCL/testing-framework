@@ -272,7 +272,7 @@ public class ProviderNames
     public static List<String> getNetworkKeys()
     {
         List<String> keys = new ArrayList<String>();
-        keys.add(InstanceNames.VpcIdKey);  
+        keys.add(InstanceNames.VpcNameKey);  
         keys.add(InstanceNames.VpcCidrKey);
         keys.add(InstanceNames.VpcTenancyKey);
         keys.add(InstanceNames.VpcMaxDelayKey);       
@@ -281,7 +281,8 @@ public class ProviderNames
         keys.add(InstanceNames.SubnetNameKey);
         keys.add(InstanceNames.SubnetCidrKey);
         keys.add(InstanceNames.SubnetVpcIdKey);
-        keys.add(InstanceNames.SgGroupIdKey);
+        keys.add(InstanceNames.SgNameKey);
+        keys.add(InstanceNames.SgIdKey);
         keys.add(InstanceNames.SgMaxDelayKey);
         keys.add(InstanceNames.SgMaxRetriesKey);
         keys.add(InstanceNames.PermProtocolKey);
