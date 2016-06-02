@@ -513,6 +513,9 @@ public class InstancedTemplate {
                                 throw new Exception("Improper step order");
                             }
                             break;
+                        case "nop": // harmless, does nothing except occupy space in the template steps; allowed as an implementation convenience
+                       		log.debug(this.simpleName + "nop step found, for step set " + setStepCount);
+                       		break;
                         default:
                             log.debug(simpleName + "unhandled step command: " + commandString + (commandString.equals("include") ? ": must precede all other commands" : ""));
                             break;
@@ -692,6 +695,10 @@ public class InstancedTemplate {
                             log.debug(simpleName + "startHandler() completes " + startHandler.getConsecutiveSameStepCount() + " start program(s) for setID " + setID);
                         }
                     }
+                    
+//                  // temporarily: uncomment these 2 lines to forcibly stay in the loop until test run is canceled
+//                  if (!this.isTestRunCanceled())
+//                      allStepsCompleteForThisStepSet = false;
                 } while (!allStepsCompleteForThisStepSet && !this.isTestRunCanceled()); // end do/while loop: process all step commands for same setID
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
@@ -707,9 +714,9 @@ public class InstancedTemplate {
         }
         String templateID = this.getTemplateID();
         if (this.isTestRunCanceled())
-        	log.debug(this.simpleName + "runSteps() CANCELED, for templateID " + templateID);
+        	log.debug(this.simpleName + "runSteps() CANCELED, for reNum " + this.getRunID() + ", templateID " + templateID);
         else
-        	log.debug(this.simpleName + "runSteps() completes without error, for templateID " + templateID);
+        	log.debug(this.simpleName + "runSteps() completes without error, for reNum " + this.getRunID() + ", templateID " + templateID);
     }
 
     /**

@@ -85,7 +85,8 @@ public class RunEntryCore {
             }
             statement = null;
             
-            connection.close();
+            if (connection != null)
+            	connection.close();
         }
     	return retBoolean;
     }	
@@ -99,7 +100,7 @@ public class RunEntryCore {
     private Long reNum;
     private DBTemplate topDBTemplate = null; // describes the top-level template only, i.e. the template that is matched to the run table entry known as reNum
     private CancelTask cancelTask;
-    private boolean testRunIsCanceled;
+    private volatile boolean testRunIsCanceled; // volatile fixes a bug where an old and wrong value tends to be returned, caused by other threads are hogging time somewhat
 
 
     // private methods
@@ -135,7 +136,7 @@ public class RunEntryCore {
         try {
         	connection = this.dbConnPool.getConnection();
         	statement = connection.createStatement();
-            if (reNum != null) {
+            if (this.reNum != null) {
                 String strRENum = String.valueOf(this.reNum);
 
                 // These table run entries are filled: pk_run, fk_template, start_time, and maybe owner.
@@ -174,7 +175,8 @@ public class RunEntryCore {
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
                 } else {
-                    throw new Exception("template data not present");
+                    log.debug(simpleName + "<internal> loadRunEntryData() fails to find data from run-template matched records for reNum " + this.reNum + ", pk_template " + topDBTemplate.pk_template);
+                    throw new Exception("template data not present for specified reNum");
                 }
             } else {
             	// Note: Is it impossible to be here, now? It means that reCore was instantiated without coming through the path that has an reNum and a matching entry in table run.     
@@ -327,6 +329,8 @@ public class RunEntryCore {
         try {
           	// fill all fields of topDBTemplate from the existing existing database entries
 			loadRunEntryData(); // throws Exception for no database entry for this.reNum
+//          // temporarily: uncomment this next line to force initial null result (won't work if overwriting result is not separately temporarily allowed for)
+//			topDBTemplate.result = null;
 			storeReadyRunEntryData(); // can throw IllegalArgumentException for template.enabled false, and SQL write related exceptions
 		} catch (Exception e) {
 			throw e;
@@ -427,10 +431,13 @@ public class RunEntryCore {
 			log.debug(this.simpleName + ".testRun() launches template instantiation for top level template " + DBTemplate.getId(this.topDBTemplate.hash));
         	// Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
-            result = !iT.getForceNullResult() ? new Boolean(true) : // No exception means test run success.
-                                                null;               // Although the test run succeeded, the result should be marked null. 
-            testRunSuccess = true;
+            if (!this.isTestRunCanceled()) {
+            	result = !iT.getForceNullResult() ? new Boolean(true) : // No exception means test run had a "pass" result.
+                                                    null;               // Although the test run succeeded (i.e. threw no exceptions), the test run result should be marked null.
+            }
+            testRunSuccess = true; // a canceled test run is still a "successful" test run, i.e. there was no exception thrown
         } catch (Throwable t) {
+        	// result is still new Boolean(false)
         	log.debug(simpleName + "testRun errors out, reNum : " + this.reNum);
             throw t;
         } finally {
@@ -449,16 +456,17 @@ public class RunEntryCore {
     }
     
     /**
-     * Never call this after the dtf-test-runner stores a false test run result.
+     * To indicate run cancel, a false test run result can be stored by forces outside dtf-runner, e.g. the dtfexec app.
+     * This need not be called after the dtf-test-runner stores a false test run result.
      */
-    void checkForRunCancel() {
+    void checkRunCancel() {
 		try {
 			Boolean result = RunEntryCore.getResult(this.dbConnPool, this.reNum);
 			// result null:  test run not canceled
 			//        true:  test run passed, not canceled
 			//        false: test run canceled by a force that is outside dtf-runner
-			//    (or false could mean that we are called wrongly, after we stored a false test run result) 
-	    	if (result!=null &&	result==false) {
+			//    (or false could mean that we are called wrongly, after we stored a false test run result)
+	    	if (result!=null &&	!result.booleanValue()) {
 	    		// cancel this test run
 	    		this.testRunIsCanceled = true;
 	    	}
@@ -475,7 +483,7 @@ public class RunEntryCore {
      * @param result Result of the test run
      * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
      */
-    public void closeCancelTaskStoreResultAckMessageQueue(RunnerService runnerService, Boolean result) throws Exception {
+    private void closeCancelTaskStoreResultAckMessageQueue(RunnerService runnerService, Boolean result) throws Exception {
         // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
     	this.closeCancelTask();
         this.topDBTemplate.result = result;
