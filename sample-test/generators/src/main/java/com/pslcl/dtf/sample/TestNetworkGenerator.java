@@ -38,14 +38,14 @@ public class TestNetworkGenerator {
 				clientMachine.bind(new Attributes(linuxAttributes).putAll( serverArtifacts[0].getModule().getAttributes() ));
 				network.bind();
 				
-				serverMachine.connect(network);
+				String serverIP = serverMachine.connect(network).getIPReference();
 				clientMachine.connect(network);				
 				
 				serverMachine.deploy(serverArtifacts);
 				clientMachine.deploy(clientArtifacts);
 				
 				serverMachine.start(Arrays.asList(serverArtifacts), serverArtifacts[0].getName());
-				clientMachine.run(Arrays.asList(clientArtifacts), clientArtifacts[0].getName());
+				clientMachine.run(Arrays.asList(clientArtifacts), clientArtifacts[0].getName(), serverIP);
 				
 				generator.completeTest();
 			}
