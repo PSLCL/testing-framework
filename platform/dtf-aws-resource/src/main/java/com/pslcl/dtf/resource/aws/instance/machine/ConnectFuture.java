@@ -20,7 +20,12 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupEgressRequest;
+import com.amazonaws.services.ec2.model.DescribeInstanceAttributeRequest;
+import com.amazonaws.services.ec2.model.DescribeInstanceAttributeResult;
 import com.amazonaws.services.ec2.model.GroupIdentifier;
+import com.amazonaws.services.ec2.model.InstanceAttribute;
+import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
 import com.amazonaws.services.ec2.model.ModifyNetworkInterfaceAttributeRequest;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
@@ -54,23 +59,25 @@ public class ConnectFuture implements Callable<CableInstance>
     {
         List<String> sgroups = new ArrayList<String>();
         sgroups.add(networkInstance.groupIdentifier.getGroupId());
+        List<GroupIdentifier> existingGroups = machineInstance.ec2Instance.getSecurityGroups();
+        for (GroupIdentifier gid : existingGroups)
+            sgroups.add(gid.getGroupId());
         
-        String netInterId = machineInstance.ec2Instance.getNetworkInterfaces().get(0).getNetworkInterfaceId();
         //@formatter:off
-        ModifyNetworkInterfaceAttributeRequest mniar = new ModifyNetworkInterfaceAttributeRequest()
-            .withNetworkInterfaceId(netInterId)
+        ModifyInstanceAttributeRequest miar = new ModifyInstanceAttributeRequest()
+            .withInstanceId(machineInstance.ec2Instance.getInstanceId())
             .withGroups(sgroups);
         //@formatter:on
         
         pdelayData.maxDelay = networkInstance.reservedResource.subnetConfig.sgMaxDelay;
         pdelayData.maxRetries = networkInstance.reservedResource.subnetConfig.sgMaxRetries;
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-        String msg = pdelayData.getHumanName(EniMidStr, "modifyNetworkInterfaceAttribute");
+        String msg = pdelayData.getHumanName(EniMidStr, "modifyInstanceAttribute");
         do
         {
             try
             {
-                ec2Client.modifyNetworkInterfaceAttribute(mniar);
+                ec2Client.modifyInstanceAttribute(miar);
                 break;
             } catch (Exception e)
             {

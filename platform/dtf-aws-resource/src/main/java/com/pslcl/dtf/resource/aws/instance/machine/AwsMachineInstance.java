@@ -203,7 +203,8 @@ public class AwsMachineInstance implements MachineInstance
     {
         AwsNetworkInstance instance = (AwsNetworkInstance) network;
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
-        return instance.runnerConfig.blockingExecutor.submit(new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData));
+        DisconnectFuture future = new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData);
+        return rconfig.blockingExecutor.submit(future);
     }
     
     public String toString()

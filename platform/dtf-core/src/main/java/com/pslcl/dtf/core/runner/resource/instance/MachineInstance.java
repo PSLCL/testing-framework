@@ -69,9 +69,8 @@ public interface MachineInstance extends ResourceInstance
     /**
      * Disconnect a machine from a network. 
      *
-     * @param network
-     *            The NetworkInstance to which the machine should be disconnected.
-     * 
+     * @param network The NetworkInstance to which the machine should be disconnected.
+     * If null disconnect any/all.
      * @return a Future which returns once the machine is disconnected from the network.
      */
     Future<Void> disconnect(NetworkInstance network);
