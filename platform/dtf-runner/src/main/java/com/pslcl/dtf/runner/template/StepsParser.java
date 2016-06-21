@@ -147,10 +147,7 @@ public class StepsParser {
                 		                       i++) {
                 	if (this.offset == offsetNewLine)
                 		throw new Exception("step is empty before newline");
-                	int stepTagLength = stepTag.length();
-                	if (stepTagLength > offsetNewLine)
-                		break;
-                    if (!steps.substring(this.offset, this.offset+stepTagLength).equals(stepTag))
+                    if (!steps.substring(this.offset, this.offset+stepTag.length()).equals(stepTag))
                         break;
                     String strStep = getNextStep(); // adjusts this.offset
                     retList.add(i, strStep); // i: 0 ... n

@@ -102,7 +102,6 @@ public class MachineConfigData
         data.linuxSandboxPath = getAttribute(config, ResourceNames.DeployLinuxSandboxKey, ResourceNames.DeployLinuxSandboxDefault);
         data.winSandboxPath = getAttribute(config, ResourceNames.DeployWinSandboxKey, ResourceNames.DeployWinSandboxDefault);
         data.rootDiskSize = Double.parseDouble(getAttribute(config, ResourceNames.MachineDiskKey, ResourceNames.MachineDiskDefault));
-        
         config.initsb.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(config);

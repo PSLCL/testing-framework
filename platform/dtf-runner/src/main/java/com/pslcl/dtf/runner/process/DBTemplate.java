@@ -48,17 +48,17 @@ public class DBTemplate {
     
     // instance members
     
-    long pk_template = -1;      // INT(11) in template
-    public byte [] hash;        // BINARY(32) in template
-    public String steps = null; // MEDIUMTEXT in template
-    boolean enabled = false;    // BOOLEAN in template
-    Long reNum;                 // INT(11) in run.pk_run
-    byte[] artifacts;           // LONGBLOB in run
-    Date start_time = null;     // DATETIME in run
-    Date ready_time = null;     // DATETIME in run
-    Date end_time = null;       // DATETIME in run
-    Boolean result = new Boolean(false); // nullable BOOLEAN in run
-    String owner = null;        // VARCHAR(128) in run
+    long pk_template;       // INT(11) in template
+    public byte [] hash;    // BINARY(32) in template
+    public String steps;    // MEDIUMTEXT in template
+    boolean enabled;        // BOOLEAN in template
+    Long reNum;             // INT(11) in run.pk_run
+    byte[] artifacts;       // LONGBLOB in run
+    Date start_time;        // DATETIME in run
+    Date ready_time;        // DATETIME in run
+    Date end_time;          // DATETIME in run
+    Boolean result = false; // nullable BOOLEAN in run
+    String owner;           // VARCHAR(128) in run
     
     /**
      *  Constructor

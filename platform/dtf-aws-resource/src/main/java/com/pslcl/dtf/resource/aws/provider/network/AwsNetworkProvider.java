@@ -247,7 +247,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                     pdelayData.maxDelay = subnetConfig.sgMaxDelay;
                     pdelayData.maxRetries = subnetConfig.sgMaxRetries;
                     pdelayData.preFixMostName = subnetConfig.resoucePrefixName;
-                    GroupIdentifier groupId = manager.subnetManager.getSecurityGroup(pdelayData, subnetConfig.permissions, subnetConfig);
+                    GroupIdentifier groupId = manager.subnetManager.getSecurityGroup(pdelayData, subnetConfig);
                     NetworkReservedResource rresource = new NetworkReservedResource(pdelayData, resource, groupId);
                     ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
@@ -307,6 +307,7 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
             this.prefixTestName = prefixTestName;
         }
 
+        @Override
         public void run()
         {
             String tname = Thread.currentThread().getName();
