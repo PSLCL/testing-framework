@@ -3,8 +3,6 @@
 There are times when a reference to the value of a particular attribute or property is required. The only place this is allowed 
 is in the parameter lists of the [program-based commands](template_commands.md#program-based-commands).
 
-Similar to other program arguments, value references must be URL-encoded in the template.
-
 ##Attribute Values
 
 [Resource](resources.md) Instances may have attributes in addition to those specified in the [Bind](template_commands.md#bind) command.

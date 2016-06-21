@@ -149,21 +149,11 @@ public class Template implements Comparable<Template>
         @Override
         public String getValue(Template template) throws Exception
         {
-        	String attributeValue;
             if (value != null)
             {
-            	attributeValue = value;
-            } else{
-            	attributeValue = "$(attribute " + resourceParameter.getValue(template) + " " + attribute + ")";
+                return value;
             }
-            try
-            {
-                return URLEncoder.encode(attributeValue, "UTF-8");
-            } catch (Exception e)
-            {
-                // UTF-8 is required, will never happen.
-                return "";
-            }
+            return "$(attribute " + resourceParameter.getValue(template) + " " + attribute + ")";
         }
     }
 

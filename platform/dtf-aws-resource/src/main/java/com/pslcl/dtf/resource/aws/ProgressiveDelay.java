@@ -65,11 +65,6 @@ public class ProgressiveDelay
     
     public void retry(String message) throws FatalResourceException
     {
-        retry(message, null);
-    }
-    
-    public void retry(String message, Throwable t) throws FatalResourceException
-    {
         int cnt = count.incrementAndGet();
         if(cnt >= pdelayData.maxRetries)
             return;  // called by handleException
@@ -83,13 +78,7 @@ public class ProgressiveDelay
                 maxDelayHit.set(true);
             }
         }
-        if(t == null)
-            log.debug(message + " count: " + cnt + " delay: " + delay + " totalwait: " + StrH.scaleMilliSeconds(totalTime.get()));
-        else
-        {
-            String emsg = " " + t.getClass().getName() + " " + t.getMessage();
-            log.debug(message + " count: " + cnt + " delay: " + delay + " totalwait: " + StrH.scaleMilliSeconds(totalTime.get()) + emsg);
-        }
+        log.debug("count: " + cnt + " delay: " + delay + " totalwait: " + StrH.scaleMilliSeconds(totalTime.get()));
         try
         {
             Thread.sleep(delay);
@@ -145,7 +134,7 @@ public class ProgressiveDelay
             }
             try
             {
-                retry(message, t);
+                retry(message);
                 return null;
             }catch(Exception e)
             {
@@ -167,7 +156,7 @@ public class ProgressiveDelay
             {
                 try
                 {
-                    retry(message, t);
+                    retry(message);
                     return null;
                 }catch(Exception e)
                 {

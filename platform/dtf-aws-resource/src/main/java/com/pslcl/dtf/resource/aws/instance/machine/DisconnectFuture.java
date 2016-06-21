@@ -20,11 +20,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.DescribeInstanceAttributeRequest;
-import com.amazonaws.services.ec2.model.DescribeInstanceAttributeResult;
 import com.amazonaws.services.ec2.model.GroupIdentifier;
-import com.amazonaws.services.ec2.model.InstanceAttribute;
-import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
+import com.amazonaws.services.ec2.model.ModifyNetworkInterfaceAttributeRequest;
 import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
@@ -55,68 +52,32 @@ public class DisconnectFuture implements Callable<Void>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("DisconnectFuture");
-        
-        //@formatter:off
-        DescribeInstanceAttributeRequest diar = new 
-                        DescribeInstanceAttributeRequest()
-                            .withInstanceId(machineInstance.ec2Instance.getInstanceId())
-                            .withAttribute("groupSet");
-        //@formatter:on
-        
-        pdelayData.maxDelay = machineInstance.mconfig.subnetConfigData.sgMaxDelay;
-        pdelayData.maxRetries = machineInstance.mconfig.subnetConfigData.sgMaxRetries;
-        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-        String msg = pdelayData.getHumanName(EniMidStr, "describeInstanceAttribute");
-        List<GroupIdentifier>currentList = null;
-        do
-        {
-            try
-            {
-                DescribeInstanceAttributeResult result = ec2Client.describeInstanceAttribute(diar);
-                InstanceAttribute attr = result.getInstanceAttribute();
-                currentList = attr.getGroups();
-                break;
-            } catch (Exception e)
-            {
-                Thread.currentThread().setName(tname);
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if (fre instanceof FatalException)
-                    throw fre;
-            }
-        } while (true);
-        
         List<String> sgroups = new ArrayList<String>();
-        if(networkInstance == null)
+        List<GroupIdentifier> existingGroups = machineInstance.ec2Instance.getSecurityGroups();
+        for (GroupIdentifier gid : existingGroups)
         {
-            // use the security group set at ec2 instantiation
-            currentList = machineInstance.ec2Instance.getSecurityGroups();
-            for (GroupIdentifier gid : currentList)  // should only be one
+            if(gid.getGroupName().equals("default"))
                 sgroups.add(gid.getGroupId());
-        }else
-        {
-            for (GroupIdentifier gid : currentList)
-            {
-                if(!gid.getGroupId().equals(networkInstance.groupIdentifier.getGroupId()))
-                    sgroups.add(gid.getGroupId());
-            }
         }
+        String netInterId = machineInstance.ec2Instance.getNetworkInterfaces().get(0).getNetworkInterfaceId();
         //@formatter:off
-        ModifyInstanceAttributeRequest miar = new ModifyInstanceAttributeRequest()
-            .withInstanceId(machineInstance.ec2Instance.getInstanceId())
+        ModifyNetworkInterfaceAttributeRequest mniar = new ModifyNetworkInterfaceAttributeRequest()
+            .withNetworkInterfaceId(netInterId)
             .withGroups(sgroups);
         //@formatter:on
 
-        pdelay.reset();
-        msg = pdelayData.getHumanName(EniMidStr, "modifyInstanceAttribute");
+        pdelayData.maxDelay = networkInstance.reservedResource.subnetConfig.sgMaxDelay;
+        pdelayData.maxRetries = networkInstance.reservedResource.subnetConfig.sgMaxRetries;
+        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+        String msg = pdelayData.getHumanName(EniMidStr, "modifyNetworkInterfaceAttribute");
         do
         {
             try
             {
-                ec2Client.modifyInstanceAttribute(miar);
+                ec2Client.modifyNetworkInterfaceAttribute(mniar);
                 break;
             } catch (Exception e)
             {
-                Thread.currentThread().setName(tname);
                 FatalResourceException fre = pdelay.handleException(msg, e);
                 if (fre instanceof FatalException)
                     throw fre;
