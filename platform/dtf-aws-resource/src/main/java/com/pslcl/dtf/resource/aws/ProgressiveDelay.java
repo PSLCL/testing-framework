@@ -136,7 +136,7 @@ public class ProgressiveDelay
         {
             AmazonServiceException ase = (AmazonServiceException)t;
             ase.getErrorType();
-            if(ase.getStatusCode() == 400)
+            if(ase.getStatusCode() >= 400 && ase.getStatusCode() < 500)
             {
                 String msg = getErrorMessage(message, false);
                 log.warn(msg, t);

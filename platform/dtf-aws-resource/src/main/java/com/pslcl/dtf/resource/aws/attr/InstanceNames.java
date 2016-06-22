@@ -44,14 +44,13 @@ public class InstanceNames
     ******************************************************************************/    
     public static final String VpcKeyBase = InstanceKeyBase + ".vpc";
     
-    public static final String VpcNameKey = VpcKeyBase + ".name";
+    public static final String VpcIdKey = VpcKeyBase + ".id";
     public static final String VpcCidrKey = VpcKeyBase + ".cidr";
     public static final String VpcTenancyKey = VpcKeyBase + ".tenancy";
     public static final String VpcMaxDelayKey = VpcKeyBase + ".max-delay";       
     public static final String VpcMaxRetriesKey = VpcKeyBase + ".max-retries";  
 
     public static final String VpcCidrDefault = "10.0.0.0/16";
-    public static final String VpcNameAwsDefault = "aws-vpc-default";   
     public static final String VpcNameDefault = null;   // installation/site default
     public static final String VpcTenancyDefault = "default";
     public static final String VpcMaxDelayDefault = ProviderNames.ShortMaxDelayDefault; 
@@ -76,8 +75,7 @@ public class InstanceNames
     ******************************************************************************/    
     public static final String SgKeyBase = InstanceKeyBase + ".sg";
     
-    public static final String SgNameKey = SgKeyBase + ".group-name";
-    public static final String SgIdKey = SgKeyBase + ".group-id";
+    public static final String SgGroupIdKey = SgKeyBase + ".group-id";
     public static final String SgMaxDelayKey = SgKeyBase + ".max-delay";       
     public static final String SgMaxRetriesKey = SgKeyBase + ".max-retries";   
     

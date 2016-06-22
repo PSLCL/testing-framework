@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.core.runner.resource;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.util.TabToLevel;
 
@@ -156,11 +159,11 @@ public class ResourceCoordinates
     
     public TabToLevel toString(TabToLevel format)
     {
-        format.ttl("resourceId: " + resourceId);
+        format.ttl("\nresourceId: " + resourceId);
         format.level.incrementAndGet();
         format.ttl("manager: ", (manager == null ? "null" : manager.getClass().getName()));
         format.ttl("provider: ", (provider == null ? "null" : provider.getClass().getName()));
-        format.ttl("templateId: " + templateId);
+        format.ttl("templateId: " + templateIdToHexString());
         format.ttl("templateInstanceId: " + templateInstanceId);
         format.ttl("runId: " + runId);
         format.level.decrementAndGet();
@@ -173,4 +176,20 @@ public class ResourceCoordinates
         TabToLevel format = new TabToLevel();
         return toString(format).sb.toString(); 
     }
+    
+    public String templateIdToHexString()
+    {
+        byte[] rawBytes = templateId.getBytes();
+        ByteBuffer buf = ByteBuffer.wrap(rawBytes);
+        buf.order(ByteOrder.BIG_ENDIAN); // big is default
+        
+        StringBuilder sb = new StringBuilder("0x");
+        for(int i=0; i < 4; i++)
+        {
+            long lvalue = buf.getLong();
+            sb.append(Long.toHexString(lvalue));
+        }
+        return sb.toString();
+    }
+    
 }
