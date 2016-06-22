@@ -421,6 +421,7 @@ public class RunEntryCore {
         Boolean result = new Boolean(false);
         boolean testRunSuccess = false;
         InstancedTemplate iT = null;
+        
         try {
         	// Setup test run cancellation, prior to starting our test run.
         	// 	   While a test run is in progress, a user can cancel it, by entering a fail result in "our" run table entry.  
@@ -432,13 +433,14 @@ public class RunEntryCore {
         	// Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
             if (!this.isTestRunCanceled()) {
-            	result = !iT.getForceNullResult() ? new Boolean(true) : // No exception means test run had a "pass" result.
-                                                    null;               // Although the test run succeeded (i.e. threw no exceptions), the test run result should be marked null.
+            	result = iT.getResult(); //True = passed, false = failed, null = no result(inspect). 
             }
+            log.info("Test run " + reNum + " completed with result " + result);
             testRunSuccess = true; // a canceled test run is still a "successful" test run, i.e. there was no exception thrown
         } catch (Throwable t) {
         	// result is still new Boolean(false)
         	log.debug(simpleName + "testRun errors out, reNum : " + this.reNum);
+        	log.warn("Failed to execute test run " + reNum + " - " + t, t);
             throw t;
         } finally {
         	this.closeCancelTaskStoreResultAckMessageQueue(runnerMachine.getService(), result);
