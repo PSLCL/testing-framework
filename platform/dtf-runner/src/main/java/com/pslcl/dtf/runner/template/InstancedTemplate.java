@@ -706,9 +706,9 @@ public class InstancedTemplate {
                                     }
 
                                     Integer programStartResult = runnableProgram.getRunResult();
-                                    if (programStartResult==null || programStartResult!=0) {
+                                    if (programStartResult != null && programStartResult!=0) {
                                         startStepErroredOut = true;
-                                        log.debug(this.simpleName + "A program start returned non-zero, or failed to run at all");
+                                        log.debug(this.simpleName + "A program start returned non-zero. Result: " + programStartResult);
                                         break;
                                     }
                                 }
