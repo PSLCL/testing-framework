@@ -15,6 +15,7 @@
  */
 package com.pslcl.dtf.core.generator.resource;
 
+import java.net.URLEncoder;
 import java.util.UUID;
 
 import com.pslcl.dtf.core.generator.Generator;
@@ -48,7 +49,15 @@ public class Cable
         @Override
         public String getValue(Template template) throws Exception
         {
-            return "$(ip " + template.getReference(machine) + " " + template.getReference(network) + ")";
+        	String ipReference = "$(ip " + template.getReference(machine) + " " + template.getReference(network) + ")";
+            try
+            {
+                return URLEncoder.encode(ipReference, "UTF-8");
+            } catch (Exception e)
+            {
+                // UTF-8 is required, will never happen.
+                return "";
+            }
         }
     }
 

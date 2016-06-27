@@ -420,7 +420,7 @@ public class SubnetManager
     //
     public SecurityGroup getSecureGroup(ProgressiveDelayData pdelayData, String groupId) throws FatalResourceException
     {
-        DescribeSecurityGroupsRequest dsgRequest = new DescribeSecurityGroupsRequest().withGroupIds(groupId);
+        DescribeSecurityGroupsRequest dsgRequest = new DescribeSecurityGroupsRequest();//.withGroupIds(groupId);
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
         String msg = pdelayData.getHumanName(SgMidStr, "describeSecurityGroups " + groupId);
         SecurityGroup rvalue = null;

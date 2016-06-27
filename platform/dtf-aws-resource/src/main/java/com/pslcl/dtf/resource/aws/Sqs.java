@@ -103,9 +103,9 @@ public class Sqs extends MessageQueueBase {
                         log.debug(prependString + "Drop msg - jmsMessageID or strQueueStoreNumber are null");
                     }
                 } catch (JMSException jmse) {
-                    log.debug(prependString + "Drop msg - JMS message could not be examined " + jmse);
+                    log.debug(prependString + "Drop msg - JMS message could not be examined " + jmse, jmse);
                 } catch (Throwable t) {
-                    log.debug(prependString + "Drop msg - JMS message rejected by RunnerService");
+                    log.debug(prependString + "Drop msg - JMS message rejected by RunnerService - " + t, t);
                 }
                 
                 // .submitQueueStoreNumber() failed to be deliver message to dtf-runner

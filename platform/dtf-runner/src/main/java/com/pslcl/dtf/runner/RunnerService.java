@@ -243,13 +243,13 @@ public class RunnerService implements Runner, RunnerServiceMBean
                     // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.
                     runnerMachine.initiateProcessing(reNum, message);
                 }
-            } catch (Exception e) {
+            } catch (Throwable t) {
                 // do nothing; reNum remains in InstanceStore, we will see it again
-            	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + e);
-                throw e;
+            	LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + t);
+                throw t;
             }
-        } catch (Exception e) {
-            throw e; // the original caller must ack the message
+        } catch (Throwable t) {
+            throw t; // the original caller must ack the message
         }
     }
 

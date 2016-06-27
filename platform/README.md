@@ -86,10 +86,12 @@ The Test Runner Service requires permission to several Amazon AWS APIs. The foll
                     "ec2:DeleteTags",
                     "ec2:DescribeImages",
                     "ec2:DescribeInstances",
+                    "ec2:DescribeInstanceAttribute",
                     "ec2:DescribeKeyPairs",
                     "ec2:DescribeSecurityGroups",
                     "ec2:DescribeSubnets",
                     "ec2:DescribeVpcs",
+                    "ec2:ModifyInstanceAttribute",
                     "ec2:ModifyNetworkInterfaceAttribute",
                     "ec2:RunInstances"
                 ],
