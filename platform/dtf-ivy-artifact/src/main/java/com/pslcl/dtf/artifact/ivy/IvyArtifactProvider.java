@@ -548,8 +548,14 @@ public class IvyArtifactProvider implements ArtifactProvider
             if (!match_module.equals(target.getName()))
                 continue;
 
-            if (!target.getVersion().startsWith(match_version))
-                continue;
+            if(match_version.contains("*")){
+            	if (!target.getVersion().startsWith(match_version.substring(0, match_version.indexOf("*")))){
+            		continue;
+            	}
+            } else{
+            	if (!target.getVersion().equals(match_version))
+            		continue;
+            }
 
             return true;
         }
