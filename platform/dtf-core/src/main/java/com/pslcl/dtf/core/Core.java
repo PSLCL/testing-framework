@@ -1459,7 +1459,7 @@ public class Core
                         String module_where = module.length() > 0 ? " AND module.name='" + module + "'" : "";
                         String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + "'" : "";
                         String version_where = version.length() > 0 ? " AND module.version='" + version + "'" : "";
-                        String configuration_where = configuration.length() > 0 ? " AND module.configuration='" + configuration + "'" : "";
+                        String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + "'" : "";
 
                         query = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.name, artifact.configuration, artifact.mode, artifact.fk_content" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s"
                                         + " ORDER BY module.organization, module.name, module.attributes, module.version, artifact.configuration, module.sequence DESC", fields[2], organization_where, module_where, attributes_where, version_where, configuration_where);
