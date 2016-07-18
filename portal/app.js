@@ -14,21 +14,23 @@ var passport = require('passport');
 var config   = require('./config/config');
 var fs       = require('fs');
 var os       = require('os');
-var CronJob  = require('cron').CronJob;
+//var CronJob  = require('cron').CronJob;
+var schedule = require('node-schedule');
 var spawn    = require('child_process').spawn;
 var path     = require('path');
 
 var env = process.env.NODE_ENV || 'production';
 
 if ( env == 'production' ) {
-    var job = new CronJob(config.synchronize_schedule, function() {
+    //var job = new CronJob(config.synchronize_schedule, function()
+    var job = schedule.scheduleJob(config.synchronize_schedule, function() {
         console.log('Synchronize starting...');
         var parameters = ['-cp', path.join('platform','lib','*'), 'com.pslcl.dtf.core.DistributedTestingFramework', 'synchronize' ];
         if ( config.prune != null ) {
             parameters.push( '--prune' );
             parameters.push( '' + config.prune );
         };
-        
+
         var child = spawn('java',
                 parameters,
                 { cwd: config.home_dir });
@@ -41,9 +43,9 @@ if ( env == 'production' ) {
             lines.forEach( function(line) { if ( line.length > 0 ) console.log('synchronize (error): '+line); } );
         });
         child.on('close', function(code) { console.log("Synchronize complete with exit code " + code) });
-        }, function() {
-        },
-        true
+      }//, function() {
+        //},
+        //true
     );
 };
 
