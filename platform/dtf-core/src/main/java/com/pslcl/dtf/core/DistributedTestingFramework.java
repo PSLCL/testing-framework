@@ -892,6 +892,11 @@ public class DistributedTestingFramework
         {
             return 0b100_100_100;
         }
+
+		@Override
+		public String getTargetFilePath() {
+			return null;
+		}
     }
 
     private static class PopulateModule implements Module

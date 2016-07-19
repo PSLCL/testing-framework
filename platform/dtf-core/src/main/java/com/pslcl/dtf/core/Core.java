@@ -1171,7 +1171,32 @@ public class Core
         private String name;
         private int mode;
         private Hash hash;
+        private String targetDirectory;
 
+        /**
+         * Construct an artifact associated with a component, name, version, platform and variant. The content
+         * associated with the artifact is passed as a hash.
+         * @param core The core managing the database.
+         * @param pk The primary key of the artifact.
+         * @param module The module the artifact belongs to.
+         * @param configuration The configuration the artifact belongs to.
+         * @param name The name of the artifact.
+         * @param mode The POSIX mode of the artifact.
+         * @param hash The hash of the artifact contents.
+         * @param targetDirectory The target directory to which the artifact should be deployed.
+         */
+        public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash, String targetDirectory)
+        {
+            this.core = core;
+            this.pk = pk;
+            this.module = module;
+            this.configuration = configuration;
+            this.name = name;
+            this.mode = mode;
+            this.hash = hash;
+            this.targetDirectory = targetDirectory;
+        }
+        
         /**
          * Construct an artifact associated with a component, name, version, platform and variant. The content
          * associated with the artifact is passed as a hash.
@@ -1185,13 +1210,7 @@ public class Core
          */
         public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash)
         {
-            this.core = core;
-            this.pk = pk;
-            this.module = module;
-            this.configuration = configuration;
-            this.name = name;
-            this.mode = mode;
-            this.hash = hash;
+        	this(core, pk, module, configuration, name, mode, hash, null);
         }
 
         public long getPK()
@@ -1241,6 +1260,11 @@ public class Core
         {
             return mode;
         }
+
+		@Override
+		public String getTargetFilePath() {
+			return this.targetDirectory;
+		}
 
         //@Override
         //public String getValue( Template template ) {
@@ -1432,11 +1456,12 @@ public class Core
                         while (resultSet.next())
                         {
                         	String name = resultSet.getString(3);
+                        	String targetName = name;
                         	if(fields.length == 2){
-                        		name = getTargetName(name, fields[1]);
+                        		targetName = getTargetName(name, fields[1]);
                         	}
                             Module mod = artifact.getModule();
-                            Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), name, resultSet.getInt(4), new Hash(resultSet.getBytes(5)));
+                            Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), name, resultSet.getInt(4), new Hash(resultSet.getBytes(5)), targetName);
                             set.add(A);
                         }
                         
@@ -1473,13 +1498,14 @@ public class Core
                         while (resultSet.next())
                         {
                             String artifact_name = resultSet.getString(10);
+                        	String targetName = artifact_name;
                             if (found.contains(artifact_name))
                                 continue;
                         	if(fields.length == 4){
-                        		artifact_name = getTargetName(artifact_name, fields[3]);
+                        		targetName = getTargetName(artifact_name, fields[3]);
                         	}
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
-                            Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
+                            Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)), targetName);
                             set.add(A);
                         }
                     } else

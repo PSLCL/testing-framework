@@ -206,6 +206,11 @@ public class IvyArtifactProvider implements ArtifactProvider
         {
             return 0b100_100_100;
         }
+
+		@Override
+		public String getTargetFilePath() {
+			return null;
+		}
     }
 
     private static class IvyContent implements Content
