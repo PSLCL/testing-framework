@@ -1424,18 +1424,23 @@ public class Core
                 {
                     String line = iterator.next();
                     String[] fields = line.split(",");
-                    if (fields.length == 1)
+                    if (fields.length == 1 || fields.length == 2)
                     {
                         statement = connect.createStatement();
                         query = String.format("SELECT artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " WHERE artifact.fk_module = %d AND artifact.name REGEXP '%s" + "'", pk, fields[0]);
                         resultSet = statement.executeQuery(query);
                         while (resultSet.next())
                         {
+                        	String name = resultSet.getString(3);
+                        	if(fields.length == 2){
+                        		name = getTargetName(name, fields[1]);
+                        	}
                             Module mod = artifact.getModule();
-                            Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), resultSet.getString(3), resultSet.getInt(4), new Hash(resultSet.getBytes(5)));
+                            Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), name, resultSet.getInt(4), new Hash(resultSet.getBytes(5)));
                             set.add(A);
                         }
-                    } else if (fields.length == 3)
+                        
+                    } else if (fields.length == 3 || fields.length == 4)
                     {
                         statement = connect.createStatement();
 
@@ -1467,12 +1472,14 @@ public class Core
                         Set<String> found = new HashSet<String>();
                         while (resultSet.next())
                         {
-                            String artifact_name = resultSet.getString(8);
+                            String artifact_name = resultSet.getString(10);
                             if (found.contains(artifact_name))
                                 continue;
-
+                        	if(fields.length == 4){
+                        		artifact_name = getTargetName(artifact_name, fields[3]);
+                        	}
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
-                            Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
+                            Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
                             set.add(A);
                         }
                     } else
@@ -1492,6 +1499,25 @@ public class Core
         }
 
         return set;
+    }
+    
+    /**
+     * Remove default directory from artifact name and replace it with the target directory instead.
+     * 
+     * @param artifactName The name of the artifact
+     * @param targetDirectory The target directory.
+     * @return The name of the artifact in the target directory.
+     */
+    private String getTargetName(String artifactName, String targetDirectory){
+    	int nameStartIndex = 0;
+    	if(artifactName.contains("/")){
+    		nameStartIndex = artifactName.indexOf("/" + 1);
+    	}
+    	String targetName = artifactName.substring(nameStartIndex);
+    	if(!targetDirectory.endsWith("/")){
+    		targetDirectory = targetDirectory + "/";
+    	}
+    	return targetDirectory + targetName;
     }
 
     /**
