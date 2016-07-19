@@ -36,4 +36,10 @@ public interface Artifact
      * @return Target file path, or null to use name.
      */
     String getTargetFilePath();
+    
+    /**
+     * Set the filepath to which the artifact should be deployed, if different than name.
+     * @param targetFilePath The filepath to which the artifact should be deployed.
+     */
+    void setTargetFilePath(String targetFilePath);
 }

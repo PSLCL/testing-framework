@@ -785,6 +785,7 @@ public class DistributedTestingFramework
         private String name;
         private int artifacts;
         private long start;
+        private String targetFilePath;
 
         PopulateArtifact(Module module, String name, int artifacts, long start)
         {
@@ -895,7 +896,12 @@ public class DistributedTestingFramework
 
 		@Override
 		public String getTargetFilePath() {
-			return null;
+			return this.targetFilePath;
+		}
+
+		@Override
+		public void setTargetFilePath(String targetFilePath) {
+			this.targetFilePath = targetFilePath;
 		}
     }
 

@@ -1171,7 +1171,7 @@ public class Core
         private String name;
         private int mode;
         private Hash hash;
-        private String targetDirectory;
+        private String targetFilePath;
 
         /**
          * Construct an artifact associated with a component, name, version, platform and variant. The content
@@ -1194,7 +1194,7 @@ public class Core
             this.name = name;
             this.mode = mode;
             this.hash = hash;
-            this.targetDirectory = targetDirectory;
+            this.targetFilePath = targetDirectory;
         }
         
         /**
@@ -1263,7 +1263,12 @@ public class Core
 
 		@Override
 		public String getTargetFilePath() {
-			return this.targetDirectory;
+			return this.targetFilePath;
+		}
+
+		@Override
+		public void setTargetFilePath(String targetFilePath) {
+			this.targetFilePath = targetFilePath;
 		}
 
         //@Override
