@@ -1171,7 +1171,32 @@ public class Core
         private String name;
         private int mode;
         private Hash hash;
+        private String targetFilePath;
 
+        /**
+         * Construct an artifact associated with a component, name, version, platform and variant. The content
+         * associated with the artifact is passed as a hash.
+         * @param core The core managing the database.
+         * @param pk The primary key of the artifact.
+         * @param module The module the artifact belongs to.
+         * @param configuration The configuration the artifact belongs to.
+         * @param name The name of the artifact.
+         * @param mode The POSIX mode of the artifact.
+         * @param hash The hash of the artifact contents.
+         * @param targetDirectory The target directory to which the artifact should be deployed.
+         */
+        public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash, String targetDirectory)
+        {
+            this.core = core;
+            this.pk = pk;
+            this.module = module;
+            this.configuration = configuration;
+            this.name = name;
+            this.mode = mode;
+            this.hash = hash;
+            this.targetFilePath = targetDirectory;
+        }
+        
         /**
          * Construct an artifact associated with a component, name, version, platform and variant. The content
          * associated with the artifact is passed as a hash.
@@ -1185,13 +1210,7 @@ public class Core
          */
         public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash)
         {
-            this.core = core;
-            this.pk = pk;
-            this.module = module;
-            this.configuration = configuration;
-            this.name = name;
-            this.mode = mode;
-            this.hash = hash;
+        	this(core, pk, module, configuration, name, mode, hash, null);
         }
 
         public long getPK()
@@ -1241,6 +1260,16 @@ public class Core
         {
             return mode;
         }
+
+		@Override
+		public String getTargetFilePath() {
+			return this.targetFilePath;
+		}
+
+		@Override
+		public void setTargetFilePath(String targetFilePath) {
+			this.targetFilePath = targetFilePath;
+		}
 
         //@Override
         //public String getValue( Template template ) {
@@ -1424,18 +1453,24 @@ public class Core
                 {
                     String line = iterator.next();
                     String[] fields = line.split(",");
-                    if (fields.length == 1)
+                    if (fields.length == 1 || fields.length == 2)
                     {
                         statement = connect.createStatement();
                         query = String.format("SELECT artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " WHERE artifact.fk_module = %d AND artifact.name REGEXP '%s" + "'", pk, fields[0]);
                         resultSet = statement.executeQuery(query);
                         while (resultSet.next())
                         {
+                        	String name = resultSet.getString(3);
+                        	String targetName = name;
+                        	if(fields.length == 2){
+                        		targetName = getTargetName(name, fields[1]);
+                        	}
                             Module mod = artifact.getModule();
-                            Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), resultSet.getString(3), resultSet.getInt(4), new Hash(resultSet.getBytes(5)));
+                            Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), name, resultSet.getInt(4), new Hash(resultSet.getBytes(5)), targetName);
                             set.add(A);
                         }
-                    } else if (fields.length == 3)
+                        
+                    } else if (fields.length == 3 || fields.length == 4)
                     {
                         statement = connect.createStatement();
 
@@ -1459,20 +1494,23 @@ public class Core
                         String module_where = module.length() > 0 ? " AND module.name='" + module + "'" : "";
                         String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + "'" : "";
                         String version_where = version.length() > 0 ? " AND module.version='" + version + "'" : "";
-                        String configuration_where = configuration.length() > 0 ? " AND module.configuration='" + configuration + "'" : "";
+                        String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + "'" : "";
 
-                        query = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.name, artifact.configuration, artifact.mode, artifact.fk_content" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s"
+                        query = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s"
                                         + " ORDER BY module.organization, module.name, module.attributes, module.version, artifact.configuration, module.sequence DESC", fields[2], organization_where, module_where, attributes_where, version_where, configuration_where);
                         resultSet = statement.executeQuery(query);
                         Set<String> found = new HashSet<String>();
                         while (resultSet.next())
                         {
-                            String artifact_name = resultSet.getString(8);
+                            String artifact_name = resultSet.getString(10);
+                        	String targetName = artifact_name;
                             if (found.contains(artifact_name))
                                 continue;
-
+                        	if(fields.length == 4){
+                        		targetName = getTargetName(artifact_name, fields[3]);
+                        	}
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
-                            Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
+                            Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)), targetName);
                             set.add(A);
                         }
                     } else
@@ -1492,6 +1530,25 @@ public class Core
         }
 
         return set;
+    }
+    
+    /**
+     * Remove default directory from artifact name and replace it with the target directory instead.
+     * 
+     * @param artifactName The name of the artifact
+     * @param targetDirectory The target directory.
+     * @return The name of the artifact in the target directory.
+     */
+    private String getTargetName(String artifactName, String targetDirectory){
+    	int nameStartIndex = 0;
+    	if(artifactName.contains("/")){
+    		nameStartIndex = artifactName.indexOf("/" + 1);
+    	}
+    	String targetName = artifactName.substring(nameStartIndex);
+    	if(!targetDirectory.endsWith("/")){
+    		targetDirectory = targetDirectory + "/";
+    	}
+    	return targetDirectory + targetName;
     }
 
     /**

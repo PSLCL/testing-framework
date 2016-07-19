@@ -167,6 +167,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         private String configuration;
         private String name;
         private IvyContent content;
+        private String targetFilePath;
 
         public IvyArtifact(IvyModule module, ResolvedModuleRevision rmv, String configuration, org.apache.ivy.core.module.descriptor.Artifact artifact)
         {
@@ -206,6 +207,16 @@ public class IvyArtifactProvider implements ArtifactProvider
         {
             return 0b100_100_100;
         }
+
+		@Override
+		public String getTargetFilePath() {
+			return this.targetFilePath;
+		}
+
+		@Override
+		public void setTargetFilePath(String targetFilePath) {
+			this.targetFilePath = targetFilePath;
+		}
     }
 
     private static class IvyContent implements Content

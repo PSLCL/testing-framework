@@ -43,6 +43,8 @@ Artifacts may specify dependencies by listing them in another artifact named `<a
 	2. A version, specified as 'version/configuration'.
 	3. The name of the artifact.
 
+Each of these formats may optionally be followed with a target directory where the module should be deployed on the test machine. The target directory is relative to the test sandbox directory.
+
 ### Dependency Artifact Name Matching
 
 Dependency artifact names are matched using the MySQL REGEXP comparitor. See the MySQL documentation for valid formatting.
@@ -56,6 +58,7 @@ If a dependency shares any part of their module reference, version or name with 
 Consider an artifact named 'artifact.jar' and corresponding dependency artifact named 'artifact.jar.dep' with the following possible dependencies listed.
 
 1. `artifact2.jar` - artifact.jar depends on artifact2.jar in the same module.
-2. `org.mycompany#mymodule#,1.0/,artifact3.jar` - artifact.jar depends on artifact3.jar in the module mymodule with organization org.mycompany and version 1.0.
-3. `$#mymodule2#,$/$,artifact4.jar` - artifact.jar depends on artifact4.jar in the module mymodule2 with artifact.jar's same organization, version and configuration.
+2. `artifact3.jar,lib/` - artifact.jar depends on artifact3.jar in the same module. artifact3.jar will be deployed directly to the lib/ directory.  
+2. `org.mycompany#mymodule#,1.0/,artifact4.jar` - artifact.jar depends on artifact3.jar in the module mymodule with organization org.mycompany and version 1.0.
+3. `$#mymodule2#,$/$,artifact5.jar,mymodule2/lib/` - artifact.jar depends on artifact4.jar in the module mymodule2 with artifact.jar's same organization, version and configuration. artifact4.jar will be deployed directly to mymodule2/lib/.
 
