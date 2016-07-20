@@ -60,5 +60,5 @@ Consider an artifact named 'artifact.jar' and corresponding dependency artifact 
 1. `artifact2.jar` - artifact.jar depends on artifact2.jar in the same module.
 2. `artifact3.jar,lib/` - artifact.jar depends on artifact3.jar in the same module. artifact3.jar will be deployed directly to the lib/ directory.  
 2. `org.mycompany#mymodule#,1.0/,artifact4.jar` - artifact.jar depends on artifact3.jar in the module mymodule with organization org.mycompany and version 1.0.
-3. `$#mymodule2#,$/$,artifact5.jar,mymodule2/lib/` - artifact.jar depends on artifact4.jar in the module mymodule2 with artifact.jar's same organization, version and configuration. artifact4.jar will be deployed directly to mymodule2/lib/.
+3. `$#mymodule2#,$/$,artifact5.jar,mymodule2/lib/` - artifact.jar depends on artifact5.jar in the module mymodule2 with artifact.jar's same organization, version and configuration. artifact5.jar will be deployed directly to mymodule2/lib/.
 
