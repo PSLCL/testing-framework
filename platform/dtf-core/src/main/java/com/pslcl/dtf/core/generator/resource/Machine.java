@@ -101,7 +101,10 @@ public class Machine extends Resource
         public String getCommand(Template t) throws Exception
         {
             String retStr = getSetID() + " deploy " + t.getReference(this.m) + " ";
-            String destName = a.getName();
+            String destName = a.getTargetFilePath();
+            if(destName == null || destName.isEmpty()){
+            	destName = a.getName();
+            }
             retStr += destName;
             retStr += (" " + a.getContent().getValue(template));
             return retStr;
