@@ -1,6 +1,7 @@
 package com.pslcl.dtf.sample;
 
 import java.util.Arrays;
+import java.util.List;
 
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.generator.Generator;
@@ -8,6 +9,7 @@ import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.resource.Machine;
 import com.pslcl.dtf.core.generator.resource.Network;
 import com.pslcl.dtf.core.generator.template.Program;
+import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
 
 public class TestNetworkGenerator {
@@ -41,11 +43,13 @@ public class TestNetworkGenerator {
 				String serverIP = serverMachine.connect(network).getIPReference();
 				clientMachine.connect(network);				
 				
-				serverMachine.deploy(serverArtifacts);
-				clientMachine.deploy(clientArtifacts);
+				List<Action> serverDependencyActions = serverMachine.deploy(serverArtifacts);
+				List<Action> clientDependencyActions = clientMachine.deploy(clientArtifacts);
 				
-				serverMachine.start(Arrays.asList(serverArtifacts), serverArtifacts[0].getName());
-				clientMachine.run(Arrays.asList(clientArtifacts), clientArtifacts[0].getName(), serverIP);
+				Program serverProgram = serverMachine.start(serverDependencyActions, serverArtifacts[0].getName());
+				
+				clientDependencyActions.add(serverProgram.getProgramAction());
+				clientMachine.run(clientDependencyActions, clientArtifacts[0].getName(), serverIP);
 				
 				generator.completeTest();
 			}

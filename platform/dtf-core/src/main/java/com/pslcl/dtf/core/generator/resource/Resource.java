@@ -15,7 +15,6 @@
  */
 package com.pslcl.dtf.core.generator.resource;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,10 +43,13 @@ public abstract class Resource
         private Resource r;
         private Attributes a;
 
-        private BindAction(Resource r, Attributes a)
+        private BindAction(Resource r, Attributes a, List<Action> actionDependencies)
         {
             this.r = r;
             this.a = a;
+            if(actionDependencies != null){
+            	this.actionDependencies.addAll(actionDependencies);
+            }
         }
 
         @Override
@@ -95,12 +97,6 @@ public abstract class Resource
         {
             return null;
         }
-
-		@Override
-		public List<Action> getActionDependencies() throws Exception {
-			return new ArrayList<Action>();
-		}
-
     }
 
     public final Generator generator;
@@ -137,21 +133,34 @@ public abstract class Resource
     /**
      * Bind a resource. Each resource must be bound in each test instance before it may be used.
      * @param attributes The attributes that the resource must have to be acceptable.
+     * @return The bind action.
      * @throws Exception The bind failed.
      */
-    public void bind(Attributes attributes) throws Exception
+    public TestInstance.Action bind(Attributes attributes) throws Exception
+    {
+        return bind(attributes, null);
+    }
+
+    /**
+     * Bind a resource. Each resource must be bound in each test instance before it may be used.
+     * @param attributes The attributes that the resource must have to be acceptable.
+     * @param actionDependencies A list of actions that should be complete before the bind.
+     * @return The bind action.
+     * @throws Exception The bind failed.
+     */
+    public TestInstance.Action bind(Attributes attributes, List<Action> actionDependencies) throws Exception
     {
         if (bound != null)
         {
-            System.err.println("Cannot bind the same resource twice.");
-            return;
+            throw new IllegalStateException("Cannot bind a resource more than once."); 
         }
 
-        bound = new BindAction(this, attributes);
+        bound = new BindAction(this, attributes, actionDependencies);
         generator.add(bound);
         this.attributeMap = attributes.getAttributes();
         if (Generator.trace)
             System.err.println(String.format("Resource %s (%s) bound with attributes '%s'.", name, instance, attributes));
+        return bound;
     }
 
     /**
