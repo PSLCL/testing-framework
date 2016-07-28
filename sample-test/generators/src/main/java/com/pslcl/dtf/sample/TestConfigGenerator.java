@@ -1,11 +1,13 @@
 package com.pslcl.dtf.sample;
 
 import java.util.Arrays;
+import java.util.List;
 
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.generator.Generator;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.resource.Machine;
+import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
 
 public class TestConfigGenerator {
@@ -29,8 +31,8 @@ public class TestConfigGenerator {
 			Machine passMachine = new Machine(generator, "passLinuxMachine");
 			
 			passMachine.bind(new Attributes(linuxAttributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
-			passMachine.deploy(nodeArtifacts);
-			passMachine.configure(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "pass");
+			List<Action> passDeployActions = passMachine.deploy(nodeArtifacts);
+			passMachine.configure(passDeployActions, nodeArtifacts[0].getName(), "pass");
 			
 			generator.completeTest();
 
@@ -38,8 +40,8 @@ public class TestConfigGenerator {
 			Machine failMachine = new Machine(generator, "failLinuxMachine");
 			
 			failMachine.bind(new Attributes(linuxAttributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
-			failMachine.deploy(nodeArtifacts);
-			failMachine.configure(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "fail");
+			List<Action> failDeployActions = failMachine.deploy(nodeArtifacts);
+			failMachine.configure(failDeployActions, nodeArtifacts[0].getName(), "fail");
 			
 			generator.completeTest();
 		}
@@ -50,8 +52,8 @@ public class TestConfigGenerator {
 			Machine passMachine = new Machine(generator, "passWindowsMachine");
 			
 			passMachine.bind(new Attributes(windowsAttributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
-			passMachine.deploy(nodeArtifacts);
-			passMachine.configure(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "pass");
+			List<Action> passDeployActions = passMachine.deploy(nodeArtifacts);
+			passMachine.configure(passDeployActions, nodeArtifacts[0].getName(), "pass");
 			
 			generator.completeTest();
 
@@ -59,8 +61,8 @@ public class TestConfigGenerator {
 			Machine failMachine = new Machine(generator, "failWindowsMachine");
 			
 			failMachine.bind(new Attributes(windowsAttributes).putAll( nodeArtifacts[0].getModule().getAttributes() ));
-			failMachine.deploy(nodeArtifacts);
-			failMachine.configure(Arrays.asList(nodeArtifacts), nodeArtifacts[0].getName(), "fail");
+			List<Action> failDeployActions = failMachine.deploy(nodeArtifacts);
+			failMachine.configure(failDeployActions, nodeArtifacts[0].getName(), "fail");
 			
 			generator.completeTest();
 		}

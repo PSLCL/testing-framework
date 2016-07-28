@@ -64,12 +64,13 @@ public class Machine extends Resource
     /**
      * Bind a machine to a particular platform and with the specified attributes.
      * @param attributes Other attributes that the machine must satisfy.
+     * @return The bind action.
      * @throws Exception The bind is invalid.
      */
     @Override
-    public void bind(Attributes attributes) throws Exception
+    public TestInstance.Action bind(Attributes attributes) throws Exception
     {
-        super.bind(attributes);
+        return super.bind(attributes);
     }
 
     static private class Deploy extends TestInstance.Action
@@ -80,17 +81,21 @@ public class Machine extends Resource
         private Template.ResourceParameter me;
         private Template template;
         private List<Artifact> artifacts;
-        private List<Action> actionDependencies;
-
-        private Deploy(Machine m, Artifact a)
+        
+        private Deploy(Machine m, Artifact a, List<Action> actionDependencies)
         {
             this.m = m;
             this.a = a;
             me = new Template.ResourceParameter(m);
             artifacts = new ArrayList<Artifact>();
             artifacts.add(a);
-            actionDependencies = new ArrayList<Action>();
-            actionDependencies.add(m.getBindAction());
+            if(actionDependencies != null){
+            	this.actionDependencies.addAll(actionDependencies);
+            }
+            Action machineBindAction = m.getBindAction();
+            if(!this.actionDependencies.contains(machineBindAction)){
+            	this.actionDependencies.add(machineBindAction);
+            }
             
             synchronized(m.deployActions){
             	m.deployActions.put(a, this);
@@ -143,21 +148,31 @@ public class Machine extends Resource
         {
             return null;
         }
-
-		@Override
-		public List<Action> getActionDependencies() throws Exception {
-			 return actionDependencies;
-		}
     }
 
     /**
      * Deploy a set of artifacts and their dependencies to a machine.
      * @param artifacts A list of artifacts to deploy. The dependencies of the artifacts are also
      * deployed, recursively.
+     * @return A list of deploy actions.
      * @throws Exception The deploy failed.
      */
-    public void deploy(Artifact... artifacts) throws Exception
+    public List<TestInstance.Action> deploy(Artifact... artifacts) throws Exception
     {
+    	return deploy(null, artifacts);
+    }
+
+    /**
+     * Deploy a set of artifacts and their dependencies to a machine.
+     * @param actionDependencies A list of actions that should be completed before the deploy.
+     * @param artifacts A list of artifacts to deploy. The dependencies of the artifacts are also
+     * deployed, recursively.
+     * @return A list of deploy actions.
+     * @throws Exception The deploy failed.
+     */
+    public List<TestInstance.Action> deploy(List<Action> actionDependencies, Artifact... artifacts) throws Exception
+    {
+    	List<TestInstance.Action> deploys = new ArrayList<TestInstance.Action>();
     	if(!isBound()){
     		throw new IllegalStateException("Cannot deploy to unbound machine.");
     	}
@@ -168,15 +183,18 @@ public class Machine extends Resource
                 System.err.println("ERROR: Artifact is null.");
                 continue;
             }
-
-            generator.add(new Deploy(this, a));
+            
+            Deploy deploy = new Deploy(this, a, actionDependencies);
+            generator.add(deploy);
+            deploys.add(deploy);
 
             Iterable<Artifact> dependencies = generator.findDependencies(a);
             for (Artifact d : dependencies)
             {
-                deploy(d);
+                deploys.addAll(deploy(d));
             }
         }
+        return deploys;
     }
 
     /**
@@ -187,6 +205,19 @@ public class Machine extends Resource
      * @throws Exception on any error.
      */
     public Cable connect(Network network) throws Exception
+    {
+         return connect(network, null);
+    }
+    
+    /**
+     * Connect the machine to a {@link Network} Resource.
+     * 
+     * @param network The network to connect to.
+     * @param actionDependencies A list of actions that should be completed before the connect.
+     * @return A {@link Cable} which serves as a logical connection between the machine and the network.
+     * @throws Exception on any error.
+     */
+    public Cable connect(Network network, List<Action> actionDependencies) throws Exception
     {
         if (!isBound())
         {
@@ -200,8 +231,9 @@ public class Machine extends Resource
             return null;
         }
 
-        Cable c = new Cable(generator, this, network);
-        generator.add(new ConnectAction(this, network));
+        ConnectAction action = new ConnectAction(this, network, actionDependencies);
+        Cable c = new Cable(generator, this, network, action);
+        generator.add(action);
 
         return c;
     }
@@ -211,9 +243,8 @@ public class Machine extends Resource
     	private Machine machine;
     	private Network network;
         Template.Parameter[] parameters;
-    	private List<Action> actionDependencies;
-    	
-    	private ConnectAction(Machine machine, Network network){
+        
+    	private ConnectAction(Machine machine, Network network, List<Action> actionDependencies){
     		this.machine = machine;
     		this.network = network;
 
@@ -221,9 +252,18 @@ public class Machine extends Resource
             parameters[0] = new Template.ResourceParameter(machine);
             parameters[1] = new Template.ResourceParameter(network);
     		
-    		actionDependencies = new ArrayList<Action>();
-    		actionDependencies.add(machine.getBindAction());
-    		actionDependencies.add(network.getBindAction());
+
+            if(actionDependencies != null){
+            	this.actionDependencies.addAll(actionDependencies);
+            }
+            Action machineBindAction = machine.getBindAction();
+            Action networkBindAction = network.getBindAction();
+            if(!this.actionDependencies.contains(machineBindAction)){
+            	this.actionDependencies.add(machineBindAction);
+            }
+            if(!this.actionDependencies.contains(networkBindAction)){
+            	this.actionDependencies.add(networkBindAction);
+            }
     	}
 
 		@Override
@@ -265,11 +305,6 @@ public class Machine extends Resource
 		public DescribedTemplate getIncludedTemplate() throws Exception {
 			return null;
 		}
-
-		@Override
-		public List<Action> getActionDependencies() throws Exception {
-			return actionDependencies;
-		}
     	
     }
 
@@ -280,9 +315,8 @@ public class Machine extends Resource
         String executable;
         String[] params;
         Template.Parameter[] parameters;
-        List<Action> actionDependencies;
-
-        public ProgramAction(Machine machine, String action, List<Artifact> requiredArtifacts, String executable, String... params)
+        
+        public ProgramAction(Machine machine, String action, List<Action> actionDependencies, String executable, String... params)
         {
             this.machine = machine;
             this.action = action;
@@ -300,19 +334,15 @@ public class Machine extends Resource
             		parameters[2 + i] = new Template.StringParameter(params[i]);
             	}
             }
-            actionDependencies = new ArrayList<Action>();
-            
-            actionDependencies.add(machine.getBindAction());
-        	for(Artifact artifact: requiredArtifacts){
-        		synchronized (machine.deployActions) {
-					if(machine.deployActions.containsKey(artifact)){
-						actionDependencies.add(machine.deployActions.get(artifact));
-					}
-					else{
-						throw new IllegalStateException("Required artifact " + artifact.getName() + " not deployed to machine.");
-					}
-				}
-        	}
+
+
+            if(actionDependencies != null){
+            	this.actionDependencies.addAll(actionDependencies);
+            }
+            Action machineBindAction = machine.getBindAction();
+            if(!this.actionDependencies.contains(machineBindAction)){
+            	this.actionDependencies.add(machineBindAction);
+            }
         }
 
         @Override
@@ -380,32 +410,29 @@ public class Machine extends Resource
         {
             return null;
         }
-
-		@Override
-		public List<Action> getActionDependencies() throws Exception {
-			return actionDependencies;
-		}
     }
 
-    private Program programAction(String action, List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
+    private Program programAction(String action, List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-        Program program = new Program();
-        generator.add(new ProgramAction(this, action, requiredArtifacts, executable, params));
+    	ProgramAction programAction = new ProgramAction(this, action, actionDependencies, executable, params);
+        Program program = new Program(programAction);
+        generator.add(programAction);
         return program;
     }
 
     /**
      * The program configure command requests that a program be run that modifies the machine in such a way that it cannot be rolled back and reused.
      * 
-     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options. 
+     * This machine's bind action is automatically added as a dependency. 
      * @param executable A string containing the name of an executable program.
      * @param params Any string parameters that should be passed as arguments to the executable program.
      * @return A program.
      * @throws Exception Any error.
      */
-    public Program configure(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
+    public Program configure(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-        Program p = programAction("configure", requiredArtifacts, executable, params);
+        Program p = programAction("configure", actionDependencies, executable, params);
         return p;
     }
     
@@ -413,15 +440,16 @@ public class Machine extends Resource
      * The program start command requests that a program be run that should stay running for the duration of the Template Instance. 
      * It cannot modify the Machine.
      * 
-     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options. 
+     * This machine's bind action is automatically added as a dependency. 
      * @param executable A string containing the name of an executable program.
      * @param params Any string parameters that should be passed as arguments to the executable program.
      * @return A program.
      * @throws Exception Any error.
      */
-    public Program start(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
+    public Program start(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-        Program p = programAction("start", requiredArtifacts, executable, params);
+        Program p = programAction("start", actionDependencies, executable, params);
         return p;
     }
 
@@ -430,15 +458,16 @@ public class Machine extends Resource
      * program result determining the test result. This cannot modify the machine. If a test run contains multiple run or run-forever commands, 
      * the test run will fail if any of the programs fail.
      * 
-     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
+     * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options.
+     * This machine's bind action is automatically added as a dependency.  
      * @param executable A string containing the name of an executable program.
      * @param params Any string parameters that should be passed as arguments to the executable program.
      * @return A program.
      * @throws Exception Any error.
      */
-    public Program run(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
+    public Program run(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-        return programAction("run", requiredArtifacts, executable, params);
+        return programAction("run", actionDependencies, executable, params);
     }
 
     //TODO: Not currently supported.

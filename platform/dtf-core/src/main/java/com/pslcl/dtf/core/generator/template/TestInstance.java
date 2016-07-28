@@ -28,6 +28,7 @@ import java.util.UUID;
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.generator.resource.Resource;
+import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 
 /**
  * This class represents a single test instance, and relates to all of its
@@ -117,6 +118,7 @@ public class TestInstance
         }
         
         private int setID = -1;
+        protected List<Action> actionDependencies = new ArrayList<Action>();
         
         /**
          * Assign the set ID for this action. Actions which are in the same set may be executed in parallel.
@@ -187,7 +189,9 @@ public class TestInstance
          * @return A list of dependent actions. Returns an empty list if there are no dependencies.
          * @throws Exception Any error.
          */
-        public abstract List<Action> getActionDependencies() throws Exception;
+		public List<Action> getActionDependencies() throws Exception {
+			return actionDependencies;
+		}
     }
 
     @SuppressWarnings("unused")
