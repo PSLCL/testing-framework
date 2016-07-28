@@ -1541,8 +1541,11 @@ public class Core
      */
     private String getTargetName(String artifactName, String targetDirectory){
     	int nameStartIndex = 0;
+    	if(artifactName.endsWith("/")){
+    		throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
+    	}
     	if(artifactName.contains("/")){
-    		nameStartIndex = artifactName.indexOf("/" + 1);
+    		nameStartIndex = artifactName.lastIndexOf("/") + 1;
     	}
     	String targetName = artifactName.substring(nameStartIndex);
     	if(!targetDirectory.endsWith("/")){
