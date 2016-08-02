@@ -39,15 +39,20 @@ public class Person extends Resource
         private Resource inspector;
         private Content body;
         private Artifact[] attachments;
-        private List<Action> actionDependencies;
-
-        private InspectAction(Resource inspector, Content body, Artifact[] attachments)
+        
+        private InspectAction(Resource inspector, Content body, Artifact[] attachments, List<Action> actionDependencies)
         {
             this.inspector = inspector;
             this.body = body;
             this.attachments = attachments;
-            actionDependencies = new ArrayList<Action>();
-            actionDependencies.add(inspector.getBindAction());
+
+            if(actionDependencies != null){
+            	this.actionDependencies.addAll(actionDependencies);
+            }
+            Action inspectorBindAction = inspector.getBindAction();
+            if(!this.actionDependencies.contains(inspectorBindAction)){
+            	this.actionDependencies.add(inspectorBindAction);
+            }
         }
 
         /*        @Override
@@ -138,11 +143,6 @@ public class Person extends Resource
             return null;
         }
 
-		@Override
-		public List<Action> getActionDependencies() throws Exception {
-			return actionDependencies;
-		}
-
     }
 
     private static final String codename = "person";
@@ -162,14 +162,29 @@ public class Person extends Resource
      * @param body Content that contains an HTML snippet that will be included in the instructions
      * to the person performing the inspection.
      * @param attachments Artifacts that will be passed to the inspector.
+     * @param A list of actions that should be completed before the inspect is performed.
      * @throws Exception If the inspection request is invalid.
      */
-    public void inspect(Content body, Artifact[] attachments) throws Exception
+    public TestInstance.Action inspect(Content body, Artifact[] attachments, List<Action> actionDependencies) throws Exception
     {
     	if(attachments == null){
     		attachments = new Artifact[0];
     	}
-        generator.add(new InspectAction(this, body, attachments));
+    	InspectAction inspectAction = new InspectAction(this, body, attachments, actionDependencies);
+        generator.add(inspectAction);
+        return inspectAction;
+    }
+    
+    /**
+     * Have a person inspect artifacts according to specified directions.
+     * @param body Content that contains an HTML snippet that will be included in the instructions
+     * to the person performing the inspection.
+     * @param attachments Artifacts that will be passed to the inspector.
+     * @throws Exception If the inspection request is invalid.
+     */
+    public TestInstance.Action inspect(Content body, Artifact[] attachments) throws Exception
+    {
+    	return inspect(body, attachments, null);
     }
 
     @Override

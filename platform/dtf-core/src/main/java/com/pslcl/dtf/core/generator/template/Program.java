@@ -23,6 +23,11 @@ import java.util.UUID;
 public class Program implements Template.Exportable
 {
     UUID tag = null;
+    private TestInstance.Action programAction;
+    
+    public Program(TestInstance.Action programAction){
+    	this.programAction = programAction;
+    }
 
     public void stop()
     {
@@ -52,6 +57,10 @@ public class Program implements Template.Exportable
     public void receive(String output)
     {
         throw new IllegalStateException("Test not running.");
+    }
+    
+    public TestInstance.Action getProgramAction(){
+    	return this.programAction;
     }
 
     @Override

@@ -785,6 +785,7 @@ public class DistributedTestingFramework
         private String name;
         private int artifacts;
         private long start;
+        private String targetFilePath;
 
         PopulateArtifact(Module module, String name, int artifacts, long start)
         {
@@ -892,6 +893,16 @@ public class DistributedTestingFramework
         {
             return 0b100_100_100;
         }
+
+		@Override
+		public String getTargetFilePath() {
+			return this.targetFilePath;
+		}
+
+		@Override
+		public void setTargetFilePath(String targetFilePath) {
+			this.targetFilePath = targetFilePath;
+		}
     }
 
     private static class PopulateModule implements Module

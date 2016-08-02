@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import com.pslcl.dtf.core.generator.Generator;
 import com.pslcl.dtf.core.generator.template.Template;
+import com.pslcl.dtf.core.generator.template.TestInstance;
 
 /**
  * This class represents a cable, which is a connection between a machine and a network. A machine
@@ -31,6 +32,7 @@ public class Cable
     private String ipReference = UUID.randomUUID().toString().toUpperCase();
 
     private UUID exported;
+    private TestInstance.Action connectAction;
 
     /**
      * This class represents a reference to an IP address. This reference is evaluated when the test is run.
@@ -61,8 +63,9 @@ public class Cable
         }
     }
 
-    public Cable(Generator generator, Machine machine, Network network)
+    public Cable(Generator generator, Machine machine, Network network, TestInstance.Action connectAction)
     {
+    	this.connectAction = connectAction;
         generator.addParameterReference(ipReference, new IPReference(machine, network));
     }
 
@@ -127,4 +130,7 @@ public class Cable
         return exported.toString().toUpperCase();
     }
 
+	public TestInstance.Action getConnectAction() {
+		return connectAction;
+	}
 }
