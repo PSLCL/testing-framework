@@ -26,7 +26,7 @@ var all = {
     password: env.DTF_DB_PASSWORD || '',
     db: env.DTF_DB_SCHEMA || 'qa_portal'
   },
-  
+
   // AWS SQS configuration
   sqs: {
     endpoint: env.DTF_SQS_ENDPONT || 'https://sqs.us-east-1.amazonaws.com',
@@ -34,22 +34,25 @@ var all = {
 	access_key_id: env.AWS_ACCESS_KEY_ID || '',
 	secret_access_key: env.AWS_SECRET_ACCESS_KEY || ''
   },
-  
+
   home_dir: home_dir,
   artifacts_dir: env.DTF_ARTIFACTS || home_dir + '/artifacts',
   generators_dir: env.DTF_GENERATORS || home_dir + '/generators',
   shell: env.DTF_SHELL || '/bin/bash',
-  
+
   // Page size for infinite scrolling default
   page_limit: 200,
 
   // This should be randomly generated for your site.
   cookiesecret: 'randomly-generate-me',
-  
+
   // Default schedule is to synchronize every 15 minutes, and to prune
   // missing modules after 40 successful synchronizes without finding the module.
   synchronize_schedule: '*/15 * * * *',
-  
+
+  // JVM args for synchronize process.
+  synchronize_jvm_args: "-Xms1024m -Xmx1024m",
+
   // The number of synchronize runs without finding the module at which to prune, or null
   // to disable pruning.
   prune: 40

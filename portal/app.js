@@ -23,12 +23,19 @@ var env = process.env.NODE_ENV || 'production';
 if ( env == 'production' ) {
     var job = new CronJob(config.synchronize_schedule, function() {
         console.log('Synchronize starting...');
-        var parameters = ['-cp', path.join('platform','lib','*'), 'com.pslcl.dtf.core.DistributedTestingFramework', 'synchronize' ];
+        var parameters = [];
+        if(config.synchronize_jvm_args){
+          parameters.push(config.synchronize_jvm_args);
+        }
+        parameters.push('-cp');
+        parameters.push(path.join('platform','lib','*'));
+        parameters.push('com.pslcl.dtf.core.DistributedTestingFramework');
+        parameters.push('synchronize');
         if ( config.prune != null ) {
             parameters.push( '--prune' );
             parameters.push( '' + config.prune );
         };
-        
+
         var child = spawn('java',
                 parameters,
                 { cwd: config.home_dir });
