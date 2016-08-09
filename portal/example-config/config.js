@@ -53,6 +53,9 @@ var all = {
   // JVM args for synchronize process.
   synchronize_jvm_args: "-Xms1024m -Xmx1024m",
 
+  // The number of generator processes that may run in parallel during syncrhonize.
+  generator_process_count: 5,
+
   // The number of synchronize runs without finding the module at which to prune, or null
   // to disable pruning.
   prune: 40

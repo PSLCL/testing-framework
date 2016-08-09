@@ -35,6 +35,10 @@ if ( env == 'production' ) {
             parameters.push( '--prune' );
             parameters.push( '' + config.prune );
         };
+        if ( config.generator_process_count != null ) {
+            parameters.push( '--generator-process-count' );
+            parameters.push( '' + config.generator_process_count );
+        };
 
         var child = spawn('java',
                 parameters,
