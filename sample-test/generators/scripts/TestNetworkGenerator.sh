@@ -1,2 +1,2 @@
 #!/bin/bash
-java com.pslcl.dtf.sample.TestNetworkGenerator $@
+java -Xmx256m com.pslcl.dtf.sample.TestNetworkGenerator $@

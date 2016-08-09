@@ -1,2 +1,2 @@
 #!/bin/bash
-java com.pslcl.dtf.sample.TestInspectGenerator $@
+java -Xmx256m com.pslcl.dtf.sample.TestInspectGenerator $@
