@@ -84,6 +84,8 @@ public class DistributedTestingFramework
         System.out.println("  --prune <count> - optional - enable deleting of missing modules.");
         System.out.println("               <count> is the number of synchronize runs that the module has been missing. ");
         System.out.println("                       Count must be greater than 0.");
+        System.out.println("  --generator-process-count <count> - optional - set the number of generator processes that may execute in parallel.");
+        System.out.println("               Count must be greater than 0. Defaults to 5.");
 
         System.exit(1);
     }
@@ -470,6 +472,7 @@ public class DistributedTestingFramework
         boolean synchronize = true;
         boolean generate = true;
         int prune = -1;
+        int generatorProcessCount = 5;
 
         if (args.length > 1 && args[1].compareTo("--help") == 0)
             synchronizeHelp();
@@ -489,6 +492,15 @@ public class DistributedTestingFramework
 
                 prune = Integer.parseInt(args[i + 1]);
                 if (prune <= 0)
+                    synchronizeHelp();
+
+                i += 1;
+            } else if (args[i].compareTo("--generator-process-count") == 0){
+            	if (i == args.length)
+                    synchronizeHelp();
+
+            	generatorProcessCount = Integer.parseInt(args[i + 1]);
+                if (generatorProcessCount <= 0)
                     synchronizeHelp();
 
                 i += 1;
@@ -603,7 +615,7 @@ public class DistributedTestingFramework
                     shell = "/bin/bash";
                 File generators = new File(core.getConfig().dirGenerators());
 
-                ExecutorService executor = Executors.newFixedThreadPool(5);
+                ExecutorService executor = Executors.newFixedThreadPool(generatorProcessCount);
 
                 for (Map.Entry<Long, String> script : scripts.entrySet())
                 {
