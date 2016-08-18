@@ -1429,7 +1429,7 @@ public class Core
         long pk = findModule(artifact.getModule());
         if (pk == 0)
             return set; // This should not happen
-
+        LineIterator iterator = null;
         try
         {
             // We are willing to find any artifact from any merged module
@@ -1441,7 +1441,7 @@ public class Core
                 // We only care about the first match that we find.
                 Hash hash = new Hash(resultSet.getBytes(1));
                 File f = new File(this.artifacts, hash.toString());
-                LineIterator iterator = new LineIterator(new FileReader(f));
+                iterator = new LineIterator(new FileReader(f));
 
                 safeClose(resultSet);
                 resultSet = null;
@@ -1469,6 +1469,10 @@ public class Core
                             Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), name, resultSet.getInt(4), new Hash(resultSet.getBytes(5)), targetName);
                             set.add(A);
                         }
+                        safeClose(resultSet);
+                        resultSet = null;
+                        safeClose(statement);
+                        statement = null;
                         
                     } else if (fields.length == 3 || fields.length == 4)
                     {
@@ -1513,6 +1517,11 @@ public class Core
                             Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)), targetName);
                             set.add(A);
                         }
+                        
+                        safeClose(resultSet);
+                        resultSet = null;
+                        safeClose(statement);
+                        statement = null;
                     } else
                         throw new Exception("ERROR: Illegal line (" + line + ") in " + artifact.getName() + ".dep");
                 }
@@ -1523,6 +1532,7 @@ public class Core
             e.printStackTrace(System.err);
         } finally
         {
+        	if(iterator != null) iterator.close();
             safeClose(resultSet);
             resultSet = null;
             safeClose(statement);
