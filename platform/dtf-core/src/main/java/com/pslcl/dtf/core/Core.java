@@ -1516,6 +1516,7 @@ public class Core
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
                             Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)), targetName);
                             set.add(A);
+                            found.add(artifact_name);
                         }
                         
                         safeClose(resultSet);
