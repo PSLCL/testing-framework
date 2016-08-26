@@ -2317,12 +2317,12 @@ public class Core
      * Compare all described templates, deleting those that should not exist, adding
      * those that need to be created, and updating those that need to be updated.
      * Updates are limited to documentation changes.
-     * @param allTestInstances A list of all test instances, which refer to all the test instances.
+     * @param testInstances A list of test instances to be synced.
      * @throws Exception on any error
      */
-    public void syncDescribedTemplates(List<TestInstance> allTestInstances) throws Exception
+    public void syncDescribedTemplates(List<TestInstance> testInstances) throws Exception
     {
-        for (TestInstance ti : allTestInstances)
+        for (TestInstance ti : testInstances)
         {
             DBDescribedTemplate dbdt;
             DescribedTemplate.Key key = ti.getTemplate().getKey();
