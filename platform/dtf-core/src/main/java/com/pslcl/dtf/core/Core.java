@@ -1516,6 +1516,7 @@ public class Core
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
                             Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)), targetName);
                             set.add(A);
+                            found.add(artifact_name);
                         }
                         
                         safeClose(resultSet);
@@ -2317,12 +2318,12 @@ public class Core
      * Compare all described templates, deleting those that should not exist, adding
      * those that need to be created, and updating those that need to be updated.
      * Updates are limited to documentation changes.
-     * @param allTestInstances A list of all test instances, which refer to all the test instances.
+     * @param testInstances A list of test instances to be synced.
      * @throws Exception on any error
      */
-    public void syncDescribedTemplates(List<TestInstance> allTestInstances) throws Exception
+    public void syncDescribedTemplates(List<TestInstance> testInstances) throws Exception
     {
-        for (TestInstance ti : allTestInstances)
+        for (TestInstance ti : testInstances)
         {
             DBDescribedTemplate dbdt;
             DescribedTemplate.Key key = ti.getTemplate().getKey();

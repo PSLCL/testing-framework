@@ -41,9 +41,14 @@ public class Generator
     private TestInstance activeTestInstance = null;
 
     /**
-     * Holds all test instances created by the generator between creation and the call to close().
+     * Holds test instances created by the generator until the list size reaches maxInstanceAccumlationCount or the generator is closed.
      */
-    private List<TestInstance> allTestInstances = new ArrayList<TestInstance>();
+    private List<TestInstance> testInstances = new ArrayList<TestInstance>();
+    
+    /**
+     * The maximum number of test instances that should be cached by the generator before syncing with the database.
+     */
+    private int maxInstanceAccumulationCount = 100;
 
     /**
      * This map contains all created content defined by this generator. Content is always
@@ -71,6 +76,24 @@ public class Generator
     }
 
     /**
+     * Get the maximum number of test instances that will accumulate before the generator syncs with the database.
+     * 
+     * @return The maximum number of test instances to accumulate.
+     */
+    public int getMaxInstanceAccumulationCount() {
+		return maxInstanceAccumulationCount;
+	}
+
+    /**
+     * Set the maximum number of test instances that will accumulate before the generator syncs with the database. Defaults to 100.
+     * 
+     * @param maxInstanceAccumulation The maximum number of test instances to accumulate.
+     */
+	public void setMaxInstanceAccumulationCount(int maxInstanceAccumulation) {
+		this.maxInstanceAccumulationCount = maxInstanceAccumulation;
+	}
+
+	/**
      * Declare an artifact in the platform. It is uniquely identified by a UUID, which defines the artifact
      * globally throughout the platform in the context of a single running test. Multiple tests running at
      * the same time receive different artifacts even if the identifier is the same.
@@ -317,25 +340,38 @@ public class Generator
         }
 
         activeTestInstance.close();
-        allTestInstances.add(activeTestInstance);
-        activeTestInstance = null;
-        parameterReferenceMap.clear();
-        parameterReferenceMap = null;
+        synchronized (testInstances) {
+        	testInstances.add(activeTestInstance);
+            activeTestInstance = null;
+            parameterReferenceMap.clear();
+            parameterReferenceMap = null;
+            
+        	if(testInstances.size() >= maxInstanceAccumulationCount){
+            	try{
+            		sync();
+            	} catch (Exception e) {
+        	        System.err.println("ERROR: Failure to sync test instances, " + e.getMessage());
+        	    	e.printStackTrace();
+        	    }
+            	finally{
+            		close();
+            	}
+        	}
+        }
     }
 
     private void dumpTestInstances()
     {
-        for (TestInstance ti : allTestInstances)
-        {
-            ti.dump();
-        }
+    	synchronized (testInstances) {
+	        for (TestInstance ti : testInstances)
+	        {
+	            ti.dump();
+	        }
+    	}
     }
-
-    /**
-     * Close the generator, synchronizing its results with the database.
-     */
-    public void close()
-    {
+    
+    private void sync() throws Exception{
+    	
         // If the system is read-only, then just dump the created objects.
         if (core.isReadOnly())
         {
@@ -343,17 +379,12 @@ public class Generator
             return;
         }
 
-        /* The described template arrays are already loaded. We need to add any defined templates
-         * that are not in the database, and remove any that are no longer needed.
-         */
-        try
-        {
-            core.syncDescribedTemplates(allTestInstances);
-        } catch (Exception e)
-        {
-            System.err.println("ERROR: Failure to close generator, " + e.getMessage());
-        	e.printStackTrace();
-        }
+        synchronized (testInstances) {
+            /* The described template arrays are already loaded. We need to add any defined templates
+             * that are not in the database, and remove any that are no longer needed.
+             */
+            core.syncDescribedTemplates(testInstances);
+		}
 
         /* Read the main contents of the top-level synchronized tables: Content, DescribedTemplate.
          * Content is easy, since it either exists or does not.
@@ -399,6 +430,21 @@ public class Generator
         // Now that templates and test instances are synchronized, roll up top-level template relationships.
         core.syncTopTemplateRelationships();
          */
-        core.close();
+    }
+
+    /**
+     * Close the generator, synchronizing its results with the database.
+     */
+    public void close()
+    {
+    	try{
+    		sync();
+    	} catch (Exception e) {
+	        System.err.println("ERROR: Failure to close generator, " + e.getMessage());
+	    	e.printStackTrace();
+	    }
+    	finally{
+    		core.close();
+    	}
     }
 }
