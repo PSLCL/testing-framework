@@ -9,6 +9,8 @@ platform/*/target/**
 portal/repo/**
 sample-test/.build/**
 sample-test/lib/**
+sample-test/generators/bin/*
+sample-test/generators/target/*
 **.classpath
 **.project
 **.settings**
