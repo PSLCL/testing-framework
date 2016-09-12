@@ -352,10 +352,8 @@ public class Generator
             	} catch (Exception e) {
         	        System.err.println("ERROR: Failure to sync test instances, " + e.getMessage());
         	    	e.printStackTrace();
+        	    	throw e;
         	    }
-            	finally{
-            		close();
-            	}
         	}
         }
     }
