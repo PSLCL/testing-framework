@@ -723,10 +723,11 @@ public class DistributedTestingFramework
 	            	testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
 	        } else if(manualTestNumber > -1){
 	        	for(long testInstance: core.getTestInstances(manualTestNumber)){
-	            	testRuns.add(core.createInstanceRun(testInstance, owner));
+	            	Long run = core.createInstanceRun(testInstance, owner);
+	            	if(run != null)
+	            		testRuns.add(run);
 	        	}
 	        }
-	            
 	        for(Long runID: testRuns){
 	        	System.out.println("Queueing test run: " + runID);
 	        	sqs.publishTestRunRequest(runID);

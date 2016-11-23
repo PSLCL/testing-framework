@@ -3033,7 +3033,7 @@ public class Core
         }
     }
 
-    public long createInstanceRun(long testInstanceNumber, String owner) throws Exception
+    public Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {
     	PreparedStatement runStatement = null;
         Statement templateStatement = null;
@@ -3062,7 +3062,7 @@ public class Core
         {
             safeClose(templateStatement);
         }
-
+        
         try
         {
         	runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
@@ -3079,10 +3079,13 @@ public class Core
             runStatement.setNull(6, Types.TIMESTAMP);
             if(runStatement.execute()){
             	resultSet = runStatement.getResultSet();
-            	if(resultSet.next()){
+            	boolean result = resultSet.next();
+            	if(result){            		
                 	return resultSet.getLong("pk_run");
                 }
             }
+            else
+            	return null;
         } catch (Exception e)
         {
             // TODO: handle
