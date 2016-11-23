@@ -716,6 +716,7 @@ public class DistributedTestingFramework
 	        	System.setProperty("aws.accessKeyId", accessKeyID);
 	        	System.setProperty("aws.secretKey", secretKey);
 	        }
+	    	System.out.println("Preparing SQS publisher...");
 	    	SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
 	    	sqs.init();
 	    	List<Long> testRuns = new ArrayList<Long>();

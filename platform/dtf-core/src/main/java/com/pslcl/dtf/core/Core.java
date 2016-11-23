@@ -3063,6 +3063,8 @@ public class Core
             safeClose(templateStatement);
         }
 
+        System.out.println("HASH: "+ hash);
+        
         try
         {
         	runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
