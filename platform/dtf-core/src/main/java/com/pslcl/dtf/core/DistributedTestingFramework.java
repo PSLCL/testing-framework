@@ -660,6 +660,7 @@ public class DistributedTestingFramework
     @SuppressWarnings("unused")
     private static void runner(String[] args)
     {
+    	System.out.println("Running..");
         if (args.length < 2)
             runHelp(); // exits app
 
@@ -720,6 +721,7 @@ public class DistributedTestingFramework
 	    	SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
 	    	sqs.init();
 	    	List<Long> testRuns = new ArrayList<Long>();
+	    	System.out.println("");
 	    	if(manualTestInstanceNumber > -1){
 	            	testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
 	        } else if(manualTestNumber > -1){
