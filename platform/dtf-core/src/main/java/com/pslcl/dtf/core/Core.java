@@ -3089,7 +3089,7 @@ public class Core
                 }
             }
             else
-            	System.out.println("execute statement didn't work...");
+            	return null;
         } catch (Exception e)
         {
             // TODO: handle
