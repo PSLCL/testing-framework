@@ -3081,10 +3081,15 @@ public class Core
             runStatement.setNull(6, Types.TIMESTAMP);
             if(runStatement.execute()){
             	resultSet = runStatement.getResultSet();
-            	if(resultSet.next()){
+            	boolean result = resultSet.next();
+            	System.out.println("Result from result set: " + result);
+            	if(result){
+            		
                 	return resultSet.getLong("pk_run");
                 }
             }
+            else
+            	System.out.println("execute statement didn't work...");
         } catch (Exception e)
         {
             // TODO: handle
