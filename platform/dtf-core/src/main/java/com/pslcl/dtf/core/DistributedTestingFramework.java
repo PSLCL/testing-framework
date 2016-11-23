@@ -727,7 +727,9 @@ public class DistributedTestingFramework
 	        } else if(manualTestNumber > -1){
 	        	System.out.println("Building list...");
 	        	for(long testInstance: core.getTestInstances(manualTestNumber)){
-	            	testRuns.add(core.createInstanceRun(testInstance, owner));
+	            	Long run = core.createInstanceRun(testInstance, owner);
+	            	if(run != null)
+	            		testRuns.add(run);
 	        	}
 	        }
 	        System.out.println("Test Runs: " + testRuns);   

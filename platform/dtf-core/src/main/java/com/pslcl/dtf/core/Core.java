@@ -3033,7 +3033,7 @@ public class Core
         }
     }
 
-    public long createInstanceRun(long testInstanceNumber, String owner) throws Exception
+    public Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {
     	PreparedStatement runStatement = null;
         Statement templateStatement = null;
