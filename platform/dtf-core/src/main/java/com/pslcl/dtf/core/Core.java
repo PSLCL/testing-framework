@@ -3062,8 +3062,6 @@ public class Core
         {
             safeClose(templateStatement);
         }
-
-        System.out.println("HASH: "+ hash);
         
         try
         {
@@ -3082,9 +3080,7 @@ public class Core
             if(runStatement.execute()){
             	resultSet = runStatement.getResultSet();
             	boolean result = resultSet.next();
-            	System.out.println("Result from result set: " + result);
-            	if(result){
-            		
+            	if(result){            		
                 	return resultSet.getLong("pk_run");
                 }
             }

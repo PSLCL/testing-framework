@@ -660,7 +660,6 @@ public class DistributedTestingFramework
     @SuppressWarnings("unused")
     private static void runner(String[] args)
     {
-    	System.out.println("Running..");
         if (args.length < 2)
             runHelp(); // exits app
 
@@ -717,22 +716,18 @@ public class DistributedTestingFramework
 	        	System.setProperty("aws.accessKeyId", accessKeyID);
 	        	System.setProperty("aws.secretKey", secretKey);
 	        }
-	    	System.out.println("Preparing SQS publisher...");
 	    	SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
 	    	sqs.init();
 	    	List<Long> testRuns = new ArrayList<Long>();
-	    	System.out.println("");
 	    	if(manualTestInstanceNumber > -1){
 	            	testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
 	        } else if(manualTestNumber > -1){
-	        	System.out.println("Building list...");
 	        	for(long testInstance: core.getTestInstances(manualTestNumber)){
 	            	Long run = core.createInstanceRun(testInstance, owner);
 	            	if(run != null)
 	            		testRuns.add(run);
 	        	}
 	        }
-	        System.out.println("Test Runs: " + testRuns);   
 	        for(Long runID: testRuns){
 	        	System.out.println("Queueing test run: " + runID);
 	        	sqs.publishTestRunRequest(runID);
