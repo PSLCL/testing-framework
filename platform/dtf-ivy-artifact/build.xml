@@ -46,6 +46,7 @@
   <property name="vendor.email" value=""/>
   <property name="vendor.url" value="https://pslcl.com/"/>
   <property name="copyright.owner" value="Panasonic Corporation"/>
+  <property name="compile.debuglevel" value="lines,vars,source"/>
   
   <target name="init">
     <tstamp>
@@ -172,7 +173,7 @@
   <target name="javac" depends="retrieve" description="compile the source">
     <!-- Compile the java code from ${src.dir} into ${build.dir} -->
     <mkdir dir="${class.dir}"/>
-    <javac srcdir="${src.dir}" destdir="${class.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}">
+    <javac srcdir="${src.dir}" destdir="${class.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}" debug="true" debuglevel="${compile.debuglevel}">
       <classpath id="javac-classpath">
         <fileset dir="${lib.dir}" includes="*.jar" excludes="*-javadoc.jar"/>
       </classpath>
