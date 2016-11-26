@@ -2333,7 +2333,9 @@ public class Core
                 // Add the template
                 dbdt = add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
             } else
+            {
                 dbdt = check(ti.getTemplate());
+            }
 
             // We have the described template. There should be a Test Instance that relates the
             // current test (pk_test) to the current described template.
