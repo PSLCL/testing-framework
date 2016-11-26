@@ -2325,15 +2325,25 @@ public class Core
     {
         for (TestInstance ti : testInstances)
         {
+System.out.println("SyncDescribedTemplates: ti - " + ti.getTemplate().getKey());
+long start;
+long total;
             DBDescribedTemplate dbdt;
             DescribedTemplate.Key key = ti.getTemplate().getKey();
 
             if (!keyToDT.containsKey(key))
             {
                 // Add the template
+start = System.currentTimeMillis();
                 dbdt = add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
-            } else
+total = System.currentTimeMillis() - start;
+System.out.println("add template time(ms): " + total);
+            } else{
+start = System.currentTimeMillis();
                 dbdt = check(ti.getTemplate());
+total = System.currentTimeMillis() - start;
+System.out.println("check template time(ms): " + total);
+            }
 
             // We have the described template. There should be a Test Instance that relates the
             // current test (pk_test) to the current described template.
@@ -2349,7 +2359,11 @@ public class Core
                     //TODO: Determine the phase
                     statement2.setLong(3, 0);
                     statement2.setInt(4, 1); // Default is synchronized.
+
+start = System.currentTimeMillis();
                     statement2.executeUpdate();
+total = System.currentTimeMillis() - start;
+System.out.println("Add test instance time(ms): " + total);
 
                     ResultSet keys = statement2.getGeneratedKeys();
                     if (keys.next())
@@ -2362,6 +2376,7 @@ public class Core
                 safeClose(statement2);
                 statement2 = null;
 
+start = System.currentTimeMillis();
                 // Insert all of the module references
                 List<TestInstance.Action> actions = ti.getActions();
                 for (TestInstance.Action action : actions)
@@ -2390,6 +2405,8 @@ public class Core
                         }
                     }
                 }
+total = System.currentTimeMillis() - start;
+System.out.println("Insert Module References time(ms): " + total);
 
                 safeClose(statement2);
                 statement2 = null;
@@ -2403,6 +2420,8 @@ public class Core
             Boolean dbResult = null;
             String dbOwner = null;
 
+
+start = System.currentTimeMillis();
             if (ti.getResult() != null || ti.getOwner() != null)
             {
                 try
@@ -2437,6 +2456,8 @@ public class Core
                     reportResult(ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 }
             }
+total = System.currentTimeMillis() - start;
+System.out.println("Report Result time(ms): " + total);
         }
     }
 
