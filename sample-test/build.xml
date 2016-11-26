@@ -48,6 +48,7 @@
   <property name="vendor.url" value="https://github.com/PSLCL"/>
   <property name="copyright.owner" value="Panasonic Corporation"/>
   <property name="ivy.resolver.default.check.modified" value="true"/>
+  <property name="compile.debuglevel" value="lines,vars,source"/>
 
   <target name="init">
     <tstamp>
@@ -173,7 +174,7 @@
 
   <target name="javac-gen" depends="retrieve" description="compile the generator source">
     <mkdir dir="${class.gen.dir}"/>
-    <javac srcdir="${src.gen.dir}" destdir="${class.gen.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}">
+    <javac srcdir="${src.gen.dir}" destdir="${class.gen.dir}" includeAntRuntime="false" source="${ant.build.javac.source}" target="${ant.build.javac.target}" debug="true" debuglevel="${compile.debuglevel}">
       <classpath>
         <fileset dir="${lib.dir}" includes="*.jar" excludes="*-javadoc.jar"/>
       </classpath>

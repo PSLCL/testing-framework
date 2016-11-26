@@ -1429,7 +1429,7 @@ public class Core
         long pk = findModule(artifact.getModule());
         if (pk == 0)
             return set; // This should not happen
-
+        LineIterator iterator = null;
         try
         {
             // We are willing to find any artifact from any merged module
@@ -1441,7 +1441,7 @@ public class Core
                 // We only care about the first match that we find.
                 Hash hash = new Hash(resultSet.getBytes(1));
                 File f = new File(this.artifacts, hash.toString());
-                LineIterator iterator = new LineIterator(new FileReader(f));
+                iterator = new LineIterator(new FileReader(f));
 
                 safeClose(resultSet);
                 resultSet = null;
@@ -1469,6 +1469,10 @@ public class Core
                             Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), name, resultSet.getInt(4), new Hash(resultSet.getBytes(5)), targetName);
                             set.add(A);
                         }
+                        safeClose(resultSet);
+                        resultSet = null;
+                        safeClose(statement);
+                        statement = null;
                         
                     } else if (fields.length == 3 || fields.length == 4)
                     {
@@ -1512,7 +1516,13 @@ public class Core
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
                             Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)), targetName);
                             set.add(A);
+                            found.add(artifact_name);
                         }
+                        
+                        safeClose(resultSet);
+                        resultSet = null;
+                        safeClose(statement);
+                        statement = null;
                     } else
                         throw new Exception("ERROR: Illegal line (" + line + ") in " + artifact.getName() + ".dep");
                 }
@@ -1523,6 +1533,7 @@ public class Core
             e.printStackTrace(System.err);
         } finally
         {
+        	if(iterator != null) iterator.close();
             safeClose(resultSet);
             resultSet = null;
             safeClose(statement);
@@ -2307,12 +2318,12 @@ public class Core
      * Compare all described templates, deleting those that should not exist, adding
      * those that need to be created, and updating those that need to be updated.
      * Updates are limited to documentation changes.
-     * @param allTestInstances A list of all test instances, which refer to all the test instances.
+     * @param testInstances A list of test instances to be synced.
      * @throws Exception on any error
      */
-    public void syncDescribedTemplates(List<TestInstance> allTestInstances) throws Exception
+    public void syncDescribedTemplates(List<TestInstance> testInstances) throws Exception
     {
-        for (TestInstance ti : allTestInstances)
+        for (TestInstance ti : testInstances)
         {
             DBDescribedTemplate dbdt;
             DescribedTemplate.Key key = ti.getTemplate().getKey();
@@ -2322,7 +2333,9 @@ public class Core
                 // Add the template
                 dbdt = add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
             } else
+            {
                 dbdt = check(ti.getTemplate());
+            }
 
             // We have the described template. There should be a Test Instance that relates the
             // current test (pk_test) to the current described template.
@@ -3022,7 +3035,7 @@ public class Core
         }
     }
 
-    public long createInstanceRun(long testInstanceNumber, String owner) throws Exception
+    public Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {
     	PreparedStatement runStatement = null;
         Statement templateStatement = null;
@@ -3051,7 +3064,7 @@ public class Core
         {
             safeClose(templateStatement);
         }
-
+        
         try
         {
         	runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
@@ -3068,10 +3081,13 @@ public class Core
             runStatement.setNull(6, Types.TIMESTAMP);
             if(runStatement.execute()){
             	resultSet = runStatement.getResultSet();
-            	if(resultSet.next()){
+            	boolean result = resultSet.next();
+            	if(result){            		
                 	return resultSet.getLong("pk_run");
                 }
             }
+            else
+            	return null;
         } catch (Exception e)
         {
             // TODO: handle
