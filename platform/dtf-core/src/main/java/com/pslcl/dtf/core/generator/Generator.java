@@ -354,6 +354,7 @@ public class Generator
         	    	e.printStackTrace();
         	    	throw e;
         	    }
+            	testInstances.clear();
         	}
         }
     }
