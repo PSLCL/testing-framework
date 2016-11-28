@@ -54,10 +54,10 @@ public class RunnerService implements Runner, RunnerServiceMBean
     /** the process classes */
     public volatile RunnerMachine runnerMachine = null;
     public volatile RunEntryStateStore runEntryStateStore = null; // holds RunEntryState of each reNum
+    
     public volatile ProcessTracker processTracker = null;
-
     private boolean testInstanceLimitInEffect = false;
-    private int testInstanceLimit = 2; // configuration can override to even large numbers
+    private int testInstanceLimit = -1; // configuration overrides to even positive large numbers, -1: no limit; 0: interpreted as 1
     
     // public class methods
 
@@ -91,7 +91,9 @@ public class RunnerService implements Runner, RunnerServiceMBean
      */
     public boolean isOverload(long reNum, RunEntryState reState) {
     	// configured parallel test instance limit
-    	boolean limitReached = this.runEntryStateStore.isMaxSizeReached(testInstanceLimit);
+    	boolean limitReached = false;
+    	if (this.testInstanceLimit >= 0) // negative: no limit
+        	limitReached = this.runEntryStateStore.isMaxSizeReached(testInstanceLimit);
     	if (this.testInstanceLimitInEffect ^ limitReached) {
     		this.testInstanceLimitInEffect = limitReached;
             LoggerFactory.getLogger(getClass()).debug("RunnerService.isOverload() moves to new state: " + limitReached);
@@ -110,7 +112,9 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config = new RunnerConfig(daemonContext, this);
             config.init();
 
-        	this.testInstanceLimit = Integer.valueOf(this.config.properties.getProperty(ResourceNames.DtfRunnerTestInstanceLimitKey));
+        	this.testInstanceLimit = Integer.valueOf(this.config.properties.getProperty(ResourceNames.DtfRunnerTestInstanceLimitKey, ResourceNames.DtfRunnerTestInstanceLimitDefault));
+        	if (this.testInstanceLimit == 0)
+        		this.testInstanceLimit = 1;
         	LoggerFactory.getLogger(getClass()).debug("RunnerService.init() finds configured test instance parallel processing limit: " + this.testInstanceLimit); 
         	
             config.initsb.ttl("Initialize JMX: ");
