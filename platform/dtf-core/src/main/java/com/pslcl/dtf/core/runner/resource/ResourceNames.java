@@ -55,6 +55,12 @@ public class ResourceNames
     
     public static final String MsgQueClassDefault = "com.pslcl.dtf.resource.aws.Sqs";
     public static final String MsgQueNameDefault = null;
+    
+    /* ****************************************************************************
+     * dtf runner    
+    ******************************************************************************/    
+    public static final String DtfRunnerTestInstanceLimitKey = RunnerKeyBase + ".test-instance-limit";
+        
 
     /* ****************************************************************************
      * Database    

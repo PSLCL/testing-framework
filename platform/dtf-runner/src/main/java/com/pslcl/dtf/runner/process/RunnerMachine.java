@@ -127,9 +127,9 @@ public class RunnerMachine {
      * @param reNum
      */
     void engageRunEntry(long reNum, RunEntryState reState) throws Exception {
-        // TODO: May choose to not process this new template; would be because this RunnerService node is overloaded.
-        // boolean doProcess = determineDoProcess(reNum, reState);
-        // if (doProcess)
+        // check runnerService overload, by configured limit or otherwise
+    	boolean overload = this.getService().isOverload(reNum, reState);
+        if (!overload)
         {
             log.debug(simpleName + "engageRunEntry() processes reNum/action/message " + reNum + "/" + reState.getAction() + "/" + reState.getMessage());
             RunEntryState reStateOld = this.getService().runEntryStateStore.get(reNum);
@@ -139,15 +139,18 @@ public class RunnerMachine {
                 throw new Exception("Attempt to launch duplicate runEntry, the new runEntry is dropped");
             }
             this.getService().runEntryStateStore.put(reNum, reState);
-        }
-        
-        log.info("Starting test run " + reNum);
-        
-        try {
-            // launch independent thread
-            new RunEntryTask(this, reNum);
-        } catch (Exception e) {
-        	throw e;
+            
+            log.info("Starting test run " + reNum);
+            try {
+                // launch independent thread
+                new RunEntryTask(this, reNum);
+            } catch (Exception e) {
+                this.getService().runEntryStateStore.remove(reNum);
+            	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".engageRunEntry() failed to engage reNum " + reNum);
+                throw e;
+            }
+        } else {
+        	LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".engageRunEntry() postpones reNum " + reNum + ": runnerService limit reached");
         }
     }
 

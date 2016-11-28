@@ -32,6 +32,7 @@ import com.pslcl.dtf.core.runner.messageQueue.MessageQueue;
 import com.pslcl.dtf.core.runner.resource.ResourceNames;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.runner.process.ProcessTracker;
+import com.pslcl.dtf.runner.process.RunEntryState;
 import com.pslcl.dtf.runner.process.RunEntryStateStore;
 import com.pslcl.dtf.runner.process.RunnerMachine;
 
@@ -55,6 +56,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
     public volatile RunEntryStateStore runEntryStateStore = null; // holds RunEntryState of each reNum
     public volatile ProcessTracker processTracker = null;
 
+    private boolean testInstanceLimitInEffect = false;
+    private int testInstanceLimit = 2; // configuration can override to even large numbers
     
     // public class methods
 
@@ -79,8 +82,24 @@ public class RunnerService implements Runner, RunnerServiceMBean
     {
         return config;
     }
+
+    /**
+     * Determine RunnerService overload, by configuration or otherwise 
+     * @param reNum
+     * @param reState
+     * @return
+     */
+    public boolean isOverload(long reNum, RunEntryState reState) {
+    	// configured parallel test instance limit
+    	boolean limitReached = this.runEntryStateStore.isMaxSizeReached(testInstanceLimit);
+    	if (this.testInstanceLimitInEffect ^ limitReached) {
+    		this.testInstanceLimitInEffect = limitReached;
+            LoggerFactory.getLogger(getClass()).debug("RunnerService.isOverload() moves to new state: " + limitReached);
+    	}
+    	return limitReached;
+    }
     
-    
+
     // Daemon interface implementations
 
     @Override
@@ -91,6 +110,9 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config = new RunnerConfig(daemonContext, this);
             config.init();
 
+        	this.testInstanceLimit = Integer.valueOf(this.config.properties.getProperty(ResourceNames.DtfRunnerTestInstanceLimitKey));
+        	LoggerFactory.getLogger(getClass()).debug("RunnerService.init() finds configured test instance parallel processing limit: " + this.testInstanceLimit); 
+        	
             config.initsb.ttl("Initialize JMX: ");
             config.initsb.indentedOk();
             config.initsb.ttl("Initialize RunnerMachine:");

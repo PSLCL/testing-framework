@@ -32,25 +32,35 @@ public class RunEntryStateStore {
     
     /**
      * 
+     * @param configurationMaxSize
+     * @return
+     */
+    public synchronized boolean isMaxSizeReached(int configurationMaxSize) {
+    	boolean limitReached = (configurationMaxSize <= map.size());
+    	return limitReached;
+    }
+    
+    /**
+     * 
      * Note: Put to an existing Long key overwrites previous the previously held InstanceState
      * @param iNum
      * @param reState
      * @return Previously stored InstanceState when put overwrites it, null otherwise. 
      */
-    RunEntryState put(long reNum, RunEntryState reState) {
+    synchronized RunEntryState put(long reNum, RunEntryState reState) {
         return map.put(Long.valueOf(reNum), reState);
     }
-    
+   
     /**
      * 
      * @param iNum
      * @return
      */
-    RunEntryState get(long reNum) {
+    synchronized RunEntryState get(long reNum) {
         return map.get(Long.valueOf(reNum));
     }
 
-    RunEntryState remove(long reNum) {
+    synchronized RunEntryState remove(long reNum) {
     	return map.remove(Long.valueOf(reNum));
     }
     
