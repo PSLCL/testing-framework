@@ -112,15 +112,24 @@ public class RunnerService implements Runner, RunnerServiceMBean
             config = new RunnerConfig(daemonContext, this);
             config.init();
 
-        	this.testInstanceLimit = Integer.valueOf(this.config.properties.getProperty(ResourceNames.DtfRunnerTestInstanceLimitKey, ResourceNames.DtfRunnerTestInstanceLimitDefault));
-        	if (this.testInstanceLimit == 0)
-        		this.testInstanceLimit = 1;
-        	LoggerFactory.getLogger(getClass()).debug("RunnerService.init() finds configured test instance parallel processing limit: " + this.testInstanceLimit); 
-        	
             config.initsb.ttl("Initialize JMX: ");
             config.initsb.indentedOk();
             config.initsb.ttl("Initialize RunnerMachine:");
             config.initsb.indentedOk();
+
+        	try {
+				this.testInstanceLimit = Integer.valueOf(this.config.properties.getProperty(ResourceNames.DtfRunnerTestInstanceLimitKey, ResourceNames.DtfRunnerTestInstanceLimitDefault));
+	        	if (this.testInstanceLimit == 0)
+	        		this.testInstanceLimit = 1;
+	        	LoggerFactory.getLogger(getClass()).debug("RunnerService.init() finds : " + this.testInstanceLimit); 
+			} catch (Exception e) {
+				throw e;
+			}
+            config.initsb.level.incrementAndGet(); // l2
+            config.initsb.ttl(ResourceNames.DtfRunnerTestInstanceLimitKey, " = ", this.testInstanceLimit);
+            config.initsb.indentedOk();
+            config.initsb.level.decrementAndGet();
+            
             config.initsb.ttl("Initialize MessageQueueBase:");
             config.initsb.level.incrementAndGet(); // l2
             String daoClass = config.properties.getProperty(ResourceNames.MsgQueClassKey, ResourceNames.MsgQueClassDefault);
