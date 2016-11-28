@@ -77,6 +77,7 @@ public class ConnectFuture implements Callable<CableInstance>
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 ec2Client.modifyInstanceAttribute(miar);
                 break;
             } catch (Exception e)

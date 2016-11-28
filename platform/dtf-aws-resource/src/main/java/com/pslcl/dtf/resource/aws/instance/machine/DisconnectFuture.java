@@ -72,6 +72,7 @@ public class DisconnectFuture implements Callable<Void>
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 DescribeInstanceAttributeResult result = ec2Client.describeInstanceAttribute(diar);
                 InstanceAttribute attr = result.getInstanceAttribute();
                 currentList = attr.getGroups();
@@ -112,6 +113,7 @@ public class DisconnectFuture implements Callable<Void>
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 ec2Client.modifyInstanceAttribute(miar);
                 break;
             } catch (Exception e)

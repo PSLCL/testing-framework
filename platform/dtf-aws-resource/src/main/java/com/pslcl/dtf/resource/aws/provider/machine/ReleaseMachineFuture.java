@@ -80,6 +80,7 @@ public class ReleaseMachineFuture implements Callable<Void>
             try
             {
                 TerminateInstancesRequest trequest = new TerminateInstancesRequest().withInstanceIds(instanceId);
+                pdelayData.provider.manager.awsThrottle();
                 provider.manager.ec2Client.terminateInstances(trequest);
                 break;
             } catch (Exception e)
@@ -96,6 +97,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 DescribeInstancesResult diResult = provider.manager.ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
                 if (AwsInstanceState.getState(inst.getState().getName()) == AwsInstanceState.Terminated)
@@ -121,6 +123,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 provider.manager.ec2Client.deleteVpc(drequest);
                 break;
             } catch (Exception e)
@@ -143,6 +146,7 @@ public class ReleaseMachineFuture implements Callable<Void>
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 provider.manager.ec2Client.deleteSubnet(request);
                 break;
             } catch (Exception e)

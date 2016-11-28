@@ -76,7 +76,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         deleteInstanceFutures = new ArrayList<Future<Void>>();
         runnablePrograms = new HashMap<Long, List<Future<RunnableProgram>>>();
         instanceFinder = new InstanceFinder();
-        imageFinder = new ImageFinder();
+        imageFinder = new ImageFinder(this);
         totalReuseAttemps = new AtomicInteger(0);
         reuseHits = new AtomicInteger(0);
     }
@@ -535,6 +535,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 manager.ec2Client.deleteKeyPair(request);
                 break;
             } catch (Exception e)

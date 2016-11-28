@@ -136,6 +136,7 @@ public class SubnetManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 csnResult = manager.ec2Client.createSubnet(request);
                 break;
             } catch (Exception e)
@@ -186,6 +187,7 @@ public class SubnetManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 sgResult = manager.ec2Client.createSecurityGroup(request);
                 break;
             } catch (Exception e)
@@ -226,6 +228,7 @@ public class SubnetManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 manager.ec2Client.authorizeSecurityGroupIngress(ingressRequest);
                 break;
             } catch (Exception e)
@@ -257,6 +260,7 @@ public class SubnetManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 vpcs = manager.ec2Client.describeVpcs(dvpcr).getVpcs();
                 break;
             } catch (Exception e)
@@ -303,6 +307,7 @@ public class SubnetManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 subnets = manager.ec2Client.describeSubnets(dvpcr).getSubnets();
                 break;
             } catch (Exception e)
@@ -347,6 +352,7 @@ public class SubnetManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 sgs = manager.ec2Client.describeSecurityGroups().getSecurityGroups();
                 break;
             } catch (Exception e)
@@ -381,6 +387,7 @@ public class SubnetManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 manager.ec2Client.deleteSecurityGroup(dsgr);
                 break;
             } catch (Exception e)
@@ -428,6 +435,7 @@ public class SubnetManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 List<SecurityGroup> sgList = manager.ec2Client.describeSecurityGroups(dsgRequest).getSecurityGroups();
                 for (SecurityGroup group : sgList)
                 {

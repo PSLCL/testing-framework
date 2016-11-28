@@ -192,6 +192,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             {
                 try
                 {
+                    pdelayData.provider.manager.awsThrottle();
                     runResult = ec2Client.runInstances(runInstancesRequest);
                     break;
                 } catch (Exception e)
@@ -224,6 +225,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             checkFutureCanceled();
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 DescribeInstancesResult diResult = ec2Client.describeInstances(diRequest);
                 Instance inst = diResult.getReservations().get(0).getInstances().get(0);
                 if (inst != null)
@@ -326,6 +328,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             checkFutureCanceled();
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 DescribeImagesResult diResult = ec2Client.describeImages(diRequest);
                 Image image = diResult.getImages().get(0);
                 List<BlockDeviceMapping> blockDevices = image.getBlockDeviceMappings();
@@ -356,6 +359,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             {
                 try
                 {
+                    pdelayData.provider.manager.awsThrottle();
                     keyPairsResult = ec2Client.describeKeyPairs(dkpr);
                     break;
                 } catch (Exception e)
@@ -380,6 +384,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             {
                 try
                 {
+                    pdelayData.provider.manager.awsThrottle();
                     keypairResult = ec2Client.createKeyPair(ckpr);
                     break;
                 } catch (Exception e)

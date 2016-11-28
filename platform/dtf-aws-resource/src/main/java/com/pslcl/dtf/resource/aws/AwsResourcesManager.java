@@ -39,6 +39,7 @@ import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.ClientType;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
+import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.network.AwsNetworkProvider;
@@ -160,6 +161,7 @@ public class AwsResourcesManager implements ResourcesManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 ec2Client.createTags(ctr);
                 break;
             } catch (Exception e)
@@ -193,7 +195,9 @@ public class AwsResourcesManager implements ResourcesManager
         {
             try
             {
+                pdelayData.provider.manager.awsThrottle();
                 ec2Client.createTags(ctr);
+                pdelayData.provider.manager.awsThrottle();
                 ec2Client.deleteTags(dtr);
                 break;
             } catch (Exception e)
@@ -239,15 +243,17 @@ public class AwsResourcesManager implements ResourcesManager
         systemId = value;
         config.initsb.ttl(ResourceNames.SystemIdKey, " = ", systemId);
         
-        value = config.properties.getProperty(ResourceNames.SystemIdKey, ResourceNames.SystemIdDefault);
+        value = config.properties.getProperty(InstanceNames.Ec2RequestThrottleKey, InstanceNames.Ec2RequestThrottleDefault);
         value = StrH.trim(value);
-        systemId = value;
-        config.initsb.ttl(ResourceNames.SystemIdKey, " = ", systemId);
+        config.initsb.ttl(InstanceNames.Ec2RequestThrottleKey, " = ", value);
+        int persec  = Integer.parseInt(value);
+        requestThrottle = new RequestThrottle(persec);
         
         config.initsb.ttl("ec2Client:");
         config.initsb.level.incrementAndGet();
         ec2cconfig = AwsClientConfiguration.getClientConfiguration(config, ClientType.Ec2);
         ec2Client = new AmazonEC2Client(ec2cconfig.clientConfig);
+        awsThrottle();
         ec2Client.setEndpoint(ec2cconfig.endpoint);
         config.initsb.ttl("obtained ec2Client");
         config.initsb.level.decrementAndGet();
@@ -285,6 +291,7 @@ public class AwsResourcesManager implements ResourcesManager
             for (int i = 0; i < size; i++)
                 resourceProviders.get(i).destroy();
             resourceProviders.clear();
+            awsThrottle();
             ec2Client.shutdown();
             sesClient.shutdown();
         } catch (Exception e)
@@ -362,7 +369,6 @@ public class AwsResourcesManager implements ResourcesManager
     @Override
     public void awsThrottle()
     {
-        // TODO Auto-generated method stub
-        
+        requestThrottle.waitAsNeeded();
     }
 }

@@ -41,6 +41,7 @@ import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.attr.ClientNames;
 import com.pslcl.dtf.resource.aws.attr.InstanceNames;
 import com.pslcl.dtf.resource.aws.attr.ProviderNames;
+import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 
 @SuppressWarnings("javadoc")
 public class ImageFinder
@@ -48,6 +49,7 @@ public class ImageFinder
     private final Logger log;
     private final Properties defaultImageFilters;
     private final List<String> defaultLocationFilters;
+    private final AwsResourceProvider provider;
     private volatile String defaultLocationYear;
     private volatile String defaultLocationMonth;
     private volatile String defaultLocationDot;
@@ -56,11 +58,12 @@ public class ImageFinder
     private volatile RunnerConfig config;
     private volatile List<GlobalImageAttrMapData> globalImageAttrMapData;
 
-    public ImageFinder()
+    public ImageFinder(AwsResourceProvider provider)
     {
         log = LoggerFactory.getLogger(getClass());
         defaultImageFilters = new Properties();
         defaultLocationFilters = new ArrayList<String>();
+        this.provider = provider;
     }
 
     public void init(RunnerConfig config) throws Exception
@@ -232,6 +235,7 @@ public class ImageFinder
             ImageFilterData imageFilterData = getFilters(resource, imageId);
             DescribeImagesRequest request = new DescribeImagesRequest();
             request.setFilters(imageFilterData.imageFilters);
+            provider.manager.awsThrottle();
             DescribeImagesResult result = ec2Client.describeImages(request);
             java.util.List<Image> images = result.getImages();
             List<Image> locations = new ArrayList<Image>();
