@@ -108,10 +108,12 @@ public class InstanceNames
     public static final String Ec2IamNameKey = InstanceKeyBase + ".iam-name";
     public static final String Ec2KeyPairNameKey = InstanceKeyBase + ".keypair-name";
     public static final String Ec2StallReleaseKey = InstanceKeyBase + ".stall-release";     // in minutes
+    public static final String Ec2RequestThrottleKey = ProviderNames.AwsKeyBase + ".request-throttle";     // requests per second max
     
     public static final String Ec2MaxDelayDefault = ProviderNames.LongMaxDelayDefault;
     public static final String Ec2MaxRetriesDefault = ProviderNames.LongMaxRetriesDefault;
     public static final String Ec2StallReleaseDefault = "60"; // in minutes
+    public static final String Ec2RequestThrottleDefault = "60"; // per second
     
     public static List<String> getInstanceKeys()
     {
@@ -124,6 +126,7 @@ public class InstanceNames
        keys.add(Ec2IamNameKey);
        keys.add(Ec2KeyPairNameKey);
        keys.add(Ec2StallReleaseKey);
+       keys.add(Ec2RequestThrottleKey);
        return keys;
     }
 }

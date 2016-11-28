@@ -102,4 +102,9 @@ public interface ResourcesManager
      * maps but for which it recognizes it has created in the past. 
      */
     public void forceCleanup();
+    
+    /**
+     * Throttle AWS calls to a configured max per second.
+     */
+    public void awsThrottle();
 }
