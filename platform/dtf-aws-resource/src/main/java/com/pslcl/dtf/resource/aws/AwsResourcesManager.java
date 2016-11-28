@@ -34,6 +34,7 @@ import com.pslcl.dtf.core.runner.resource.exception.FatalException;
 import com.pslcl.dtf.core.runner.resource.exception.FatalResourceException;
 import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
 import com.pslcl.dtf.core.runner.resource.staf.StafSupport;
+import com.pslcl.dtf.core.util.RequestThrottle;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.AwsClientConfig;
 import com.pslcl.dtf.resource.aws.AwsClientConfiguration.ClientType;
@@ -58,6 +59,7 @@ public class AwsResourcesManager implements ResourcesManager
     public volatile AwsClientConfig ec2cconfig;
     public volatile AmazonSimpleEmailServiceClient sesClient;
     public volatile String systemId;
+    public volatile RequestThrottle requestThrottle;
     
     public AwsResourcesManager()
     {
@@ -235,6 +237,13 @@ public class AwsResourcesManager implements ResourcesManager
         String value = config.properties.getProperty(ResourceNames.SystemIdKey, ResourceNames.SystemIdDefault);
         value = StrH.trim(value);
         systemId = value;
+        config.initsb.ttl(ResourceNames.SystemIdKey, " = ", systemId);
+        
+        value = config.properties.getProperty(ResourceNames.SystemIdKey, ResourceNames.SystemIdDefault);
+        value = StrH.trim(value);
+        systemId = value;
+        config.initsb.ttl(ResourceNames.SystemIdKey, " = ", systemId);
+        
         config.initsb.ttl("ec2Client:");
         config.initsb.level.incrementAndGet();
         ec2cconfig = AwsClientConfiguration.getClientConfiguration(config, ClientType.Ec2);
@@ -348,5 +357,12 @@ public class AwsResourcesManager implements ResourcesManager
             Thread.currentThread().setName(tname);
             return null;
         }
+    }
+
+    @Override
+    public void awsThrottle()
+    {
+        // TODO Auto-generated method stub
+        
     }
 }

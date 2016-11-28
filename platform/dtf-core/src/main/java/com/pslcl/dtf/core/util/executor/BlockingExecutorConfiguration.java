@@ -23,16 +23,16 @@ import com.pslcl.dtf.core.util.StrH;
 @SuppressWarnings("javadoc")
 public class BlockingExecutorConfiguration
 {
-    public static final String CorePoolSizeKey = "pslcl.service.util.executor.core-size";
-    public static final String MaximumQueueSizeKey = "pslcl.service.util.executor.max-queue-size";
-    public static final String MaxBlockingTimeKey = "pslcl.service.util.executor.max-blocking-time";
-    public static final String ThreadNamePrefixKey = "pslcl.service.util.executor.thread-name";
-    public static final String KeepAliveDelayKey = "pslcl.service.util.executor.keep-alive-delay";
-    public static final String AllowCoreThreadTimeoutKey = "pslcl.service.util.executor.core-timeout";
-    public static final String StatusNameKey = "pslcl.service.util.executor.status-name";
+    public static final String CorePoolSizeKey = "pslcl.common.executor.core-size";
+    public static final String MaximumPoolSizeKey = "pslcl.common.executor.max-pool-size";
+    public static final String MaxBlockingTimeKey = "pslcl.common.executor.max-blocking-time";
+    public static final String ThreadNamePrefixKey = "pslcl.common.executor.thread-name";
+    public static final String KeepAliveDelayKey = "pslcl.common.executor.keep-alive-delay";
+    public static final String AllowCoreThreadTimeoutKey = "pslcl.common.executor.core-timeout";
+    public static final String StatusNameKey = "pslcl.common.executor.status-name";
 
     public static final String CorePoolSizeDefault = "128";
-    public static final String MaximumQueueSizeDefault = "128";
+    public static final String MaximumPoolSizeDefault = "128";
     public static final String MaxBlockingTimeDefault = "120000";
     public static final String ThreadNamePrefixDefault = "PslclBlockingExecutor";
     public static final String KeepAliveDelayDefault = "120000";
@@ -49,9 +49,9 @@ public class BlockingExecutorConfiguration
             config.initsb.ttl(CorePoolSizeKey, "=", value);
             msg = "invalid corePoolSize value";
             int corePoolSize = Integer.parseInt(value);
-            value = config.properties.getProperty(MaximumQueueSizeKey, MaximumQueueSizeDefault);
+            value = config.properties.getProperty(MaximumPoolSizeKey, MaximumPoolSizeDefault);
             value = StrH.trim(value);
-            config.initsb.ttl(MaximumQueueSizeKey, "=", value);
+            config.initsb.ttl(MaximumPoolSizeKey, "=", value);
             msg = "invalid maxQueueSize value";
             int maxQueueSize = Integer.parseInt(value);
             value = config.properties.getProperty(MaxBlockingTimeKey, MaxBlockingTimeDefault);
@@ -78,7 +78,7 @@ public class BlockingExecutorConfiguration
             config.initsb.ttl(StatusNameKey, "=", statusName);
 
             config.properties.remove(CorePoolSizeKey);
-            config.properties.remove(MaximumQueueSizeKey);
+            config.properties.remove(MaximumPoolSizeKey);
             config.properties.remove(MaxBlockingTimeKey);
             config.properties.remove(ThreadNamePrefixKey);
             config.properties.remove(KeepAliveDelayKey);
