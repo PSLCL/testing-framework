@@ -60,7 +60,7 @@ public class ResourceNames
      * dtf runner    
     ******************************************************************************/    
     public static final String DtfRunnerTestInstanceLimitKey = RunnerKeyBase + ".test-instance-limit";
-        
+    public static final String DtfRunnerTestInstanceLimitDefault = "2";
 
     /* ****************************************************************************
      * Database    
