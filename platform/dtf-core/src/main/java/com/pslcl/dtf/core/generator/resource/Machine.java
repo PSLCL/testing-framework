@@ -183,6 +183,11 @@ public class Machine extends Resource
                 System.err.println("ERROR: Artifact is null.");
                 continue;
             }
+            synchronized(deployActions){
+	            if(deployActions.containsKey(a)){
+	            	continue; //duplicate
+	            }
+            }
             
             Deploy deploy = new Deploy(this, a, actionDependencies);
             generator.add(deploy);

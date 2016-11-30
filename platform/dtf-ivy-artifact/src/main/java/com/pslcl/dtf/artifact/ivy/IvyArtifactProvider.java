@@ -159,6 +159,31 @@ public class IvyArtifactProvider implements ArtifactProvider
 
             return result;
         }
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((rmv == null) ? 0 : rmv.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			IvyModule other = (IvyModule) obj;
+			if (rmv == null) {
+				if (other.rmv != null)
+					return false;
+			} else if (!rmv.equals(other.rmv))
+				return false;
+			return true;
+		}
     }
 
     private static class IvyArtifact implements Artifact
@@ -217,6 +242,55 @@ public class IvyArtifactProvider implements ArtifactProvider
 		public void setTargetFilePath(String targetFilePath) {
 			this.targetFilePath = targetFilePath;
 		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((configuration == null) ? 0 : configuration.hashCode());
+			result = prime * result + ((content == null) ? 0 : content.hashCode());
+			result = prime * result + ((module == null) ? 0 : module.hashCode());
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			result = prime * result + ((targetFilePath == null) ? 0 : targetFilePath.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			IvyArtifact other = (IvyArtifact) obj;
+			if (configuration == null) {
+				if (other.configuration != null)
+					return false;
+			} else if (!configuration.equals(other.configuration))
+				return false;
+			if (content == null) {
+				if (other.content != null)
+					return false;
+			} else if (!content.equals(other.content))
+				return false;
+			if (module == null) {
+				if (other.module != null)
+					return false;
+			} else if (!module.equals(other.module))
+				return false;
+			if (name == null) {
+				if (other.name != null)
+					return false;
+			} else if (!name.equals(other.name))
+				return false;
+			if (targetFilePath == null) {
+				if (other.targetFilePath != null)
+					return false;
+			} else if (!targetFilePath.equals(other.targetFilePath))
+				return false;
+			return true;
+		}		
     }
 
     private static class IvyContent implements Content
@@ -297,6 +371,52 @@ public class IvyArtifactProvider implements ArtifactProvider
         {
             return getHash().toString();
         }
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((artifact == null) ? 0 : artifact.hashCode());
+			result = prime * result + (downloaded ? 1231 : 1237);
+			result = prime * result + ((file == null) ? 0 : file.hashCode());
+			result = prime * result + ((hash == null) ? 0 : hash.hashCode());
+			result = prime * result + ((rmv == null) ? 0 : rmv.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			IvyContent other = (IvyContent) obj;
+			if (artifact == null) {
+				if (other.artifact != null)
+					return false;
+			} else if (!artifact.equals(other.artifact))
+				return false;
+			if (downloaded != other.downloaded)
+				return false;
+			if (file == null) {
+				if (other.file != null)
+					return false;
+			} else if (!file.equals(other.file))
+				return false;
+			if (hash == null) {
+				if (other.hash != null)
+					return false;
+			} else if (!hash.equals(other.hash))
+				return false;
+			if (rmv == null) {
+				if (other.rmv != null)
+					return false;
+			} else if (!rmv.equals(other.rmv))
+				return false;
+			return true;
+		}
     }
 
     /**
