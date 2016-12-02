@@ -1156,6 +1156,64 @@ public class Core
         {
             return core.getArtifacts(pk, namePattern, configuration);
         }
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((attributes == null) ? 0 : attributes.hashCode());
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+			result = prime * result + (int) (pk ^ (pk >>> 32));
+			result = prime * result + ((sequence == null) ? 0 : sequence.hashCode());
+			result = prime * result + ((status == null) ? 0 : status.hashCode());
+			result = prime * result + ((version == null) ? 0 : version.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			DBModule other = (DBModule) obj;
+			if (attributes == null) {
+				if (other.attributes != null)
+					return false;
+			} else if (!attributes.equals(other.attributes))
+				return false;
+			if (name == null) {
+				if (other.name != null)
+					return false;
+			} else if (!name.equals(other.name))
+				return false;
+			if (organization == null) {
+				if (other.organization != null)
+					return false;
+			} else if (!organization.equals(other.organization))
+				return false;
+			if (pk != other.pk)
+				return false;
+			if (sequence == null) {
+				if (other.sequence != null)
+					return false;
+			} else if (!sequence.equals(other.sequence))
+				return false;
+			if (status == null) {
+				if (other.status != null)
+					return false;
+			} else if (!status.equals(other.status))
+				return false;
+			if (version == null) {
+				if (other.version != null)
+					return false;
+			} else if (!version.equals(other.version))
+				return false;
+			return true;
+		}
     }
 
     /**
@@ -1269,6 +1327,61 @@ public class Core
 		@Override
 		public void setTargetFilePath(String targetFilePath) {
 			this.targetFilePath = targetFilePath;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((configuration == null) ? 0 : configuration.hashCode());
+			result = prime * result + ((hash == null) ? 0 : hash.hashCode());
+			result = prime * result + mode;
+			result = prime * result + ((module == null) ? 0 : module.hashCode());
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			result = prime * result + (int) (pk ^ (pk >>> 32));
+			result = prime * result + ((targetFilePath == null) ? 0 : targetFilePath.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			DBArtifact other = (DBArtifact) obj;
+			if (configuration == null) {
+				if (other.configuration != null)
+					return false;
+			} else if (!configuration.equals(other.configuration))
+				return false;
+			if (hash == null) {
+				if (other.hash != null)
+					return false;
+			} else if (!hash.equals(other.hash))
+				return false;
+			if (mode != other.mode)
+				return false;
+			if (module == null) {
+				if (other.module != null)
+					return false;
+			} else if (!module.equals(other.module))
+				return false;
+			if (name == null) {
+				if (other.name != null)
+					return false;
+			} else if (!name.equals(other.name))
+				return false;
+			if (pk != other.pk)
+				return false;
+			if (targetFilePath == null) {
+				if (other.targetFilePath != null)
+					return false;
+			} else if (!targetFilePath.equals(other.targetFilePath))
+				return false;
+			return true;
 		}
 
         //@Override
