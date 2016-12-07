@@ -29,6 +29,7 @@ function expandModules( m, ls ) {
  * Get a list of test instances and result summaries.
  */
 module.exports.list_instances = function( plan, test, module_str, against, callback ) {
+  let includeInstances = false;
   mysql.getConnection(function(err,conn) {
     if(err){
       console.log("Error getting mysql connection: " + err);
@@ -64,9 +65,14 @@ module.exports.list_instances = function( plan, test, module_str, against, callb
           var vals = _.map( test_plan.values, function( test ) {
 
             var docs = _.find( result[2], function(e) { return e.pk_test == test.key; } );
+            var failedInstances = [];
             var summary = _.countBy(test.values, function(i) {
                 if ( i.result == null ) return 'pending';
-                return i.result == 0 ? 'failed' : 'passed';
+                if(i.result == 0){
+                  failedInstances.push(i.pk_test_instance);
+                  return 'failed';
+                }
+                return 'passed';
             });
 
             if ( summary.passed == undefined )
@@ -94,7 +100,7 @@ module.exports.list_instances = function( plan, test, module_str, against, callb
 
             var chart = { "data": data, "options": { "animation": false, "animateRotate": false, "segmentShowStroke": false } };
 
-            var items = _.map( test.values, function(v) {
+            var items = !includeInstances ? [] : _.map( test.values, function(v) {
                 v.module_list = expandModules( modules, v.modules );
                 if ( v.result == null )
                     v.result_text = "Pending";
@@ -112,7 +118,8 @@ module.exports.list_instances = function( plan, test, module_str, against, callb
                 description: docs.description,
                 'summary': summary,
                 'chart': chart,
-                values: items
+                values: items,
+                failed: failedInstances 
             };
           });
 

@@ -56,6 +56,7 @@
                     <p class='pending'><span class='count'>{{test.summary.pending }}</span><span class='percent'>{{ 100 * test.summary.pending / test.summary.total | number:0 }}</span></p>
                 </div>
             </div>
+            <div><p class='fail'>Failed Tests: {{test.failed}}</p></div>
 
             <div class='report-module instance'
             ng-repeat="instance in test.values track by $index">
@@ -66,6 +67,7 @@
 
                 <h4>Test Completed At:</h4><p>{{instance.end_time | date:'medium'}}</p>
             </div>
+            <br/>
         </div>
     </div>
 </div>
