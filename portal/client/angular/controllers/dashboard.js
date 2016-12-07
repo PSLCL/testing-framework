@@ -13,10 +13,6 @@ app.controller('DashboardCtrl',
     };
     $scope.stats = Stats.get();
     $scope.runrates = RunRates.get();
-    $scope.untested = UntestedArtifacts.query();
-    $scope.untested.$promise.then( function( untested ) {
-        $scope.untested_count = untested.length;
-        });
     $scope.user = AuthenticUser.get();
     $scope.user.$promise.then( function( user ) {
         var username = user.email;

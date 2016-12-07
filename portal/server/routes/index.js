@@ -29,7 +29,8 @@ exports.stats = function( req, res ) {
                 + '(SELECT COUNT(*) FROM content) AS artifact_count,'
                 + '(SELECT COUNT(*) FROM test_instance) AS ti_count,'
                 + '(SELECT COUNT(*) FROM test_instance WHERE fk_run IS NULL) AS ti_pending,'
-                + '(SELECT COUNT(*) FROM test_instance INNER JOIN run ON run.pk_run = test_instance.fk_run WHERE end_time IS NULL) AS ti_running',
+                + '(SELECT COUNT(*) FROM test_instance INNER JOIN run ON run.pk_run = test_instance.fk_run WHERE end_time IS NULL) AS ti_running,'
+                + '(SELECT COUNT(*) FROM module WHERE module.pk_module NOT IN (SELECT module_to_test_instance.fk_module FROM module_to_test_instance)) AS untested_module_count',
                 function( err, result ) {
                   conn.release();
 
