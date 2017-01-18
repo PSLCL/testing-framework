@@ -652,6 +652,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         } catch (Exception e)
         {
             System.err.println("ERROR: Exception during module iteration, " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
