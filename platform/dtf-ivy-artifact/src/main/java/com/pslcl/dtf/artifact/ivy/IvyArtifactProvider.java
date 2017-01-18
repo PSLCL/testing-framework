@@ -639,8 +639,14 @@ public class IvyArtifactProvider implements ArtifactProvider
 
                         {
                             ModuleRevisionId mrid = new ModuleRevisionId(new ModuleId(org, module), version);
-
-                            ResolvedModuleRevision rmv = ivy.findModule(mrid);
+                            ResolvedModuleRevision rmv;
+                            try{
+                            	rmv = ivy.findModule(mrid);
+                            } catch(Exception e){
+                            	System.err.println("Failed to find module: " + org + "#" + module + ";" + version);
+                            	e.printStackTrace();
+                            	continue;
+                            }
                             if (rmv != null)
                                 moduleNotifier.module(this, new IvyModule(rmv), extractMergeTo(rmv.getDescriptor()));
                             else
