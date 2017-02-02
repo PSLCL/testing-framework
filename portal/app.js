@@ -54,7 +54,8 @@ if ( env == 'production' ) {
         child.on('close', function(code) { console.log("Synchronize complete with exit code " + code) });
         }, function() {
         },
-        true
+        true,
+		config.synchronize_schedule_time_zone
     );
 };
 
