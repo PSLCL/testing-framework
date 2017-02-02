@@ -98,6 +98,8 @@ var configs = {
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
     'synchronize_schedule': all.synchronize_schedule,
+    synchronize_jvm_args: all.synchronize_jvm_args,
+    generator_process_count: all.generator_process_count,
     'certificate_passphrase': certificate_passphrase,
     listen_ip: '0.0.0.0',
     http_port: 80,
