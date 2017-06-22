@@ -47,5 +47,10 @@ The Distributed Test Framework test runner service implementation.
     <dependency org="org.apache.httpcomponents" name="fluent-hc" rev="4.5.1"/>
     <dependency org="org.apache.commons" name="commons-compress" rev="1.10"/>
 	<dependency org="org.apache.commons" name="commons-collections4" rev="4.1"/>
+    <!-- did not pick these up transitively in intellij -->
+    <dependency org="ch.qos.logback" name="logback-classic" rev="[1.1.2,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="commons-io" name="commons-io" rev="[2.4,3)" conf="compile->master,compile;javadoc"/>
+    <dependency org="commons-daemon" name="commons-daemon" rev="[1.0.15,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="javax.jms" name="jms-api" rev="1.1-rev-1"/>
   </dependencies>
 </ivy-module>

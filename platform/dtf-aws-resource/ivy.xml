@@ -44,5 +44,8 @@ The Distributed Test Framework AWS resource provider implementation.
     <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="com.amazonaws" name="aws-java-sdk" rev="[1.10.23,1.11)" conf="compile->master,compile;javadoc"/>
     <dependency org="com.amazonaws" name="amazon-sqs-java-messaging-lib" rev="[1,2)" conf="compile->master,compile;javadoc"/>
+    <!-- did not pick these up transitively in intellij -->
+    <dependency org="ch.qos.logback" name="logback-classic" rev="[1.1.2,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="javax.mail" name="mail" rev="1.4.7"/>
   </dependencies>
 </ivy-module>
