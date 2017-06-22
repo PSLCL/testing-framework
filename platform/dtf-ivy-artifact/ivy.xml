@@ -43,5 +43,7 @@ The Distributed Test Framework Ivy artifact provider implementation.
   <dependencies>
     <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="org.apache.ivy" name="ivy" rev="[2.4,3)" conf="compile->master,compile;javadoc"/>
+    <!-- did not pick these up transitively in intellij -->
+    <dependency org="commons-io" name="commons-io" rev="[2.4,3)" conf="compile->master,compile;javadoc"/>
   </dependencies>
 </ivy-module>
