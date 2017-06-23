@@ -354,8 +354,7 @@ public class Core
                 read_only = true;
             }
 
-            Class.forName("com.mysql.jdbc.Driver"); // required at run time only for .getConnection(): mysql-connector-java-5.1.35.jar
-            String connectstring = String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
+            String connectstring = String.format("jdbc:mariadb://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
             connect = DriverManager.getConnection(connectstring);
         } catch (Exception e)
         {
