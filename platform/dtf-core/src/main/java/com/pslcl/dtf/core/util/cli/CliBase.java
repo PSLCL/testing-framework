@@ -15,25 +15,22 @@
  */
 package com.pslcl.dtf.core.util.cli;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.swing.JOptionPane;
-
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.util.StatusPrinter;
+import com.pslcl.dtf.core.util.ClassInfo;
+import com.pslcl.dtf.core.util.StrH;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.core.util.StatusPrinter;
-
-import com.pslcl.dtf.core.util.ClassInfo;
-import com.pslcl.dtf.core.util.StrH;
+import javax.swing.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Command line Interface Base.

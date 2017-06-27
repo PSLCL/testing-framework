@@ -40,14 +40,32 @@ The Distributed Test Framework common interfaces and core implementation.
     <artifact conf="master" name="${jar.name}" type="jar" ext="jar"/>
     <artifact conf="javadoc" name="${jar.name}" type="javadoc" ext="jar" m:classifier="javadoc"/>
   </publications>
+
+  <dependencies>
+    <dependency org="ch.qos.logback" name="logback-classic" rev="[1.2.3, 1.3)" conf="compile->default"/>
+    <dependency org="commons-cli" name="commons-cli" rev="[1.4, 1.5)" conf="compile->default"/>
+    <dependency org="javax.jms" name="jms-api" rev="1.1-rev-1" conf="compile->default"/>
+    <dependency org="net.sf.staf" name="jstaf" rev="[3.4.4, 3.5)" conf="compile->default"/>
+    <dependency org="commons-io" name="commons-io" rev="[2.5, 2.6)" conf="compile->default"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-sqs" rev="[1.11.155,1.12)" conf="compile->default"/>
+    <dependency org="org.apache.commons" name="commons-compress" rev="[1.14, 1.15)" conf="compile->default"/>
+  </dependencies>
+
+  <!-- the following dependencies block built with ivyidea transitives turned off, thus there is redundancy here
+    <dependency org="javax.jms" name="jms" rev="[1.1, 1.2)" conf="compile->default"/>
   <dependencies>
     <dependency org="commons-daemon" name="commons-daemon" rev="[1.0.15,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="commons-io" name="commons-io" rev="[2.4,3)" conf="compile->master,compile;javadoc"/>
     <dependency org="commons-cli" name="commons-cli" rev="[1.3.1,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="ch.qos.logback" name="logback-classic" rev="[1.1.2,2)" conf="compile->master,compile;javadoc"/>
+    <dependency org="org.slf4j" name="slf4j-api" rev="[1.7.25,1.8)"/>
+    <dependency org="ch.qos.logback" name="logback-core" rev="1.2.3"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="[1.11.155,1.12)"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk" rev="[1.11.155,1.12)"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-sqs" rev="[1.11.155,1.12)"/>
     <dependency org="javax" name="javaee-api" rev="[7,8)" conf="compile->master,compile;javadoc"/>
     <dependency org="net.sf.staf" name="jstaf" rev="3.4.4"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk-sqs" rev="[1.10.23,1.11)"/>
     <dependency org="org.apache.commons" name="commons-compress" rev="1.10"/>
   </dependencies>
+  -->
 </ivy-module>

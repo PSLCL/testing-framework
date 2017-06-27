@@ -41,11 +41,26 @@ The Distributed Test Framework AWS resource provider implementation.
     <artifact conf="javadoc" name="${jar.name}" type="javadoc" ext="jar" m:classifier="javadoc"/>
   </publications>
   <dependencies>
+    <dependency org="org.slf4j" name="slf4j-api" rev="[1.7.25,1.8)" conf="compile->default"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-ec2" rev="[1.11.155, 1.12)" conf="compile->default"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-ses" rev="[1.11.155, 1.12)" conf="compile->default"/>
+    <dependency org="javax.jms" name="jms-api" rev="1.1-rev-1" conf="compile->default"/>
+    <dependency org="com.amazonaws" name="amazon-sqs-java-messaging-lib" rev="[1.0.0, 1.1)" conf="compile->default"/>
+    <dependency org="javax.mail" name="mail" rev="[1.4.7, 1.5)" conf="compile->default"/>
+  </dependencies>
+  <!-- the following dependencies block built with iveidea transitives turned off, thus there is redundancy here
+  <dependencies>
     <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk" rev="[1.10.23,1.11)" conf="compile->master,compile;javadoc"/>
-    <dependency org="com.amazonaws" name="amazon-sqs-java-messaging-lib" rev="[1,2)" conf="compile->master,compile;javadoc"/>
-    <!-- did not pick these up transitively in intellij -->
+    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="[1.11.155,1.12)"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-ec2" rev="[1.11.155, 1.12)"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-ses" rev="[1.11.155, 1.12)"/>
+    <dependency org="com.amazonaws" name="amazon-sqs-java-messaging-lib" rev="[1.0.0, 1.1)"/>
+
+    <dependency org="javax.jms" name="jms-api" rev="1.1-rev-1"/>
+    <dependency org="org.slf4j" name="slf4j-api" rev="[1.7.25,1.8)"/>
     <dependency org="ch.qos.logback" name="logback-classic" rev="[1.1.2,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="javax.mail" name="mail" rev="1.4.7"/>
+    <dependency org="org.slf4j" name="slf4j-api" rev="[1.7.25,1.8)"/>
   </dependencies>
+  -->
 </ivy-module>

@@ -41,9 +41,16 @@ The Distributed Test Framework Ivy artifact provider implementation.
     <artifact conf="javadoc" name="${jar.name}" type="javadoc" ext="jar" m:classifier="javadoc"/>
   </publications>
   <dependencies>
+    <dependency org="commons-io" name="commons-io" rev="[2.5, 2.6)" conf="compile->default"/>
+    <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->default"/>
+    <dependency org="org.apache.ivy" name="ivy" rev="[2.4,2.5)" conf="compile->default"/>
+
+  </dependencies>
+  <!-- the following dependencies block built with iveidea transitives turned off, thus there is redundancy here
+  <dependencies>
     <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->master,compile;javadoc"/>
     <dependency org="org.apache.ivy" name="ivy" rev="[2.4,3)" conf="compile->master,compile;javadoc"/>
-    <!-- did not pick these up transitively in intellij -->
     <dependency org="commons-io" name="commons-io" rev="[2.4,3)" conf="compile->master,compile;javadoc"/>
   </dependencies>
+  -->
 </ivy-module>
