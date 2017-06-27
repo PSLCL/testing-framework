@@ -509,7 +509,7 @@ public class DistributedTestingFramework
         }
 
         Core core = null;
-        ArtifactProvider artifactProvider = null;
+//      ArtifactProvider artifactProvider = null;
 
         try
         {
@@ -643,11 +643,12 @@ public class DistributedTestingFramework
             e.printStackTrace(System.err);
         } finally
         {
-            if (artifactProvider != null)
-            {
-                artifactProvider.close();
-                artifactProvider = null;
-            }
+            // artifactProvider is ever used
+//          if (artifactProvider != null)
+//          {
+//              artifactProvider.close();
+//              artifactProvider = null;
+//          }
 
             if (core != null)
             {
