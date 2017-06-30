@@ -203,7 +203,7 @@ public class Core
                 binding.put("process", null);
                 binding.put("env", System.getenv());
                 binding.put("module", new NodeModule());
-		binding.put("home_dir", Paths.get("").toAbsolutePath().normalize().toString());
+    	        binding.put("home_dir", Paths.get("").toAbsolutePath().normalize().toString());
 
                 engine.eval(new FileReader(fs), binding);
                 this.db_host = (String) engine.eval("config.mysql.host;", binding);
@@ -817,7 +817,7 @@ public class Core
      */
     public Hash addContent(InputStream is, long length)
     {
-        File tmp;
+        File tmp = null;
         FileOutputStream os = null;
 
         try
@@ -1927,7 +1927,7 @@ public class Core
     /**
      * Return whether the specified version is associated with the current core target test. This is true
      * if there is a relationship from the test through the test plan to the component and version.
-     * @param version
+     * @param module
      * @return
      */
     boolean isAssociatedWithTest(Module module)

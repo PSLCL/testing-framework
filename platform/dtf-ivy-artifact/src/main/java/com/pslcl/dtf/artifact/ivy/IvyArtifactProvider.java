@@ -312,12 +312,21 @@ public class IvyArtifactProvider implements ArtifactProvider
             if (downloaded)
                 return;
 
-            DownloadOptions options = new DownloadOptions();
-            DownloadReport report = rmv.getArtifactResolver().download(new org.apache.ivy.core.module.descriptor.Artifact[] { artifact }, options);
-            ArtifactDownloadReport areport = report.getArtifactReport(artifact);
-            file = areport.getLocalFile();
-            hash = Hash.fromContent(file);
-            downloaded = true;
+            try {
+                DownloadOptions options = new DownloadOptions();
+                DownloadReport report = rmv.getArtifactResolver().download(new org.apache.ivy.core.module.descriptor.Artifact[] { artifact }, options);
+                ArtifactDownloadReport areport = report.getArtifactReport(artifact);
+                file = areport.getLocalFile();
+                if (file != null) {
+                    hash = Hash.fromContent(file);
+                    downloaded = true;
+                } else {
+                    System.out.println("ERROR: IvyArtifactProvider.download() finds null file, returns without full download");
+                }
+            } catch (Exception e) {
+                System.out.println("ERROR: IvyArtifactProvider.download() sees exception, msg: " + e);
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -339,9 +348,15 @@ public class IvyArtifactProvider implements ArtifactProvider
             try
             {
                 download();
-                return new FileInputStream(file);
+                if (file != null)
+                    return new FileInputStream(file);
+                else {
+                    System.out.println("ERROR: IvyArtifactProvider.asStream() sees file null, returns null");
+                    return null;
+                }
             } catch (Exception e)
             {
+                System.out.println("ERROR: IvyArtifactProvider.asStream() sees exception, returns null; msg: " + e);
                 return null;
             }
         }
@@ -474,7 +489,7 @@ public class IvyArtifactProvider implements ArtifactProvider
      * @param version The version
      * @param criteria Criteria that have already been determined to apply.
      * @param optional If the current search parameter is optional then the name is passed here.
-     * @param attr A list of attribute sets that have been searched for to prevent duplicate searches.
+     * @param attrs A list of attribute sets that have been searched for to prevent duplicate searches.
      * @param moduleNotifier The callback to notify modules to.
      */
     private void scanOptions(Ivy ivy, AbstractPatternsBasedResolver pbr, String org, String module, String version, Map<String, String> criteria, String optional, List<String> attrs, ModuleNotifier moduleNotifier)

@@ -256,16 +256,28 @@ public class DistributedTestingFramework
                 pk_module = core.addModule(module);
                 for (Artifact artifact : artifacts)
                 {
-                    Hash h = core.addContent(artifact.getContent().asStream(), -1);
-                    long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
-                    if (artifact.getName().endsWith(".tar.gz"))
+                    Content content = artifact.getContent();
+                    if (content != null)
                     {
-                        decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0);
+                        InputStream is = content.asStream();
+                        if (is != null)
+                        {
+                            Hash h = core.addContent(is, -1);
+                            long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
+                            if (artifact.getName().endsWith(".tar.gz"))
+                            {
+                                decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0);
+                            }
+                        } else {
+                            System.out.println("ERROR: .module() skipping one artifact having null InputStream");
+                        }
+                    } else {
+                        System.out.println("ERROR: .module() skipping one artifact having null Content");
                     }
                 }
             } catch (Exception e)
             {
-
+                // TODO
             }
         }
 
@@ -546,7 +558,7 @@ public class DistributedTestingFramework
                         provider.init();
                         to_close.add(provider);
 
-                        /* Handle generators from this provider. */
+                        // Identify artifacts from this artifact provider. Fill tables modules/artifacts/content.
                         provider.iterateModules(handler);
                     } catch (Exception e)
                     {
