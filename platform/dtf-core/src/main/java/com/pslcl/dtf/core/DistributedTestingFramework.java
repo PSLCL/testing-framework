@@ -418,7 +418,7 @@ public class DistributedTestingFramework
                 core.updateTest(id, stdout.toString(), stderr.toString());
             } catch (Exception e)
             {
-                String log = "ERROR: Could not run script " + script + ", " + e;
+                String log = "ERROR: Could not run script '" + script + "', " + e;
                 System.err.println(log);
                 new PrintStream(stderr).println(log);
             } finally
@@ -427,11 +427,11 @@ public class DistributedTestingFramework
             }
         }
 
-        @Override
-        public String toString()
-        {
-            return Long.toString(id) + "/" + script;
-        }
+//      @Override
+//      public String toString()
+//      {
+//          return Long.toString(id) + "/" + script;
+//      }
     }
 
     private static Set<PosixFilePermission> toPosixPermissions(int mode)

@@ -295,6 +295,10 @@ public class Core
         String dir = config.dirArtifacts();
         if (dir != null)
             this.artifacts = new File(dir);
+        else {
+            System.out.println("ERROR: Core() constructor: null artifact directory, return with no further action");
+            return;
+        }
 
         if (!this.artifacts.isDirectory())
             //noinspection ResultOfMethodCallIgnored
@@ -2470,7 +2474,7 @@ public class Core
                         ti.pk = keys.getLong(1);
                 } catch (Exception e)
                 {
-                    System.err.println("ERROR: Could not add module to module_to_test_instance: " + e.getMessage());
+                    System.err.println("ERROR: Could not add described_template to test_instance: " + e.getMessage());
                 }
 
                 safeClose(statement2);
