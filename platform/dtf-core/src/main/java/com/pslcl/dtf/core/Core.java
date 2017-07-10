@@ -801,14 +801,14 @@ public class Core
     }
 
     /**
-     * Delete previous builds of the same version as this module.
-     * @param module The module that previous versions of should be deleted. It is required
+     * Delete all previous sequence build numbers of the same version as this module.
+     * @param module The module that previous builds of should be deleted. It is required
      * that this module not be already added to the database.
      */
-    public void deletePriorVersion(Module module)
+    public void deletePriorBuildSequenceNumbers(Module module)
     {
         long pk;
-        while ((pk = findModuleWithoutSequence(module)) != 0)
+        while ((pk = findModuleWithoutPriorSequence(module)) != 0)
             deleteModule(pk);
     }
 
@@ -2086,9 +2086,9 @@ public class Core
         }
     }
 
-    public long findModuleWithoutSequence(Module module)
+    public long findModuleWithoutPriorSequence(Module module)
     {
-        // Short-cut the lookup if it is one of our modules.
+        // Short-cut the lookup if it is one of our modules (i.e. is already in the database).
         if (module instanceof DBModule)
         {
             DBModule dbmod = (DBModule) module;
@@ -2096,6 +2096,7 @@ public class Core
                 return dbmod.pk;
         }
 
+        // here for submitted module not in database (similar module entries may exist in db, even of same version)
         PreparedStatement statement = null;
         ResultSet resultSet = null;
 
@@ -2106,6 +2107,8 @@ public class Core
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
             {
+                // resultSet.next() gives the actual first row of the overall resultSet
+                // REVIEW: do we have assurance that the returned ordering is by submittal order?
                 resultSet.next();
                 return resultSet.getLong("module.pk_module");
             }

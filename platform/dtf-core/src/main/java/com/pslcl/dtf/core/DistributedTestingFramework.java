@@ -207,16 +207,16 @@ public class DistributedTestingFramework
         {
             try
             {
-                // Check to see if the module exists. If it does then return (assuming that artifacts do not change).
+                // Check to see if the module exists. If it does then return.
                 // If it does not exist then add the module and iterate the artifacts.
                 long pk_module = core.findModule(module);
                 if (pk_module != 0)
                 {
-                    core.updateModule(pk_module);
+                    core.updateModule(pk_module); // clear module.missing_count
                     return;
                 }
 
-                // Determine if the module contains a test generator - this triggers deletion of prior instances.
+                // Determine if the module contains a test generator - this triggers deletion of prior stored modules of same version number.
                 List<Artifact> artifacts = module.getArtifacts();
                 boolean contains_generator = false;
                 for (Artifact artifact : artifacts)
@@ -231,27 +231,30 @@ public class DistributedTestingFramework
                 boolean merge_source = false;
                 if (merge != null && merge.length() > 0)
                 {
+                    // this ALSO triggers deletion of prior stored modules of same version number
                     merge_source = true;
                     Delayed D = new Delayed();
                     D.source = source;
                     D.merge = merge;
                     D.module = module;
                     delayed.add(D);
+                    // delayed list is used in .finalize(), which is called after IvyArtifactProvider.iterateModules() completes
                 }
 
-                /* Generator and merged components are "one only". This is done because they are not
-                 * meant to be the modules that are tested, but rather modules that provide
-                 * testing applications. Merging multiple "versions" of the same module would
-                 * cause conflicts. The same is true for generators, which are extracted and
-                 * executed.
+                /* Generator and merged components are of "one only" build sequence number.
+                 * This is done because they are not meant to be the modules that are tested,
+                 * but rather modules that provide testing applications.
+                 *
+                 * Merging multiple sequence numbers of the same component would cause conflicts.
+                 * The same is true for generators, which are extracted and executed.
                  * However, we do allow different versions of the component that will merge
                  * into different target modules. This means that we consider only modules
-                 * where the sequence is different.
+                 * where the build sequence number is different.
                  */
-                // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED, BELOW
-                // IT IS ASSUMED THAT THE SEQUENCE IS LATER THAN ALL EXISTING
+                // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED TO TABLS module, BELOW.
+                // IT IS ASSUMED THAT THE MODULE'S BUILD SEQUENCE NUMBER IS LATER THAN ALL EXISTING.
                 if (contains_generator || (merge != null && merge.length() > 0))
-                    core.deletePriorVersion(module);
+                    core.deletePriorBuildSequenceNumbers(module);
 
                 pk_module = core.addModule(module);
                 for (Artifact artifact : artifacts)
