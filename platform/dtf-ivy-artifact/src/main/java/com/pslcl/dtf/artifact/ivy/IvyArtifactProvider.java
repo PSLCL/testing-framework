@@ -321,7 +321,7 @@ public class IvyArtifactProvider implements ArtifactProvider
                     hash = Hash.fromContent(file);
                     downloaded = true;
                 } else {
-                    System.out.println("ERROR: IvyArtifactProvider.download() finds null file, returns without full download");
+                    System.out.println("DEBUG: IvyArtifactProvider.download() finds null file, with message: " + areport);
                 }
             } catch (Exception e) {
                 System.out.println("ERROR: IvyArtifactProvider.download() sees exception, msg: " + e);
@@ -351,7 +351,7 @@ public class IvyArtifactProvider implements ArtifactProvider
                 if (file != null)
                     return new FileInputStream(file);
                 else {
-                    System.out.println("ERROR: IvyArtifactProvider.asStream() sees file null, returns null");
+                    System.out.println("DEBUG: IvyArtifactProvider.asStream() sees file null, returns null");
                     return null;
                 }
             } catch (Exception e)
@@ -441,27 +441,28 @@ public class IvyArtifactProvider implements ArtifactProvider
      */
     private static String extractMergeTo(ModuleDescriptor module)
     {
-        String result = "";
+        // added in module's ivy.xml ivy-module declaration line- attribute key/v: xmlns:e="http://com.pslcl/dtf-ivy"
         Map<String, String> ns = module.getExtraAttributesNamespaces();
         String prefix = "";
         for (Map.Entry<String, String> entry : ns.entrySet())
         {
             if (entry.getValue().equals("http://com.pslcl/dtf-ivy"))
             {
-                prefix = entry.getKey();
+                prefix = entry.getKey(); // prefix is the above key: "e"
                 break;
             }
         }
 
+        String result = "";
         String sep = "";
         for (ExtraInfoHolder extra : module.getExtraInfos())
         {
-            if (extra.getName().equals(prefix + ":" + "dtf-merge-info"))
+            if (extra.getName().equals(prefix + ":" + "dtf-merge-info")) // match xml name line: <e:dtf-merge-info .....
             {
                 Map<String, String> attributes = extra.getAttributes();
                 for (Map.Entry<String, String> attribute : attributes.entrySet())
                 {
-                    if (attribute.getKey().equals(prefix + ":merge-to"))
+                    if (attribute.getKey().equals(prefix + ":merge-to")) // match xml attribute: "e:merge-to"
                     {
                         result += sep + attribute.getValue();
                         sep = "&";
@@ -470,7 +471,7 @@ public class IvyArtifactProvider implements ArtifactProvider
             }
         }
 
-        return result;
+        return result; // value e.g. "org.opendof.core-java#dof-oal;7.0.5" from key/value e.g. e:merge-to="org.opendof.core-java#dof-oal;7.0.5"
     }
 
     /**

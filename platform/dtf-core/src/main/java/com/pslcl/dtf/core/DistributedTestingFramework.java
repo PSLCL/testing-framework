@@ -147,7 +147,7 @@ public class DistributedTestingFramework
 
     private static class HandleModule implements ArtifactProvider.ModuleNotifier
     {
-        private static class Delayed
+        private static class DelayedModuleMergeAction
         {
             ArtifactProvider source;
             String merge;
@@ -155,7 +155,7 @@ public class DistributedTestingFramework
         }
 
         private Core core;
-        private List<Delayed> delayed = new ArrayList<Delayed>();
+        private List<DelayedModuleMergeAction> delayedModuleMergeAction = new ArrayList<DelayedModuleMergeAction>();
 
         public HandleModule(Core core)
         {
@@ -233,12 +233,12 @@ public class DistributedTestingFramework
                 {
                     // this ALSO triggers deletion of prior stored modules of same version number
                     merge_source = true;
-                    Delayed D = new Delayed();
+                    DelayedModuleMergeAction D = new DelayedModuleMergeAction();
                     D.source = source;
                     D.merge = merge;
                     D.module = module;
-                    delayed.add(D);
-                    // delayed list is used in .finalize(), which is called after IvyArtifactProvider.iterateModules() completes
+                    delayedModuleMergeAction.add(D);
+                    // delayedModuleMergeAction list is used in .markMergeFromModule(), which is called after IvyArtifactProvider.iterateModules() completes
                 }
 
                 /* Generator and merged components are of "one only" build sequence number.
@@ -272,7 +272,7 @@ public class DistributedTestingFramework
                                 decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0);
                             }
                         } else {
-                            System.out.println("ERROR: .module() skipping one artifact having null InputStream");
+                            System.out.println("DEBUG: .module() skipping one artifact having null InputStream");
                         }
                     } else {
                         System.out.println("ERROR: .module() skipping one artifact having null Content");
@@ -285,10 +285,15 @@ public class DistributedTestingFramework
         }
 
         @Override
-        public void finalize()
+        public void finalize() // this overrides java's Object.finalize()
+        {
+            markMergeFromModule();
+        }
+
+        private void markMergeFromModule()
         {
             Iterable<Module> modules = core.createModuleSet();
-            for (Delayed d : delayed)
+            for (DelayedModuleMergeAction d : delayedModuleMergeAction)
             {
                 Module dmod = d.module;
                 long pk_source_module = core.findModule(dmod);
@@ -327,7 +332,8 @@ public class DistributedTestingFramework
                 }
             }
         }
-    }
+
+    } // end class HandleModule
 
     private static void inheritIO(final InputStream src, final PrintStream dest, final PrintStream save)
     {
@@ -558,7 +564,7 @@ public class DistributedTestingFramework
                         Class<?> P = Class.forName(providerName);
                         provider = (ArtifactProvider) P.newInstance();
 
-                        provider.init();
+                        provider.init(); // setup to follow config in ../portal/config/ivysettings.xml
                         to_close.add(provider);
 
                         // Identify artifacts from this artifact provider. Fill tables modules/artifacts/content.
@@ -570,7 +576,7 @@ public class DistributedTestingFramework
                     }
                 }
 
-                handler.finalize();
+                handler.markMergeFromModule();
 
                 for (ArtifactProvider p : to_close)
                 {
