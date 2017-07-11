@@ -321,11 +321,15 @@ public class DistributedTestingFramework
                         List<Artifact> artifacts = dmod.getArtifacts();
                         for (Artifact artifact : artifacts)
                         {
-                            Hash h = core.addContent(artifact.getContent().asStream(), -1);
-                            long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
-                            if (artifact.getName().endsWith(".tar.gz"))
+                            InputStream is = artifact.getContent().asStream();
+                            if (is != null)
                             {
-                                decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module);
+                                Hash h = core.addContent(is, -1);
+                                long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
+                                if (artifact.getName().endsWith(".tar.gz"))
+                                {
+                                    decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module);
+                                }
                             }
                         }
                     }
@@ -587,7 +591,7 @@ public class DistributedTestingFramework
                 if (noModuleErrors && prune > 0)
                     core.finalizeLoadingModules(prune);
 
-                // Extract all generators
+                // Extract all generators to new generator (configured) directory
                 Iterable<Module> find_generators = core.createModuleSet();
                 for (Module M : find_generators)
                 {

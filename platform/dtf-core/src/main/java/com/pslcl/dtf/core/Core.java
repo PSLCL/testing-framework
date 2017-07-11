@@ -1044,6 +1044,7 @@ public class Core
         Set<Long> used = new HashSet<Long>();
         try
         {
+            // TODO: see that fk_template is not a column of table test_instance
             findTemplates = connect.prepareStatement("select distinct fk_template from test_instance");
             foundTemplates = findTemplates.executeQuery();
             while (foundTemplates.next())
