@@ -521,10 +521,10 @@ public class DistributedTestingFramework
 
                 i += 1;
             } else if (args[i].compareTo("--generator-process-count") == 0){
-            	if (i == args.length)
+                if (i == args.length)
                     synchronizeHelp();
 
-            	generatorProcessCount = Integer.parseInt(args[i + 1]);
+                generatorProcessCount = Integer.parseInt(args[i + 1]);
                 if (generatorProcessCount <= 0)
                     synchronizeHelp();
 
@@ -704,62 +704,62 @@ public class DistributedTestingFramework
         boolean help = true;
         
         for (int i = 1; i < args.length; i++){
-	        try{
-	            if (args[i].compareTo("--test") == 0 && args.length > i)
-	            {
-	                i += 1;
-	                manualTestNumber = Long.parseLong(args[i]);
-	            } else if (args[i].compareTo("--test-instance") == 0 && args.length > i){
-	                i += 1;
-	            	manualTestInstanceNumber = Long.parseLong(args[i]);
-	            } else if (args[i].compareTo("--owner") == 0 && args.length > i){
-	                i += 1;
-	            	owner = args[i];
-	            } else{
-	            	System.err.println("WARN: Only manual tests supported. Use the --test or --test-instance options instead.");
-	            	runHelp();
-	            	runCount = Integer.parseInt(args[1]);            	
-	            }
-	       	}catch(NumberFormatException e){
-	        	System.err.println("Invalid argument " + args[i] + ". Expected number instead.");
-	        	runHelp();
-	       	}
-	    }
+            try{
+                if (args[i].compareTo("--test") == 0 && args.length > i)
+                {
+                    i += 1;
+                    manualTestNumber = Long.parseLong(args[i]);
+                } else if (args[i].compareTo("--test-instance") == 0 && args.length > i){
+                    i += 1;
+                    manualTestInstanceNumber = Long.parseLong(args[i]);
+                } else if (args[i].compareTo("--owner") == 0 && args.length > i){
+                    i += 1;
+                    owner = args[i];
+                } else{
+                    System.err.println("WARN: Only manual tests supported. Use the --test or --test-instance options instead.");
+                    runHelp();
+                    runCount = Integer.parseInt(args[1]);
+                }
+               }catch(NumberFormatException e){
+                System.err.println("Invalid argument " + args[i] + ". Expected number instead.");
+                runHelp();
+               }
+        }
         
         try{
-	        Core core = null;
-	        
-	        if(manualTestNumber > -1){
-	        	core = new Core(manualTestNumber);
-	        }
-	        else{
-	        	core = new Core(0);
-	        }
-	        
-	        String accessKeyID = core.getConfig().sqsAccessKeyID();
-	    	String secretKey = core.getConfig().sqsSecretAccessKey();
-	    	if(accessKeyID != null && !accessKeyID.isEmpty()){
-	        	System.setProperty("aws.accessKeyId", accessKeyID);
-	        	System.setProperty("aws.secretKey", secretKey);
-	        }
-	    	SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
-	    	sqs.init();
-	    	List<Long> testRuns = new ArrayList<Long>();
-	    	if(manualTestInstanceNumber > -1){
-	            	testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
-	        } else if(manualTestNumber > -1){
-	        	for(long testInstance: core.getTestInstances(manualTestNumber)){
-	            	Long run = core.createInstanceRun(testInstance, owner);
-	            	if(run != null)
-	            		testRuns.add(run);
-	        	}
-	        }
-	        for(Long runID: testRuns){
-	        	System.out.println("Queueing test run: " + runID);
-	        	sqs.publishTestRunRequest(runID);
-	        }
+            Core core = null;
+
+            if(manualTestNumber > -1){
+                core = new Core(manualTestNumber);
+            }
+            else{
+                core = new Core(0);
+            }
+
+            String accessKeyID = core.getConfig().sqsAccessKeyID();
+            String secretKey = core.getConfig().sqsSecretAccessKey();
+            if(accessKeyID != null && !accessKeyID.isEmpty()){
+                System.setProperty("aws.accessKeyId", accessKeyID);
+                System.setProperty("aws.secretKey", secretKey);
+            }
+            SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
+            sqs.init();
+            List<Long> testRuns = new ArrayList<Long>();
+            if(manualTestInstanceNumber > -1){
+                    testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
+            } else if(manualTestNumber > -1){
+                for(long testInstance: core.getTestInstances(manualTestNumber)){
+                    Long run = core.createInstanceRun(testInstance, owner);
+                    if(run != null)
+                        testRuns.add(run);
+                }
+            }
+            for(Long runID: testRuns){
+                System.out.println("Queueing test run: " + runID);
+                sqs.publishTestRunRequest(runID);
+            }
         } catch(Exception e){
-        	System.err.println("Failed to queue test run - " + e);
+            System.err.println("Failed to queue test run - " + e);
         }
     }
 
@@ -800,21 +800,21 @@ public class DistributedTestingFramework
         }
 
         if (result == null || (hash == null && run == null)){
-        	System.err.println("Missing required argument");
+            System.err.println("Missing required argument");
             resultHelp();
         }
 
         Core core = new Core(0);
         try{
-        	if(hash != null){
-        		core.reportResult(hash, result, null, null, null, null);
-        	} else{
-        		core.addResultToRun(run, result);
-        	}
+            if(hash != null){
+                core.reportResult(hash, result, null, null, null, null);
+            } else{
+                core.addResultToRun(run, result);
+            }
         } catch(Exception e){
-        	System.err.println("Failed to add result: " + e);
+            System.err.println("Failed to add result: " + e);
         } finally{
-        	core.close();
+            core.close();
         }
     }
 
@@ -933,15 +933,15 @@ public class DistributedTestingFramework
             return 0b100_100_100;
         }
 
-		@Override
-		public String getTargetFilePath() {
-			return this.targetFilePath;
-		}
+        @Override
+        public String getTargetFilePath() {
+            return this.targetFilePath;
+        }
 
-		@Override
-		public void setTargetFilePath(String targetFilePath) {
-			this.targetFilePath = targetFilePath;
-		}
+        @Override
+        public void setTargetFilePath(String targetFilePath) {
+            this.targetFilePath = targetFilePath;
+        }
     }
 
     private static class PopulateModule implements Module
@@ -1178,7 +1178,7 @@ public class DistributedTestingFramework
 
                 i += 1;
             } else{
-            	System.err.println("Invalid argument " + args[i]);
+                System.err.println("Invalid argument " + args[i]);
                 populateHelp();
             }
         }
@@ -1335,11 +1335,11 @@ public class DistributedTestingFramework
 
                     test_sequence += 1;
                     try {
-						generator.completeTest();
-					} catch (Exception e) {
-						System.err.println("ERROR: Unable to complete test, " + e.getMessage());
-						e.printStackTrace();
-					}
+                        generator.completeTest();
+                    } catch (Exception e) {
+                        System.err.println("ERROR: Unable to complete test, " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
 
                 generator.close();

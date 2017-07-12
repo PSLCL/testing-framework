@@ -23,7 +23,7 @@ import com.pslcl.dtf.core.runner.resource.provider.ResourceProvider;
  * Represents a Resource Instance.
  */
 public interface ResourceInstance extends ResourceDescription {
-	
+
     /**
      * Get the ResourceProvider that bound the resource.
      * @return the ResourceProvider.

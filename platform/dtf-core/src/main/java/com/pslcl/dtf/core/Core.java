@@ -203,7 +203,7 @@ public class Core
                 binding.put("process", null);
                 binding.put("env", System.getenv());
                 binding.put("module", new NodeModule());
-    	        binding.put("home_dir", Paths.get("").toAbsolutePath().normalize().toString());
+                binding.put("home_dir", Paths.get("").toAbsolutePath().normalize().toString());
 
                 engine.eval(new FileReader(fs), binding);
                 this.db_host = (String) engine.eval("config.mysql.host;", binding);
@@ -265,19 +265,19 @@ public class Core
         }
         
         public String sqsEndpoint(){
-        	return sqs_endpoint;
+            return sqs_endpoint;
         }
 
         public String sqsQueueName(){
-        	return sqs_queue_name;
+            return sqs_queue_name;
         }
         
         public String sqsAccessKeyID(){
-        	return sqs_access_key_id;
+            return sqs_access_key_id;
         }
 
         public String sqsSecretAccessKey(){
-        	return sqs_secret_access_key;
+            return sqs_secret_access_key;
         }
     }
 
@@ -1161,63 +1161,63 @@ public class Core
             return core.getArtifacts(pk, namePattern, configuration);
         }
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((attributes == null) ? 0 : attributes.hashCode());
-			result = prime * result + ((name == null) ? 0 : name.hashCode());
-			result = prime * result + ((organization == null) ? 0 : organization.hashCode());
-			result = prime * result + (int) (pk ^ (pk >>> 32));
-			result = prime * result + ((sequence == null) ? 0 : sequence.hashCode());
-			result = prime * result + ((status == null) ? 0 : status.hashCode());
-			result = prime * result + ((version == null) ? 0 : version.hashCode());
-			return result;
-		}
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((attributes == null) ? 0 : attributes.hashCode());
+            result = prime * result + ((name == null) ? 0 : name.hashCode());
+            result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+            result = prime * result + (int) (pk ^ (pk >>> 32));
+            result = prime * result + ((sequence == null) ? 0 : sequence.hashCode());
+            result = prime * result + ((status == null) ? 0 : status.hashCode());
+            result = prime * result + ((version == null) ? 0 : version.hashCode());
+            return result;
+        }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			DBModule other = (DBModule) obj;
-			if (attributes == null) {
-				if (other.attributes != null)
-					return false;
-			} else if (!attributes.equals(other.attributes))
-				return false;
-			if (name == null) {
-				if (other.name != null)
-					return false;
-			} else if (!name.equals(other.name))
-				return false;
-			if (organization == null) {
-				if (other.organization != null)
-					return false;
-			} else if (!organization.equals(other.organization))
-				return false;
-			if (pk != other.pk)
-				return false;
-			if (sequence == null) {
-				if (other.sequence != null)
-					return false;
-			} else if (!sequence.equals(other.sequence))
-				return false;
-			if (status == null) {
-				if (other.status != null)
-					return false;
-			} else if (!status.equals(other.status))
-				return false;
-			if (version == null) {
-				if (other.version != null)
-					return false;
-			} else if (!version.equals(other.version))
-				return false;
-			return true;
-		}
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            DBModule other = (DBModule) obj;
+            if (attributes == null) {
+                if (other.attributes != null)
+                    return false;
+            } else if (!attributes.equals(other.attributes))
+                return false;
+            if (name == null) {
+                if (other.name != null)
+                    return false;
+            } else if (!name.equals(other.name))
+                return false;
+            if (organization == null) {
+                if (other.organization != null)
+                    return false;
+            } else if (!organization.equals(other.organization))
+                return false;
+            if (pk != other.pk)
+                return false;
+            if (sequence == null) {
+                if (other.sequence != null)
+                    return false;
+            } else if (!sequence.equals(other.sequence))
+                return false;
+            if (status == null) {
+                if (other.status != null)
+                    return false;
+            } else if (!status.equals(other.status))
+                return false;
+            if (version == null) {
+                if (other.version != null)
+                    return false;
+            } else if (!version.equals(other.version))
+                return false;
+            return true;
+        }
     }
 
     /**
@@ -1272,7 +1272,7 @@ public class Core
          */
         public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash)
         {
-        	this(core, pk, module, configuration, name, mode, hash, null);
+            this(core, pk, module, configuration, name, mode, hash, null);
         }
 
         public long getPK()
@@ -1323,70 +1323,70 @@ public class Core
             return mode;
         }
 
-		@Override
-		public String getTargetFilePath() {
-			return this.targetFilePath;
-		}
+        @Override
+        public String getTargetFilePath() {
+            return this.targetFilePath;
+        }
 
-		@Override
-		public void setTargetFilePath(String targetFilePath) {
-			this.targetFilePath = targetFilePath;
-		}
+        @Override
+        public void setTargetFilePath(String targetFilePath) {
+            this.targetFilePath = targetFilePath;
+        }
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((configuration == null) ? 0 : configuration.hashCode());
-			result = prime * result + ((hash == null) ? 0 : hash.hashCode());
-			result = prime * result + mode;
-			result = prime * result + ((module == null) ? 0 : module.hashCode());
-			result = prime * result + ((name == null) ? 0 : name.hashCode());
-			result = prime * result + (int) (pk ^ (pk >>> 32));
-			result = prime * result + ((targetFilePath == null) ? 0 : targetFilePath.hashCode());
-			return result;
-		}
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((configuration == null) ? 0 : configuration.hashCode());
+            result = prime * result + ((hash == null) ? 0 : hash.hashCode());
+            result = prime * result + mode;
+            result = prime * result + ((module == null) ? 0 : module.hashCode());
+            result = prime * result + ((name == null) ? 0 : name.hashCode());
+            result = prime * result + (int) (pk ^ (pk >>> 32));
+            result = prime * result + ((targetFilePath == null) ? 0 : targetFilePath.hashCode());
+            return result;
+        }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			DBArtifact other = (DBArtifact) obj;
-			if (configuration == null) {
-				if (other.configuration != null)
-					return false;
-			} else if (!configuration.equals(other.configuration))
-				return false;
-			if (hash == null) {
-				if (other.hash != null)
-					return false;
-			} else if (!hash.equals(other.hash))
-				return false;
-			if (mode != other.mode)
-				return false;
-			if (module == null) {
-				if (other.module != null)
-					return false;
-			} else if (!module.equals(other.module))
-				return false;
-			if (name == null) {
-				if (other.name != null)
-					return false;
-			} else if (!name.equals(other.name))
-				return false;
-			if (pk != other.pk)
-				return false;
-			if (targetFilePath == null) {
-				if (other.targetFilePath != null)
-					return false;
-			} else if (!targetFilePath.equals(other.targetFilePath))
-				return false;
-			return true;
-		}
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            DBArtifact other = (DBArtifact) obj;
+            if (configuration == null) {
+                if (other.configuration != null)
+                    return false;
+            } else if (!configuration.equals(other.configuration))
+                return false;
+            if (hash == null) {
+                if (other.hash != null)
+                    return false;
+            } else if (!hash.equals(other.hash))
+                return false;
+            if (mode != other.mode)
+                return false;
+            if (module == null) {
+                if (other.module != null)
+                    return false;
+            } else if (!module.equals(other.module))
+                return false;
+            if (name == null) {
+                if (other.name != null)
+                    return false;
+            } else if (!name.equals(other.name))
+                return false;
+            if (pk != other.pk)
+                return false;
+            if (targetFilePath == null) {
+                if (other.targetFilePath != null)
+                    return false;
+            } else if (!targetFilePath.equals(other.targetFilePath))
+                return false;
+            return true;
+        }
 
         //@Override
         //public String getValue( Template template ) {
@@ -1401,7 +1401,7 @@ public class Core
 
         DBContent(Core core, Hash hash)
         {
-        	this.core = core;
+            this.core = core;
             this.hash = hash;
         }
 
@@ -1577,11 +1577,11 @@ public class Core
                         resultSet = statement.executeQuery(query);
                         while (resultSet.next())
                         {
-                        	String name = resultSet.getString(3);
-                        	String targetName = name;
-                        	if(fields.length == 2){
-                        		targetName = getTargetName(name, fields[1]);
-                        	}
+                            String name = resultSet.getString(3);
+                            String targetName = name;
+                            if(fields.length == 2){
+                                targetName = getTargetName(name, fields[1]);
+                            }
                             Module mod = artifact.getModule();
                             Artifact A = new DBArtifact(this, resultSet.getLong(1), mod, resultSet.getString(2), name, resultSet.getInt(4), new Hash(resultSet.getBytes(5)), targetName);
                             set.add(A);
@@ -1624,12 +1624,12 @@ public class Core
                         while (resultSet.next())
                         {
                             String artifact_name = resultSet.getString(10);
-                        	String targetName = artifact_name;
+                            String targetName = artifact_name;
                             if (found.contains(artifact_name))
                                 continue;
-                        	if(fields.length == 4){
-                        		targetName = getTargetName(artifact_name, fields[3]);
-                        	}
+                            if(fields.length == 4){
+                                targetName = getTargetName(artifact_name, fields[3]);
+                            }
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
                             Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)), targetName);
                             set.add(A);
@@ -1650,7 +1650,7 @@ public class Core
             e.printStackTrace(System.err);
         } finally
         {
-        	if(iterator != null) iterator.close();
+            if(iterator != null) iterator.close();
             safeClose(resultSet);
             resultSet = null;
             safeClose(statement);
@@ -1668,18 +1668,18 @@ public class Core
      * @return The name of the artifact in the target directory.
      */
     private String getTargetName(String artifactName, String targetDirectory){
-    	int nameStartIndex = 0;
-    	if(artifactName.endsWith("/")){
-    		throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
-    	}
-    	if(artifactName.contains("/")){
-    		nameStartIndex = artifactName.lastIndexOf("/") + 1;
-    	}
-    	String targetName = artifactName.substring(nameStartIndex);
-    	if(!targetDirectory.endsWith("/")){
-    		targetDirectory = targetDirectory + "/";
-    	}
-    	return targetDirectory + targetName;
+        int nameStartIndex = 0;
+        if(artifactName.endsWith("/")){
+            throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
+        }
+        if(artifactName.contains("/")){
+            nameStartIndex = artifactName.lastIndexOf("/") + 1;
+        }
+        String targetName = artifactName.substring(nameStartIndex);
+        if(!targetDirectory.endsWith("/")){
+            targetDirectory = targetDirectory + "/";
+        }
+        return targetDirectory + targetName;
     }
 
     /**
@@ -2351,8 +2351,8 @@ public class Core
             return dbdt;
         } catch (Exception e)
         {
-        	System.err.println("Failed to add described template: " + e);
-        	e.printStackTrace();
+            System.err.println("Failed to add described template: " + e);
+            e.printStackTrace();
             try
             {
                 connect.rollback();
@@ -2905,11 +2905,11 @@ public class Core
         
         try
         {
-        	find_test_instance = connect.createStatement();
-        	test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test);
-        	while (test_instances.next())
+            find_test_instance = connect.createStatement();
+            test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test);
+            while (test_instances.next())
             {
-        		testInstanceList.add(test_instances.getLong("pk_test_instance"));
+                testInstanceList.add(test_instances.getLong("pk_test_instance"));
             }
         } catch(Exception e)
         {
@@ -2941,8 +2941,8 @@ public class Core
 
                 // We found a candidate, but need to verify that its version references exactly match.
                 List<Long> my_versions = new ArrayList<Long>();
-                //	            for ( Version v : sync.getVersions() )
-                //	            	my_versions.add( v.getPK() );
+                //                for ( Version v : sync.getVersions() )
+                //                    my_versions.add( v.getPK() );
 
                 find_versions = connect.prepareStatement("SELECT fk_version FROM test_instance_to_version WHERE fk_test_instance=?");
                 find_versions.setLong(1, pk);
@@ -3008,10 +3008,10 @@ public class Core
         {
             System.err.println("------------------------");
             System.err.println("Test Instance for Test " + Long.toString(pk_test));
-            //    		System.err.println( "Template: " + sync.getTemplate().getHash().toString() );
+            //            System.err.println( "Template: " + sync.getTemplate().getHash().toString() );
             System.err.println("Versions:");
-            //    		for ( Version v : sync.getVersions() )
-            //    			System.err.println( "\t" + v.getComponent() + ", " + v.getVersion() );
+            //            for ( Version v : sync.getVersions() )
+            //                System.err.println( "\t" + v.getComponent() + ", " + v.getVersion() );
             System.err.println("------------------------");
             return pk;
         }
@@ -3102,7 +3102,7 @@ public class Core
         }
 
         //        if ( sync.getResult() != null )
-        //        	reportResult( sync.getTemplate().getHash().toString(), sync.getResult() );
+        //            reportResult( sync.getTemplate().getHash().toString(), sync.getResult() );
 
         return pk;
     }
@@ -3113,13 +3113,13 @@ public class Core
         ResultSet resultSet = null;
         try
         {
-        	statement = connect.createStatement();
+            statement = connect.createStatement();
             resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
             if(resultSet.next()){
-            	
-            	long result = resultSet.getLong("fk_run");
-            	if(!resultSet.wasNull())
-            		return result;
+
+                long result = resultSet.getLong("fk_run");
+                if(!resultSet.wasNull())
+                    return result;
             }
             return null;
         } catch(Exception e)
@@ -3140,10 +3140,10 @@ public class Core
         
         try
         {
-        	statement = connect.createStatement();
+            statement = connect.createStatement();
             int rowsUpdated = statement.executeUpdate("Update run SET result = " + result + ", end_time = NOW() WHERE pk_run = " + runID);
             if(rowsUpdated == 0){
-            	throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
+                throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
             }
         } catch(Exception e)
         {
@@ -3157,7 +3157,7 @@ public class Core
 
     public Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {
-    	PreparedStatement runStatement = null;
+        PreparedStatement runStatement = null;
         Statement templateStatement = null;
         
         if (read_only)
@@ -3167,14 +3167,14 @@ public class Core
         ResultSet resultSet = null;
         try
         {
-        	templateStatement = connect.createStatement();
+            templateStatement = connect.createStatement();
             resultSet = templateStatement.executeQuery("SELECT hash FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance = " + testInstanceNumber);
             if(resultSet.next()){
-            	hash = new Hash(resultSet.getBytes("hash")).toString();
+                hash = new Hash(resultSet.getBytes("hash")).toString();
             }
             else{
-            	System.err.println("Cannot find template for test instance " + testInstanceNumber);
-            	throw new Exception("Cannot find template for test instance " + testInstanceNumber);
+                System.err.println("Cannot find template for test instance " + testInstanceNumber);
+                throw new Exception("Cannot find template for test instance " + testInstanceNumber);
             }
         } catch(Exception e)
         {
@@ -3187,27 +3187,27 @@ public class Core
         
         try
         {
-        	runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
-        	runStatement.setString(1, hash);
-           	runStatement.setNull(2, Types.BOOLEAN);
-           	
+            runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
+            runStatement.setString(1, hash);
+               runStatement.setNull(2, Types.BOOLEAN);
+
             if (owner != null)
-            	runStatement.setString(3, owner);
+                runStatement.setString(3, owner);
             else
-            	runStatement.setNull(3, Types.VARCHAR);
+                runStatement.setNull(3, Types.VARCHAR);
             
             runStatement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
             runStatement.setNull(5, Types.TIMESTAMP);
             runStatement.setNull(6, Types.TIMESTAMP);
             if(runStatement.execute()){
-            	resultSet = runStatement.getResultSet();
-            	boolean result = resultSet.next();
-            	if(result){            		
-                	return resultSet.getLong("pk_run");
+                resultSet = runStatement.getResultSet();
+                boolean result = resultSet.next();
+                if(result){
+                    return resultSet.getLong("pk_run");
                 }
             }
             else
-            	return null;
+                return null;
         } catch (Exception e)
         {
             // TODO: handle

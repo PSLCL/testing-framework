@@ -48,7 +48,7 @@ public abstract class Resource
             this.r = r;
             this.a = a;
             if(actionDependencies != null){
-            	this.actionDependencies.addAll(actionDependencies);
+                this.actionDependencies.addAll(actionDependencies);
             }
         }
 
@@ -178,7 +178,7 @@ public abstract class Resource
      * @return The BindAction for this resource. null if not bound.
      */
     public Action getBindAction(){
-    	return bound;
+        return bound;
     }
 
     /**

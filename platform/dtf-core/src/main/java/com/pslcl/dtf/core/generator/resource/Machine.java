@@ -90,15 +90,15 @@ public class Machine extends Resource
             artifacts = new ArrayList<Artifact>();
             artifacts.add(a);
             if(actionDependencies != null){
-            	this.actionDependencies.addAll(actionDependencies);
+                this.actionDependencies.addAll(actionDependencies);
             }
             Action machineBindAction = m.getBindAction();
             if(!this.actionDependencies.contains(machineBindAction)){
-            	this.actionDependencies.add(machineBindAction);
+                this.actionDependencies.add(machineBindAction);
             }
             
             synchronized(m.deployActions){
-            	m.deployActions.put(a, this);
+                m.deployActions.put(a, this);
             }
         }
 
@@ -108,7 +108,7 @@ public class Machine extends Resource
             String retStr = getSetID() + " deploy " + t.getReference(this.m) + " ";
             String destName = a.getTargetFilePath();
             if(destName == null || destName.isEmpty()){
-            	destName = a.getName();
+                destName = a.getName();
             }
             retStr += destName;
             retStr += (" " + a.getContent().getValue(template));
@@ -159,7 +159,7 @@ public class Machine extends Resource
      */
     public List<TestInstance.Action> deploy(Artifact... artifacts) throws Exception
     {
-    	return deploy(null, artifacts);
+        return deploy(null, artifacts);
     }
 
     /**
@@ -172,10 +172,10 @@ public class Machine extends Resource
      */
     public List<TestInstance.Action> deploy(List<Action> actionDependencies, Artifact... artifacts) throws Exception
     {
-    	List<TestInstance.Action> deploys = new ArrayList<TestInstance.Action>();
-    	if(!isBound()){
-    		throw new IllegalStateException("Cannot deploy to unbound machine.");
-    	}
+        List<TestInstance.Action> deploys = new ArrayList<TestInstance.Action>();
+        if(!isBound()){
+            throw new IllegalStateException("Cannot deploy to unbound machine.");
+        }
         for (Artifact a : artifacts)
         {
             if (a == null)
@@ -184,9 +184,9 @@ public class Machine extends Resource
                 continue;
             }
             synchronized(deployActions){
-	            if(deployActions.containsKey(a)){
-	            	continue; //duplicate
-	            }
+                if(deployActions.containsKey(a)){
+                    continue; //duplicate
+                }
             }
             
             Deploy deploy = new Deploy(this, a, actionDependencies);
@@ -244,37 +244,37 @@ public class Machine extends Resource
     }
     
     private static class ConnectAction extends TestInstance.Action{
-    	
-    	private Machine machine;
-    	private Network network;
+
+        private Machine machine;
+        private Network network;
         Template.Parameter[] parameters;
         
-    	private ConnectAction(Machine machine, Network network, List<Action> actionDependencies){
-    		this.machine = machine;
-    		this.network = network;
+        private ConnectAction(Machine machine, Network network, List<Action> actionDependencies){
+            this.machine = machine;
+            this.network = network;
 
             parameters = new Template.Parameter[2];
             parameters[0] = new Template.ResourceParameter(machine);
             parameters[1] = new Template.ResourceParameter(network);
-    		
+
 
             if(actionDependencies != null){
-            	this.actionDependencies.addAll(actionDependencies);
+                this.actionDependencies.addAll(actionDependencies);
             }
             Action machineBindAction = machine.getBindAction();
             Action networkBindAction = network.getBindAction();
             if(!this.actionDependencies.contains(machineBindAction)){
-            	this.actionDependencies.add(machineBindAction);
+                this.actionDependencies.add(machineBindAction);
             }
             if(!this.actionDependencies.contains(networkBindAction)){
-            	this.actionDependencies.add(networkBindAction);
+                this.actionDependencies.add(networkBindAction);
             }
-    	}
+        }
 
-		@Override
-		public String getCommand(Template t) throws Exception {
-			StringBuilder sb = new StringBuilder();
-			sb.append(getSetID() + " ");
+        @Override
+        public String getCommand(Template t) throws Exception {
+            StringBuilder sb = new StringBuilder();
+            sb.append(getSetID() + " ");
             sb.append("connect");
 
             for (Template.Parameter P : parameters){
@@ -283,34 +283,34 @@ public class Machine extends Resource
             }
 
             return sb.toString();
-		}
+        }
 
-		@Override
-		public String getDescription() throws Exception {
-			StringBuilder sb = new StringBuilder();
+        @Override
+        public String getDescription() throws Exception {
+            StringBuilder sb = new StringBuilder();
             sb.append("Connect the machine <em>");
             sb.append(machine.name);
             sb.append("</em> to the network <em>");
             sb.append(network.name);
             sb.append("</em>.");
             return sb.toString();
-		}
+        }
 
-		@Override
-		public ArtifactUses getArtifactUses() throws Exception {
-			return null;
-		}
+        @Override
+        public ArtifactUses getArtifactUses() throws Exception {
+            return null;
+        }
 
-		@Override
-		public Resource getBoundResource() throws Exception {
-			return null;
-		}
+        @Override
+        public Resource getBoundResource() throws Exception {
+            return null;
+        }
 
-		@Override
-		public DescribedTemplate getIncludedTemplate() throws Exception {
-			return null;
-		}
-    	
+        @Override
+        public DescribedTemplate getIncludedTemplate() throws Exception {
+            return null;
+        }
+
     }
 
     private class ProgramAction extends TestInstance.Action
@@ -332,21 +332,21 @@ public class Machine extends Resource
             parameters[1] = new Template.StringParameter(executable);
             for (int i = 0; i < params.length; i++)
             {
-            	Template.Parameter referenceParameter = machine.generator.getReferencedParameter(params[i]);
-            	if(referenceParameter != null){
-            		parameters[2 + i] = referenceParameter;
-            	} else{
-            		parameters[2 + i] = new Template.StringParameter(params[i]);
-            	}
+                Template.Parameter referenceParameter = machine.generator.getReferencedParameter(params[i]);
+                if(referenceParameter != null){
+                    parameters[2 + i] = referenceParameter;
+                } else{
+                    parameters[2 + i] = new Template.StringParameter(params[i]);
+                }
             }
 
 
             if(actionDependencies != null){
-            	this.actionDependencies.addAll(actionDependencies);
+                this.actionDependencies.addAll(actionDependencies);
             }
             Action machineBindAction = machine.getBindAction();
             if(!this.actionDependencies.contains(machineBindAction)){
-            	this.actionDependencies.add(machineBindAction);
+                this.actionDependencies.add(machineBindAction);
             }
         }
 
@@ -359,8 +359,8 @@ public class Machine extends Resource
             sb.append(action);
 
             for (Template.Parameter P : parameters){
-            	String value = P.getValue(t);
-            	if (value.length() > 0)
+                String value = P.getValue(t);
+                if (value.length() > 0)
                 {
                     sb.append(" ");
                     sb.append(value);
@@ -419,7 +419,7 @@ public class Machine extends Resource
 
     private Program programAction(String action, List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-    	ProgramAction programAction = new ProgramAction(this, action, actionDependencies, executable, params);
+        ProgramAction programAction = new ProgramAction(this, action, actionDependencies, executable, params);
         Program program = new Program(programAction);
         generator.add(programAction);
         return program;
@@ -489,7 +489,7 @@ public class Machine extends Resource
 //     */
 //    public Program run_forever(List<Artifact> requiredArtifacts, String executable, String... params) throws Exception
 //    {
-//    	
+//
 //        return programAction("run-forever", requiredArtifacts, executable, params);
 //    }
 

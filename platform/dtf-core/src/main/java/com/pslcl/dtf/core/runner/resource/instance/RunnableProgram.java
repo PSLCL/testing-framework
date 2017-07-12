@@ -22,11 +22,11 @@ import java.util.concurrent.Future;
 public interface RunnableProgram
 {
     /**
-	 * Stop the program command on a machine and return a Future with the {@link Future} result of the corresponding stop command, or the exit code of
-	 * the stop script, being set once the stop script has completed.
+     * Stop the program command on a machine and return a Future with the {@link Future} result of the corresponding stop command, or the exit code of
+     * the stop script, being set once the stop script has completed.
      * 
      * @return a Future with the {@link Future} result of the corresponding stop command, or the exit code of
-	 * the stop script, being set once the stop script has completed.
+     * the stop script, being set once the stop script has completed.
      */
     public Future<Integer> kill();
 

@@ -5,9 +5,9 @@ package com.pslcl.dtf.core.util;
 public class ElapsedTimer
 {
     protected static final long startTime;
-	private static final long[] nanos;
-	private static final long[] elapsed;
-	private static final Object[] contexts;
+    private static final long[] nanos;
+    private static final long[] elapsed;
+    private static final Object[] contexts;
     private static final String[] labels;
     private static final int[] hits;
 
@@ -21,123 +21,123 @@ public class ElapsedTimer
         hits = new int[100];
     }
     
-	public static String getNormalizedString(int value)
-	{
-		return getNormalizedString((long) value);
-	}
-	
-	public static String getNormalizedString(long value)
-	{
-		StringBuilder rvalue = new StringBuilder();
-		long nextScale = 1024;
-		long currentScale = 1;
-		for(int i=0; i < 5; i++)
-		{
-			long check = value / nextScale;
-			if(check == 0 || i == 4)
-			{
-				boolean fractional = true;
-				rvalue.append(""+value / currentScale);
-				switch(i)
-				{
-					case 0:
-						fractional = false;
-						break;
-					case 1:
-						rvalue.append("K");
-						break;
-					case 2:
-						rvalue.append("M");
-						break;
-					case 3:
-						rvalue.append("TeraBytes");
-						break;
-					case 4:
-						rvalue.append("PetaBytes");
-						break;
+    public static String getNormalizedString(int value)
+    {
+        return getNormalizedString((long) value);
+    }
+
+    public static String getNormalizedString(long value)
+    {
+        StringBuilder rvalue = new StringBuilder();
+        long nextScale = 1024;
+        long currentScale = 1;
+        for(int i=0; i < 5; i++)
+        {
+            long check = value / nextScale;
+            if(check == 0 || i == 4)
+            {
+                boolean fractional = true;
+                rvalue.append(""+value / currentScale);
+                switch(i)
+                {
+                    case 0:
+                        fractional = false;
+                        break;
+                    case 1:
+                        rvalue.append("K");
+                        break;
+                    case 2:
+                        rvalue.append("M");
+                        break;
+                    case 3:
+                        rvalue.append("TeraBytes");
+                        break;
+                    case 4:
+                        rvalue.append("PetaBytes");
+                        break;
                     default:
                         break;
-				}
-				if(fractional)
-				{
-					rvalue.append(".");
-					rvalue.append(""+value % currentScale);
-				}
-				return rvalue.toString();
-			}
-			nextScale *= 1024L;
-			currentScale *= 1024L;
-		}
-		return rvalue.toString();
-	}
-	
-	/**
-	 * Returns the time in milliseconds that the class Environment was loaded by
-	 * a class loader.
-	 * @return start time
-	 */
-	public static long getStartTime()
-	{
-		return startTime;
-	}
+                }
+                if(fractional)
+                {
+                    rvalue.append(".");
+                    rvalue.append(""+value % currentScale);
+                }
+                return rvalue.toString();
+            }
+            nextScale *= 1024L;
+            currentScale *= 1024L;
+        }
+        return rvalue.toString();
+    }
 
-	/**
-	 * starts the generic millisecond timer for the given index.
-	 * 
-	 * @param index Index of timer to control, 0-99 valid.
-	 * 
-	 * @see #stopTimer
-	 * @see #resetTimer
-	 * @see #elapsedTime
-	 */
-	public static void startTimer( int index )
-	{
-	    synchronized(nanos)
-	    {
-	        nanos[index] = System.nanoTime();
-	    }
-	}
+    /**
+     * Returns the time in milliseconds that the class Environment was loaded by
+     * a class loader.
+     * @return start time
+     */
+    public static long getStartTime()
+    {
+        return startTime;
+    }
 
-	/**
-	 * stops the generic millisecond timer for the given index.
-	 * 
-	 * @param index Index of timer to control, 0-99 valid.
-	 * 
-	 * @see #startTimer
-	 * @see #resetTimer
-	 * @see #elapsedTime
-	 */
-	public static void stopTimer( int index )
-	{
+    /**
+     * starts the generic millisecond timer for the given index.
+     *
+     * @param index Index of timer to control, 0-99 valid.
+     *
+     * @see #stopTimer
+     * @see #resetTimer
+     * @see #elapsedTime
+     */
+    public static void startTimer( int index )
+    {
         synchronized(nanos)
         {
-    		if(nanos[index] == 0)
-    			return;	// not running
-    		// simply add the current delta into the elapsed counter
-    		long t2 = System.nanoTime();
-    		elapsed[index] += t2 - nanos[index];
-    		nanos[index] = 0;
+            nanos[index] = System.nanoTime();
         }
-	}
+    }
 
-	/**
-	 * Zeros the elapsed timer, and captures the current system milliseconds for
-	 * the given index.
-	 * 
-	 * @param index Index of timer to control, 0-9 valid.
-	 * 
-	 * @see #startTimer
-	 * @see #stopTimer
-	 * @see #elapsedTime
-	 */
-	public static void resetTimer( int index )
-	{
+    /**
+     * stops the generic millisecond timer for the given index.
+     *
+     * @param index Index of timer to control, 0-99 valid.
+     *
+     * @see #startTimer
+     * @see #resetTimer
+     * @see #elapsedTime
+     */
+    public static void stopTimer( int index )
+    {
         synchronized(nanos)
         {
-    		nanos[index] = System.nanoTime();
-    		elapsed[index] = 0;
+            if(nanos[index] == 0)
+                return;    // not running
+            // simply add the current delta into the elapsed counter
+            long t2 = System.nanoTime();
+            elapsed[index] += t2 - nanos[index];
+            nanos[index] = 0;
         }
-	}
+    }
+
+    /**
+     * Zeros the elapsed timer, and captures the current system milliseconds for
+     * the given index.
+     *
+     * @param index Index of timer to control, 0-9 valid.
+     *
+     * @see #startTimer
+     * @see #stopTimer
+     * @see #elapsedTime
+     */
+    public static void resetTimer( int index )
+    {
+        synchronized(nanos)
+        {
+            nanos[index] = System.nanoTime();
+            elapsed[index] = 0;
+        }
+    }
 
     /**
      * Stops all timers and zeros all the elapsed timers.
@@ -197,45 +197,45 @@ public class ElapsedTimer
         }
     }
 
-	/**
-	 * Returns the current elapsed time for the given index.
-	 * 
-	 * @param index Index of timer to control, 0-99 valid.
-	 * @return the long
-	 * @see #startTimer
-	 * @see #stopTimer
-	 * @see #resetTimer
-	 */
-	public static long elapsedTime( int index )
-	{
+    /**
+     * Returns the current elapsed time for the given index.
+     *
+     * @param index Index of timer to control, 0-99 valid.
+     * @return the long
+     * @see #startTimer
+     * @see #stopTimer
+     * @see #resetTimer
+     */
+    public static long elapsedTime( int index )
+    {
         synchronized(nanos)
         {
-    		// simply add the current delta into the elapsed counter
-    		long t2 = System.nanoTime();
-    		elapsed[index] += (t2 - nanos[index]);
-    		nanos[index] = t2;
-    		return elapsed[index];
+            // simply add the current delta into the elapsed counter
+            long t2 = System.nanoTime();
+            elapsed[index] += (t2 - nanos[index]);
+            nanos[index] = t2;
+            return elapsed[index];
         }
-	}
-	
-	public static long getTime(int index)
-	{
+    }
+
+    public static long getTime(int index)
+    {
         synchronized(nanos)
         {
             return elapsed[index];
         }
-	}
-	
-	public static double elapsedMs(int index)
-	{
+    }
+
+    public static double elapsedMs(int index)
+    {
         synchronized(nanos)
         {
-    		double ns = elapsedTime(index);
-    		return ns/1000000.0;
+            double ns = elapsedTime(index);
+            return ns/1000000.0;
         }
-	}
+    }
         
-	
+
     /**
      * Associates a context object to a given timer.
      * 
@@ -395,69 +395,69 @@ public class ElapsedTimer
         return scaleNanoSeconds(msToNano(value));
     }
     
-	public static String scaleNanoSeconds(long value)
-	{
+    public static String scaleNanoSeconds(long value)
+    {
 /*
-				about max 				about min
-ns:		         999				            1
-mico:         999222					     1222
-ms:		   999111222			          1111222
-sec:	 59000111222		           1000111222
-min:   3633000111222		          60000111222
-hr:	  86400000000000	            3600000111222
+                about max                 about min
+ns:                 999                            1
+mico:         999222                         1222
+ms:           999111222                      1111222
+sec:     59000111222                   1000111222
+min:   3633000111222                  60000111222
+hr:      86400000000000                3600000111222
 */
-		if(value < 0)
-			return "0";
-		
-		if(value < 1000)
-		{// nano seconds
-			return "" + value + "ns";
-		}
-		if(value < 1000000)
-		{// micro seconds
-			return "" + (value / 1000.0) + "micos";
-		}
-		
-		if(value < 1000000000)
-		{// milli seconds
-			return "" + (value / 1000000.0) + "ms";
-		}
-		
-		if(value < 60000000000L)
-		{// seconds
-			return "" + (value / 1000000000.0) + "sec";
-		}
-		
-		if(value < 3600000000000L)
-		{// minutes
-			return "" + (value / 60000000000.0) + "min";
-		}
-		
-		if(value < 86400000000000L)
-		{// hours
-			return "" + (value / 3600000000000.0) + "hr";
-		}
-		return "" + (value / 3600000000000.0) + "hr";
-	}
-	
-	public static String getElapsedTime(String message, int index)
-	{
-		double d = elapsedTime(index);
-		StringBuilder etime = new StringBuilder(message).append(" : ").append((d/1000000)).append(" ms");
-		return etime.toString();
-	}
-	
-	public static String getCurrentInfo(String message, int index, int total)
-	{
-	    long et = elapsedTime(index);
-	    long avt = et / total;
-	    double ps = (1.0 / et);
-	    ps *= 10000000000000L;
+        if(value < 0)
+            return "0";
+
+        if(value < 1000)
+        {// nano seconds
+            return "" + value + "ns";
+        }
+        if(value < 1000000)
+        {// micro seconds
+            return "" + (value / 1000.0) + "micos";
+        }
+
+        if(value < 1000000000)
+        {// milli seconds
+            return "" + (value / 1000000.0) + "ms";
+        }
+
+        if(value < 60000000000L)
+        {// seconds
+            return "" + (value / 1000000000.0) + "sec";
+        }
+
+        if(value < 3600000000000L)
+        {// minutes
+            return "" + (value / 60000000000.0) + "min";
+        }
+
+        if(value < 86400000000000L)
+        {// hours
+            return "" + (value / 3600000000000.0) + "hr";
+        }
+        return "" + (value / 3600000000000.0) + "hr";
+    }
+
+    public static String getElapsedTime(String message, int index)
+    {
+        double d = elapsedTime(index);
+        StringBuilder etime = new StringBuilder(message).append(" : ").append((d/1000000)).append(" ms");
+        return etime.toString();
+    }
+
+    public static String getCurrentInfo(String message, int index, int total)
+    {
+        long et = elapsedTime(index);
+        long avt = et / total;
+        double ps = (1.0 / et);
+        ps *= 10000000000000L;
         StringBuilder msg = new StringBuilder(message).
         append(" total: ").append(total).
         append(" time: ").append(scaleNanoSeconds(et)).
         append(" avg: ").append(scaleNanoSeconds(avt)).
         append(" persec: ").append(ps);
-	    return msg.toString();
-	}
+        return msg.toString();
+    }
 }

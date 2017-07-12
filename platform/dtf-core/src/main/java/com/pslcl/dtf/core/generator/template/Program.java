@@ -26,7 +26,7 @@ public class Program implements Template.Exportable
     private TestInstance.Action programAction;
     
     public Program(TestInstance.Action programAction){
-    	this.programAction = programAction;
+        this.programAction = programAction;
     }
 
     public void stop()
@@ -60,7 +60,7 @@ public class Program implements Template.Exportable
     }
     
     public TestInstance.Action getProgramAction(){
-    	return this.programAction;
+        return this.programAction;
     }
 
     @Override

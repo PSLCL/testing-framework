@@ -81,19 +81,19 @@ public class Generator
      * @return The maximum number of test instances to accumulate.
      */
     public int getMaxInstanceAccumulationCount() {
-		return maxInstanceAccumulationCount;
-	}
+        return maxInstanceAccumulationCount;
+    }
 
     /**
      * Set the maximum number of test instances that will accumulate before the generator syncs with the database. Defaults to 100.
      * 
      * @param maxInstanceAccumulation The maximum number of test instances to accumulate.
      */
-	public void setMaxInstanceAccumulationCount(int maxInstanceAccumulation) {
-		this.maxInstanceAccumulationCount = maxInstanceAccumulation;
-	}
+    public void setMaxInstanceAccumulationCount(int maxInstanceAccumulation) {
+        this.maxInstanceAccumulationCount = maxInstanceAccumulation;
+    }
 
-	/**
+    /**
      * Declare an artifact in the platform. It is uniquely identified by a UUID, which defines the artifact
      * globally throughout the platform in the context of a single running test. Multiple tests running at
      * the same time receive different artifacts even if the identifier is the same.
@@ -118,10 +118,10 @@ public class Generator
      * @return A Parameter
      */
     public Parameter getReferencedParameter(String uuid){
-    	if (parameterReferenceMap == null)
+        if (parameterReferenceMap == null)
             throw new IllegalStateException("Test has not been started.");
-    	
-    	return parameterReferenceMap.get(uuid);
+
+        return parameterReferenceMap.get(uuid);
     }
 
     //TODO: https://github.com/PSLCL/testing-framework/issues/43
@@ -167,7 +167,7 @@ public class Generator
 //     * @return
 //     */
 //    public Content createContent(String content)
-//    {    	 	
+//    {
 //        Content result = new StringContent(content);
 //        if (!addedContent.containsKey(result.getHash()))
 //        {
@@ -341,36 +341,36 @@ public class Generator
 
         activeTestInstance.close();
         synchronized (testInstances) {
-        	testInstances.add(activeTestInstance);
+            testInstances.add(activeTestInstance);
             activeTestInstance = null;
             parameterReferenceMap.clear();
             parameterReferenceMap = null;
             
-        	if(testInstances.size() >= maxInstanceAccumulationCount){
-            	try{
-            		sync();
-            	} catch (Exception e) {
-        	        System.err.println("ERROR: Failure to sync test instances, " + e.getMessage());
-        	    	e.printStackTrace();
-        	    	throw e;
-        	    }
-            	testInstances.clear();
-        	}
+            if(testInstances.size() >= maxInstanceAccumulationCount){
+                try{
+                    sync();
+                } catch (Exception e) {
+                    System.err.println("ERROR: Failure to sync test instances, " + e.getMessage());
+                    e.printStackTrace();
+                    throw e;
+                }
+                testInstances.clear();
+            }
         }
     }
 
     private void dumpTestInstances()
     {
-    	synchronized (testInstances) {
-	        for (TestInstance ti : testInstances)
-	        {
-	            ti.dump();
-	        }
-    	}
+        synchronized (testInstances) {
+            for (TestInstance ti : testInstances)
+            {
+                ti.dump();
+            }
+        }
     }
     
     private void sync() throws Exception{
-    	
+
         // If the system is read-only, then just dump the created objects.
         if (core.isReadOnly())
         {
@@ -383,7 +383,7 @@ public class Generator
              * that are not in the database, and remove any that are no longer needed.
              */
             core.syncDescribedTemplates(testInstances);
-		}
+        }
 
         /* Read the main contents of the top-level synchronized tables: Content, DescribedTemplate.
          * Content is easy, since it either exists or does not.
@@ -397,7 +397,7 @@ public class Generator
 
         // All generated content needs to be added or synchronized
         /*        for ( Content c : addedContent.values() ) {
-        	c.sync();
+            c.sync();
         }
 
         // Templates can be added to the database, this will either
@@ -436,14 +436,14 @@ public class Generator
      */
     public void close()
     {
-    	try{
-    		sync();
-    	} catch (Exception e) {
-	        System.err.println("ERROR: Failure to close generator, " + e.getMessage());
-	    	e.printStackTrace();
-	    }
-    	finally{
-    		core.close();
-    	}
+        try{
+            sync();
+        } catch (Exception e) {
+            System.err.println("ERROR: Failure to close generator, " + e.getMessage());
+            e.printStackTrace();
+        }
+        finally{
+            core.close();
+        }
     }
 }

@@ -47,11 +47,11 @@ public class Person extends Resource
             this.attachments = attachments;
 
             if(actionDependencies != null){
-            	this.actionDependencies.addAll(actionDependencies);
+                this.actionDependencies.addAll(actionDependencies);
             }
             Action inspectorBindAction = inspector.getBindAction();
             if(!this.actionDependencies.contains(inspectorBindAction)){
-            	this.actionDependencies.add(inspectorBindAction);
+                this.actionDependencies.add(inspectorBindAction);
             }
         }
 
@@ -167,10 +167,10 @@ public class Person extends Resource
      */
     public TestInstance.Action inspect(Content body, Artifact[] attachments, List<Action> actionDependencies) throws Exception
     {
-    	if(attachments == null){
-    		attachments = new Artifact[0];
-    	}
-    	InspectAction inspectAction = new InspectAction(this, body, attachments, actionDependencies);
+        if(attachments == null){
+            attachments = new Artifact[0];
+        }
+        InspectAction inspectAction = new InspectAction(this, body, attachments, actionDependencies);
         generator.add(inspectAction);
         return inspectAction;
     }
@@ -184,7 +184,7 @@ public class Person extends Resource
      */
     public TestInstance.Action inspect(Content body, Artifact[] attachments) throws Exception
     {
-    	return inspect(body, attachments, null);
+        return inspect(body, attachments, null);
     }
 
     @Override

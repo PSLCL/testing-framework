@@ -149,12 +149,12 @@ public class Template implements Comparable<Template>
         @Override
         public String getValue(Template template) throws Exception
         {
-        	String attributeValue;
+            String attributeValue;
             if (value != null)
             {
-            	attributeValue = value;
+                attributeValue = value;
             } else{
-            	attributeValue = "$(attribute " + resourceParameter.getValue(template) + " " + attribute + ")";
+                attributeValue = "$(attribute " + resourceParameter.getValue(template) + " " + attribute + ")";
             }
             try
             {
@@ -273,7 +273,7 @@ public class Template implements Comparable<Template>
             int currentSetID = 0;
             for (int i = 0; i < actions.size(); i++)
             {
-            	Action action = actions.get(i);
+                Action action = actions.get(i);
                 standardString.append(action.getCommand(this));
                 standardString.append("\n");
 
@@ -283,9 +283,9 @@ public class Template implements Comparable<Template>
                 
                 //Sort again if we are about to move to next set. This allows resource references assigned in the current set to be used in the sort.
                 //This should only change the order of actions that we have not yet gotten to.
-            	if(i < actions.size() - 1 && actions.get(i + 1).getSetID() > currentSetID){
-            		Collections.sort(actions, new TestInstance.Action.ActionSorter(this));
-            	}
+                if(i < actions.size() - 1 && actions.get(i + 1).getSetID() > currentSetID){
+                    Collections.sort(actions, new TestInstance.Action.ActionSorter(this));
+                }
             }
 
             std_string = standardString.toString();
