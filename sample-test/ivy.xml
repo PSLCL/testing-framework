@@ -14,13 +14,14 @@
 **  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 **  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
-<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd" xmlns:m="http://ant.apache.org/ivy/maven">
+<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd" xmlns:m="http://ant.apache.org/ivy/maven" xmlns:e="http://com.pslcl/dtf-ivy">
   <info organisation="com.pslcl.dtf" module="sample-test" revision="1.0">
     <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
     <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
     <description homepage="https://github.com/PSLCL/testing-framework/">
-		Sample tests for the Distributed Test Framework.
+        Sample tests for the Distributed Test Framework.
     </description>
+    <e:dtf-merge-info e:merge-to="com.pslcl.dtf#under-test;1.0"/>
   </info>
   <configurations>
     <conf name="master" visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
@@ -29,10 +30,10 @@
   </configurations>
   <publications>
     <artifact conf="master" name="${ivy.module.group}-${ivy.module}" type="dist" ext="noarch.tar.gz"/>
-    <artifact conf="sources" name="${ivy.module.group}-${ivy.module}" type="source" ext="src.tar.gz"/> 
+    <artifact conf="sources" name="${ivy.module.group}-${ivy.module}" type="source" ext="src.tar.gz"/>
     <artifact conf="dtf_test_generator" name="${ivy.module.group}-${ivy.module}" type="dist" ext="gen.noarch.tar.gz"/>
   </publications>
   <dependencies>
-	<dependency org="com.pslcl.dtf" name="dtf-core" rev="1.0" conf="dtf_test_generator->master"/>
+    <dependency org="com.pslcl.dtf" name="dtf-core" rev="1.0" conf="dtf_test_generator->master"/>
   </dependencies>
 </ivy-module>
