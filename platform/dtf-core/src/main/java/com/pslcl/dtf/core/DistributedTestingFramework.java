@@ -195,7 +195,7 @@ public class DistributedTestingFramework
                     try
                     {
                         ti.close();
-                    } catch (IOException e)
+                    } catch (IOException ignored)
                     {
                         // Ignore
                     }
@@ -278,7 +278,7 @@ public class DistributedTestingFramework
                         System.out.println("ERROR: .module() skipping one artifact having null Content");
                     }
                 }
-            } catch (Exception e)
+            } catch (Exception ignored)
             {
                 // TODO
             }
@@ -422,7 +422,7 @@ public class DistributedTestingFramework
                         try
                         {
                             Thread.sleep(250);
-                        } catch (Exception ex)
+                        } catch (Exception ignored)
                         {
                         }
                     }
@@ -604,7 +604,7 @@ public class DistributedTestingFramework
                         try
                         {
                             Files.setPosixFilePermissions(P.toPath(), toPosixPermissions(A.getPosixMode()));
-                        } catch (UnsupportedOperationException e)
+                        } catch (UnsupportedOperationException ignored)
                         {
                             // Windows does not support setPosixFilePermissions. Fall back.
                             Set<PosixFilePermission> perms = toPosixPermissions(A.getPosixMode());
@@ -654,7 +654,7 @@ public class DistributedTestingFramework
                     try
                     {
                         Thread.sleep(500);
-                    } catch (Exception e)
+                    } catch (Exception ignored)
                     {
                     }
                 }
@@ -695,14 +695,14 @@ public class DistributedTestingFramework
             {
                 runHelp(); // exits app
             }
-        }        
+        }
 
         int runCount = -1;
         long manualTestNumber = -1;
         long manualTestInstanceNumber = -1;
         String owner = null;
         boolean help = true;
-        
+
         for (int i = 1; i < args.length; i++){
             try{
                 if (args[i].compareTo("--test") == 0 && args.length > i)
@@ -720,12 +720,12 @@ public class DistributedTestingFramework
                     runHelp();
                     runCount = Integer.parseInt(args[1]);
                 }
-               }catch(NumberFormatException e){
+               }catch(NumberFormatException ignored){
                 System.err.println("Invalid argument " + args[i] + ". Expected number instead.");
                 runHelp();
                }
         }
-        
+
         try{
             Core core = null;
 
@@ -771,7 +771,7 @@ public class DistributedTestingFramework
 
         if (args.length < 2 || args[1].compareTo("--help") == 0)
             resultHelp();
-                
+
 
         for (int i = 1; i < args.length; i++)
         {
@@ -1297,7 +1297,7 @@ public class DistributedTestingFramework
                         boolean need_start = false, need_complete = false;
 
                         // Pass/Fail generation. Pass groups of 3 tests, then fail 3, then pend 3.
-                        // Owner generation. Assign owner for groups of 7, then skip 7.                    
+                        // Owner generation. Assign owner for groups of 7, then skip 7.
                         if (((test_sequence / 3) % 3) == 0)
                         {
                             generator.pass();
