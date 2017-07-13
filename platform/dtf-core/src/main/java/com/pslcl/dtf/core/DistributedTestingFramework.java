@@ -56,8 +56,12 @@ import com.pslcl.dtf.core.generator.resource.Machine;
 import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
 
-public class DistributedTestingFramework
+// this "final" class cannot be extended
+public final class DistributedTestingFramework
 {
+   private DistributedTestingFramework() {
+    }
+
     private static void generalHelp()
     {
         System.out.println("test-platform General Help");
@@ -149,15 +153,15 @@ public class DistributedTestingFramework
     {
         private static class DelayedModuleMergeAction
         {
-            ArtifactProvider source;
-            String merge;
-            Module module;
+            private ArtifactProvider source = null;
+            private String merge = null;
+            private Module module = null;
         }
 
         private Core core;
         private List<DelayedModuleMergeAction> delayedModuleMergeAction = new ArrayList<DelayedModuleMergeAction>();
 
-        public HandleModule(Core core)
+        HandleModule(Core core)
         {
             this.core = core;
         }
@@ -824,7 +828,7 @@ public class DistributedTestingFramework
         private String name;
         private int artifacts;
         private long start;
-        private String targetFilePath;
+        private String targetFilePath = null;
 
         PopulateArtifact(Module module, String name, int artifacts, long start)
         {
@@ -854,8 +858,8 @@ public class DistributedTestingFramework
 
         private static class TarContent implements Content
         {
-            private byte[] content;
-            private Hash hash;
+            private byte[] content = null;
+            private Hash hash = null;
 
             TarContent(String name, int artifacts, long start)
             {
