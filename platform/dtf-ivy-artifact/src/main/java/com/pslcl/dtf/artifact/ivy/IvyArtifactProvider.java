@@ -230,7 +230,8 @@ public class IvyArtifactProvider implements ArtifactProvider
         @Override
         public int getPosixMode()
         {
-            return 0b100_100_100;
+//          return 0b100_100_100;
+            return 0b110_110_110; // temporary workaround to issue #159
         }
 
         @Override

@@ -619,7 +619,17 @@ public final class DistributedTestingFramework
                             P.setReadable(perms.contains(PosixFilePermission.GROUP_READ) || perms.contains(PosixFilePermission.OTHERS_READ), false);
                             P.setReadable(perms.contains(PosixFilePermission.OWNER_READ), true);
 
-                            P.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
+                            try {
+                                P.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
+                            } catch (Exception e) {
+                                // TODO: This is where issue #159 is caught, before the workaround was placed (in IvyArtifactsProvider.javas).
+                                //       A workaround gives gen.noarch.tar.gz files 666 perminssions instead of 444.
+                                //       This intercept catch code here can potenetially allow 444 permissions to
+                                //          return, and take specific action before throwing the exception.
+                                //       It is possible that issue #159 can be fixed at a more fundamental level,
+                                //          in which case the 666 workaround and this intercepting block can be removed.
+                                throw e;
+                            }
                             P.setWritable(perms.contains(PosixFilePermission.OWNER_WRITE), true);
                         }
                     }
