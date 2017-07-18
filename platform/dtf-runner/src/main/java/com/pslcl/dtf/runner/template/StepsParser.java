@@ -22,60 +22,60 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StepsParser {
-	
+
     /**
      * Return the next substring, which
      * starts at the next non space char, and
      * ends at the char before next follow-on space char, or at last char of the full Step String.
-     * 
+     *
      * Note: Internal state is not available for this static method.
      * @param step The full String being parsed.
-     * @param offset Begin point of the step String; a negative offset eliminates processing. 
+     * @param offset Begin point of the step String; a negative offset eliminates processing.
      * @return null for negative offset or offset beyond step length
      */
     static String peekNextSubString(String step, int offset) {
-    	String retString = null;
+        String retString = null;
         if (offset >= 0) {
-        	for (int i=offset; i<step.length(); i++) {
-        		// move past leading space chars
-        		if (step.startsWith(" ", offset)) {
-        			++offset;
-        			continue;
-        		}
+            for (int i=offset; i<step.length(); i++) {
+                // move past leading space chars
+                if (step.startsWith(" ", offset)) {
+                    ++offset;
+                    continue;
+                }
                 int spaceOffset = StepsParser.offsetToSpace(step, offset);
                 if (spaceOffset >= 0) {
                     return step.substring(offset, spaceOffset);
                 }
                 return step.substring(offset);
-        	}
+            }
         }
         return retString;
     }
 
     /**
      * From offset, return additional offset to next space.
-     * 
+     *
      * @param step
      * @param offset
      * @return
      */
-	private static int offsetToSpace(String step, int offset) {
+    private static int offsetToSpace(String step, int offset) {
         int spaceOffset = step.indexOf(" ", offset);
         return spaceOffset;
     }
-    
 
-	// private instance members
-    
+
+    // private instance members
+
     private String steps;
     private int offset;
     private int stepReference;
     private final Logger log;
     private final String simpleName;
-    
-    
+
+
     // instance methods
-    
+
     /**
      * Constructor. Set internal offset to 0.
      * @param steps
@@ -89,18 +89,18 @@ public class StepsParser {
     }
 
     /**
-     * 
+     *
      * @return
      */
     int getStepReference() {
-    	return stepReference;
+        return stepReference;
     }
-    
+
     /**
      * Get next step.
      * Adjusts internal offset to match.
-     * 
-     * @return null for internal offset initially negative, or \n not found at or after internal offset 
+     *
+     * @return null for internal offset initially negative, or \n not found at or after internal offset
      * @return empty String when \n is at offset
      * @return a real step when first \n found after offset
      */
@@ -117,87 +117,87 @@ public class StepsParser {
                 if (++termOffset >= steps.length())
                     termOffset = -1; // all bytes of steps have been consumed; termOffset now points to a byte that is after steps
             } else {
-            	throw new Exception("empty step encountered, terminated with newline");
+                throw new Exception("empty step encountered, terminated with newline");
             }
             this.offset = termOffset;
         }
         return retStep;
     }
-    
+
     /**
      * Get list of next steps of a specified step type.
      * Adjusts internal offset to match.
-     * 
+     *
      * @param stepTag String such as "bind " or "include "; MUST include a trailing space
      * @return null for internal offset initially negative, or \n not found at or after internal offset
      * @return empty List<String> when the first step does not match param stepType
-     * @return In-order List<String> when at least the first step matches param stepType  
+     * @return In-order List<String> when at least the first step matches param stepType
      */
     List<String> getNextSteps(String stepTag) throws Exception {
         List<String> retList = new ArrayList<String>(); // empty list; // capacity grows as elements are added; null elements are permitted
         if (steps == null) {
-        	// supposedly not possible because table template requires column step to be filled
+            // supposedly not possible because table template requires column step to be filled
             log.warn(simpleName + "getNextSteps() finds null steps member variable");
         } else if (this.offset >= 0) {
             // process any one step with this rule: stepTag is the first characters leading up to and including the first space char
-        	int offsetNewLine = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
-        	if (offsetNewLine >= 0) {
+            int offsetNewLine = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
+            if (offsetNewLine >= 0) {
                 for (int i=0;
-                	          this.offset!=-1; // -1: getNextStep(), below, exhausted this.steps buffer
-                		                       i++) {
-                	if (this.offset == offsetNewLine)
-                		throw new Exception("step is empty before newline");
-                	int stepTagLength = stepTag.length();
-                	if (stepTagLength > offsetNewLine)
-                		break;
+                              this.offset!=-1; // -1: getNextStep(), below, exhausted this.steps buffer
+                                               i++) {
+                    if (this.offset == offsetNewLine)
+                        throw new Exception("step is empty before newline");
+                    int stepTagLength = stepTag.length();
+                    if (stepTagLength > offsetNewLine)
+                        break;
                     if (!steps.substring(this.offset, this.offset+stepTagLength).equals(stepTag))
                         break;
                     String strStep = getNextStep(); // adjusts this.offset
                     retList.add(i, strStep); // i: 0 ... n
                     offsetNewLine = steps.indexOf('\n', this.offset); // -1 return means steps has no \n at or after offset
                 }
-        	} else {
+            } else {
                 log.debug(simpleName + "getNextSteps(): possible step has no trailing newline: " + steps.substring(this.offset));
                 throw new Exception("step has no trailing newline");
-        	}
+            }
         }
         return retList;
     }
-    
+
     /**
-     * 
+     *
      * @return
      */
     boolean isExhausted() {
-    	return (this.offset < 0) ? true : false; 
+        return (this.offset < 0) ? true : false;
     }
-  
-    
+
+
 // static methods eliminated by outside refactoring
-    
-//	/**
-//	 * Note: param step must not be null
-//	 * @param step
-//	 * @return
-//	 */
-//	public static List<String> parsedStepBySpace(String step) {
-//		List<String> retList = new ArrayList<String>();
-//		int offset = 0;
-//		while (true) {
-//			String paramStep = StepsParser.peekNextSubString(step, offset);
-//			if (paramStep != null) {
-//				retList.add(paramStep);
-//				// this awkward thing accounts for multiple spaces between substrings
-//				offset = step.indexOf(paramStep, offset) + paramStep.length();
-//			}
-//			else
-//				break;
-//		}
-//		return retList;		
-//	}
-   
+
+//    /**
+//     * Note: param step must not be null
+//     * @param step
+//     * @return
+//     */
+//    public static List<String> parsedStepBySpace(String step) {
+//        List<String> retList = new ArrayList<String>();
+//        int offset = 0;
+//        while (true) {
+//            String paramStep = StepsParser.peekNextSubString(step, offset);
+//            if (paramStep != null) {
+//                retList.add(paramStep);
+//                // this awkward thing accounts for multiple spaces between substrings
+//                offset = step.indexOf(paramStep, offset) + paramStep.length();
+//            }
+//            else
+//                break;
+//        }
+//        return retList;
+//    }
+
 //   /**
-//    * 
+//    *
 //    * Note: Internal state is not available for this static method.
 //    * @param strResourceAttributes Must be space terminated; must follow K=V&K=V%K=V pattern; expecting no duplicate K (or if so only 1 is stored); empty K or V not expected but allowed
 //    * @return KVP Map, possibly empty, but without a null key entry
@@ -211,7 +211,7 @@ public class StepsParser {
 //           if (ampersandOffset == -1)
 //               ampersandOffset = strResourceAttributes.length(); // last attribute
 //           int equalsOffset = strResourceAttributes.indexOf("=", offset);
-//           
+//
 //           if (equalsOffset >= 0) // allow empty K to be extracted (will become an empty string in the returned HashMap)
 ////         if (equalsOffset >  0) // deny empty K
 //           {
@@ -225,5 +225,5 @@ public class StepsParser {
 //       }
 //       return ret;
 //   }
-    
+
 }

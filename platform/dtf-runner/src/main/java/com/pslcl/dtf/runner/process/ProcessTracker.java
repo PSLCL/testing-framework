@@ -22,10 +22,10 @@ import com.pslcl.dtf.runner.RunnerService;
 
 public class ProcessTracker {
 
-	// static
-	
+    // static
+
     /**
-     * 
+     *
      * Note: This is a static method, because there is only one database.
      * Note: Timeout at five seconds by throwing TimeoutException
      * @param dbConnPool The database connection pool
@@ -35,26 +35,26 @@ public class ProcessTracker {
      * @throws Exception on any error
      */
     static public boolean isResultStored(DBConnPool dbConnPool, long reNum) throws TimeoutException, Exception {
-    	boolean retBoolean = false;
+        boolean retBoolean = false;
 
         // temporarily, comment out these two lines, to allow local testing to proceed, even if a result is already stored
- 		Boolean result = RunEntryCore.getResult(dbConnPool, reNum);
- 		retBoolean = (result != null);
-   		
+         Boolean result = RunEntryCore.getResult(dbConnPool, reNum);
+         retBoolean = (result != null);
+
         return retBoolean;
     }
 
-	
+
     // instance declarations
-    
-	private RunnerService runnerService = null;
-    
+
+    private RunnerService runnerService = null;
+
     public ProcessTracker(RunnerService runnerService) {
         this.runnerService = runnerService;
     }
-    
+
     /**
-     * 
+     *
      * Note: Timeout at five seconds by throwing TimeoutException
      * @param reNum The run entry number
      * @return true if running; false if not running
@@ -62,18 +62,18 @@ public class ProcessTracker {
      * @throws Exception on any error
      */
     public boolean isRunning(long reNum) throws TimeoutException, Exception {
-    	// return true if reNum if found in runEntryState storage
-    	boolean retIsRunning = runnerService.runEntryStateStore.get(reNum) != null;
-    	return retIsRunning;
+        // return true if reNum if found in runEntryState storage
+        boolean retIsRunning = runnerService.runEntryStateStore.get(reNum) != null;
+        return retIsRunning;
 
-    	// TODO: There is a case to consider, where a hopelessly blocked test run is detected.
-    	//           Can it be detected? If so, this code could be injected, above:
-        //    	if (retInProcess) {
-        //    		if (hopelesslyBlocked) {
-        //    			destroyTestRun(reNum);
-        //    			retInProcess = false; // this can allow the test run to begin again
-        //    		}
-        //    	}
+        // TODO: There is a case to consider, where a hopelessly blocked test run is detected.
+        //           Can it be detected? If so, this code could be injected, above:
+        //        if (retInProcess) {
+        //            if (hopelesslyBlocked) {
+        //                destroyTestRun(reNum);
+        //                retInProcess = false; // this can allow the test run to begin again
+        //            }
+        //        }
     }
 
 }

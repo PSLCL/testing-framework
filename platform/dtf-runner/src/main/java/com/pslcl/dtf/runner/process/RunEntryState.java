@@ -16,12 +16,12 @@
 package com.pslcl.dtf.runner.process;
 
 public class RunEntryState {
-    
+
     private final long reNum;
     private Object message;
     private Action action;
     private Action lastAction;
-    
+
     /**
      * Constructor
      * @param reNum The run entry number
@@ -37,7 +37,7 @@ public class RunEntryState {
     long getRunEntryNumber() {
         return reNum;
     }
-    
+
     Object getMessage() {
         return message;
     }
@@ -45,29 +45,29 @@ public class RunEntryState {
     Action getAction() {
         return action;
     }
-    
+
     void setAction(Action action) {
         this.action = action;
     }
-    
+
     /**
-     * Note: blocks until Action has changed; calling this.setAction() is required 
+     * Note: blocks until Action has changed; calling this.setAction() is required
      * @return
      * @throws InterruptedException
      */
     Action getNewAction() throws InterruptedException {
-    	do {
-	    	if (this.lastAction != this.action) {
-	    		this.lastAction =  this.action;
-	    		return this.action;
-	    	}
-	    	
-	        try {
-	            Thread.sleep(1000);
-	        } catch (InterruptedException ie) {
-	        	throw ie;
-	        }
-    	} while (true);
+        do {
+            if (this.lastAction != this.action) {
+                this.lastAction =  this.action;
+                return this.action;
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ie) {
+                throw ie;
+            }
+        } while (true);
     }
-    
+
 }

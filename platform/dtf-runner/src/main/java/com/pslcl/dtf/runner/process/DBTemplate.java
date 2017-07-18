@@ -22,32 +22,32 @@ import java.util.Date;
  */
 public class DBTemplate {
 
-//	final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
-//	private static String bytesToHex(byte[] bytes)
-//	{
-//	    char[] hexChars = new char[bytes.length * 2];
-//	    for (int j = 0; j < bytes.length; j++)
-//	    {
-//	        int v = bytes[j] & 0xFF;
-//	        hexChars[j * 2] = hexArray[v >>> 4];
-//	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-//	    }
-//	    return new String(hexChars);
-//	}
-	
+//    final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
+//    private static String bytesToHex(byte[] bytes)
+//    {
+//        char[] hexChars = new char[bytes.length * 2];
+//        for (int j = 0; j < bytes.length; j++)
+//        {
+//            int v = bytes[j] & 0xFF;
+//            hexChars[j * 2] = hexArray[v >>> 4];
+//            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+//        }
+//        return new String(hexChars);
+//    }
+
     /**
      * Return the value of the hash byte array as a hex String.
-     * 
+     *
      * @param templateHash The hash array
      * @return Hex String representation of the hash array
      */
     static public String getId(byte [] templateHash)
     {
-    	return new String(templateHash);
+        return new String(templateHash);
     }
-    
+
     // instance members
-    
+
     long pk_template = -1;      // INT(11) in template
     public byte [] hash;        // BINARY(32) in template
     public String steps = null; // MEDIUMTEXT in template
@@ -59,26 +59,26 @@ public class DBTemplate {
     Date end_time = null;       // DATETIME in run
     Boolean result = new Boolean(false); // nullable BOOLEAN in run
     String owner = null;        // VARCHAR(128) in run
-    
+
     /**
      *  Constructor
-     *  
+     *
      *  @param reNum The run entry number
      */
     public DBTemplate(Long reNum) {
         this.reNum = reNum;
     }
-    
+
     public Long getReNum() {
-    	return this.reNum;
+        return this.reNum;
     }
-    
+
     public boolean checkValidTemplateInfo() {
-    	return (this.hash!=null && this.steps!=null && this.enabled);
+        return (this.hash!=null && this.steps!=null && this.enabled);
     }
-    
+
     public boolean isTopLevelTemplate() {
-    	return this.reNum >= 0;
+        return this.reNum >= 0;
     }
-    
+
 }

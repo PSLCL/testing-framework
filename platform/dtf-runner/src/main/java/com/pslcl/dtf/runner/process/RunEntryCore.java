@@ -35,7 +35,7 @@ import com.pslcl.dtf.runner.template.InstancedTemplate;
 public class RunEntryCore {
 
     // static methods
-	
+
     /**
      *
      * @param dbConnPool The database connection pool
@@ -44,12 +44,12 @@ public class RunEntryCore {
      * @throws Exception on any error
      */
     static public Boolean getResult(DBConnPool dbConnPool, long reNum) throws Exception {
-    	Boolean retBoolean = null;
+        Boolean retBoolean = null;
         Connection connection = null;
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-        	connection = dbConnPool.getConnection();
+            connection = dbConnPool.getConnection();
             statement = connection.createStatement();
             String strRENum = String.valueOf(reNum);
             resultSet = statement.executeQuery( "SELECT pk_run, result " +
@@ -59,7 +59,7 @@ public class RunEntryCore {
                 retBoolean = resultSet.getBoolean("result"); // note: false is returned for SQL_NULL
                 // the really cool api is: getBoolean first to get true or false, but only AFTER that, check to see if database column really holds null.
                 if (resultSet.wasNull())
-                	retBoolean = null;
+                    retBoolean = null;
                 if (resultSet.next())
                     throw new Exception("resultSet wrongly has more than one entry");
             } else {
@@ -76,24 +76,24 @@ public class RunEntryCore {
                 // ignore
             }
             resultSet = null;
-            
+
             try {
                 if ( statement != null )
-                	statement.close();
+                    statement.close();
             } catch ( Exception e ) {
                 // ignore
             }
             statement = null;
-            
-            if (connection != null)
-            	connection.close();
-        }
-    	return retBoolean;
-    }	
 
-    
+            if (connection != null)
+                connection.close();
+        }
+        return retBoolean;
+    }
+
+
     // class instance members
-    
+
     private final Logger log;
     private final String simpleName;
     private DBConnPool dbConnPool;
@@ -124,7 +124,7 @@ public class RunEntryCore {
             // Ignore
         }
     }
-    
+
     /**
      * load data for reNum in topDBTemplate
      */
@@ -134,8 +134,8 @@ public class RunEntryCore {
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-        	connection = this.dbConnPool.getConnection();
-        	statement = connection.createStatement();
+            connection = this.dbConnPool.getConnection();
+            statement = connection.createStatement();
             if (this.reNum != null) {
                 String strRENum = String.valueOf(this.reNum);
 
@@ -155,22 +155,22 @@ public class RunEntryCore {
                     topDBTemplate.artifacts = resultSet.getBytes("artifacts");
                     topDBTemplate.result = (resultSet.getObject("result") != null) ? resultSet.getBoolean("result") : null;
                     topDBTemplate.owner = resultSet.getString("owner");
-                    
+
                     topDBTemplate.start_time = resultSet.getDate("start_time");
                     Timestamp timestamp = resultSet.getTimestamp("start_time");
                     if (timestamp != null)
-                    	topDBTemplate.start_time = new Date(timestamp.getTime());
-                    
+                        topDBTemplate.start_time = new Date(timestamp.getTime());
+
                     topDBTemplate.ready_time = resultSet.getDate("ready_time");
                     timestamp = resultSet.getTimestamp("ready_time");
                     if (timestamp != null)
-                    	topDBTemplate.ready_time = new Date(timestamp.getTime());
-                    
+                        topDBTemplate.ready_time = new Date(timestamp.getTime());
+
                     topDBTemplate.end_time = resultSet.getDate("end_time");
                     timestamp = resultSet.getTimestamp("end_time");
                     if (timestamp != null)
-                    	topDBTemplate.end_time = new Date(timestamp.getTime());
-                    
+                        topDBTemplate.end_time = new Date(timestamp.getTime());
+
                     log.debug(simpleName + "<internal> loadRunEntryData() loads data from run-template matched records for reNum " + this.reNum + ", pk_template " + topDBTemplate.pk_template);
                     if (resultSet.next())
                         throw new Exception("resultSet wrongly has more than one entry");
@@ -179,8 +179,8 @@ public class RunEntryCore {
                     throw new Exception("template data not present for specified reNum");
                 }
             } else {
-            	// Note: Is it impossible to be here, now? It means that reCore was instantiated without coming through the path that has an reNum and a matching entry in table run.     
-            	
+                // Note: Is it impossible to be here, now? It means that reCore was instantiated without coming through the path that has an reNum and a matching entry in table run.
+
                 // acquire template table information
                 resultSet = statement.executeQuery( "SELECT pk_template, hash, enabled, steps " +
                                                     "FROM template " );
@@ -205,14 +205,14 @@ public class RunEntryCore {
                 }
             }
         } catch(Exception e) {
-        	// can get here when MySQL Server is not running
+            // can get here when MySQL Server is not running
             log.error(simpleName + "loadRunEntryData() exception for reNum " + this.reNum + ": "+ e);
             throw e;
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
             if (connection != null)
-            	connection.close();
+                connection.close();
         }
     }
 
@@ -226,12 +226,12 @@ public class RunEntryCore {
         topDBTemplate.ready_time = new Date(); // now; assume start_time was filled when the reNum run table entry was placed
         if (topDBTemplate.owner == null)
             topDBTemplate.owner = "dtf-runner";
-		try { 
-	        writeRunEntryData(); // ready_time and owner have changed
-		} catch (Exception e) {
-			log.debug(this.simpleName + "storeReadyRunEntryData() database write failure");
-			throw e;
-		}
+        try {
+            writeRunEntryData(); // ready_time and owner have changed
+        } catch (Exception e) {
+            log.debug(this.simpleName + "storeReadyRunEntryData() database write failure");
+            throw e;
+        }
     }
 
     /**
@@ -242,8 +242,8 @@ public class RunEntryCore {
         try {
             writeRunEntryData();
         } catch (Exception e) {
-			log.debug(this.simpleName + "storeResultRunEntryData() database write failure");
-			throw e;
+            log.debug(this.simpleName + "storeResultRunEntryData() database write failure");
+            throw e;
         }
     }
 
@@ -255,58 +255,58 @@ public class RunEntryCore {
      */
     private void writeRunEntryData() throws Exception {
         // temporarily, comment out these next 5 lines, to allow overwriting a past non-null result
-    	Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, this.reNum);
-    	if (previousResultIsStored != null) { // this specific test is a fail-safe
-    		log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
-    		throw new Exception("Database write not accomplished");
-    	} else
-    		
-    	{
-    		if (!this.dbConnPool.getReadOnly()) {
+        Boolean previousResultIsStored = RunEntryCore.getResult(this.dbConnPool, this.reNum);
+        if (previousResultIsStored != null) { // this specific test is a fail-safe
+            log.warn(simpleName + "writeRunEntryData() does not overwrite a previously stored result, for reNum " + topDBTemplate.reNum);
+            throw new Exception("Database write not accomplished");
+        } else
+
+        {
+            if (!this.dbConnPool.getReadOnly()) {
                 Connection connection = null;
-    	        Statement statement = null;
-    	        try {
-    	        	connection = this.dbConnPool.getConnection();
-    	            connection.setAutoCommit(true);
-    	        	statement = connection.createStatement();
-    	            String strRENum = String.valueOf(topDBTemplate.reNum);
-    	            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    	
-    	            String readyTime = "null";
-    	            if (topDBTemplate.ready_time != null)
-    	                readyTime = "'" + sdf.format(topDBTemplate.ready_time) + "'";
-    	            String endTime = "null";
-    	            if (topDBTemplate.end_time != null)
-    	                endTime = "'" + sdf.format(topDBTemplate.end_time) + "'";
-    	            String owner = "null";
-    	            if (topDBTemplate.owner != null)
-    	                owner = "'" + topDBTemplate.owner + "'";
-   	                Boolean result = topDBTemplate.result;
-    	            byte [] artifacts = null;
-    	            if (topDBTemplate.artifacts != null)
-    	                artifacts = topDBTemplate.artifacts;
-    	
-    	            String str = "UPDATE run " +
-    	                         "SET ready_time = " + readyTime + ", " +
-    	                               "end_time = " + endTime   + ", " +
-    	                                  "owner = " + owner + ", " +
-    	                                 "result = " + result + ", " +
-    	                              "artifacts = " + artifacts + " " +
-    	                         "WHERE pk_run = " + strRENum;
-    	
-    	            statement.executeUpdate( str ); // returns the matching row count: 1 for pk_run row exists, or 0
-    	        } catch(Exception e) {
-    	            log.error(simpleName + "writeRunEntryData() exception for reNum " + topDBTemplate.reNum + ": "+ e);
-    	            throw e;
-    	        } finally {
-    	            safeClose( statement ); statement = null;
-    	            connection.close();
-    	        }    			
-    		} else {
-    			log.warn(simpleName + "writeRunEntryData() finds readonly status; does not write a result, for reNum " + topDBTemplate.reNum);
-    			throw new Exception("Database write not accomplished");
-    		}
-    	}
+                Statement statement = null;
+                try {
+                    connection = this.dbConnPool.getConnection();
+                    connection.setAutoCommit(true);
+                    statement = connection.createStatement();
+                    String strRENum = String.valueOf(topDBTemplate.reNum);
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                    String readyTime = "null";
+                    if (topDBTemplate.ready_time != null)
+                        readyTime = "'" + sdf.format(topDBTemplate.ready_time) + "'";
+                    String endTime = "null";
+                    if (topDBTemplate.end_time != null)
+                        endTime = "'" + sdf.format(topDBTemplate.end_time) + "'";
+                    String owner = "null";
+                    if (topDBTemplate.owner != null)
+                        owner = "'" + topDBTemplate.owner + "'";
+                       Boolean result = topDBTemplate.result;
+                    byte [] artifacts = null;
+                    if (topDBTemplate.artifacts != null)
+                        artifacts = topDBTemplate.artifacts;
+
+                    String str = "UPDATE run " +
+                                 "SET ready_time = " + readyTime + ", " +
+                                       "end_time = " + endTime   + ", " +
+                                          "owner = " + owner + ", " +
+                                         "result = " + result + ", " +
+                                      "artifacts = " + artifacts + " " +
+                                 "WHERE pk_run = " + strRENum;
+
+                    statement.executeUpdate( str ); // returns the matching row count: 1 for pk_run row exists, or 0
+                } catch(Exception e) {
+                    log.error(simpleName + "writeRunEntryData() exception for reNum " + topDBTemplate.reNum + ": "+ e);
+                    throw e;
+                } finally {
+                    safeClose( statement ); statement = null;
+                    connection.close();
+                }
+            } else {
+                log.warn(simpleName + "writeRunEntryData() finds readonly status; does not write a result, for reNum " + topDBTemplate.reNum);
+                throw new Exception("Database write not accomplished");
+            }
+        }
     }
 
 
@@ -319,7 +319,7 @@ public class RunEntryCore {
      * @throws Exception on any area
      */
     public RunEntryCore(DBConnPool dbConnPool, Long reNum) throws Exception {
-    	this.log = LoggerFactory.getLogger(getClass());
+        this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
         this.dbConnPool = dbConnPool;
         this.reNum = reNum;
@@ -327,40 +327,40 @@ public class RunEntryCore {
         this.cancelTask = null;
         this.testRunIsCanceled = false;
         try {
-          	// fill all fields of topDBTemplate from the existing existing database entries
-			loadRunEntryData(); // throws Exception for no database entry for this.reNum
+              // fill all fields of topDBTemplate from the existing existing database entries
+            loadRunEntryData(); // throws Exception for no database entry for this.reNum
 //          // temporarily: uncomment this next line to force initial null result (won't work if overwriting result is not separately temporarily allowed for)
-//			topDBTemplate.result = null;
-			storeReadyRunEntryData(); // can throw IllegalArgumentException for template.enabled false, and SQL write related exceptions
-		} catch (Exception e) {
-			throw e;
-		}
+//            topDBTemplate.result = null;
+            storeReadyRunEntryData(); // can throw IllegalArgumentException for template.enabled false, and SQL write related exceptions
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     public DBTemplate getDBTemplate() {
-    	return topDBTemplate;
+        return topDBTemplate;
     }
-    
+
     public long getRENum() {
-    	return reNum;
+        return reNum;
     }
-    
+
     /**
-     * 
+     *
      * @param templateHash String representation of the Hash of the template
      * @return The DBTemplate object
      * @throws Exception on any error
      */
     public DBTemplate getTemplateInfo(String templateHash) throws Exception {
-    	DBTemplate retDBTemplate = new DBTemplate(-1L);
-    	retDBTemplate.hash = templateHash.getBytes();
+        DBTemplate retDBTemplate = new DBTemplate(-1L);
+        retDBTemplate.hash = templateHash.getBytes();
         Connection connection = null;
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-        	connection = this.dbConnPool.getConnection();
-        	statement = connection.createStatement();
-        	String str = "SELECT pk_template, hash, enabled, steps " +
+            connection = this.dbConnPool.getConnection();
+            statement = connection.createStatement();
+            String str = "SELECT pk_template, hash, enabled, steps " +
                          "FROM template " +
                          "WHERE hash = " + templateHash;
             resultSet = statement.executeQuery(str);
@@ -371,25 +371,25 @@ public class RunEntryCore {
                 retDBTemplate.steps = resultSet.getString("steps");
             }
         } catch (Exception e) {
-        	log.debug(this.simpleName + ".getTemplateInfo() does not find template for templateID " + DBTemplate.getId(retDBTemplate.hash));
-        	throw e;
+            log.debug(this.simpleName + ".getTemplateInfo() does not find template for templateID " + DBTemplate.getId(retDBTemplate.hash));
+            throw e;
         } finally {
             safeClose( resultSet ); resultSet = null;
             safeClose( statement ); statement = null;
             if (connection != null)
-            	connection.close();
+                connection.close();
         }
-    	return retDBTemplate;
+        return retDBTemplate;
     }
-    
+
     private void closeCancelTask() {
-    	if (this.cancelTask != null)
-    		this.cancelTask.close();
+        if (this.cancelTask != null)
+            this.cancelTask.close();
     }
-    
+
     /**
      * Execute the test run specified by the run entry number.
-     * 
+     *
      * @param runnerMachine The RunnerMachine
      * @return the result of this test run; result is stored already
      * @throws Exception on any error
@@ -421,117 +421,117 @@ public class RunEntryCore {
         Boolean result = new Boolean(false);
         boolean testRunSuccess = false;
         InstancedTemplate iT = null;
-        
+
         try {
-        	// Setup test run cancellation, prior to starting our test run.
-        	// 	   While a test run is in progress, a user can cancel it, by entering a fail result in "our" run table entry.  
-        	// Setup local task to watch for on the fly run cancellation. Place it as a member of RunEntryCore (ie: this), passed into and accessible while the test run executes its template steps.
-        	this.cancelTask = new CancelTask(this, runnerMachine);
-        	// temporarily, comment out the above line, to avoid CancelTask activity
-        	
-			log.debug(this.simpleName + ".testRun() launches template instantiation for top level template " + DBTemplate.getId(this.topDBTemplate.hash));
-        	// Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
+            // Setup test run cancellation, prior to starting our test run.
+            //        While a test run is in progress, a user can cancel it, by entering a fail result in "our" run table entry.
+            // Setup local task to watch for on the fly run cancellation. Place it as a member of RunEntryCore (ie: this), passed into and accessible while the test run executes its template steps.
+            this.cancelTask = new CancelTask(this, runnerMachine);
+            // temporarily, comment out the above line, to avoid CancelTask activity
+
+            log.debug(this.simpleName + ".testRun() launches template instantiation for top level template " + DBTemplate.getId(this.topDBTemplate.hash));
+            // Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
             if (!this.isTestRunCanceled()) {
-            	result = iT.getResult(); //True = passed, false = failed, null = no result(inspect). 
+                result = iT.getResult(); //True = passed, false = failed, null = no result(inspect).
             }
             log.info("Test run " + reNum + " completed with result " + result);
             testRunSuccess = true; // a canceled test run is still a "successful" test run, i.e. there was no exception thrown
         } catch (Throwable t) {
-        	// result is still new Boolean(false)
-        	log.debug(simpleName + "testRun errors out, reNum : " + this.reNum);
-        	log.warn("Failed to execute test run " + reNum + " - " + t, t);
+            // result is still new Boolean(false)
+            log.debug(simpleName + "testRun errors out, reNum : " + this.reNum);
+            log.warn("Failed to execute test run " + reNum + " - " + t, t);
             throw t;
         } finally {
-        	this.closeCancelTaskStoreResultAckMessageQueue(runnerMachine.getService(), result);
+            this.closeCancelTaskStoreResultAckMessageQueue(runnerMachine.getService(), result);
         }
-        
-    	// note: for !testRunSuccess, the template has already cleaned itself up (it was handled internally, by exception processing code, because we can't do it- iT is null for that)
+
+        // note: for !testRunSuccess, the template has already cleaned itself up (it was handled internally, by exception processing code, because we can't do it- iT is null for that)
         if (testRunSuccess)
             runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
-        	
+
         return testRunSuccess; // always true, for exception not thrown
     }
-    
+
     public boolean isTestRunCanceled() {
-    	return this.testRunIsCanceled;
+        return this.testRunIsCanceled;
     }
-    
+
     /**
      * To indicate run cancel, a false test run result can be stored by forces outside dtf-runner, e.g. the dtfexec app.
      * This need not be called after the dtf-test-runner stores a false test run result.
      */
     void checkRunCancel() {
-		try {
-			Boolean result = RunEntryCore.getResult(this.dbConnPool, this.reNum);
-			// result null:  test run not canceled
-			//        true:  test run passed, not canceled
-			//        false: test run canceled by a force that is outside dtf-runner
-			//    (or false could mean that we are called wrongly, after we stored a false test run result)
-	    	if (result!=null &&	!result.booleanValue()) {
-	    		// cancel this test run
-	    		this.testRunIsCanceled = true;
-	    	}
-	    	log.debug(this.simpleName + ".checkRunCancel() called for reNum " + this.reNum + ", finds test run " + (this.testRunIsCanceled?"CANCELED":"running"));
-		} catch (Exception e) {
-			log.warn(this.simpleName + "for reNum " + this.reNum + ", checkRunCancel exception, msg: " + e.getMessage());
-			// swallow exception, we will check run cancel again, in a while.
-		}
+        try {
+            Boolean result = RunEntryCore.getResult(this.dbConnPool, this.reNum);
+            // result null:  test run not canceled
+            //        true:  test run passed, not canceled
+            //        false: test run canceled by a force that is outside dtf-runner
+            //    (or false could mean that we are called wrongly, after we stored a false test run result)
+            if (result!=null &&    !result.booleanValue()) {
+                // cancel this test run
+                this.testRunIsCanceled = true;
+            }
+            log.debug(this.simpleName + ".checkRunCancel() called for reNum " + this.reNum + ", finds test run " + (this.testRunIsCanceled?"CANCELED":"running"));
+        } catch (Exception e) {
+            log.warn(this.simpleName + "for reNum " + this.reNum + ", checkRunCancel exception, msg: " + e.getMessage());
+            // swallow exception, we will check run cancel again, in a while.
+        }
     }
-    
+
     /**
-     * 
+     *
      * @param runnerService The RunnerService
      * @param result Result of the test run
      * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
      */
     private void closeCancelTaskStoreResultAckMessageQueue(RunnerService runnerService, Boolean result) throws Exception {
         // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
-    	this.closeCancelTask();
+        this.closeCancelTask();
         this.topDBTemplate.result = result;
         this.storeResultAndAckMessageQueue(runnerService);
     }
-    
+
     /**
-     * 
+     *
      * @param runnerService
      * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
      */
     private void storeResultAndAckMessageQueue(RunnerService runnerService) throws Exception {
-    	boolean resultNowStored = false;
-    	Boolean foundResult = RunEntryCore.getResult(this.dbConnPool, reNum);
-    	// Note: When a test run actually fails or succeeds, this is the only path that writes the result portion of the run entry. To see foundResult not null, right now, might indicate some sort of double run of the test run 
+        boolean resultNowStored = false;
+        Boolean foundResult = RunEntryCore.getResult(this.dbConnPool, reNum);
+        // Note: When a test run actually fails or succeeds, this is the only path that writes the result portion of the run entry. To see foundResult not null, right now, might indicate some sort of double run of the test run
 
-    	if (foundResult == null) {
-    		// note: we do not get here when test run is canceled
-        	try {
-    			storeResultRunEntryData();
-    			resultNowStored = true;
-    	        log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
-    		} catch (Exception e) {
-    			// swallow this exception, it does not relate to the actual test run
+        if (foundResult == null) {
+            // note: we do not get here when test run is canceled
+            try {
+                storeResultRunEntryData();
+                resultNowStored = true;
+                log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
+            } catch (Exception e) {
+                // swallow this exception, it does not relate to the actual test run
                 log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", FAILED to store to database this result: " + this.topDBTemplate.result + "; message queue not acked"); // result can be null, true, or false
-    		}
-    	} else {
-           	log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum);
-    	}
+            }
+        } else {
+               log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum);
+        }
 
-    	if (foundResult!=null || resultNowStored) {
-           	// ack the message queue
-    		
+        if (foundResult!=null || resultNowStored) {
+               // ack the message queue
+
             // temporarily, comment out these next 9 lines, to prevent acking the message queue
-    		try {
-    			RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
-    			Object message = reState.getMessage();
-    			runnerService.ackRunEntry(message);
-    			log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
-    		} catch (Exception e) {
-    			// swallow this exception, it does not relate to the actual test run
-    			log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue. The attempt to ack gives this message: " + e.getMessage());
-    		}
-    	}
+            try {
+                RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
+                Object message = reState.getMessage();
+                runnerService.ackRunEntry(message);
+                log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
+            } catch (Exception e) {
+                // swallow this exception, it does not relate to the actual test run
+                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue. The attempt to ack gives this message: " + e.getMessage());
+            }
+        }
     }
-    
+
         // unneeded- our real approach involves an api to come to us soon
 //        // prove that api works to get files from the build machine
 //        String endpoint = null;

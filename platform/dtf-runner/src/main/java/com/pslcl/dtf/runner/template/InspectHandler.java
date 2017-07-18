@@ -28,8 +28,8 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
 
 
 /**
- * 
- * 
+ *
+ *
  */
 public class InspectHandler {
     static String inspectWorkDir = new String("inspectTemp");
@@ -47,12 +47,12 @@ public class InspectHandler {
     private Entry<String, String> currArtifact;
     private List<InspectInfo> resultInspectInfos;
     private List<InspectInfo> inspectInfos = null;
-    
+
     private File topWorkDir = null;
     private File reNumWorkDir = null;
     private File inspectInfoIndexWorkDir = null;
-   
-    private StepSetOffsets stepSetOffsets; 
+
+    private StepSetOffsets stepSetOffsets;
     private int indexNextInspectInfo = 0;
     private boolean done;
     private final Logger log;
@@ -79,9 +79,9 @@ public class InspectHandler {
         this.done = false;
         this.stepSetOffsets = new StepSetOffsets("inspect", setSteps, initialSetStepCount);
     }
-    
+
     /**
-     * 
+     *
      * @param qapaResponse The QAPAResponse
      */
     public void setQAPaResponse(QAPaResponse qapaResponse) {
@@ -89,7 +89,7 @@ public class InspectHandler {
     }
 
     /**
-     * 
+     *
      * @return
      * @throws Exception
      */
@@ -103,21 +103,21 @@ public class InspectHandler {
     }
 
     /**
-     * 
+     *
      * @return The RunnerMachine
      */
     public RunnerMachine getRunnerMachine() {
         return this.runnerMachine;
     }
-    
+
     /**
-     * 
+     *
      * @return
      */
     boolean isDone() {
         return done;
     }
-    
+
     int computeInspectRequests() throws Exception { // setID inspect 0-based-person-ref instructionsHash [strArtifactName strArtifactHash] ...
         this.inspectInfos = new ArrayList<>();
         int beginSetOffset = this.stepSetOffsets.getBeginSetOffset();
@@ -127,17 +127,17 @@ public class InspectHandler {
                     ResourceInstance resourceInstance = null;
                     String strInstructionsHash = null;
                     Map<String, String> artifacts = new LinkedHashMap<>(); // iterates in the order in which entries are put in the map; HashMap makes no guarantee about iteration order
-                    
+
                     String inspectStep = setSteps.get(i);
                     SetStep parsedSetStep = new SetStep(inspectStep); // setID inspect 0-based-person-ref instructionsHash strArtifactName strArtifactHash [strArtifactName strArtifactHash] ...
                                                                       // 8 inspect 0 A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
                     log.debug(simpleName + "computeInspectRequests() finds inspect in stepSet " + parsedSetStep.getSetID() + ": " + inspectStep);
                     int parsedSetStepParameterCount = parsedSetStep.getParameterCount();
-                    if (parsedSetStepParameterCount < 2) // after setID and command, must have at least 0-based-person-ref and instructionsHash; each couplet thereafter adds 2: "strArtifactName strArtifactHash"                    	 
+                    if (parsedSetStepParameterCount < 2) // after setID and command, must have at least 0-based-person-ref and instructionsHash; each couplet thereafter adds 2: "strArtifactName strArtifactHash"
                         throw new IllegalArgumentException("inspect step did not specify all needed person reference, instructionsHash, artifact name, and artifact hash");
                     if (parsedSetStepParameterCount%2 != 0) // odd parameter count means a strArtifactName is missing its associated strArtifactHash
                         throw new IllegalArgumentException("InspectHandler.computeInspectRequests() finds its final artifact name parameter is missing its required artifact hash paramenter");
-                    
+
                     String strPersonReference = parsedSetStep.getParameter(0);
                     resourceInstance = iT.getResourceInstance(strPersonReference);
                     if (resourceInstance != null)
@@ -156,7 +156,7 @@ public class InspectHandler {
                                           parsedSetStep.getParameter(j+1)); // artifact hash
                         }
                         if (artifacts.isEmpty())
-                        	artifacts = null; // flag further processing that we will not supply artifacts to the Person.inspect() call
+                            artifacts = null; // flag further processing that we will not supply artifacts to the Person.inspect() call
                         this.inspectInfos.add(new InspectInfo(resourceInstance, strInstructionsHash, artifacts));
                     } else {
                         throw new Exception("InspectHandler.computeInspectRequests() finds null bound ResourceInstance at reference " + strPersonReference);
@@ -178,7 +178,7 @@ public class InspectHandler {
      */
     void proceed() throws Exception {
         if (this.inspectInfos==null || this.inspectInfos.isEmpty()) {
-        	this.done = true;
+            this.done = true;
             throw new Exception("InspectHandler processing has no inspectInfo");
         }
         if (this.qapaResponse == null)
@@ -186,13 +186,13 @@ public class InspectHandler {
 
         try {
             QAPortalAccess qapa = this.iT.getQAPortalAccess();
-            
+
             // establish working directory for forming (possibly parallel) collections of files to inspect
             if (this.topWorkDir == null) {
-            	this.topWorkDir = new File(InspectHandler.inspectWorkDir);
-            	this.topWorkDir.mkdirs(); // does not blow away existing content, which is work from other test runs
+                this.topWorkDir = new File(InspectHandler.inspectWorkDir);
+                this.topWorkDir.mkdirs(); // does not blow away existing content, which is work from other test runs
             }
-            
+
             while (!done) {
                 if (this.resultInspectInfos.isEmpty())
                 {
@@ -201,7 +201,7 @@ public class InspectHandler {
                         while (this.indexNextInspectInfo < this.inspectInfos.size()) {
                             // for this one inspectInfo . . .
                             InspectInfo inspectInfo = this.inspectInfos.get(this.indexNextInspectInfo);
-                            
+
                             if (inspectInfo.getInstructions() == null) {
                                 if (!this.qapaResponseLaunched) {
                                     // request instructions
@@ -215,30 +215,30 @@ public class InspectHandler {
                                     this.qapaResponseLaunched = false;
                                     // this.qapaResponse is guaranteed not null, but exception out if it is not filled
                                     if (!this.qapaResponse.isFilled()) {
-                                    	log.warn(this.simpleName + "proceed() finds empty qapaResponse");
-                                    	throw new Exception("QAPortal access failure");
+                                        log.warn(this.simpleName + "proceed() finds empty qapaResponse");
+                                        throw new Exception("QAPortal access failure");
                                     }
                                     String instruction = this.qapaResponse.getContentAsString();
                                     inspectInfo.setInstruction(instruction);
                                     continue;
                                 }
                             } else if (inspectInfo.getContentStream()==null && // need to fill this
-                            		   inspectInfo.getArtifacts()!=null) {     // unless we don't have artifacts to give to the Person.inspect() call
+                                       inspectInfo.getArtifacts()!=null) {     // unless we don't have artifacts to give to the Person.inspect() call
                                 if (this.artifactEntriesIterator == null) {
                                     Map<String, String> artifacts = inspectInfo.getArtifacts();
                                     this.artifactEntriesIterator = artifacts.entrySet().iterator();
                                 }
                                 if (this.currArtifact==null && this.artifactEntriesIterator.hasNext())
                                         this.currArtifact = this.artifactEntriesIterator.next();
-                                
+
                                 if (this.reNumWorkDir == null) {
-                                	this.reNumWorkDir = new File(this.topWorkDir.getAbsolutePath() + File.separator + "reNum"+ this.iT.getRunID());
+                                    this.reNumWorkDir = new File(this.topWorkDir.getAbsolutePath() + File.separator + "reNum"+ this.iT.getRunID());
                                     FileUtils.deleteDirectory(this.reNumWorkDir); // whether directory is present, or not, this operates without exception
-                                	this.reNumWorkDir.mkdirs();
+                                    this.reNumWorkDir.mkdirs();
                                 }
                                 if (this.inspectInfoIndexWorkDir == null) {
-                                	this.inspectInfoIndexWorkDir = new File(this.reNumWorkDir.getAbsolutePath() + File.separator + "iii"+ this.indexNextInspectInfo);
-                                	this.inspectInfoIndexWorkDir.mkdirs();
+                                    this.inspectInfoIndexWorkDir = new File(this.reNumWorkDir.getAbsolutePath() + File.separator + "iii"+ this.indexNextInspectInfo);
+                                    this.inspectInfoIndexWorkDir.mkdirs();
                                 }
 
                                 if (this.currArtifact != null) {
@@ -254,12 +254,12 @@ public class InspectHandler {
                                         this.qapaResponseLaunched = false;
                                         // this.qapaResponse is guaranteed not null, but exception out if it is not filled
                                         if (!this.qapaResponse.isFilled()) {
-                                        	log.warn(this.simpleName + "proceed() finds empty qapaResponse");
-                                        	throw new Exception("QAPortal access failure");
+                                            log.warn(this.simpleName + "proceed() finds empty qapaResponse");
+                                            throw new Exception("QAPortal access failure");
                                         }
                                         InputStream streamContent = this.qapaResponse.getContentAsStream();
                                         String contentFilename = currArtifact.getKey();
-                                        
+
                                         // establish directories stipulated in contentFilename
                                         int finalBackSlash = contentFilename.lastIndexOf('\\');
                                         int finalForwardSlash = contentFilename.lastIndexOf('/');
@@ -269,25 +269,25 @@ public class InspectHandler {
                                             File destPath = new File((this.inspectInfoIndexWorkDir.getAbsolutePath() + File.separator), dirString); // appends a path of directories
                                             destPath.mkdirs(); // does not blow away existing content in these directories
                                         }
-                                        
+
                                         // copy actual content to the content file
                                         File contentFile = new File(contentFilename); // empty File
                                         Path dest = Paths.get(this.inspectInfoIndexWorkDir + File.separator + contentFile.getPath());
                                         // It should never happen that a file is copied over a file of the same filename, because:
-                                        //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.   
+                                        //     first, the tempArtifactDirectory always starts empty, and second, duplicated filenames are not reflected in inspectInfo.artifacts.
                                         Files.copy(streamContent, dest/*, StandardCopyOption.REPLACE_EXISTING*/); // On duplicate filename, we want the exception. We could place .REPLACE_EXISTING, to avoid throwing that exception.
-                                        
+
                                         this.currArtifact = null;
                                         continue;
                                     }
                                 } else {
                                     // create a tarGz of .archiveFilename, specified with its full path; the output file has filename .archiveFilename, but is placed at the fully specified path
-                                	// fill the tarGz file with the directory structure found under this.inspectInfoIndexWorkDir
-                                	String tarGzipFullPathFilename = this.reNumWorkDir + File.separator + InspectHandler.archiveFilename;
+                                    // fill the tarGz file with the directory structure found under this.inspectInfoIndexWorkDir
+                                    String tarGzipFullPathFilename = this.reNumWorkDir + File.separator + InspectHandler.archiveFilename;
                                     ToTarGz toTarGz = new ToTarGz(tarGzipFullPathFilename, this.inspectInfoIndexWorkDir.getAbsolutePath());
                                     File fileTarGz = toTarGz.CreateTarGz();
                                     // fileTarGz (attachments.tar.gzip) is placed and filled, using GzipCompressorOutputStream and TarArchiveOutputStream
-                                  
+
                                     // setContentStream
                                     FileInputStream fis = toTarGz.getFileInputStream(fileTarGz);
                                     inspectInfo.setContentStream(fis);
@@ -305,11 +305,11 @@ public class InspectHandler {
                             if (!PersonInstance.class.isAssignableFrom(resourceInstance.getClass()))
                                 throw new Exception("Specified inspect target is not a PersonInstance");
                             PersonInstance pi = PersonInstance.class.cast(resourceInstance);
-                            
+
                             // for this one inspectInfo, initiate person.inspect() and store the returned future
                             Future<? extends Void> future = pi.inspect(inspectInfo.getInstructions(),
-                            		                                   inspectInfo.getContentStream(), // null only if inspectInfo.getArtifacts() is null
-                            		                                   InspectHandler.archiveFilename);
+                                                                       inspectInfo.getContentStream(), // null only if inspectInfo.getArtifacts() is null
+                                                                       InspectHandler.archiveFilename);
                             inspectInfo.setInspectFuture(future);
                             this.resultInspectInfos.add(inspectInfo);
                         } // end for(submit futures)
@@ -319,7 +319,7 @@ public class InspectHandler {
                         //     can be a Future<Void>, for which future.get():
                         //        returns a Void on inspect success, or
                         //        throws an exception on inspect failure
-                        
+
                         return; // allow time for futures to resolve
                     }
                 } // end if(resultInspectInfos.isEmpty())
@@ -328,16 +328,16 @@ public class InspectHandler {
                     this.waitComplete();
                     this.done = true;
                 }
-            } // end while(!done)                        
+            } // end while(!done)
         } catch (Exception e) {
             this.done = true;
             throw e;
         }
     }
-    
+
     /**
      * thread blocks
-     * 
+     *
      * @throws Exception on any error
      */
     public void waitComplete() throws Exception {
@@ -350,47 +350,47 @@ public class InspectHandler {
         // Gather all results from this.resultInspectInfos, a list of inspectInfo, each holding a future. This thread yields, in waiting for each of the multiple asynch inspect calls to complete.
         boolean allInspects = true;
         try {
-			for (InspectInfo inspectInfo : this.resultInspectInfos) {
-			    Future<? extends Void> future = inspectInfo.getInspectFuture();
-			    if (future != null) {
-			        try {
-			            future.get(); // blocks until asynch answer comes, or exception, or timeout
-			        } catch (InterruptedException | ExecutionException ioreE) {
-			            Throwable t = ioreE.getCause();
-			            String msg = ioreE.getLocalizedMessage();
-			            if(t != null)
-			                msg = t.getLocalizedMessage();
-			            log.debug(simpleName + "waitComplete(), inspect failed future.get() with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
-			            allInspects = false;
-				    	// stay in loop to gather other futures
-			        }                    
-			    } else {
-			        allInspects = false;
-		            log.debug(simpleName + "waitComplete(), one inspect failed- future returned as null");
-			    	// stay in loop to gather other futures
-			    }
-			    InputStream contentStream = inspectInfo.getContentStream();
-			    if (contentStream != null)
-			    	contentStream.close(); // cleanup original InputStream, regardless of our success or failure
-			}
-		} catch (Exception e) {
-			throw e;
-		}
+            for (InspectInfo inspectInfo : this.resultInspectInfos) {
+                Future<? extends Void> future = inspectInfo.getInspectFuture();
+                if (future != null) {
+                    try {
+                        future.get(); // blocks until asynch answer comes, or exception, or timeout
+                    } catch (InterruptedException | ExecutionException ioreE) {
+                        Throwable t = ioreE.getCause();
+                        String msg = ioreE.getLocalizedMessage();
+                        if(t != null)
+                            msg = t.getLocalizedMessage();
+                        log.debug(simpleName + "waitComplete(), inspect failed future.get() with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
+                        allInspects = false;
+                        // stay in loop to gather other futures
+                    }
+                } else {
+                    allInspects = false;
+                    log.debug(simpleName + "waitComplete(), one inspect failed- future returned as null");
+                    // stay in loop to gather other futures
+                }
+                InputStream contentStream = inspectInfo.getContentStream();
+                if (contentStream != null)
+                    contentStream.close(); // cleanup original InputStream, regardless of our success or failure
+            }
+        } catch (Exception e) {
+            throw e;
+        }
 
         if (!allInspects) {
-			if (false) // true: temporarily for test
-				this.cleanup();
+            if (false) // true: temporarily for test
+                this.cleanup();
             throw new Exception("InspectHandler.waitComplete() finds one or more inspect steps failed");
         }
     }
-    
+
     void cleanup() {
-    	try {
-			FileUtils.deleteDirectory(this.reNumWorkDir);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+        try {
+            FileUtils.deleteDirectory(this.reNumWorkDir);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
-    
+
 }

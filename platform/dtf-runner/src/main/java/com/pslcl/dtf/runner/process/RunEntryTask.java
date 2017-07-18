@@ -22,21 +22,21 @@ import com.pslcl.dtf.runner.RunnerService;
 
 public class RunEntryTask implements Runnable {
 
-	// instance declarations 
+    // instance declarations
 
-	private RunnerMachine runnerMachine;
+    private RunnerMachine runnerMachine;
     private RunEntryCore reCore;
     private long reNum;
     //private String runInstanceThreadName;
     private final Logger log;
     private final String simpleName;
-        
-    
+
+
     // public class methods
 
     /**
      * Constructor: From a given run entry number, initiate execution of its test run.
-     * 
+     *
      * Note: Step 1 Check to see if first time setup is accomplished; if not, setup our testrunExecutor.
      * Note: Step 2 Submit this test instance to the testRunExecutorService for future execution.
      * Note: Every thread or task created by this class closes itself automatically, whether seconds or days from instantiation.
@@ -51,7 +51,7 @@ public class RunEntryTask implements Runnable {
         this.reNum = reNum;
         //this.runInstanceThreadName = new String("runEntry " + reNum);
         this.reCore = new RunEntryCore(this.runnerMachine.getDBConnPool(), new Long(reNum));
-        
+
         try {
             runnerMachine.getConfig().blockingExecutor.execute(this); // schedules call to this.run(); this is the full execution of the specified test run
         } catch (Exception e) {
@@ -62,7 +62,7 @@ public class RunEntryTask implements Runnable {
 
     /**
      * Execute one test run
-     * 
+     *
      * Note: Efforts to exit this thread early require cooperation of whatever code this method calls.
      */
     @Override
@@ -71,25 +71,25 @@ public class RunEntryTask implements Runnable {
         Thread.currentThread().setName("RunEntryTask");
         // this thread blocks while waiting for the test run to return a test result and otherwise complete itself (if needed, block could be for days at a time)
         log.debug(simpleName + "run() opens reNum " + reNum);
-    	RunnerService rs = this.runnerMachine.getService();
-    	RunEntryStateStore ress = rs.runEntryStateStore;
-    	RunEntryState reState = ress.get(reNum);
-        
+        RunnerService rs = this.runnerMachine.getService();
+        RunEntryStateStore ress = rs.runEntryStateStore;
+        RunEntryState reState = ress.get(reNum);
+
         while(true) {
-			try {
-	            Action newAction = reState.getNewAction(); // blocks until action changes to something new
-	            Action nextAction = newAction.act(reState, reCore, runnerMachine.getService());
+            try {
+                Action newAction = reState.getNewAction(); // blocks until action changes to something new
+                Action nextAction = newAction.act(reState, reCore, runnerMachine.getService());
                 log.debug(simpleName + "run() ran Action " + newAction.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
-	            if (nextAction == Action.DISCARDED)
-	                break; // close thread
-			} catch (Throwable t) {
-				log.warn(this.simpleName + "run() sees exception " + t.getMessage());
-				break; // close thread
-			}
+                if (nextAction == Action.DISCARDED)
+                    break; // close thread
+            } catch (Throwable t) {
+                log.warn(this.simpleName + "run() sees exception " + t.getMessage());
+                break; // close thread
+            }
         }
- 
+
         log.debug(simpleName + "run() closes reNum " + reNum);
         Thread.currentThread().setName(tname);
     }
-    
+
 }

@@ -34,7 +34,7 @@ import com.pslcl.dtf.core.util.PropertiesFile;
 import com.pslcl.dtf.core.util.StrH.StringPair;
 
 /**
- * Contains ResourceProvider instantiated objects and supplies access to them 
+ * Contains ResourceProvider instantiated objects and supplies access to them
  */
 public class ResourceProviders
 {
@@ -52,12 +52,12 @@ public class ResourceProviders
         resourceManagers = new ArrayList<ResourcesManager>();
         resourceProviders = new ArrayList<ResourceProvider>();
     }
-    
+
     public List<ResourcesManager> getManagers()
     {
         return new ArrayList<ResourcesManager>(resourceManagers);
     }
-    
+
     public List<ResourceProvider> getProviders()
     {
         return new ArrayList<ResourceProvider>(resourceProviders);
@@ -73,13 +73,13 @@ public class ResourceProviders
         config.initsb.level.incrementAndGet();
         config.initsb.ttl(getClass().getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
-        
+
         config.initsb.ttl(ResourcesManager.class.getSimpleName(), " Initialization");
         config.initsb.level.incrementAndGet();
         configToManagers(config, ResourceNames.ResourceManagerClassKey, ResourceNames.ResourceManagerClassDefault);
         config.initsb.level.decrementAndGet();
     }
-    
+
     private void configToManagers(RunnerConfig config, String key, String defaultValue) throws Exception
     {
         List<Entry<String, String>> list = PropertiesFile.getPropertiesForBaseKey(key, config.properties);
@@ -91,7 +91,7 @@ public class ResourceProviders
             list.add(pair);
             ++size;
         }
-        
+
         for(int i=0; i < size; i++)
         {
             Entry<String,String> entry = list.get(i);
@@ -102,8 +102,8 @@ public class ResourceProviders
             resourceProviders.addAll(rm.getResourceProviders());
         }
     }
-    
-    public void destroy() 
+
+    public void destroy()
     {
         try {
             int size = resourceManagers.size();
@@ -112,20 +112,20 @@ public class ResourceProviders
             resourceManagers.clear();
             resourceProviders.clear();
         } catch(Exception e) {
-        	log.error(this.simpleName + ".destroy() failed", e);
+            log.error(this.simpleName + ".destroy() failed", e);
         }
     }
-    
-    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> reservedResources) throws ResourceNotReservedException 
+
+    public List<Future<? extends ResourceInstance>> bind(List<ReservedResource> reservedResources) throws ResourceNotReservedException
     {
         // Note: Current implementation assumes only one instance of dtf-runner is running;
-    	//       for each resource in reservedResources, we know it was reserved by a resource provider known to dtf-runner.
+        //       for each resource in reservedResources, we know it was reserved by a resource provider known to dtf-runner.
         List<Future<? extends ResourceInstance>> retRiList = new ArrayList<>();
-        for(int i=0; i < reservedResources.size(); i++) 
+        for(int i=0; i < reservedResources.size(); i++)
         {
             ReservedResource reservedResource = reservedResources.get(i);
             retRiList.add(reservedResource.getResourceProvider().bind(reservedResource));
         }
         return retRiList;
-    }  
+    }
 }
