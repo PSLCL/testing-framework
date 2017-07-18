@@ -42,8 +42,10 @@ public class MachineConfigData
     public volatile String linuxSandboxPath;
     public volatile String winSandboxPath;
     public volatile int stallReleaseMinutes;   
-    public volatile double rootDiskSize; // in gig   
-    
+    public volatile double rootDiskSize; // in gig
+    public volatile String s3Bucket;
+    public volatile String loggingSourceFolder;
+
     private MachineConfigData()
     {
     }
@@ -75,6 +77,8 @@ public class MachineConfigData
         data.linuxSandboxPath = getAttribute(ResourceNames.DeployLinuxSandboxKey, defaultData.linuxSandboxPath, resource, format);
         data.winSandboxPath = getAttribute(ResourceNames.DeployWinSandboxKey, defaultData.winSandboxPath, resource, format);
         data.rootDiskSize = Double.parseDouble(getAttribute(ResourceNames.MachineDiskKey, ""+defaultData.rootDiskSize, resource, format));
+        data.s3Bucket = getAttribute(InstanceNames.S3BucketKey, defaultData.s3Bucket, resource, format);
+        data.loggingSourceFolder = getAttribute(InstanceNames.LoggingSrcFolderKey, defaultData.s3Bucket, resource, format);
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
@@ -103,6 +107,8 @@ public class MachineConfigData
         data.winSandboxPath = getAttribute(config, ResourceNames.DeployWinSandboxKey, ResourceNames.DeployWinSandboxDefault);
         data.rootDiskSize = Double.parseDouble(getAttribute(config, ResourceNames.MachineDiskKey, ResourceNames.MachineDiskDefault));
         config.initsb.level.decrementAndGet();
+        data.s3Bucket = getAttribute(config, InstanceNames.S3BucketKey, null);
+        data.loggingSourceFolder = getAttribute(config, InstanceNames.LoggingSrcFolderKey, null);
 
         data.subnetConfigData = SubnetConfigData.init(config);
         

@@ -17,6 +17,7 @@ package com.pslcl.dtf.core.runner.resource.staf.futures;
 
 import java.util.concurrent.Callable;
 
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +36,11 @@ public class DeployFuture implements Callable<Void>
     private final String partialDestPath;
     private final String sourceUrl;
     private final boolean windows;
-    private final long runId;
+    private final ResourceCoordinates coordinates;
+    private final String s3Bucket;
+    private final String loggingSourceFolder;
 
-    public DeployFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, String sourceUrl, boolean windows, long runId)
+    public DeployFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, String sourceUrl, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String loggingSourceFolder)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
@@ -45,7 +48,9 @@ public class DeployFuture implements Callable<Void>
         this.partialDestPath = partialDestPath;
         this.sourceUrl = sourceUrl;
         this.windows = windows;
-        this.runId = runId;
+        this.coordinates = coordinates;
+        this.s3Bucket = s3Bucket;
+        this.loggingSourceFolder = loggingSourceFolder;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
         {
@@ -58,7 +63,9 @@ public class DeployFuture implements Callable<Void>
             format.ttl("partialDestPath = ", partialDestPath);
             format.ttl("sourceUrl = ", sourceUrl);
             format.ttl("windows = ", windows);
-            format.ttl("runId = ", runId);
+            format.ttl("runId = ", coordinates.getRunId());
+            format.ttl("s3Bucket = ", s3Bucket);
+            format.ttl("loggingSourceFolder = ", loggingSourceFolder);
             log.debug(format.toString());
         }
     }
@@ -68,7 +75,7 @@ public class DeployFuture implements Callable<Void>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("DeployFuture");
-        ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
+        ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, loggingSourceFolder);
         cmdData.setUseWorkingDir(false);
         String urlFile = StrH.getAtomicName(sourceUrl, '/');            // hashname
         
@@ -132,7 +139,7 @@ public class DeployFuture implements Callable<Void>
         }
     }
     
-    public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows, long runId) throws Exception
+    public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String logSourceFolder) throws Exception
     {
         // where partialDestPath is one of these three
         // 1. lib/someApp.jar arg1 arg2
@@ -159,14 +166,14 @@ public class DeployFuture implements Callable<Void>
             if(windows)
             {
                 penultimate = penultimate.replace('/', '\\');           // lib\someApp.jr, topLevelFile 
-                path = StrH.addTrailingSeparator(winSandbox + "\\" + runId, '\\');     // c:\opt\dtf\sandbox\
+                path = StrH.addTrailingSeparator(winSandbox + "\\" + coordinates.getRunId(), '\\');     // c:\opt\dtf\sandbox\
             }else
-                path = StrH.addTrailingSeparator(linuxSandbox + "/" + runId, '/');     // /opt/dtf/sandbox\
+                path = StrH.addTrailingSeparator(linuxSandbox + "/" + coordinates.getRunId(), '/');     // /opt/dtf/sandbox\
                 
             if (!fileOnly)
                 path = StrH.addTrailingSeparator(path + penultimate, '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/
         }
         path = StrH.stripTrailingSeparator(path);        
-        return new ProcessCommandData((windows ? winSandbox : linuxSandbox), path, fileName, fdn, fileOnly);
+        return new ProcessCommandData((windows ? winSandbox : linuxSandbox), path, fileName, fdn, fileOnly, coordinates, s3Bucket, logSourceFolder, windows);
     }
 }

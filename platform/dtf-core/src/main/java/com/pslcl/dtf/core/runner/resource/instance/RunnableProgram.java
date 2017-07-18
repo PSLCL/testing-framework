@@ -48,4 +48,9 @@ public interface RunnableProgram
      */
     public Integer getRunResult();
 
+    /**
+     * Captures the instance logging to AWS S3.
+     * This method will block.
+     */
+    public void captureLogsToS3();
 }

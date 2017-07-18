@@ -114,7 +114,14 @@ public class InstanceNames
     public static final String Ec2MaxRetriesDefault = ProviderNames.LongMaxRetriesDefault;
     public static final String Ec2StallReleaseDefault = "60"; // in minutes
     public static final String Ec2RequestThrottleDefault = "60"; // per second
-    
+
+    /* ****************************************************************************
+     * logging capture
+    ******************************************************************************/
+    public static final String LoggingKeyBase = InstanceKeyBase + ".logging";
+    public static final String S3BucketKey = LoggingKeyBase + ".s3-bucket";
+    public static final String LoggingSrcFolderKey = LoggingKeyBase + ".src-folder";
+
     public static List<String> getInstanceKeys()
     {
        List<String> keys = new ArrayList<String>();
@@ -127,6 +134,8 @@ public class InstanceNames
        keys.add(Ec2KeyPairNameKey);
        keys.add(Ec2StallReleaseKey);
        keys.add(Ec2RequestThrottleKey);
+       keys.add(S3BucketKey);
+       keys.add(LoggingSrcFolderKey);
        return keys;
     }
 }

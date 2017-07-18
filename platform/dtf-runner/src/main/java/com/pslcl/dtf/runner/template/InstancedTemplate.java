@@ -559,6 +559,7 @@ public class InstancedTemplate {
 
 
                 // this do/while loop: process all step commands for same setID
+                List<RunnableProgram> needsLogsCaptured = new ArrayList<>();
                 boolean allStepsCompleteForThisStepSet;
                 do {
                     allStepsCompleteForThisStepSet = true;
@@ -590,7 +591,7 @@ public class InstancedTemplate {
                                         log.debug(this.simpleName + "A configure program returned null RunnableProgram");
                                         break;
                                     }
-
+                                    needsLogsCaptured.add(runnableProgram);
                                     Integer programRunResult = runnableProgram.getRunResult();
                                     if (programRunResult==null || programRunResult!=0) {
                                         configureStepErroredOut = true;
@@ -666,7 +667,7 @@ public class InstancedTemplate {
                                         log.debug(this.simpleName + "A run program returned null RunnableProgram");
                                         break;
                                     }
-
+                                    needsLogsCaptured.add(runnableProgram);
                                     logProgramResults(runnableProgram, getRunID());
                                     Integer programRunResult = runnableProgram.getRunResult();
                                     if (programRunResult==null) {
@@ -704,7 +705,7 @@ public class InstancedTemplate {
                                         log.debug(this.simpleName + "A program start returned null RunnableProgram");
                                         break;
                                     }
-
+                                    needsLogsCaptured.add(runnableProgram);
                                     Integer programStartResult = runnableProgram.getRunResult();
                                     if (programStartResult != null && programStartResult!=0) {
                                         startStepErroredOut = true;
@@ -727,6 +728,8 @@ public class InstancedTemplate {
 //                  if (!this.isTestRunCanceled())
 //                      allStepsCompleteForThisStepSet = false;
                 } while (!allStepsCompleteForThisStepSet && !this.isTestRunCanceled() && !this.isTestRunFailed()); // end do/while loop: process all step commands for same setID
+                for(RunnableProgram rp : needsLogsCaptured)
+                    rp.captureLogsToS3();
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
             this.result = false;

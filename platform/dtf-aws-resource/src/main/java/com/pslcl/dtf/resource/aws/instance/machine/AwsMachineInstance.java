@@ -112,7 +112,7 @@ public class AwsMachineInstance implements MachineInstance
         DeployFuture deployFuture = new DeployFuture(
                         ec2Instance.getPublicIpAddress(), 
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        partialDestPath, url, windows, reservedResource.resource.getCoordinates().getRunId());
+                        partialDestPath, url, windows, reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder);
         //@formatter:on
         return reservedResource.provider.config.blockingExecutor.submit(deployFuture);
     }
@@ -137,7 +137,7 @@ public class AwsMachineInstance implements MachineInstance
                         ec2Instance.getPublicIpAddress(), 
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
                         command, null, windows, 
-                        reservedResource.resource.getCoordinates().getRunId(), this);
+                        reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
         reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
@@ -157,7 +157,7 @@ public class AwsMachineInstance implements MachineInstance
                         ec2Instance.getPublicIpAddress(), 
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
                         command, windows, 
-                        reservedResource.resource.getCoordinates().getRunId(), this);
+                        reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(cf);
         reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
@@ -176,7 +176,7 @@ public class AwsMachineInstance implements MachineInstance
                         ec2Instance.getPublicIpAddress(), 
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
                         command, rconfig.blockingExecutor, windows, 
-                        reservedResource.resource.getCoordinates().getRunId(), this);
+                        reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder,this);
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
         reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
         return rpf;
@@ -193,7 +193,7 @@ public class AwsMachineInstance implements MachineInstance
         DeleteFuture df = new DeleteFuture(
                         ec2Instance.getPublicIpAddress(), 
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        partialDestPath, windows, reservedResource.resource.getCoordinates().getRunId());
+                        partialDestPath, windows, reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder);
         //@formatter:on
         return reservedResource.provider.config.blockingExecutor.submit(df);
     }

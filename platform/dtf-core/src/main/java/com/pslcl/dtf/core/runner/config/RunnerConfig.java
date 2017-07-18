@@ -15,13 +15,9 @@
  */
 package com.pslcl.dtf.core.runner.config;
 
-import java.util.Properties;
-
-import org.apache.commons.daemon.DaemonContext;
-
 import com.pslcl.dtf.core.runner.Runner;
-import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.config.status.DtfStatusTracker;
+import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.core.util.cli.CliBase;
 import com.pslcl.dtf.core.util.cli.CliCommand;
@@ -33,6 +29,9 @@ import com.pslcl.dtf.core.util.executor.BlockingExecutorConfiguration.ExecutorCo
 import com.pslcl.dtf.core.util.executor.ScheduledExecutor;
 import com.pslcl.dtf.core.util.executor.ScheduledExecutorConfiguration;
 import com.pslcl.dtf.core.util.executor.ScheduledExecutorConfiguration.ScheduledExecutorConfig;
+import org.apache.commons.daemon.DaemonContext;
+
+import java.util.Properties;
 
 @SuppressWarnings("javadoc")
 public class RunnerConfig

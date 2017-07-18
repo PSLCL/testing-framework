@@ -61,7 +61,7 @@ public class AwsResourcesManager implements ResourcesManager
     public volatile AmazonSimpleEmailServiceClient sesClient;
     public volatile String systemId;
     public volatile RequestThrottle requestThrottle;
-    
+
     public AwsResourcesManager()
     {
         resourceProviders = new ArrayList<ResourceProvider>();
@@ -273,6 +273,7 @@ public class AwsResourcesManager implements ResourcesManager
         machineProvider.init(config);
         personProvider.init(config);
         networkProvider.init(config);
+
         value = config.properties.getProperty(ResourceNames.StafLocalPingKey, ResourceNames.StafLocalPingDefault);
         value = StrH.trim(value);
         if(Boolean.parseBoolean(value))

@@ -266,7 +266,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     
     private void waitForStaf(ProgressiveDelay pdelay) throws FatalResourceException
     {
-        ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false);
+        ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false, null, null, null, false);
         StafRunnableProgram runnableProgram;
         try
         {

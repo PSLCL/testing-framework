@@ -129,7 +129,29 @@ public class StafRunnableProgram implements RunnableProgram
         //TODO: when runforever with kill for stop but get "start" ccode ... this is broken here
         return result.getServiceCcode();
     }
-    
+
+    @Override
+    public void captureLogsToS3()
+    {
+        if(commandData.isWindows())
+        {
+//powershell -NoExit -Command "& {Import-Module 'C:\Program Files (x86)\AWS Tools\PowerShell\AWSPowerShell\AWSPowerShell.psd1'; Initialize-AWSDefaultConfiguration; ./uploadFolder.ps1}
+//#powershell -NoExit -Command dir            return;
+
+//test-s3bucket -bucketname dtf-staf-logging
+//#write-s3object -key /testId/templateId/runid/instanceid/dtfAws.log -file C:\var\opt\pslcl\dtf\log\dtfAws.log -bucketname dtf-staf-logging
+//write-s3object -keyprefix /testId/templateId/runid/instanceid -folder C:\var\opt\pslcl\dtf\log -bucketname dtf-staf-logging
+            return;
+        }
+//#!/bin/bash
+//aws s3api put-object --bucket dtf-staf-logging --key testId/templateId/runId/
+//aws s3 cp --recursive /var/opt/pslcl/dtf/log s3://dtf-staf-logging/testId/templateId/runId/instanceId
+
+
+        commandData.getS3Bucket();
+        commandData.getLogSourceFolder();
+    }
+
     @Override
     public synchronized String toString()
     {

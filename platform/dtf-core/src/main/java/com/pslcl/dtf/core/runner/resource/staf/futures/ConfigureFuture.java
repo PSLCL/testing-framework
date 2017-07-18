@@ -17,6 +17,7 @@ package com.pslcl.dtf.core.runner.resource.staf.futures;
 
 import java.util.concurrent.Callable;
 
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,17 +36,21 @@ public class ConfigureFuture implements Callable<RunnableProgram>
     private final String winSandbox;
     private final String partialDestPath;
     private final boolean windows;
-    private final long runId;
+    private final ResourceCoordinates coordinates;
+    private final String s3Bucket;
+    private final String loggingSourceFolder;
     private final MachineInstance machineInstance;
 
-    public ConfigureFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, long runId, MachineInstance machineInstance)
+    public ConfigureFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String loggingSourceFolder, MachineInstance machineInstance)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
         this.winSandbox = winSandbox;
         this.partialDestPath = partialDestPath;
         this.windows = windows;
-        this.runId = runId;
+        this.coordinates = coordinates;
+        this.s3Bucket = s3Bucket;
+        this.loggingSourceFolder = loggingSourceFolder;
         this.machineInstance = machineInstance;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
@@ -67,7 +72,7 @@ public class ConfigureFuture implements Callable<RunnableProgram>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("ConfigureFuture");
-        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, loggingSourceFolder);
         cmdData.setHost(host);
         cmdData.setWait(true);
         cmdData.setContext(machineInstance);

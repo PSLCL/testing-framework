@@ -15,6 +15,7 @@
  */
 package com.pslcl.dtf.core.runner.resource.staf;
 
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 
@@ -35,14 +36,22 @@ public class ProcessCommandData
     private int timeout;
     private Object context;
     private boolean useWorkingDir;
+    private String s3Bucket;
+    private String logSourceFolder;
+    private ResourceCoordinates coordinates;
+    private boolean windows;
 
-    public ProcessCommandData(String sandbox, String basePath, String fileName, boolean fdn, boolean fileOnly)
+    public ProcessCommandData(String sandbox, String basePath, String fileName, boolean fdn, boolean fileOnly, ResourceCoordinates coordinates, String s3Bucket, String logSourceFolder, boolean windows)
     {
         this.sandbox = sandbox;
         this.basePath = basePath;
         this.fileName = fileName;
         this.fdn = fdn;
         this.fileOnly = fileOnly;
+        this.coordinates = coordinates;
+        this.s3Bucket = s3Bucket;
+        this.logSourceFolder = logSourceFolder;
+        this.windows = windows;
     }
 
     public ProcessCommandData(ProcessCommandData commandData)
@@ -58,6 +67,10 @@ public class ProcessCommandData
         timeout = commandData.getTimeout();
         context = commandData.getContext();
         useWorkingDir = commandData.isUseWorkingDir();
+        coordinates = commandData.coordinates;
+        s3Bucket = commandData.s3Bucket;
+        logSourceFolder = commandData.logSourceFolder;
+        windows = commandData.windows;
     }
 
     public synchronized boolean isFdn()
@@ -73,7 +86,15 @@ public class ProcessCommandData
             separator = '/';
         return StrH.addTrailingSeparator(basePath, separator) + fileName;
     }
-    
+
+    public synchronized boolean isWindows() {return windows;}
+
+    public synchronized ResourceCoordinates getCoordinates() {return coordinates;}
+
+    public synchronized String getS3Bucket() {return s3Bucket;}
+
+    public synchronized String getLogSourceFolder() {return logSourceFolder;}
+
     public synchronized boolean isFileOnly()
     {
         return fileOnly;

@@ -19,6 +19,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,15 +40,12 @@ public class RunFuture implements Callable<RunnableProgram>
     private final String partialDestPath;
     private final ExecutorService executor;
     private final boolean windows;
-    private final long runId;
+    private final ResourceCoordinates coordinates;
+    private final String s3Bucket;
+    private final String loggingSourceFolder;
     private final Object context;
     
-    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, long runId, Object context)
-    {
-        this(host, linuxSandbox, winSandbox, partialDestPath, null, windows, runId, context);
-    }
-    
-    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, ExecutorService executor, boolean windows, long runId, Object context)
+    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, ExecutorService executor, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String loggingSourceFolder, Object context)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
@@ -55,7 +53,9 @@ public class RunFuture implements Callable<RunnableProgram>
         this.partialDestPath = partialDestPath;
         this.executor = executor;
         this.windows = windows;
-        this.runId = runId;
+        this.coordinates = coordinates;
+        this.s3Bucket = s3Bucket;
+        this.loggingSourceFolder = loggingSourceFolder;
         this.context = context;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
@@ -78,7 +78,7 @@ public class RunFuture implements Callable<RunnableProgram>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("RunFuture");
-        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, runId);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, loggingSourceFolder);
         cmdData.setHost(host);
         cmdData.setWait(executor == null);
         cmdData.setContext(context);

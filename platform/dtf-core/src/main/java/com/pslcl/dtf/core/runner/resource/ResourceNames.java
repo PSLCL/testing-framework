@@ -23,54 +23,54 @@ public class ResourceNames
 {
     /* ****************************************************************************
      * Globals     
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String PslclKeyBase = "pslcl.dtf";
     public static final String RunnerKeyBase = PslclKeyBase + ".runner";
-    
+
     public static final String LogPathKey = PslclKeyBase + ".log-file-path";
     public static final String SystemIdKey = PslclKeyBase + ".system-id";
     public static final String SystemIdDefault = "dtf-system";
-    
+
     public static final String LogPathDefault = null;
     public static final String ShortMaxDelayDefault = "5000"; // 5 seconds
     public static final String ShortMaxRetriesDefault = "17"; // roughly 1 minute
     public static final String LongMaxDelayDefault = "15000"; // 15 seconds
     public static final String LongMaxRetriesDefault = "67";  // roughly 15 minutes
-    
+
     /* ****************************************************************************
      * Portal declarations    
-    ******************************************************************************/    
-    public static final String PortalKeyBase = PslclKeyBase + ".portal";    
+    ******************************************************************************/
+    public static final String PortalKeyBase = PslclKeyBase + ".portal";
     public static final String PortalHostKey = PortalKeyBase + ".host";
     public static final String PortalContentDirKey = PortalKeyBase + ".content-dir";
-    
+
     public static final String PortalHostDefault = null;
     public static final String PortalContentDirDefault = "content";
 
     /* ****************************************************************************
      * Message Queue    
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String MsgQueNameKey = RunnerKeyBase + ".msg-queue-name";
     public static final String MsgQueClassKey = "pslcl.dtf.resource.mq-class";
-    
+
     public static final String MsgQueClassDefault = "com.pslcl.dtf.resource.aws.Sqs";
     public static final String MsgQueNameDefault = null;
-    
+
     /* ****************************************************************************
      * dtf runner    
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String DtfRunnerTestInstanceLimitKey = RunnerKeyBase + ".test-instance-limit";
     public static final String DtfRunnerTestInstanceLimitDefault = "2";
     public static final String DtfRequestThrottleKey = RunnerKeyBase + ".request-throttle";
 
     /* ****************************************************************************
      * Database    
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String DbBase = PslclKeyBase + ".db";
     public static final String DbHostKey = DbBase + ".host";
     public static final String DbUserKey = DbBase + ".user";
     public static final String DbPassKey = DbBase + ".password";
-    
+
     public static final String DbHostDefault = null;
     public static final String DbUserDefault = null;
     public static final String DbPassDefault = null;
@@ -80,23 +80,23 @@ public class ResourceNames
     ******************************************************************************/
     public static final String StafKeyBase = PslclKeyBase + ".staf";
     public static final String StafLocalPingKey = StafKeyBase + ".local-ping";
-    
+
     public static final String StafLocalPingDefault = "true";
-    
+
     /* ****************************************************************************
      * Resource Providers    
     ******************************************************************************/
-    public static final String ResourceKeyBase = PslclKeyBase + ".resource";    
+    public static final String ResourceKeyBase = PslclKeyBase + ".resource";
     public static final String ResourceManagerClassKey = ResourceKeyBase + ".resource-manager-class";
     public static final String ResourcePersonEmailKey = ResourceKeyBase + ".person.email";
-    
+
     public static final String ResourceManagerClassDefault = "com.pslcl.dtf.resource.aws.AwsResourcesManager";
 
     /* ****************************************************************************
      * Hardware/image     
-    ******************************************************************************/    
-    public static final String MachineKeyBase = ResourceKeyBase + ".machine";    
-    public static final String ImageBase = ResourceKeyBase + ".image";    
+    ******************************************************************************/
+    public static final String MachineKeyBase = ResourceKeyBase + ".machine";
+    public static final String ImageBase = ResourceKeyBase + ".image";
     public static final String MachineCoresKey = MachineKeyBase + ".cores";
     public static final String MachineMemoryKey = MachineKeyBase + ".memory-size";
     public static final String MachineDiskKey = MachineKeyBase + ".disk-size";
@@ -104,42 +104,42 @@ public class ResourceNames
     public static final String ImageOsKey = MachineKeyBase + ".os";
     public static final String ImageConfigKey = MachineKeyBase + ".image.config";
     public static final String DnsHostKey = MachineKeyBase + ".hostname";
-    
+
     public static final String MachineCoresDefault = "1";
     public static final String MachineMemoryDefault = "2.0";
     public static final String MachineDiskDefault = "4.0";
     public static final String ImageImageIdDefault = null;
     public static final String ImageConfigDefault = null;
     public static final String ImagePlatformDefault = "linux";
-    public static final String ImagePlatformLinux = "linux"; 
+    public static final String ImagePlatformLinux = "linux";
     public static final String ImagePlatformWindows = "windows";
 
     /* ****************************************************************************
      * Deploy declarations    
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String DepoyKeyBase = PslclKeyBase + ".deploy";
     public static final String DeployLinuxSandboxKey = DepoyKeyBase + ".linux-sandbox-path";
     public static final String DeployWinSandboxKey = DepoyKeyBase + ".win-sandbox-path";
-    
+
     public static final String DeployLinuxSandboxDefault = "/opt/dtf/sandbox";
     public static final String DeployWinSandboxDefault = "c:\\opt\\dtf\\sandbox";
-    
+
     /* ****************************************************************************
      * Inspect    
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String InspectKeyBase = PslclKeyBase + ".inspect";
-    
+
     // note that inspector is a base key and can be numbered from 0 on up, to add as many inspectors as desired
     public static final String InspectSenderKey = InspectKeyBase + ".sender";
     public static final String InspectReplyKey = InspectKeyBase + ".reply";
     public static final String InspectSubjectKey = InspectKeyBase + ".subject";
     public static final String InspectInspectorKey = InspectKeyBase + ".inspector";
-    
+
     public static final String InspectSenderDefault = null; // valid email address
     public static final String InspectReplyDefault = null; // valid email address
     public static final String InspectSubjectDefault = "DTF Inspect";
     public static final String InspectInspectorDefault = null;  // valid email address
-    public static final String InspectMaxDelayDefault = ShortMaxDelayDefault;      
+    public static final String InspectMaxDelayDefault = ShortMaxDelayDefault;
     public static final String InspectMaxRetriesDefault = ShortMaxRetriesDefault;  // about 1 min timeout
 
     public static List<String> getProviderKeys()
@@ -153,7 +153,7 @@ public class ResourceNames
         keys.add(DnsHostKey);
         return keys;
     }
-    
+
     public static List<String> getAllPersonProviderKeys()
     {
         List<String> keys = new ArrayList<String>();
