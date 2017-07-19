@@ -39,23 +39,25 @@ public class RunFuture implements Callable<RunnableProgram>
     private final String winSandbox;
     private final String partialDestPath;
     private final ExecutorService executor;
+    private final boolean wait;
     private final boolean windows;
     private final ResourceCoordinates coordinates;
     private final String s3Bucket;
-    private final String loggingSourceFolder;
+    private final String logFolder;
     private final Object context;
     
-    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, ExecutorService executor, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String loggingSourceFolder, Object context)
+    public RunFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, ExecutorService executor, boolean wait, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String logFolder, Object context)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
         this.winSandbox = winSandbox;
         this.partialDestPath = partialDestPath;
         this.executor = executor;
+        this.wait = wait;
         this.windows = windows;
         this.coordinates = coordinates;
         this.s3Bucket = s3Bucket;
-        this.loggingSourceFolder = loggingSourceFolder;
+        this.logFolder = logFolder;
         this.context = context;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
@@ -78,9 +80,9 @@ public class RunFuture implements Callable<RunnableProgram>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("RunFuture");
-        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, loggingSourceFolder);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, logFolder);
         cmdData.setHost(host);
-        cmdData.setWait(executor == null);
+        cmdData.setWait(wait);
         cmdData.setContext(context);
         cmdData.setUseWorkingDir(true);
         if (windows)
@@ -88,7 +90,7 @@ public class RunFuture implements Callable<RunnableProgram>
             cmdData.setCommand(cmdData.getFileName());
             StafRunnableProgram runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
             runnableProgram.setExecutorService(executor);
-            if (executor != null)
+            if (!wait)
                 return runnableProgram;
             Thread.currentThread().setName(tname);
             return runnableProgram;
@@ -98,7 +100,7 @@ public class RunFuture implements Callable<RunnableProgram>
         StafRunnableProgram runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
         runnableProgram.setExecutorService(executor);
         Thread.currentThread().setName(tname);
-        if (executor != null)
+        if (!wait)
             return runnableProgram;
         //TODO: if we decide to support timeout
 //        waitForComplete(runnableProgram, 20, 800);
@@ -132,13 +134,14 @@ public class RunFuture implements Callable<RunnableProgram>
         } while (true);
     }
 
+    @SuppressWarnings("unused")
     public static class TimeoutData
     {
-        public final long totalTime;
-        public final int maxRetries;
-        public final int maxDelay;
+        final long totalTime;
+        private final int maxRetries;
+        private final int maxDelay;
 
-        public TimeoutData(int maxRetries, int maxDelay, long totalTime)
+        TimeoutData(int maxRetries, int maxDelay, long totalTime)
         {
             this.maxRetries = maxRetries;
             this.maxDelay = maxDelay;

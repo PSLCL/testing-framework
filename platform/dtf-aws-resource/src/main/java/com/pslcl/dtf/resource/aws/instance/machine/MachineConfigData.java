@@ -78,7 +78,7 @@ public class MachineConfigData
         data.winSandboxPath = getAttribute(ResourceNames.DeployWinSandboxKey, defaultData.winSandboxPath, resource, format);
         data.rootDiskSize = Double.parseDouble(getAttribute(ResourceNames.MachineDiskKey, ""+defaultData.rootDiskSize, resource, format));
         data.s3Bucket = getAttribute(InstanceNames.S3BucketKey, defaultData.s3Bucket, resource, format);
-        data.loggingSourceFolder = getAttribute(InstanceNames.LoggingSrcFolderKey, defaultData.s3Bucket, resource, format);
+        data.loggingSourceFolder = getAttribute(InstanceNames.S3LogsSrcFolderKey, defaultData.s3Bucket, resource, format);
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
@@ -108,7 +108,7 @@ public class MachineConfigData
         data.rootDiskSize = Double.parseDouble(getAttribute(config, ResourceNames.MachineDiskKey, ResourceNames.MachineDiskDefault));
         config.initsb.level.decrementAndGet();
         data.s3Bucket = getAttribute(config, InstanceNames.S3BucketKey, null);
-        data.loggingSourceFolder = getAttribute(config, InstanceNames.LoggingSrcFolderKey, null);
+        data.loggingSourceFolder = getAttribute(config, InstanceNames.S3LogsSrcFolderKey, InstanceNames.S3LogsSrcFolderDefault);
 
         data.subnetConfigData = SubnetConfigData.init(config);
         

@@ -135,8 +135,8 @@ public class AwsMachineInstance implements MachineInstance
         //@formatter:off
         RunFuture df = new RunFuture(
                         ec2Instance.getPublicIpAddress(), 
-                        mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        command, null, windows, 
+                        mconfig.linuxSandboxPath, mconfig.winSandboxPath,
+                        command, rconfig.blockingExecutor, true, windows,
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
@@ -156,7 +156,7 @@ public class AwsMachineInstance implements MachineInstance
         ConfigureFuture cf = new ConfigureFuture(
                         ec2Instance.getPublicIpAddress(), 
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        command, windows, 
+                        rconfig.blockingExecutor, command, windows,
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(cf);
@@ -175,7 +175,7 @@ public class AwsMachineInstance implements MachineInstance
         RunFuture df = new RunFuture(
                         ec2Instance.getPublicIpAddress(), 
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        command, rconfig.blockingExecutor, windows, 
+                        command, rconfig.blockingExecutor, false, windows,
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder,this);
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
         reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);

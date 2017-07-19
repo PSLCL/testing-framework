@@ -138,42 +138,75 @@ public class DeployFuture implements Callable<Void>
             log.warn("Staf requested process failed: " + runnableProgram.result.getCompletionSysErr());
         }
     }
-    
-    public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String logSourceFolder) throws Exception
+
+    public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String logFolder) throws Exception
     {
         // where partialDestPath is one of these three
         // 1. lib/someApp.jar arg1 arg2
         // 2. topLevelFile arg1 arg2
         // 3. fdn given don't prepend sandbox arg1 arg2
-        
-        // deal with partialDestPath as if linux for now
+
+//        linux
+//        1. bin/OperationsTest -requestorMode - maxiterations 10 -address addr -testset
+//        2. OperationsTest -requestorMode - maxiterations 10 -address addr -testset
+//        3. /opt/dtf/sandbox/OperationsTest -requestorMode - maxiterations 10 -address addr -testset
+//        windows
+//        1. bin\\OperationsTest -requestorMode - maxiterations 10 -address addr -testset
+//        2. OperationsTest -requestorMode - maxiterations 10 -address addr -testset
+//        3. c:\\opt\\dtf\\sandbox\\OperationsTest -requestorMode - maxiterations 10 -address addr -testset
+
+        String args = "";
+        String cmdPath = partialDestPath;
+        int idx = partialDestPath.indexOf(' ');
+        if(idx != -1)
+        {
+            args = partialDestPath.substring(idx); // keep space
+            cmdPath = partialDestPath.substring(0, idx);
+        }
+        // deal with cmdPath as if linux for now
         String path = null;
+        String absoluteLogPath = null;
         if(partialDestPath == null)
             partialDestPath = "";
-        String penultimate = partialDestPath.replace('\\', '/');        // lib/someApp.jar, topLevelFile, /opt/dtf/sandbox/doit.sh arg1 arg2
-        String fileName = StrH.getAtomicName(penultimate, '/');         // someApp.jar, topLevelFile, doit.sh
-        boolean fileOnly = penultimate.equals(fileName);                // false, true, false
-        boolean fdn = penultimate.contains(":");                        // false, false, true windows - false linux
+        String penultimate = cmdPath.replace('\\', '/');        // bin/OperationsTest, OperationsTest, /opt/dtf/sandbox/OperationsTest
+        String fileName = StrH.getAtomicName(penultimate, '/');         // OperationsTest, OperationsTest, OperationsTest
+        boolean fileOnly = penultimate.equals(fileName);                         // false, true, false
+        penultimate = StrH.getPenultimateNameFromPath(penultimate);          // bin, null
+        if(penultimate == null)
+            penultimate = "";                                                // bin, ""
+        else
+            penultimate += "/";                                              // bin/, ""
+        boolean fdn = penultimate.contains(":");                                 // false, false, true windows - false linux
         if(!fdn)
-            fdn = penultimate.startsWith("/");                          // false, false, true
+            fdn = penultimate.startsWith("/");                                   // false, false, true
         if(!fdn)
         {
-            penultimate = StrH.getPenultimateNameFromPath(penultimate); // lib, null
-            if(penultimate == null)
-                penultimate = "";                                       // lib, ""
-            else
-                penultimate += "/";                                     // lib/, ""
             if(windows)
             {
-                penultimate = penultimate.replace('/', '\\');           // lib\someApp.jr, topLevelFile 
+                penultimate = penultimate.replace('/', '\\');   // lib\someApp.jr, topLevelFile
                 path = StrH.addTrailingSeparator(winSandbox + "\\" + coordinates.getRunId(), '\\');     // c:\opt\dtf\sandbox\
+                absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '\\');
             }else
-                path = StrH.addTrailingSeparator(linuxSandbox + "/" + coordinates.getRunId(), '/');     // /opt/dtf/sandbox\
-                
+            {
+                path = StrH.addTrailingSeparator(linuxSandbox + "/" + coordinates.getRunId(), '/');     // /opt/dtf/sandbox/80/
+                absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '/');
+            }
+
             if (!fileOnly)
-                path = StrH.addTrailingSeparator(path + penultimate, '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/
+                path = StrH.addTrailingSeparator(path + penultimate, '/');  // /opt/dtf/sandbox/lib/, /opt/dtf/sandbox/80/bin/
+        }else
+        {
+            path = penultimate;
+            if(windows)
+            {
+                path = path.replace('/', '\\');   // lib\someApp.jr, topLevelFile
+                absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '\\');
+            }
+            else
+                absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '/');
         }
-        path = StrH.stripTrailingSeparator(path);        
-        return new ProcessCommandData((windows ? winSandbox : linuxSandbox), path, fileName, fdn, fileOnly, coordinates, s3Bucket, logSourceFolder, windows);
+        path = StrH.stripTrailingSeparator(path);
+        fileName = fileName += args;
+        return new ProcessCommandData((windows ? winSandbox : linuxSandbox), path, fileName, fdn, fileOnly, coordinates, s3Bucket, absoluteLogPath, windows);
     }
 }

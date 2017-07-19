@@ -37,11 +37,11 @@ public class ProcessCommandData
     private Object context;
     private boolean useWorkingDir;
     private String s3Bucket;
-    private String logSourceFolder;
+    private String logFolder;
     private ResourceCoordinates coordinates;
     private boolean windows;
 
-    public ProcessCommandData(String sandbox, String basePath, String fileName, boolean fdn, boolean fileOnly, ResourceCoordinates coordinates, String s3Bucket, String logSourceFolder, boolean windows)
+    public ProcessCommandData(String sandbox, String basePath, String fileName, boolean fdn, boolean fileOnly, ResourceCoordinates coordinates, String s3Bucket, String logFolder, boolean windows)
     {
         this.sandbox = sandbox;
         this.basePath = basePath;
@@ -50,7 +50,7 @@ public class ProcessCommandData
         this.fileOnly = fileOnly;
         this.coordinates = coordinates;
         this.s3Bucket = s3Bucket;
-        this.logSourceFolder = logSourceFolder;
+        this.logFolder = logFolder;
         this.windows = windows;
     }
 
@@ -69,7 +69,7 @@ public class ProcessCommandData
         useWorkingDir = commandData.isUseWorkingDir();
         coordinates = commandData.coordinates;
         s3Bucket = commandData.s3Bucket;
-        logSourceFolder = commandData.logSourceFolder;
+        logFolder = commandData.logFolder;
         windows = commandData.windows;
     }
 
@@ -93,7 +93,7 @@ public class ProcessCommandData
 
     public synchronized String getS3Bucket() {return s3Bucket;}
 
-    public synchronized String getLogSourceFolder() {return logSourceFolder;}
+    public synchronized String getLogFolder() {return logFolder;}
 
     public synchronized boolean isFileOnly()
     {
@@ -133,15 +133,14 @@ public class ProcessCommandData
     private String getProcessCmd(String stafPrefix)
     {
         StringBuilder cmd = new StringBuilder(stafPrefix).append("\"");
-        if(!fdn)
-            cmd.append(command);
-        else
-            cmd.append(basePath);
+        cmd.append(command);
         if (wait)
             cmd.append("\" wait ");
         else
             cmd.append("\" ");
 //            cmd.append("\" notify onend ");
+        cmd.append("stdout ").append(logFolder).append("stdout.log ");
+        cmd.append("stderr ").append(logFolder).append("stderr.log ");
         cmd.append("returnstdout ")
         .append("returnstderr ");
         if(!fdn && useWorkingDir)

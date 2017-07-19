@@ -16,6 +16,7 @@
 package com.pslcl.dtf.core.runner.resource.staf.futures;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import org.slf4j.Logger;
@@ -30,7 +31,6 @@ import com.pslcl.dtf.core.util.TabToLevel;
 @SuppressWarnings("javadoc")
 public class ConfigureFuture implements Callable<RunnableProgram>
 {
-    private final Logger log;
     private final String host;
     private final String linuxSandbox;
     private final String winSandbox;
@@ -38,10 +38,11 @@ public class ConfigureFuture implements Callable<RunnableProgram>
     private final boolean windows;
     private final ResourceCoordinates coordinates;
     private final String s3Bucket;
-    private final String loggingSourceFolder;
+    private final String logFolder;
     private final MachineInstance machineInstance;
+    private final ExecutorService executor;
 
-    public ConfigureFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String loggingSourceFolder, MachineInstance machineInstance)
+    public ConfigureFuture(String host, String linuxSandbox, String winSandbox, ExecutorService executor, String partialDestPath, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String logFolder, MachineInstance machineInstance)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
@@ -50,9 +51,10 @@ public class ConfigureFuture implements Callable<RunnableProgram>
         this.windows = windows;
         this.coordinates = coordinates;
         this.s3Bucket = s3Bucket;
-        this.loggingSourceFolder = loggingSourceFolder;
+        this.logFolder = logFolder;
         this.machineInstance = machineInstance;
-        log = LoggerFactory.getLogger(getClass());
+        this.executor = executor;
+        Logger log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
         {
             TabToLevel format = new TabToLevel();
@@ -72,7 +74,7 @@ public class ConfigureFuture implements Callable<RunnableProgram>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("ConfigureFuture");
-        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, loggingSourceFolder);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, logFolder);
         cmdData.setHost(host);
         cmdData.setWait(true);
         cmdData.setContext(machineInstance);
@@ -81,10 +83,13 @@ public class ConfigureFuture implements Callable<RunnableProgram>
         {
             cmdData.setCommand(cmdData.getFileName());
             Thread.currentThread().setName(tname);
-            return  StafSupport.issueProcessShellRequest(cmdData);
+            StafRunnableProgram srp = StafSupport.issueProcessShellRequest(cmdData);
+            srp.setExecutorService(executor);
+            return srp;
         }
         cmdData.setCommand("sudo ./" + cmdData.getFileName());
         StafRunnableProgram srp = StafSupport.issueProcessShellRequest(cmdData);
+        srp.setExecutorService(executor);
         Thread.currentThread().setName(tname);
         return srp;
     }

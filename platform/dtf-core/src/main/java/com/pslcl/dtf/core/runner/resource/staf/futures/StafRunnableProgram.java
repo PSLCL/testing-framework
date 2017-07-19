@@ -15,33 +15,36 @@
  */
 package com.pslcl.dtf.core.runner.resource.staf.futures;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-
 import com.ibm.staf.STAFResult;
+import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.ProcessResult;
 import com.pslcl.dtf.core.runner.resource.staf.StopResult;
+import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 @SuppressWarnings("javadoc")
 public class StafRunnableProgram implements RunnableProgram
 {
-    public final static String ProcessQueryHandle = "query handle ";
-    public final static String ProcessStopHandle = "stop handle ";
-    public final static String ProcessFreeHandle = "free handle ";
-    
+    private final static String ProcessQueryHandle = "query handle ";
+    private final static String ProcessStopHandle = "stop handle ";
+    private final static String ProcessFreeHandle = "free handle ";
+
     public final ProcessResult result;
     private final ProcessCommandData commandData;
     private ExecutorService executor;
     private boolean stopped;
-    
+
     public StafRunnableProgram(ProcessCommandData commandData) throws Exception
     {
-    	this(null, commandData);
+        this(null, commandData);
     }
-    
+
     public StafRunnableProgram(STAFResult result, ProcessCommandData commandData) throws Exception
     {
         this.commandData = commandData;
@@ -50,21 +53,16 @@ public class StafRunnableProgram implements RunnableProgram
         else
             this.result = new ProcessResult(result, commandData.isWait());
     }
-    
+
     public synchronized boolean isStopped()
     {
         return stopped;
     }
 
-    public synchronized void setStopped(StopResult result)
+    synchronized void setStopped(StopResult result)
     {
         this.stopped = true;
         this.result.setStopResult(result);
-    }
-
-    public synchronized void setExecutorService(ExecutorService executor)
-    {
-        this.executor = executor;
     }
 
     public synchronized ExecutorService getExecutorService()
@@ -72,41 +70,45 @@ public class StafRunnableProgram implements RunnableProgram
         return executor;
     }
 
+    public synchronized void setExecutorService(ExecutorService executor)
+    {
+        this.executor = executor;
+    }
+
     public synchronized String getProcessQueryCommand()
     {
-        StringBuilder cmd = new StringBuilder(ProcessQueryHandle)
-                        .append(" ")
-                        .append(getProcessHandle());
+        StringBuilder cmd = new StringBuilder(ProcessQueryHandle).append(" ").append(getProcessHandle());
         return cmd.toString();
     }
-    
+
+    public String getProcessHandle()
+    {
+        if(commandData.isWait())
+            return null;
+        return result.getServiceHandle();
+    }
+
     public synchronized String getProcessStopCommand()
     {
-        StringBuilder cmd = new StringBuilder(ProcessStopHandle)
-                        .append(" ")
-                        .append(getProcessHandle());
+        StringBuilder cmd = new StringBuilder(ProcessStopHandle).append(" ").append(getProcessHandle());
         return cmd.toString();
     }
-    
+
     public synchronized String getProcessFreeCommand()
     {
-        StringBuilder cmd = new StringBuilder(ProcessFreeHandle)
-                        .append(" ")
-                        .append(getProcessHandle());
+        StringBuilder cmd = new StringBuilder(ProcessFreeHandle).append(" ").append(getProcessHandle());
         return cmd.toString();
     }
-    
+
     public ProcessResult getResult()
     {
         return result;
     }
 
-
     public ProcessCommandData getCommandData()
     {
         return commandData;
     }
-
 
     @Override
     public Future<Integer> kill()
@@ -133,23 +135,70 @@ public class StafRunnableProgram implements RunnableProgram
     @Override
     public void captureLogsToS3()
     {
-        if(commandData.isWindows())
+        try
         {
-//powershell -NoExit -Command "& {Import-Module 'C:\Program Files (x86)\AWS Tools\PowerShell\AWSPowerShell\AWSPowerShell.psd1'; Initialize-AWSDefaultConfiguration; ./uploadFolder.ps1}
-//#powershell -NoExit -Command dir            return;
+            ResourceCoordinates coordinates = commandData.getCoordinates();
 
-//test-s3bucket -bucketname dtf-staf-logging
-//#write-s3object -key /testId/templateId/runid/instanceid/dtfAws.log -file C:\var\opt\pslcl\dtf\log\dtfAws.log -bucketname dtf-staf-logging
-//write-s3object -keyprefix /testId/templateId/runid/instanceid -folder C:\var\opt\pslcl\dtf\log -bucketname dtf-staf-logging
-            return;
-        }
-//#!/bin/bash
+            StringBuilder keyprefix = new StringBuilder("/");
+            keyprefix.append("runId-").append(coordinates.getRunId()).append("/");
+            keyprefix.append("templateId-").append(coordinates.templateId).append("/");
+            keyprefix.append("templateInstanceId-").append(coordinates.templateInstanceId).append("/");
+            keyprefix.append("resourceId-").append(coordinates.resourceId);
+
+            if(commandData.isWindows())
+            {
+                // "write-s3object -keyprefix /testId/templateId/runid/instanceid -folder C:\var\opt\pslcl\dtf\log -bucketname dtf-staf-logging";
+                StringBuilder cmd = new StringBuilder("write-s3object -keyprefix ");
+                cmd.append(keyprefix);
+                String logFolder = StrH.stripTrailingSeparator(commandData.getLogFolder());
+                cmd.append(" -folder ").append(logFolder);
+                cmd.append(" -bucketname ").append(commandData.getS3Bucket());
+
+                //@formatter:off
+                RunFuture df = new RunFuture(
+                        commandData.getHost(),
+                        null, commandData.getSandbox(),
+                        cmd.toString(), executor, true, true,
+                        commandData.getCoordinates(), commandData.getSandbox(),
+                        commandData.getLogFolder(), null);
+                //@formatter:on
+                executor.submit(df).get();
+                return;
+            }
 //aws s3api put-object --bucket dtf-staf-logging --key testId/templateId/runId/
+            StringBuilder cmd = new StringBuilder("aws s3api put-object --bucket ");
+            cmd.append(commandData.getS3Bucket());
+            String key = StrH.addTrailingSeparator(keyprefix.toString(), '/');
+            cmd.append(" --key ").append(key);
+            //@formatter:off
+                RunFuture df = new RunFuture(
+                        commandData.getHost(),
+                        null, commandData.getSandbox(),
+                        cmd.toString(), executor, true, true,
+                        commandData.getCoordinates(), commandData.getSandbox(),
+                        commandData.getLogFolder(), null);
+                //@formatter:on
+            executor.submit(df).get();
+
 //aws s3 cp --recursive /var/opt/pslcl/dtf/log s3://dtf-staf-logging/testId/templateId/runId/instanceId
+            cmd = new StringBuilder("aws s3 cp --recursive ");
+            String logFolder = StrH.stripTrailingSeparator(commandData.getLogFolder());
+            cmd.append(logFolder);
+            cmd.append(" s3://").append(commandData.getS3Bucket()).append(keyprefix);
 
-
-        commandData.getS3Bucket();
-        commandData.getLogSourceFolder();
+            //@formatter:off
+                df = new RunFuture(
+                        commandData.getHost(),
+                        null, commandData.getSandbox(),
+                        cmd.toString(), executor, true, true,
+                        commandData.getCoordinates(), commandData.getSandbox(),
+                        commandData.getLogFolder(), null);
+                //@formatter:on
+            executor.submit(df).get();
+        }catch(Exception e)
+        {
+            LoggerFactory.getLogger(getClass()).warn("failed to capture logs to s3:\n" + commandData.toString());
+        }
     }
 
     @Override
@@ -159,14 +208,7 @@ public class StafRunnableProgram implements RunnableProgram
         format.ttl("\n");
         return toString(format).toString();
     }
-    
-    public String getProcessHandle()
-    {
-        if(commandData.isWait())
-            return null;
-        return result.getServiceHandle();
-    }
-    
+
     public synchronized TabToLevel toString(TabToLevel format)
     {
         format.ttl(getClass().getSimpleName() + ":");

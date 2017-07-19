@@ -118,9 +118,11 @@ public class InstanceNames
     /* ****************************************************************************
      * logging capture
     ******************************************************************************/
-    public static final String LoggingKeyBase = InstanceKeyBase + ".logging";
-    public static final String S3BucketKey = LoggingKeyBase + ".s3-bucket";
-    public static final String LoggingSrcFolderKey = LoggingKeyBase + ".src-folder";
+    public static final String S3LoggingKeyBase = InstanceKeyBase + ".logging";
+    public static final String S3BucketKey = S3LoggingKeyBase + ".s3-bucket";
+    public static final String S3LogsSrcFolderKey = S3LoggingKeyBase + ".src-folder";
+
+    public static final String S3LogsSrcFolderDefault = "logs";  // relative to sandbox
 
     public static List<String> getInstanceKeys()
     {
@@ -135,7 +137,7 @@ public class InstanceNames
        keys.add(Ec2StallReleaseKey);
        keys.add(Ec2RequestThrottleKey);
        keys.add(S3BucketKey);
-       keys.add(LoggingSrcFolderKey);
+       keys.add(S3LogsSrcFolderKey);
        return keys;
     }
 }
