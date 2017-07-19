@@ -173,7 +173,7 @@ public class StafRunnableProgram implements RunnableProgram
             //@formatter:off
                 RunFuture df = new RunFuture(
                         commandData.getHost(),
-                        null, commandData.getSandbox(),
+                        commandData.getSandbox(), null,
                         cmd.toString(), executor, true, true,
                         commandData.getCoordinates(), commandData.getSandbox(),
                         commandData.getLogFolder(), null);
@@ -189,7 +189,7 @@ public class StafRunnableProgram implements RunnableProgram
             //@formatter:off
                 df = new RunFuture(
                         commandData.getHost(),
-                        null, commandData.getSandbox(),
+                        commandData.getSandbox(), null,
                         cmd.toString(), executor, true, true,
                         commandData.getCoordinates(), commandData.getSandbox(),
                         commandData.getLogFolder(), null);
