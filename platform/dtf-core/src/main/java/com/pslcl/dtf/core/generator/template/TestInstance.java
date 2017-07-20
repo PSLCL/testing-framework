@@ -73,18 +73,25 @@ public class TestInstance
                 int o1SetID = o1.getSetID();
                 int o2SetID = o2.getSetID();
 
+                if (o1SetID < o2SetID)
+                    return -1;
+                else if (o1SetID > o2SetID)
+                    return 1;
+
+                String o1Command = null;
+                String o2Command = null;
+                int retVal;
                 try
                 {
-                    if (o1SetID < o2SetID)
-                        return -1;
-                    else if (o1SetID > o2SetID)
-                        return +1;
-
-                    return o1.getCommand(template).compareTo(o2.getCommand(template));
-                } catch (Exception e)
-                {
-                    return 0;
+                    o1Command = o1.getCommand(template);
+                    o2Command = o2.getCommand(template);
+                    retVal = o1Command.compareTo(o2Command);
+                } catch (Exception e) {
+                    // Illogical value: used without rationale. Code things so we never get here.
+                    retVal = 0;
                 }
+                return retVal;
+
             }
         }
 
@@ -116,24 +123,24 @@ public class TestInstance
                 return artifacts;
             }
         }
-        
+
         private int setID = -1;
         protected List<Action> actionDependencies = new ArrayList<Action>();
-        
+
         /**
          * Assign the set ID for this action. Actions which are in the same set may be executed in parallel.
          * All actions within a set must complete execution before the next set begins. Set IDs are executed
-         * in increasing numeric order, beginning with 0. 
-         * 
+         * in increasing numeric order, beginning with 0.
+         *
          * @param setID The set ID.
          */
         public void assignSetID(int setID){
             this.setID = setID;
         }
-        
+
         /**
          * Get the ID of the set to which this action is assigned.
-         * 
+         *
          * @return The setID or -1 if a set ID has not been assigned.
          */
         public int getSetID(){
@@ -181,11 +188,11 @@ public class TestInstance
          * @throws Exception Any error.
          */
         public abstract DescribedTemplate getIncludedTemplate() throws Exception;
-        
+
         /**
          * Returns a list of actions that must be completed before this action may be
          * executed. For example, a deploy may require that a machine is bound.
-         * 
+         *
          * @return A list of dependent actions. Returns an empty list if there are no dependencies.
          * @throws Exception Any error.
          */
@@ -406,6 +413,9 @@ public class TestInstance
         assignSetIDs();
 
         // Sort each set of actions (only one set for now)
+        //      Note: Our template is created below, so at this moment:
+        //            We have no Template param to pass to "new Action.ActionSorter(Template)"
+        //            This is a problem, because the sorter uses template in its sort- a null pointer results.
         Collections.sort(actions, new Action.ActionSorter());
 
         // Determine dependencies for each template (none for now)
@@ -419,7 +429,7 @@ public class TestInstance
 
         dtemplate = new DescribedTemplate(template, actions, dependencies);
     }
-    
+
     private void assignSetIDs() throws Exception{
         List<Action> unassignedActions = new ArrayList<Action>();
         List<Action> assignedActions = new ArrayList<Action>();
