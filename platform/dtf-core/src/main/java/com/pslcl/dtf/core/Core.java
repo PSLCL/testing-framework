@@ -228,7 +228,7 @@ public class Core
         {
             return db_host;
         }
-        
+
         public Integer dbPort()
         {
             return db_port;
@@ -263,7 +263,7 @@ public class Core
         {
             return shell;
         }
-        
+
         public String sqsEndpoint(){
             return sqs_endpoint;
         }
@@ -271,7 +271,7 @@ public class Core
         public String sqsQueueName(){
             return sqs_queue_name;
         }
-        
+
         public String sqsAccessKeyID(){
             return sqs_access_key_id;
         }
@@ -460,7 +460,7 @@ public class Core
         {
             for (DBTestInstance dbti : list_pkTest_ToMany_pkTestInstance)
             {
-                if (dbti.fk_run == 0) // 0: null in database: not yet run 
+                if (dbti.fk_run == 0) // 0: null in database: not yet run
                     retSet.add(Long.valueOf(dbti.pk_test_instance));
             }
         }
@@ -469,7 +469,7 @@ public class Core
 
     /**
      * From a given test instance number, execute the corresponding test instance (aka test run).
-     * 
+     *
      *  @param testInstanceNumber The test instance number
      */
     public void executeTestInstance(long testInstanceNumber)
@@ -483,7 +483,7 @@ public class Core
         {
             String str_fkTestInstanceNumber = Long.toString(testInstanceNumber);
 
-            // This simple line requires that .pk_template be placed in DBTestInstance. 
+            // This simple line requires that .pk_template be placed in DBTestInstance.
             String str_fkTemplate = Long.toString(dbti.pk_template);
 
             //            // This lookup works just as well to fill str_fkTemplate, and does not require the presence of .pk_template being placed in DBTestInstance.
@@ -817,7 +817,7 @@ public class Core
      * and the database is still updated.
      * @param is An input stream for the content.
      * @param length The length of the stream, or -1 if the entire stream is to be added.
-     * @return Hash of the added content 
+     * @return Hash of the added content
      */
     public Hash addContent(InputStream is, long length)
     {
@@ -936,7 +936,7 @@ public class Core
      * @param content The hash of the file content, which must already exist in the system.
      * @param merge_source True if the artifact is associated with a merged module.
      * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
-     * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from. 
+     * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from.
      * @return The primary key of the added artifact, as stored in the artifact table
      */
     public long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module)
@@ -1258,7 +1258,7 @@ public class Core
             this.hash = hash;
             this.targetFilePath = targetDirectory;
         }
-        
+
         /**
          * Construct an artifact associated with a component, name, version, platform and variant. The content
          * associated with the artifact is passed as a hash.
@@ -1590,7 +1590,7 @@ public class Core
                         resultSet = null;
                         safeClose(statement);
                         statement = null;
-                        
+
                     } else if (fields.length == 3 || fields.length == 4)
                     {
                         statement = connect.createStatement();
@@ -1635,7 +1635,7 @@ public class Core
                             set.add(A);
                             found.add(artifact_name);
                         }
-                        
+
                         safeClose(resultSet);
                         resultSet = null;
                         safeClose(statement);
@@ -1659,10 +1659,10 @@ public class Core
 
         return set;
     }
-    
+
     /**
      * Remove default directory from artifact name and replace it with the target directory instead.
-     * 
+     *
      * @param artifactName The name of the artifact
      * @param targetDirectory The target directory.
      * @return The name of the artifact in the target directory.
@@ -1689,7 +1689,7 @@ public class Core
      * The result set includes a list of sets of matching artifacts. For each element in the list the array of results contains the
      * artifact that matches the parameter in the same position, all of which will come from the same module.
      * @param required A parameter set or null. Any module considered for artifacts must contain at least these attributes.
-     * @param configuration the configuration to check, or null. 
+     * @param configuration the configuration to check, or null.
      * @param name Artifact names, including MySQL REGEXP patterns.
      * @return The set of artifacts
      */
@@ -2441,8 +2441,10 @@ public class Core
      * @param testInstances A list of test instances to be synced.
      * @throws Exception on any error
      */
-    public void syncDescribedTemplates(List<TestInstance> testInstances) throws Exception
+    public int syncDescribedTemplates(List<TestInstance> testInstances) throws Exception
     {
+        int addedDescribedTemplatesCount = 0;
+        int checkedNotAddedDescribedTemplatesCount = 0;
         for (TestInstance ti : testInstances)
         {
             DBDescribedTemplate dbdt;
@@ -2452,9 +2454,12 @@ public class Core
             {
                 // Add the template
                 dbdt = add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                ++addedDescribedTemplatesCount;
+
             } else
             {
                 dbdt = check(ti.getTemplate());
+                ++checkedNotAddedDescribedTemplatesCount;
             }
 
             // We have the described template. There should be a Test Instance that relates the
@@ -2499,6 +2504,8 @@ public class Core
 
                         try
                         {
+                            // TODO: When adding 529 test instances, is it ok that 1000 entries are added to this table?
+                            //       This table has a 1000 entry limit. Is this a bug?
                             long pk_module = findModule(artifact.getModule());
                             statement2 = connect.prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
                             statement2.setLong(1, pk_module);
@@ -2560,6 +2567,9 @@ public class Core
                 }
             }
         }
+        if (checkedNotAddedDescribedTemplatesCount > 0)
+            System.out.println("Core.SyncDescribedTemplates() checked (without adding) " + checkedNotAddedDescribedTemplatesCount + " described templates in database");
+        return addedDescribedTemplatesCount;
     }
 
     public long syncTemplate(Template sync)
@@ -2897,12 +2907,12 @@ public class Core
             statement = null;
         }
     }
-    
+
     public List<Long> getTestInstances(long pk_test) throws Exception{
         Statement find_test_instance = null;
         ResultSet test_instances = null;
         List<Long> testInstanceList = new ArrayList<Long>();
-        
+
         try
         {
             find_test_instance = connect.createStatement();
@@ -3106,10 +3116,10 @@ public class Core
 
         return pk;
     }
-    
+
     public Long getInstanceRun(long testInstanceNumber) throws Exception
     {
-        Statement statement = null; 
+        Statement statement = null;
         ResultSet resultSet = null;
         try
         {
@@ -3131,13 +3141,13 @@ public class Core
             safeClose(statement);
         }
     }
-    
+
     public void addResultToRun(long runID, boolean result) throws Exception {
-        Statement statement = null; 
-        
+        Statement statement = null;
+
         if (read_only)
             return;
-        
+
         try
         {
             statement = connect.createStatement();
@@ -3159,11 +3169,11 @@ public class Core
     {
         PreparedStatement runStatement = null;
         Statement templateStatement = null;
-        
+
         if (read_only)
             throw new Exception("Database connection is read only.");
-        
-        String hash; 
+
+        String hash;
         ResultSet resultSet = null;
         try
         {
@@ -3184,7 +3194,7 @@ public class Core
         {
             safeClose(templateStatement);
         }
-        
+
         try
         {
             runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
@@ -3195,7 +3205,7 @@ public class Core
                 runStatement.setString(3, owner);
             else
                 runStatement.setNull(3, Types.VARCHAR);
-            
+
             runStatement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
             runStatement.setNull(5, Types.TIMESTAMP);
             runStatement.setNull(6, Types.TIMESTAMP);
@@ -3218,7 +3228,7 @@ public class Core
             safeClose(runStatement);
             runStatement = null;
         }
-        throw new Exception("Failed to add new run for test instance " + testInstanceNumber); 
+        throw new Exception("Failed to add new run for test instance " + testInstanceNumber);
     }
 
     public void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)

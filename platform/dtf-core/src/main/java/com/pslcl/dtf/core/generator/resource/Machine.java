@@ -35,7 +35,7 @@ import com.pslcl.dtf.core.generator.template.TestInstance.Action;
 public class Machine extends Resource
 {
     private static final String codename = "machine";
-    
+
     private Map<Artifact, Action> deployActions;
 
     /**
@@ -46,7 +46,7 @@ public class Machine extends Resource
     public Machine(Generator generator, String name)
     {
         super(generator, name, codename);
-        
+
         deployActions = new HashMap<Artifact, Action>();
     }
 
@@ -57,8 +57,13 @@ public class Machine extends Resource
     @Override
     public void bind() throws Exception
     {
-        Attributes attributes = new Attributes();
-        super.bind(attributes);
+        try {
+            Attributes attributes = new Attributes();
+            super.bind(attributes);
+        } catch (Exception e) {
+            System.out.println("Machine.bind() exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     /**
@@ -70,7 +75,12 @@ public class Machine extends Resource
     @Override
     public TestInstance.Action bind(Attributes attributes) throws Exception
     {
-        return super.bind(attributes);
+        try {
+            return super.bind(attributes);
+        } catch (Exception e) {
+            System.out.println("Machine.bind(Attributes) exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     static private class Deploy extends TestInstance.Action
@@ -81,7 +91,7 @@ public class Machine extends Resource
         private Template.ResourceParameter me;
         private Template template;
         private List<Artifact> artifacts;
-        
+
         private Deploy(Machine m, Artifact a, List<Action> actionDependencies)
         {
             this.m = m;
@@ -96,7 +106,7 @@ public class Machine extends Resource
             if(!this.actionDependencies.contains(machineBindAction)){
                 this.actionDependencies.add(machineBindAction);
             }
-            
+
             synchronized(m.deployActions){
                 m.deployActions.put(a, this);
             }
@@ -105,36 +115,51 @@ public class Machine extends Resource
         @Override
         public String getCommand(Template t) throws Exception
         {
-            String retStr = getSetID() + " deploy " + t.getReference(this.m) + " ";
-            String destName = a.getTargetFilePath();
-            if(destName == null || destName.isEmpty()){
-                destName = a.getName();
+            try {
+                String retStr = getSetID() + " deploy " + t.getReference(this.m) + " ";
+                String destName = a.getTargetFilePath();
+                if(destName == null || destName.isEmpty()){
+                    destName = a.getName();
+                }
+                retStr += destName;
+                retStr += (" " + a.getContent().getValue(template));
+                return retStr;
+            } catch (Exception e) {
+                System.out.println("Machine.getCommand(Template) exits after catching exception, msg: " + e);
+                throw e;
             }
-            retStr += destName;
-            retStr += (" " + a.getContent().getValue(template));
-            return retStr;
         }
 
         @Override
         public String getDescription() throws Exception
         {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Copy the file <tt>");
-            sb.append(a.getName());
-            sb.append("</tt> from module <tt>");
-            sb.append(a.getModule().getName());
-            sb.append(":");
-            sb.append(a.getModule().getVersion());
-            sb.append("</tt> to machine <em>");
-            sb.append(m.name);
-            sb.append("</em>");
-            return sb.toString();
+            try {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Copy the file <tt>");
+                sb.append(a.getName());
+                sb.append("</tt> from module <tt>");
+                sb.append(a.getModule().getName());
+                sb.append(":");
+                sb.append(a.getModule().getVersion());
+                sb.append("</tt> to machine <em>");
+                sb.append(m.name);
+                sb.append("</em>");
+                return sb.toString();
+            } catch (Exception e) {
+                System.out.println("Machine.getDescription() exits after catching exception, msg: " + e);
+                throw e;
+            }
         }
 
         @Override
         public ArtifactUses getArtifactUses() throws Exception
         {
-            return new TestInstance.Action.ArtifactUses("", true, artifacts.iterator());
+            try {
+                return new ArtifactUses("", true, artifacts.iterator());
+            } catch (Exception e) {
+                System.out.println("Machine.getArtifactUses() exits after catching exception, msg: " + e);
+                throw e;
+            }
         }
 
         @Override
@@ -159,7 +184,12 @@ public class Machine extends Resource
      */
     public List<TestInstance.Action> deploy(Artifact... artifacts) throws Exception
     {
-        return deploy(null, artifacts);
+        try {
+            return deploy(null, artifacts);
+        } catch (Exception e) {
+            System.out.println("Machine.deploy(Artifact...) exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     /**
@@ -172,51 +202,61 @@ public class Machine extends Resource
      */
     public List<TestInstance.Action> deploy(List<Action> actionDependencies, Artifact... artifacts) throws Exception
     {
-        List<TestInstance.Action> deploys = new ArrayList<TestInstance.Action>();
-        if(!isBound()){
-            throw new IllegalStateException("Cannot deploy to unbound machine.");
-        }
-        for (Artifact a : artifacts)
-        {
-            if (a == null)
-            {
-                System.err.println("ERROR: Artifact is null.");
-                continue;
+        try {
+            List<Action> deploys = new ArrayList<Action>();
+            if(!isBound()){
+                throw new IllegalStateException("Cannot deploy to unbound machine.");
             }
-            synchronized(deployActions){
-                if(deployActions.containsKey(a)){
-                    continue; //duplicate
+            for (Artifact a : artifacts)
+            {
+                if (a == null)
+                {
+                    System.err.println("ERROR: Artifact is null.");
+                    continue;
+                }
+                synchronized(deployActions){
+                    if(deployActions.containsKey(a)){
+                        continue; //duplicate
+                    }
+                }
+
+                Deploy deploy = new Deploy(this, a, actionDependencies);
+                generator.add(deploy);
+                deploys.add(deploy);
+
+                Iterable<Artifact> dependencies = generator.findDependencies(a);
+                for (Artifact d : dependencies)
+                {
+                    deploys.addAll(deploy(d));
                 }
             }
-            
-            Deploy deploy = new Deploy(this, a, actionDependencies);
-            generator.add(deploy);
-            deploys.add(deploy);
-
-            Iterable<Artifact> dependencies = generator.findDependencies(a);
-            for (Artifact d : dependencies)
-            {
-                deploys.addAll(deploy(d));
-            }
+            return deploys;
+        } catch (Exception e) {
+            System.out.println("Machine.deploy(List<Action>, Artifact...) exits after catching exception, msg: " + e);
+            throw e;
         }
-        return deploys;
     }
 
     /**
      * Connect the machine to a {@link Network} Resource.
-     * 
+     *
      * @param network The network to connect to.
      * @return A {@link Cable} which serves as a logical connection between the machine and the network.
      * @throws Exception on any error.
      */
     public Cable connect(Network network) throws Exception
     {
-         return connect(network, null);
+        try {
+            return connect(network, null);
+        } catch (Exception e) {
+            System.out.println("Machine.connect(Network) exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
-    
+
     /**
      * Connect the machine to a {@link Network} Resource.
-     * 
+     *
      * @param network The network to connect to.
      * @param actionDependencies A list of actions that should be completed before the connect.
      * @return A {@link Cable} which serves as a logical connection between the machine and the network.
@@ -224,31 +264,36 @@ public class Machine extends Resource
      */
     public Cable connect(Network network, List<Action> actionDependencies) throws Exception
     {
-        if (!isBound())
-        {
-            System.err.println("Cannot connect an unbound machine.");
-            return null;
+        try {
+            if (!isBound())
+            {
+                System.err.println("Cannot connect an unbound machine.");
+                return null;
+            }
+
+            if (!network.isBound())
+            {
+                System.err.println("Cannot connect a machine to an unbound network.");
+                return null;
+            }
+
+            ConnectAction action = new ConnectAction(this, network, actionDependencies);
+            Cable c = new Cable(generator, this, network, action);
+            generator.add(action);
+
+            return c;
+        } catch (Exception e) {
+            System.out.println("Machine.connect(Network, List<Action>) exits after catching exception, msg: " + e);
+            throw e;
         }
-
-        if (!network.isBound())
-        {
-            System.err.println("Cannot connect a machine to an unbound network.");
-            return null;
-        }
-
-        ConnectAction action = new ConnectAction(this, network, actionDependencies);
-        Cable c = new Cable(generator, this, network, action);
-        generator.add(action);
-
-        return c;
     }
-    
+
     private static class ConnectAction extends TestInstance.Action{
 
         private Machine machine;
         private Network network;
         Template.Parameter[] parameters;
-        
+
         private ConnectAction(Machine machine, Network network, List<Action> actionDependencies){
             this.machine = machine;
             this.network = network;
@@ -273,27 +318,37 @@ public class Machine extends Resource
 
         @Override
         public String getCommand(Template t) throws Exception {
-            StringBuilder sb = new StringBuilder();
-            sb.append(getSetID() + " ");
-            sb.append("connect");
+            try {
+                StringBuilder sb = new StringBuilder();
+                sb.append(getSetID() + " ");
+                sb.append("connect");
 
-            for (Template.Parameter P : parameters){
-                sb.append(" ");
-                sb.append(P.getValue(t));
+                for (Template.Parameter P : parameters){
+                    sb.append(" ");
+                    sb.append(P.getValue(t));
+                }
+
+                return sb.toString();
+            } catch (Exception e) {
+                System.out.println("Machine.ConnectAction.getCommand(Template) exits after catching exception, msg: " + e);
+                throw e;
             }
-
-            return sb.toString();
         }
 
         @Override
         public String getDescription() throws Exception {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Connect the machine <em>");
-            sb.append(machine.name);
-            sb.append("</em> to the network <em>");
-            sb.append(network.name);
-            sb.append("</em>.");
-            return sb.toString();
+            try {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Connect the machine <em>");
+                sb.append(machine.name);
+                sb.append("</em> to the network <em>");
+                sb.append(network.name);
+                sb.append("</em>.");
+                return sb.toString();
+            } catch (Exception e) {
+                System.out.println("Machine.ConnectAction.getDescription() exits after catching exception, msg: " + e);
+                throw e;
+            }
         }
 
         @Override
@@ -320,7 +375,7 @@ public class Machine extends Resource
         String executable;
         String[] params;
         Template.Parameter[] parameters;
-        
+
         public ProgramAction(Machine machine, String action, List<Action> actionDependencies, String executable, String... params)
         {
             this.machine = machine;
@@ -353,49 +408,59 @@ public class Machine extends Resource
         @Override
         public String getCommand(Template t) throws Exception
         {
-            StringBuilder sb = new StringBuilder();
-            sb.append(getSetID());
-            sb.append(" ");
-            sb.append(action);
+            try {
+                StringBuilder sb = new StringBuilder();
+                sb.append(getSetID());
+                sb.append(" ");
+                sb.append(action);
 
-            for (Template.Parameter P : parameters){
-                String value = P.getValue(t);
-                if (value.length() > 0)
-                {
-                    sb.append(" ");
-                    sb.append(value);
+                for (Template.Parameter P : parameters){
+                    String value = P.getValue(t);
+                    if (value.length() > 0)
+                    {
+                        sb.append(" ");
+                        sb.append(value);
+                    }
                 }
-            }
 
-            return sb.toString();
+                return sb.toString();
+            } catch (Exception e) {
+                System.out.println("Machine.ProgramAction.getCommand(Template) exits after catching exception, msg: " + e);
+                throw e;
+            }
         }
 
         @Override
         public String getDescription() throws Exception
         {
-            StringBuilder sb = new StringBuilder();
-            sb.append(action.substring(0, 1).toUpperCase() + action.substring(1));
-            sb.append(" the program <tt>");
-            sb.append(executable);
-            sb.append("</tt>");
+            try {
+                StringBuilder sb = new StringBuilder();
+                sb.append(action.substring(0, 1).toUpperCase() + action.substring(1));
+                sb.append(" the program <tt>");
+                sb.append(executable);
+                sb.append("</tt>");
 
-            if (params.length > 1)
-                sb.append(" with parameters <tt>");
-            else
-                sb.append(" with parameter <tt>");
+                if (params.length > 1)
+                    sb.append(" with parameters <tt>");
+                else
+                    sb.append(" with parameter <tt>");
 
-            String sep = "";
-            for (String P : params)
-            {
-                sb.append(sep);
-                sb.append(P);
-                sep = " ";
+                String sep = "";
+                for (String P : params)
+                {
+                    sb.append(sep);
+                    sb.append(P);
+                    sep = " ";
+                }
+
+                sb.append("</tt> on machine <em>");
+                sb.append(machine.name);
+                sb.append("</em>.");
+                return sb.toString();
+            } catch (Exception e) {
+                System.out.println("Machine.ProgramAction.getDescription() exits after catching exception, msg: " + e);
+                throw e;
             }
-
-            sb.append("</tt> on machine <em>");
-            sb.append(machine.name);
-            sb.append("</em>.");
-            return sb.toString();
         }
 
         @Override
@@ -419,17 +484,22 @@ public class Machine extends Resource
 
     private Program programAction(String action, List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-        ProgramAction programAction = new ProgramAction(this, action, actionDependencies, executable, params);
-        Program program = new Program(programAction);
-        generator.add(programAction);
-        return program;
+        try {
+            ProgramAction programAction = new ProgramAction(this, action, actionDependencies, executable, params);
+            Program program = new Program(programAction);
+            generator.add(programAction);
+            return program;
+        } catch (Exception e) {
+            System.out.println("Machine.programAction() exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     /**
      * The program configure command requests that a program be run that modifies the machine in such a way that it cannot be rolled back and reused.
-     * 
-     * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options. 
-     * This machine's bind action is automatically added as a dependency. 
+     *
+     * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options.
+     * This machine's bind action is automatically added as a dependency.
      * @param executable A string containing the name of an executable program.
      * @param params Any string parameters that should be passed as arguments to the executable program.
      * @return A program.
@@ -437,16 +507,21 @@ public class Machine extends Resource
      */
     public Program configure(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-        Program p = programAction("configure", actionDependencies, executable, params);
-        return p;
+        try {
+            Program p = programAction("configure", actionDependencies, executable, params);
+            return p;
+        } catch (Exception e) {
+            System.out.println("Machine.configure() exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
-    
+
     /**
-     * The program start command requests that a program be run that should stay running for the duration of the Template Instance. 
+     * The program start command requests that a program be run that should stay running for the duration of the Template Instance.
      * It cannot modify the Machine.
-     * 
-     * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options. 
-     * This machine's bind action is automatically added as a dependency. 
+     *
+     * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options.
+     * This machine's bind action is automatically added as a dependency.
      * @param executable A string containing the name of an executable program.
      * @param params Any string parameters that should be passed as arguments to the executable program.
      * @return A program.
@@ -454,17 +529,22 @@ public class Machine extends Resource
      */
     public Program start(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-        Program p = programAction("start", actionDependencies, executable, params);
-        return p;
+        try {
+            Program p = programAction("start", actionDependencies, executable, params);
+            return p;
+        } catch (Exception e) {
+            System.out.println("Machine.start() exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     /**
-     * The program run command requests that a program be run that should complete on its own. The run command completes the test run, with the 
-     * program result determining the test result. This cannot modify the machine. If a test run contains multiple run or run-forever commands, 
+     * The program run command requests that a program be run that should complete on its own. The run command completes the test run, with the
+     * program result determining the test result. This cannot modify the machine. If a test run contains multiple run or run-forever commands,
      * the test run will fail if any of the programs fail.
-     * 
+     *
      * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options.
-     * This machine's bind action is automatically added as a dependency.  
+     * This machine's bind action is automatically added as a dependency.
      * @param executable A string containing the name of an executable program.
      * @param params Any string parameters that should be passed as arguments to the executable program.
      * @return A program.
@@ -472,15 +552,20 @@ public class Machine extends Resource
      */
     public Program run(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
-        return programAction("run", actionDependencies, executable, params);
+        try {
+            return programAction("run", actionDependencies, executable, params);
+        } catch (Exception e) {
+            System.out.println("Machine.run() exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     //TODO: Not currently supported.
 //    /**
 //     * The program run-forever command requests that a program be run that will not complete until told to stop. The run-forever command completes
-//     * the test when it completes, with the program result determining the test result. This cannot modify the Machine. If a test run contains multiple 
+//     * the test when it completes, with the program result determining the test result. This cannot modify the Machine. If a test run contains multiple
 //     * run or run-forever commands, the test run will fail if any of the programs fail.
-//     * 
+//     *
 //     * @param requiredArtifacts A list of artifacts that must be deployed to the machine before the command may be executed.
 //     * @param executable A string containing the name of an executable program.
 //     * @param params Any string parameters that should be passed as arguments to the executable program.

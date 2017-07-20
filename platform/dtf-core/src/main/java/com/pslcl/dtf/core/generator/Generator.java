@@ -44,7 +44,7 @@ public class Generator
      * Holds test instances created by the generator until the list size reaches maxInstanceAccumlationCount or the generator is closed.
      */
     private List<TestInstance> testInstances = new ArrayList<TestInstance>();
-    
+
     /**
      * The maximum number of test instances that should be cached by the generator before syncing with the database.
      */
@@ -77,7 +77,7 @@ public class Generator
 
     /**
      * Get the maximum number of test instances that will accumulate before the generator syncs with the database.
-     * 
+     *
      * @return The maximum number of test instances to accumulate.
      */
     public int getMaxInstanceAccumulationCount() {
@@ -86,7 +86,7 @@ public class Generator
 
     /**
      * Set the maximum number of test instances that will accumulate before the generator syncs with the database. Defaults to 100.
-     * 
+     *
      * @param maxInstanceAccumulation The maximum number of test instances to accumulate.
      */
     public void setMaxInstanceAccumulationCount(int maxInstanceAccumulation) {
@@ -111,7 +111,7 @@ public class Generator
 
         parameterReferenceMap.put(uuid, parameter);
     }
-    
+
     /**
      * Get the parameter referenced by the specified uuid.
      * @param uuid The reference to the parameter.
@@ -162,7 +162,7 @@ public class Generator
 //
 //    /**
 //     * Create content that can be used in a test.
-//     * 
+//     *
 //     * @param content
 //     * @return
 //     */
@@ -278,7 +278,7 @@ public class Generator
     /**
      * Declare the running times of a particular result. This would never be used except
      * when populating test data.
-     * 
+     *
      * @param start The start time
      * @param ready The ready time
      * @param complete The complete time
@@ -331,32 +331,39 @@ public class Generator
      * Declare that the test currently being defined is complete.
      * @throws Exception Any error completing the test.
      */
-    public void completeTest() throws Exception
+    public int completeTest() throws Exception
     {
-        if (activeTestInstance == null)
-        {
-            System.err.println("ERROR: There is no active test to complete.");
-            return;
-        }
-
-        activeTestInstance.close();
-        synchronized (testInstances) {
-            testInstances.add(activeTestInstance);
-            activeTestInstance = null;
-            parameterReferenceMap.clear();
-            parameterReferenceMap = null;
-            
-            if(testInstances.size() >= maxInstanceAccumulationCount){
-                try{
-                    sync();
-                } catch (Exception e) {
-                    System.err.println("ERROR: Failure to sync test instances, " + e.getMessage());
-                    e.printStackTrace();
-                    throw e;
-                }
-                testInstances.clear();
+        int addedDescribedTemplatesCount = 0;
+        try {
+            if (activeTestInstance == null)
+            {
+                System.err.println("ERROR: There is no active test to complete.");
+                return addedDescribedTemplatesCount;
             }
+
+            activeTestInstance.close();
+            synchronized (testInstances) {
+                testInstances.add(activeTestInstance);
+                activeTestInstance = null;
+                parameterReferenceMap.clear();
+                parameterReferenceMap = null;
+
+                if(testInstances.size() >= maxInstanceAccumulationCount){
+                    try{
+                        addedDescribedTemplatesCount = sync();
+                    } catch (Exception e) {
+                        System.err.println("ERROR: Failure to sync test instances, " + e.getMessage());
+                        e.printStackTrace();
+                        throw e;
+                    }
+                    testInstances.clear();
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Generator.completeTest() exits after catching exception, msg: " + e);
+            throw e;
         }
+        return addedDescribedTemplatesCount;
     }
 
     private void dumpTestInstances()
@@ -368,21 +375,22 @@ public class Generator
             }
         }
     }
-    
-    private void sync() throws Exception{
+
+    private int sync() throws Exception{
+        int addedDescribedTemplatesCount = 0;
 
         // If the system is read-only, then just dump the created objects.
         if (core.isReadOnly())
         {
             dumpTestInstances();
-            return;
+            return addedDescribedTemplatesCount;
         }
 
         synchronized (testInstances) {
             /* The described template arrays are already loaded. We need to add any defined templates
              * that are not in the database, and remove any that are no longer needed.
              */
-            core.syncDescribedTemplates(testInstances);
+            addedDescribedTemplatesCount = core.syncDescribedTemplates(testInstances);
         }
 
         /* Read the main contents of the top-level synchronized tables: Content, DescribedTemplate.
@@ -429,15 +437,20 @@ public class Generator
         // Now that templates and test instances are synchronized, roll up top-level template relationships.
         core.syncTopTemplateRelationships();
          */
+
+        if (addedDescribedTemplatesCount > 0)
+            System.out.println("Generator.sync() added " + addedDescribedTemplatesCount + " describedTemplates to database");
+        return addedDescribedTemplatesCount;
     }
 
     /**
      * Close the generator, synchronizing its results with the database.
      */
-    public void close()
+    public int close()
     {
+        int addedDescribedTemplatesCount = 0;
         try{
-            sync();
+            addedDescribedTemplatesCount = sync();
         } catch (Exception e) {
             System.err.println("ERROR: Failure to close generator, " + e.getMessage());
             e.printStackTrace();
@@ -445,5 +458,6 @@ public class Generator
         finally{
             core.close();
         }
+        return addedDescribedTemplatesCount;
     }
 }

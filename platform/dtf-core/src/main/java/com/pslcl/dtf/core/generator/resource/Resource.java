@@ -127,7 +127,12 @@ public abstract class Resource
      */
     public void bind() throws Exception
     {
-        bind(new Attributes());
+        try {
+            bind(new Attributes());
+        } catch (Exception e) {
+            System.out.println("Resource.bind() exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     /**
@@ -152,15 +157,20 @@ public abstract class Resource
     {
         if (bound != null)
         {
-            throw new IllegalStateException("Cannot bind a resource more than once."); 
+            throw new IllegalStateException("Cannot bind a resource more than once.");
         }
 
-        bound = new BindAction(this, attributes, actionDependencies);
-        generator.add(bound);
-        this.attributeMap = attributes.getAttributes();
-        if (Generator.trace)
-            System.err.println(String.format("Resource %s (%s) bound with attributes '%s'.", name, instance, attributes));
-        return bound;
+        try {
+            bound = new BindAction(this, attributes, actionDependencies);
+            generator.add(bound);
+            this.attributeMap = attributes.getAttributes();
+            if (Generator.trace)
+                System.err.println(String.format("Resource %s (%s) bound with attributes '%s'.", name, instance, attributes));
+            return bound;
+        } catch (Exception e) {
+            System.out.println("Resource.bind(Attributes, List<Action>) exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     /**
@@ -171,10 +181,10 @@ public abstract class Resource
     {
         return bound != null;
     }
-    
+
     /**
      * Return the BindAction for this resource.
-     * 
+     *
      * @return The BindAction for this resource. null if not bound.
      */
     public Action getBindAction(){
@@ -198,12 +208,12 @@ public abstract class Resource
 
     /**
      * Get a reference to an attribute whose value may be used as a parameter in a program action.
-     * 
+     *
      * This reference will be resolved by the Generator when the Template is generated. If the value of
      * the attribute is known at that time, then the reference will be replaced by the value. If the value
      * of the attribute will not be known until the test is run, then the reference will be replaced by
      * a value reference in the form of $(attribute resource-ref attribute-name).
-     * 
+     *
      * @param attributeName The name of the attribute.
      * @return a String reference to the attribute.
      */
