@@ -115,6 +115,13 @@ public class Machine extends Resource
         @Override
         public String getCommand(Template t) throws Exception
         {
+            if (t == null) {
+                // not an IllegalArgument, this happens often when Template t has not been created: return empty command
+                // Not put out message- this is too common
+//              String msg = "Machine.Deploy.getCommand(Template) sees null Template parameter, returns empty string as command";
+//              System.out.println(msg);
+                return "";
+            }
             try {
                 String retStr = getSetID() + " deploy " + t.getReference(this.m) + " ";
                 String destName = a.getTargetFilePath();
@@ -125,7 +132,7 @@ public class Machine extends Resource
                 retStr += (" " + a.getContent().getValue(template));
                 return retStr;
             } catch (Exception e) {
-                System.out.println("Machine.getCommand(Template) exits after catching exception, msg: " + e);
+                System.out.println("Machine.Deploy.getCommand(Template) exits after catching exception, msg: " + e);
                 throw e;
             }
         }
