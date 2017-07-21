@@ -38,6 +38,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -59,93 +62,91 @@ import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
 // this "final" class cannot be extended
 public final class DistributedTestingFramework
 {
-   private DistributedTestingFramework() {
+    private DistributedTestingFramework() {
     }
 
     private static void generalHelp()
     {
-        System.out.println("test-platform General Help");
-        System.out.println("[program] --help (this output)");
-        System.out.println("[program] command --help (help on command)");
-        System.out.println("[program] command <arguments> (run command with arguments)");
-        System.out.println("commands are:");
-        System.out.println("  synchronize - synchronize the artifact providers with the database.");
-        System.out.println("  result - add a result to the database.");
-        System.out.println("  run - extract tests from the database and run them.");
-        System.out.println("  populate - populate the system with made-up testing data.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform General Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] command --help (help on command)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] command <arguments> (run command with arguments)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("commands are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  synchronize - synchronize the artifact providers with the database.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  result - add a result to the database.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  run - extract tests from the database and run them.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  populate - populate the system with made-up testing data.");
         System.exit(1);
     }
 
     private static void synchronizeHelp()
     {
-        System.out.println("test-platform Synchronize Help");
-        System.out.println("This command synchronizes artifact providers with the database and runs generators.");
-        System.out.println("[program] synchronize --help (this output)");
-        System.out.println("[program] synchronize <arguments>");
-        System.out.println("arguments are:");
-        System.out.println("  --no-synchronize - optional - disable synchronization.");
-        System.out.println("  --no-generators - optional - disable running generators.");
-        System.out.println("  --prune <count> - optional - enable deleting of missing modules.");
-        System.out.println("               <count> is the number of synchronize runs that the module has been missing. ");
-        System.out.println("                       Count must be greater than 0.");
-        System.out.println("  --generator-process-count <count> - optional - set the number of generator processes that may execute in parallel.");
-        System.out.println("               Count must be greater than 0. Defaults to 5.");
-
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Synchronize Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command synchronizes artifact providers with the database and runs generators.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] synchronize --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] synchronize <arguments>");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --no-synchronize - optional - disable synchronization.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --no-generators - optional - disable running generators.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --prune <count> - optional - enable deleting of missing modules.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("               <count> is the number of synchronize runs that the module has been missing. ");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("                       Count must be greater than 0.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --generator-process-count <count> - optional - set the number of generator processes that may execute in parallel.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("               Count must be greater than 0. Defaults to 5.");
         System.exit(1);
     }
 
     private static void runHelp()
     {
-        System.out.println("test-platform Run Help");
-        System.out.println("This command extracts tests from the database and runs them.");
-        System.out.println("[program] run --help (this output)");
-        System.out.println("[program] run <arguments>");
-        System.out.println("arguments are:");
-        System.out.println("  <runcount> - required unless --test or --test-instance are specified - the number of tests to run.");
-        System.out.println("  --test i - optional, to run one test on all test instances soon - supply the id number assigned for the test.");
-        System.out.println("  --test-instance j - optional, to run one test on one test instance soon - supply the id number assigned to the test instance.");
-        System.out.println("  --owner - optional, to specify the owner for all test runs started by this command.");
-
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Run Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command extracts tests from the database and runs them.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] run --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] run <arguments>");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  <runcount> - required unless --test or --test-instance are specified - the number of tests to run.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test i - optional, to run one test on all test instances soon - supply the id number assigned for the test.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test-instance j - optional, to run one test on one test instance soon - supply the id number assigned to the test instance.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --owner - optional, to specify the owner for all test runs started by this command.");
         System.exit(1);
     }
 
     private static void resultHelp()
     {
-        System.out.println("test-platform Result Help");
-        System.out.println("This command sets a result for a given component, version, and test instance.");
-        System.out.println("[program] result --help (this output)");
-        System.out.println("[program] result <arguments> <result>");
-        System.out.println("  <result> - either 'pass' or 'fail'");
-        System.out.println("arguments are:");
-        System.out.println("  --hash <hash> - required unless --run is specified - the template(identifed by its hash) to apply the result to. This argument creates a new test run.");
-        System.out.println("  --run <run-id> - required unless --hash is specified - the test run to apply the result to.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Result Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command sets a result for a given component, version, and test instance.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] result --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] result <arguments> <result>");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  <result> - either 'pass' or 'fail'");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --hash <hash> - required unless --run is specified - the template(identifed by its hash) to apply the result to. This argument creates a new test run.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --run <run-id> - required unless --hash is specified - the test run to apply the result to.");
         System.exit(1);
     }
 
     private static void populateHelp()
     {
-        System.out.println("test-platform Populate Help");
-        System.out.println("This command populates the database with made-up testing data.");
-        System.out.println("[program] populate --help (this output)");
-        System.out.println("[program] populate <arguments>");
-        System.out.println("arguments are:");
-        System.out.println("  --plans <num> - optional, specifies how many test plans to populate.");
-        System.out.println("  --tests <num> - optional, specifies how many tests to populate in each test plan (requires --plans).");
-        System.out.println("  --instances <num> - optional, specifies how many test instances to populate for each test (requires --tests).");
-        System.out.println("  --orgs <num> - optional, specifies how many organizations to populate.");
-        System.out.println("  --modules <num> - optional, specifies how many modules to populate for each organization (requires --orgs).");
-        System.out.println("  --versions <num> - optional, specifies how many versions to populate for each module (requires -modules).");
-        System.out.println("  --artifacts <num> - optional, specifies how many artifacts to populate in each module (requires --modules).");
-        System.out.println("  --owner <email> - optional, specifies that some pending tests should be assigned to this owner (requires --instances).");
-        System.out.println("  --results - optional, specifies whether or not to populate results (requires --instances).");
-        System.out.println("  --start - optional, specifies the date/time to begin creating results at (requires --results).");
-        System.out.println("  --end - optional, specifies the date/time to end creating results at (requires --results).");
-        System.out.println("When creating modules, the populator will create organizations, names, and versions. A new organization");
-        System.out.println("is created for each 10 modules, a new name for each 5.");
-        System.out.println("When creating instances, each will get progressively more complex and use different combinations of modules");
-        System.out.println("and artifacts.");
-        System.out.println("If results are generated and begin and end times are not specified then the results will be created uniformly");
-        System.out.println("during the previous week.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Populate Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command populates the database with made-up testing data.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] populate --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] populate <arguments>");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --plans <num> - optional, specifies how many test plans to populate.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --tests <num> - optional, specifies how many tests to populate in each test plan (requires --plans).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --instances <num> - optional, specifies how many test instances to populate for each test (requires --tests).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --orgs <num> - optional, specifies how many organizations to populate.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --modules <num> - optional, specifies how many modules to populate for each organization (requires --orgs).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --versions <num> - optional, specifies how many versions to populate for each module (requires -modules).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --artifacts <num> - optional, specifies how many artifacts to populate in each module (requires --modules).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --owner <email> - optional, specifies that some pending tests should be assigned to this owner (requires --instances).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --results - optional, specifies whether or not to populate results (requires --instances).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --start - optional, specifies the date/time to begin creating results at (requires --results).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --end - optional, specifies the date/time to end creating results at (requires --results).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("When creating modules, the populator will create organizations, names, and versions. A new organization");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("is created for each 10 modules, a new name for each 5.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("When creating instances, each will get progressively more complex and use different combinations of modules");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("and artifacts.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("If results are generated and begin and end times are not specified then the results will be created uniformly");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("during the previous week.");
         System.exit(1);
     }
 
@@ -192,7 +193,7 @@ public final class DistributedTestingFramework
                 }
             } catch (Exception e)
             {
-                System.err.println("ERROR: Failure extracting file, " + e.getMessage());
+                LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.HandleModule.decompress(): Failure extracting file, " + e.getMessage());
             } finally
             {
                 if (ti != null)
@@ -276,10 +277,10 @@ public final class DistributedTestingFramework
                                 decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0);
                             }
                         } else {
-                            System.out.println("DEBUG: .module() skipping one artifact having null InputStream");
+                            LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream");
                         }
                     } else {
-                        System.out.println("ERROR: .module() skipping one artifact having null Content");
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content");
                     }
                 }
             } catch (Exception ignored)
@@ -389,9 +390,9 @@ public final class DistributedTestingFramework
         {
             String tname = Thread.currentThread().getName();
             Thread.currentThread().setName("GeneratorFuture");
-            System.out.println("Script: " + this.toString() + " started.");
+            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " started.");
             process();
-            System.out.println("Script: " + this.toString() + " completed.");
+            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " completed.");
             Thread.currentThread().setName(tname);
         }
 
@@ -435,9 +436,9 @@ public final class DistributedTestingFramework
                 core.updateTest(id, stdout.toString(), stderr.toString());
             } catch (Exception e)
             {
-                String log = "ERROR: Could not run script '" + script + "', " + e;
-                System.err.println(log);
-                new PrintStream(stderr).println(log);
+                String msg = "ERROR: Could not run script '" + script + "', " + e;
+                LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.GeneratorExecutor.process() Script: " + msg);
+                new PrintStream(stderr).println(msg);
             } finally
             {
                 core.updateTest(id, stdout.toString(), stderr.toString());
@@ -579,7 +580,7 @@ public final class DistributedTestingFramework
                         provider.iterateModules(handler);
                     } catch (Exception e)
                     {
-                        System.err.println(e.getMessage());
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize() exception msg: " + e);
                         noModuleErrors = false;
                     }
                 }
@@ -678,8 +679,8 @@ public final class DistributedTestingFramework
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Exception " + e.getMessage());
-            e.printStackTrace(System.err);
+            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize() exception msg: " + e);
+            LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", e);
         } finally
         {
             // artifactProvider is ever used
@@ -717,7 +718,7 @@ public final class DistributedTestingFramework
         String owner = null;
         boolean help = true;
 
-        for (int i = 1; i < args.length; i++){
+        for (int i = 1; i < args.length; i++) {
             try{
                 if (args[i].compareTo("--test") == 0 && args.length > i)
                 {
@@ -730,14 +731,14 @@ public final class DistributedTestingFramework
                     i += 1;
                     owner = args[i];
                 } else{
-                    System.err.println("WARN: Only manual tests supported. Use the --test or --test-instance options instead.");
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Only manual tests supported. Use the --test or --test-instance options instead.");
                     runHelp();
                     runCount = Integer.parseInt(args[1]);
                 }
-               }catch(NumberFormatException ignored){
-                System.err.println("Invalid argument " + args[i] + ". Expected number instead.");
+            } catch(NumberFormatException ignored) {
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Invalid argument " + args[i] + ". Expected number instead.");
                 runHelp();
-               }
+            }
         }
 
         try{
@@ -769,11 +770,11 @@ public final class DistributedTestingFramework
                 }
             }
             for(Long runID: testRuns){
-                System.out.println("Queueing test run: " + runID);
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Queueing test run: " + runID);
                 sqs.publishTestRunRequest(runID);
             }
         } catch(Exception e){
-            System.err.println("Failed to queue test run - " + e);
+            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to queue test run - " + e);
         }
     }
 
@@ -814,7 +815,7 @@ public final class DistributedTestingFramework
         }
 
         if (result == null || (hash == null && run == null)){
-            System.err.println("Missing required argument");
+            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): Missing required argument");
             resultHelp();
         }
 
@@ -826,7 +827,7 @@ public final class DistributedTestingFramework
                 core.addResultToRun(run, result);
             }
         } catch(Exception e){
-            System.err.println("Failed to add result: " + e);
+            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): Failed to add result: " + e);
         } finally{
             core.close();
         }
@@ -900,7 +901,7 @@ public final class DistributedTestingFramework
                     hash = new Hash(content);
                 } catch (Exception e)
                 {
-                    System.err.println("ERROR: Failure to create populated artifact, " + e.getMessage());
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.PopulateArtifact.TarContent constructor: Failure to create populated artifact, " + e.getMessage());
                 }
             }
 
@@ -1174,7 +1175,7 @@ public final class DistributedTestingFramework
                     start = d.getTime();
                 } catch (Exception e)
                 {
-                    System.err.println("ERROR: Could not parse date, " + e.getMessage());
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Could not parse date, " + e.getMessage());
                 }
 
                 i += 1;
@@ -1187,12 +1188,12 @@ public final class DistributedTestingFramework
                     end = d.getTime();
                 } catch (Exception e)
                 {
-                    System.err.println("ERROR: Could not parse date, " + e.getMessage());
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Could not parse date, " + e.getMessage());
                 }
 
                 i += 1;
             } else{
-                System.err.println("Invalid argument " + args[i]);
+                LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Invalid argument " + args[i]);
                 populateHelp();
             }
         }
@@ -1240,7 +1241,7 @@ public final class DistributedTestingFramework
             populateProvider.iterateModules(moduleNotifier);
         } catch (Exception e)
         {
-            System.err.println("ERROR: Failed to iterate modules, " + e.getMessage());
+            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Failed to iterate modules, " + e.getMessage());
         } finally
         {
             populateProvider.close();
@@ -1300,7 +1301,7 @@ public final class DistributedTestingFramework
                         simpleMachine.deploy(artifact_list);
                     } catch (Exception e)
                     {
-                        System.err.println("ERROR: Couldn't bind an deploy instance, " + e.getMessage());
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Couldn't bind an deploy instance, " + e.getMessage());
                     }
 
                     // Log results if either we need to have results or if there is an owner. For repeatability,
@@ -1351,8 +1352,8 @@ public final class DistributedTestingFramework
                     try {
                         generator.completeTest();
                     } catch (Exception e) {
-                        System.err.println("ERROR: Unable to complete test, " + e.getMessage());
-                        e.printStackTrace();
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Unable to complete test, " + e.getMessage());
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", e);
                     }
                 }
 
