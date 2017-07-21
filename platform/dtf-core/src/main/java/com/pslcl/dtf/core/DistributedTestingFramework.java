@@ -38,9 +38,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -193,7 +191,7 @@ public final class DistributedTestingFramework
                 }
             } catch (Exception e)
             {
-                LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.HandleModule.decompress(): Failure extracting file, " + e.getMessage());
+                LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.decompress(): Failure extracting file, " + e.getMessage());
             } finally
             {
                 if (ti != null)
@@ -277,10 +275,10 @@ public final class DistributedTestingFramework
                                 decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0);
                             }
                         } else {
-                            LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream");
+                            LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream");
                         }
                     } else {
-                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content");
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content");
                     }
                 }
             } catch (Exception ignored)
@@ -290,7 +288,7 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        public void finalize() // this overrides java's Object.finalize()
+        protected void finalize() // this overrides java's Object.finalize()
         {
             markMergeFromModule();
         }
@@ -351,17 +349,18 @@ public final class DistributedTestingFramework
             @Override
             public void run()
             {
-                Scanner sc = new Scanner(src);
-                while (sc.hasNextLine())
-                {
-                    String line = sc.nextLine();
-                    if (dest != null)
-                        dest.println(line);
-                    if (save != null)
-                        save.println(line);
+                // Java 7 "try with resources"; Scanner auto closes, so sc.close() need not be called.
+                //   adding a finally block to "sc.close()" is useless, and sc is out of scope there, anyway
+                try (Scanner sc = new Scanner(src)){
+                    while (sc.hasNextLine())
+                    {
+                        String line = sc.nextLine();
+                        if (dest != null)
+                            dest.println(line);
+                        if (save != null)
+                            save.println(line);
+                    }
                 }
-
-                sc.close();
             }
         }).start();
     }
