@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.core.generator.resource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,8 +37,8 @@ import com.pslcl.dtf.core.generator.template.TestInstance.Action;
  */
 public class Machine extends Resource
 {
+    private final Logger log;
     private static final String codename = "machine";
-
     private Map<Artifact, Action> deployActions;
 
     /**
@@ -46,7 +49,7 @@ public class Machine extends Resource
     public Machine(Generator generator, String name)
     {
         super(generator, name, codename);
-
+        this.log = LoggerFactory.getLogger(getClass());
         deployActions = new HashMap<Artifact, Action>();
     }
 
@@ -61,7 +64,7 @@ public class Machine extends Resource
             Attributes attributes = new Attributes();
             super.bind(attributes);
         } catch (Exception e) {
-            System.out.println("Machine.bind() exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.bind() exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -78,7 +81,7 @@ public class Machine extends Resource
         try {
             return super.bind(attributes);
         } catch (Exception e) {
-            System.out.println("Machine.bind(Attributes) exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.TestInstance.Action.bind(Attributes) exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -120,6 +123,7 @@ public class Machine extends Resource
                 // Not put out message- this is too common
 //              String msg = "Machine.Deploy.getCommand(Template) sees null Template parameter, returns empty string as command";
 //              System.out.println(msg);
+
                 return "";
             }
             try {
@@ -132,7 +136,7 @@ public class Machine extends Resource
                 retStr += (" " + a.getContent().getValue(template));
                 return retStr;
             } catch (Exception e) {
-                System.out.println("Machine.Deploy.getCommand(Template) exits after catching exception, msg: " + e);
+                LoggerFactory.getLogger(getClass()).error("<internal> Machine.Deploy.getCommand(Template) exits after catching exception, msg: " + e);
                 throw e;
             }
         }
@@ -153,7 +157,7 @@ public class Machine extends Resource
                 sb.append("</em>");
                 return sb.toString();
             } catch (Exception e) {
-                System.out.println("Machine.getDescription() exits after catching exception, msg: " + e);
+                LoggerFactory.getLogger(getClass()).error("<internal> Machine.Deploy.getDescription() exits after catching exception, msg: " + e);
                 throw e;
             }
         }
@@ -164,7 +168,7 @@ public class Machine extends Resource
             try {
                 return new ArtifactUses("", true, artifacts.iterator());
             } catch (Exception e) {
-                System.out.println("Machine.getArtifactUses() exits after catching exception, msg: " + e);
+                LoggerFactory.getLogger(getClass()).error("<internal> Machine.Deploy.getArtifactUses() exits after catching exception, msg: " + e);
                 throw e;
             }
         }
@@ -194,7 +198,7 @@ public class Machine extends Resource
         try {
             return deploy(null, artifacts);
         } catch (Exception e) {
-            System.out.println("Machine.deploy(Artifact...) exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.deploy(Artifact...) exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -218,7 +222,7 @@ public class Machine extends Resource
             {
                 if (a == null)
                 {
-                    System.err.println("ERROR: Artifact is null.");
+                    this.log.error("<internal> Machine.deploy(List<Action>, Artifact...): Artifact is null.");
                     continue;
                 }
                 synchronized(deployActions){
@@ -239,7 +243,7 @@ public class Machine extends Resource
             }
             return deploys;
         } catch (Exception e) {
-            System.out.println("Machine.deploy(List<Action>, Artifact...) exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.deploy(List<Action>, Artifact...) exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -256,7 +260,7 @@ public class Machine extends Resource
         try {
             return connect(network, null);
         } catch (Exception e) {
-            System.out.println("Machine.connect(Network) exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.connect(Network) exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -274,13 +278,13 @@ public class Machine extends Resource
         try {
             if (!isBound())
             {
-                System.err.println("Cannot connect an unbound machine.");
+                this.log.error("<internal> Machine.connect(): Cannot connect an unbound machine.");
                 return null;
             }
 
             if (!network.isBound())
             {
-                System.err.println("Cannot connect a machine to an unbound network.");
+                this.log.error("<internal> Machine.connect(): Cannot connect a machine to an unbound network.");
                 return null;
             }
 
@@ -290,7 +294,7 @@ public class Machine extends Resource
 
             return c;
         } catch (Exception e) {
-            System.out.println("Machine.connect(Network, List<Action>) exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.connect(Network, List<Action>) exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -337,7 +341,7 @@ public class Machine extends Resource
 
                 return sb.toString();
             } catch (Exception e) {
-                System.out.println("Machine.ConnectAction.getCommand(Template) exits after catching exception, msg: " + e);
+                LoggerFactory.getLogger(getClass()).error("<internal> Machine.ConnectAction.getCommand(Template) exits after catching exception, msg: " + e);
                 throw e;
             }
         }
@@ -353,7 +357,7 @@ public class Machine extends Resource
                 sb.append("</em>.");
                 return sb.toString();
             } catch (Exception e) {
-                System.out.println("Machine.ConnectAction.getDescription() exits after catching exception, msg: " + e);
+                LoggerFactory.getLogger(getClass()).error("<internal> Machine.ConnectAction.getDescription() exits after catching exception, msg: " + e);
                 throw e;
             }
         }
@@ -432,7 +436,7 @@ public class Machine extends Resource
 
                 return sb.toString();
             } catch (Exception e) {
-                System.out.println("Machine.ProgramAction.getCommand(Template) exits after catching exception, msg: " + e);
+                LoggerFactory.getLogger(getClass()).error("<internal> Machine.ProgramAction.getCommand(Template) exits after catching exception, msg: " + e);
                 throw e;
             }
         }
@@ -465,7 +469,7 @@ public class Machine extends Resource
                 sb.append("</em>.");
                 return sb.toString();
             } catch (Exception e) {
-                System.out.println("Machine.ProgramAction.getDescription() exits after catching exception, msg: " + e);
+                LoggerFactory.getLogger(getClass()).error("<internal> Machine.ProgramAction.getDescription() exits after catching exception, msg: " + e);
                 throw e;
             }
         }
@@ -497,7 +501,7 @@ public class Machine extends Resource
             generator.add(programAction);
             return program;
         } catch (Exception e) {
-            System.out.println("Machine.programAction() exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.programAction() exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -518,7 +522,7 @@ public class Machine extends Resource
             Program p = programAction("configure", actionDependencies, executable, params);
             return p;
         } catch (Exception e) {
-            System.out.println("Machine.configure() exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.configure() exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -540,7 +544,7 @@ public class Machine extends Resource
             Program p = programAction("start", actionDependencies, executable, params);
             return p;
         } catch (Exception e) {
-            System.out.println("Machine.start() exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.start() exits after catching exception, msg: " + e);
             throw e;
         }
     }
@@ -562,7 +566,7 @@ public class Machine extends Resource
         try {
             return programAction("run", actionDependencies, executable, params);
         } catch (Exception e) {
-            System.out.println("Machine.run() exits after catching exception, msg: " + e);
+            this.log.error("<internal> Machine.run() exits after catching exception, msg: " + e);
             throw e;
         }
     }

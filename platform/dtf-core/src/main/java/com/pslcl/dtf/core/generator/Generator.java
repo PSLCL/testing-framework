@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.core.generator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,6 +35,8 @@ import com.pslcl.dtf.core.generator.template.TestInstance;
 
 public class Generator
 {
+    private final Logger log;
+
     public static boolean trace = false;
 
     /**
@@ -73,6 +78,7 @@ public class Generator
     public Generator(long pk_test)
     {
         core = new Core(pk_test);
+        this.log = LoggerFactory.getLogger(getClass());
     }
 
     /**
@@ -237,7 +243,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.pass(): There is no test being generated.");
             return;
         }
 
@@ -252,7 +258,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.fail(): There is no test being generated.");
             return;
         }
 
@@ -268,7 +274,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.assign(): There is no test being generated.");
             return;
         }
 
@@ -287,7 +293,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.setRunTimes(): There is no test being generated.");
             return;
         }
 
@@ -302,7 +308,7 @@ public class Generator
     {
         if (activeTestInstance != null)
         {
-            System.err.println("ERROR: A test has already been started, and not yet completed.");
+            this.log.error("<internal> Generator.startTest(): A test has already been started, and not yet completed.");
             return;
         }
 
@@ -320,7 +326,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.add(): There is no test being generated.");
             return;
         }
 
@@ -337,7 +343,7 @@ public class Generator
         try {
             if (activeTestInstance == null)
             {
-                System.err.println("ERROR: There is no active test to complete.");
+                this.log.error("<internal> Generator.completeTest(): There is no active test to complete.");
                 return addedDescribedTemplatesCount;
             }
 
@@ -352,15 +358,15 @@ public class Generator
                     try{
                         addedDescribedTemplatesCount = sync();
                     } catch (Exception e) {
-                        System.err.println("ERROR: Failure to sync test instances, " + e.getMessage());
-                        e.printStackTrace();
+                        this.log.error("<internal> Generator.completeTest(): Failure to sync test instances, " + e.getMessage());
+                        this.log.debug("stack trace", e);
                         throw e;
                     }
                     testInstances.clear();
                 }
             }
         } catch (Exception e) {
-            System.out.println("Generator.completeTest() exits after catching exception, msg: " + e);
+            this.log.error("<internal> Generator.completeTest() exits after catching exception, msg: " + e);
             throw e;
         }
         return addedDescribedTemplatesCount;
@@ -439,7 +445,7 @@ public class Generator
          */
 
         if (addedDescribedTemplatesCount > 0)
-            System.out.println("Generator.sync() added " + addedDescribedTemplatesCount + " describedTemplates to database");
+            this.log.error("<internal> Generator.sync() added " + addedDescribedTemplatesCount + " describedTemplates to database");
         return addedDescribedTemplatesCount;
     }
 
@@ -452,7 +458,7 @@ public class Generator
         try{
             addedDescribedTemplatesCount = sync();
         } catch (Exception e) {
-            System.err.println("ERROR: Failure to close generator, " + e.getMessage());
+            this.log.error("<internal> Generator.close(): Failure to close generator, " + e.getMessage());
             e.printStackTrace();
         }
         finally{

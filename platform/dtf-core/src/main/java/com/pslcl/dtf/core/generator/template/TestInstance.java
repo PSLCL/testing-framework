@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.core.generator.template;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -88,7 +91,7 @@ public class TestInstance
                     retVal = o1Command.compareTo(o2Command);
                 } catch (Exception e) {
                     // Note: We cannot throw exception here because "the overridden method does not throw Exception."
-                    System.out.println("TestInstance.Action.ActionSorter.compare() catches Exception but must swallow it, msg: " + e);
+                    LoggerFactory.getLogger(getClass()).warn("TestInstance.Action.ActionSorter.compare() catches Exception but must swallow it, msg: " + e);
 
                     // Illogical value 0: placed without justifiable rationale. Code things so we never get here.
                     retVal = 0;
@@ -260,6 +263,8 @@ public class TestInstance
         }
     }
 
+    private final Logger log;
+
     /**
      * The core to use for database and other common access. Note that the core
      * represents the generation of a single test, and it maintains the primary
@@ -320,6 +325,7 @@ public class TestInstance
      */
     public TestInstance(Core core)
     {
+        this.log = LoggerFactory.getLogger(getClass());
         this.core = core;
 
         //TODO: Cleanup
@@ -340,7 +346,7 @@ public class TestInstance
     {
         if (actions == null)
         {
-            System.err.println("ERROR: Attempt to add an action to a closed test instance.");
+            this.log.error("TestInstance.addAction(): Attempt to add an action to a closed test instance.");
             return;
         }
 
@@ -350,7 +356,7 @@ public class TestInstance
         {
             if (boundResources.contains(r.instance))
             {
-                System.err.println(String.format("Resource %s (%s) (%s) rebound.", r.name, r.codename, r.instance));
+                this.log.error("TestInstance.addAction(): " +String.format("Resource %s (%s) (%s) rebound.", r.name, r.codename, r.instance));
             }
 
             boundResources.add(r.instance);
@@ -392,8 +398,7 @@ public class TestInstance
 
     public void dump()
     {
-        System.err.println("Test Instance:");
-        System.err.println(getTemplate());
+        this.log.error("TestInstance.dump(), Test Instance: " + "\n" + this.getTemplate());
     }
 
     /**

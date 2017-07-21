@@ -15,6 +15,10 @@
  */
 package com.pslcl.dtf.core.generator.template;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -217,6 +221,7 @@ public class Template implements Comparable<Template>
         return getHash().compareTo(o2.getHash());
     }
 
+    private final Logger log;
     private Core core;
     private List<TestInstance.Action> actions;
     private List<DescribedTemplate> dependencies;
@@ -243,6 +248,7 @@ public class Template implements Comparable<Template>
      */
     public Template(Core core, List<TestInstance.Action> actions, List<DescribedTemplate> dependencies) throws Exception
     {
+        this.log = LoggerFactory.getLogger(getClass());
         this.core = core;
         this.actions = actions;
         Collections.sort(actions, new TestInstance.Action.ActionSorter());
@@ -296,7 +302,7 @@ public class Template implements Comparable<Template>
             hash = Hash.fromContent(std_string);
         } catch (Exception e)
         {
-            System.err.println("Failed to build template string: " + e);
+            this.log.error("<internal> Template.buildStrings(): Failed to build template string: " + e);
             std_string = "";
             hash = null;
             throw e;
