@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,6 +30,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -374,7 +376,7 @@ public final class DistributedTestingFramework
         private long id;
         private String script;
 
-        public GeneratorExecutor(Core core, File generators, String base, String shell, long id, String script)
+        GeneratorExecutor(Core core, File generators, String base, String shell, long id, String script)
         {
             this.core = core;
             this.generators = generators;
@@ -389,9 +391,9 @@ public final class DistributedTestingFramework
         {
             String tname = Thread.currentThread().getName();
             Thread.currentThread().setName("GeneratorFuture");
-            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " started.");
+            LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " started.");
             process();
-            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " completed.");
+            LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " completed.");
             Thread.currentThread().setName(tname);
         }
 
@@ -400,9 +402,9 @@ public final class DistributedTestingFramework
             ByteArrayOutputStream stdout = new ByteArrayOutputStream();
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
-            try
-            {
-                String augmented_params = shell + " " + script;
+            try {
+                char notMagicSpaceChar = ' '; // this is an internationalized context magic character, which is at warning level
+                String augmented_params = shell + notMagicSpaceChar + script; // every choice is at warning level, so use this one
                 String[] params = augmented_params.split(" ");
                 params[1] = generators.getAbsolutePath() + "/bin/" + params[1];
                 ProcessBuilder processBuilder = new ProcessBuilder();
@@ -433,13 +435,11 @@ public final class DistributedTestingFramework
                 }
 
                 core.updateTest(id, stdout.toString(), stderr.toString());
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 String msg = "ERROR: Could not run script '" + script + "', " + e;
-                LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.GeneratorExecutor.process() Script: " + msg);
+                LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() Script: " + msg);
                 new PrintStream(stderr).println(msg);
-            } finally
-            {
+            } finally {
                 core.updateTest(id, stdout.toString(), stderr.toString());
             }
         }
@@ -451,9 +451,10 @@ public final class DistributedTestingFramework
 //      }
     }
 
+    @SuppressWarnings("MagicNumber")
     private static Set<PosixFilePermission> toPosixPermissions(int mode)
     {
-        Set<PosixFilePermission> permissions = new HashSet<>();
+        Set<PosixFilePermission> permissions = EnumSet.noneOf(PosixFilePermission.class);
         if ((mode & 0b001_000) == 0b001_000)
         {
             permissions.add(PosixFilePermission.GROUP_EXECUTE);
@@ -498,14 +499,13 @@ public final class DistributedTestingFramework
 
     private static void synchronize(String[] args)
     {
+        if (args.length > 1 && args[1].compareTo("--help") == 0)
+            synchronizeHelp();
+
         boolean synchronize = true;
         boolean generate = true;
         int prune = -1;
         int generatorProcessCount = 5;
-
-        if (args.length > 1 && args[1].compareTo("--help") == 0)
-            synchronizeHelp();
-
         for (int i = 1; i < args.length; i++)
         {
             if (args[i].compareTo("--no-synchronize") == 0)
@@ -516,7 +516,7 @@ public final class DistributedTestingFramework
                 generate = false;
             } else if (args[i].compareTo("--prune") == 0)
             {
-                if (i == args.length)
+                if (i == args.length-1) // original code omitted "-1", warning said args.length would not be reached
                     synchronizeHelp();
 
                 prune = Integer.parseInt(args[i + 1]);
@@ -525,7 +525,7 @@ public final class DistributedTestingFramework
 
                 i += 1;
             } else if (args[i].compareTo("--generator-process-count") == 0){
-                if (i == args.length)
+                if (i == args.length-1) // original code omitted "-1", warning said args.length would not be reached
                     synchronizeHelp();
 
                 generatorProcessCount = Integer.parseInt(args[i + 1]);
@@ -566,12 +566,11 @@ public final class DistributedTestingFramework
 
                 for (String providerName : providers)
                 {
-                    ArtifactProvider provider = null;
                     try
                     {
                         Class<?> P = Class.forName(providerName);
-                        provider = (ArtifactProvider) P.newInstance();
-
+                        Constructor<?> cons = P.getConstructor();
+                        ArtifactProvider provider = (ArtifactProvider) cons.newInstance();
                         provider.init(); // setup to follow config in ../portal/config/ivysettings.xml
                         to_close.add(provider);
 
