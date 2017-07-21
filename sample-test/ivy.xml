@@ -22,7 +22,7 @@
 		Sample tests for the Distributed Test Framework.
     </description>
   </info>
-  <configurations>
+  <configurations defaultconfmapping="compile->master;javadoc">
     <conf name="master" visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
     <conf name="sources" visibility="public" description="this configuration contains the source artifact of this module, if any."/>
     <conf name="dtf_test_generator" visibility="public" description="test generators"/>
