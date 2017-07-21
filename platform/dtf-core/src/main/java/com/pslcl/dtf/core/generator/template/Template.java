@@ -69,8 +69,8 @@ public class Template implements Comparable<Template>
             if (template != null)
                 return template.getReference(resource);
             return "unknownValue"; // this replaces the null ptr exception that used to happen
-            // note that final template storage seems to have this line "unknownValue" overwritten
-            //      that would mean that we encounter this null template ONLY early in the processing stage
+            // note that final template processing seems to overwrite this line "unknownValue"
+            //      if true, that would mean that we encounter this null template ONLY early in the processing stage
         }
     }
 

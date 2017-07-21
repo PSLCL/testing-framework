@@ -47,6 +47,8 @@ import javax.script.ScriptEngineManager;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Content;
@@ -65,56 +67,59 @@ public class Core
 {
     private static class DBDescribedTemplate
     {
-        long pk;
+        private long pk = 0L;
         @SuppressWarnings("unused")
-        long fk_template;
-        DescribedTemplate.Key key;
-        Hash description;
+        private long fk_template = 0L; // Review: this is filled, but is it used thereafter?
+        private DescribedTemplate.Key key = null;
+        private Hash description = null;
     }
 
     private static class DBTestInstance
     {
-        long fk_test; // INT(11) in test
+        private long fk_test = 0L; // INT(11) in test
         @SuppressWarnings("unused")
-        String name; // VARCHAR(100) from test
+        private String name = null; // VARCHAR(100) from test
         @SuppressWarnings("unused")
-        String description; // LONGTEXT from test
-        String script; // VARCHAR(200) from test
-        long pk_test_instance;
-        long fk_described_template;
-        long fk_run;
-        long pk_template; // added here to avoid a lookup in the executeTestInstance()
+        private String description = null; // LONGTEXT from test
+        private String script = null; // VARCHAR(200) from test
+        private long pk_test_instance = 0L;
+        private long fk_described_template = 0L;
+        private long fk_run = 0L;
+        private long pk_template = 0L; // added here to avoid a lookup in the executeTestInstance()
     }
 
     private static class DBTemplateInfo
     {
         @SuppressWarnings("unused")
-        long pk_described_template; // INT(11) in described_template
-        byte[] fk_module_set; // BINARY(32) in described_template
+        private long pk_described_template = 0L; // INT(11) in described_template
+        private byte[] fk_module_set = null; // BINARY(32) in described_template
         @SuppressWarnings("unused")
-        long pk_template; // INT(11) in described_template
-        byte[] description_hash; // BINARY(32) in described_template
-        byte[] hash; // BINARY(32) in template
-        String steps; // MEDIUMTEXT in template
-        boolean enabled; // BOOLEAN in template
+        private long pk_template = 0L; // INT(11) in described_template
+        private byte[] description_hash = null; // BINARY(32) in described_template
+        private byte[] hash = null; // BINARY(32) in template
+        private String steps = null; // MEDIUMTEXT in template
+        private boolean enabled = false; // BOOLEAN in template
     }
 
     /**
      * The connection to the database.
      */
     private Connection connect = null;
-    private File artifacts;
-    private Map<Long, DBTestInstance> pktiToTI = new HashMap<Long, DBTestInstance>();
-    private Map<Long, List<DBTestInstance>> pktToTI = new HashMap<Long, List<DBTestInstance>>();
-    private Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
+    private File artifacts = null;
     private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<DescribedTemplate.Key, DBDescribedTemplate>();
     private Map<Long, Long> dtToTI = new HashMap<Long, Long>();
+
+    // TODO: Find out why these 3 are either not filled, or are not queried
+    private Map<Long, DBTestInstance> pktiToTI = new HashMap<Long, DBTestInstance>();
+    private Map<Long, List<DBTestInstance>> pktToTI = new HashMap<Long, List<DBTestInstance>>();
+    private final Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
+//  @SuppressWarnings("Mismatched query and update of collection MismatchedQueryAndUpdateOfCollection")
 
     private void loadHashes()
     {
         if (connect == null)
         {
-            System.out.println("<internal> Core.loadHashes() finds no database connection and exits");
+            this.log.warn("<internal> Core.loadHashes() finds no database connection and exits");
             return;
         }
 
@@ -161,7 +166,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not read described_template, " + e.getMessage());
+            this.log.error("<internal> Core.loadHashes() could not read described_template, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -176,21 +181,22 @@ public class Core
      */
     private long pk_target_test = 0;
     private boolean read_only = false;
+    private final Logger log;
 
     public static class Config
     {
-        private String db_host;
-        private Integer db_port;
-        private String db_user;
-        private String db_password;
-        private String db_schema;
-        private String artifacts_dir;
-        private String generators_dir;
-        private String shell;
-        private String sqs_endpoint;
-        private String sqs_queue_name;
-        private String sqs_access_key_id;
-        private String sqs_secret_access_key;
+        private String db_host = null;
+        private Integer db_port = null;
+        private String db_user = null;
+        private String db_password = null;
+        private String db_schema = null;
+        private String artifacts_dir = null;
+        private String generators_dir = null;
+        private String shell = null;
+        private String sqs_endpoint = null;
+        private String sqs_queue_name = null;
+        private String sqs_access_key_id = null;
+        private String sqs_secret_access_key = null;
 
         Config()
         {
@@ -220,7 +226,7 @@ public class Core
                 this.sqs_secret_access_key = (String) engine.eval("config.sqs.secret_access_key;", binding);
             } catch (Exception e)
             {
-                System.err.println("ERROR: Config exception: " + e.getMessage());
+                LoggerFactory.getLogger(getClass()).warn("<internal> Core.Config constructor exception, msg: " + e);
             }
         }
 
@@ -290,13 +296,14 @@ public class Core
 
     public Core(long pk_test)
     {
+        this.log = LoggerFactory.getLogger(getClass());
         this.pk_target_test = pk_test;
 
         String dir = config.dirArtifacts();
         if (dir != null)
             this.artifacts = new File(dir);
         else {
-            System.out.println("ERROR: Core() constructor: null artifact directory, return with no further action");
+            this.log.error("<internal> Core constructor: null artifact directory, return with no further action");
             return;
         }
 
@@ -308,7 +315,7 @@ public class Core
 
         if (connect == null)
         {
-            System.err.println("Core constructor fails without database connection");
+            this.log.error("<internal> Core constructor fails without database connection");
         } else
         {
             /* Load the description and template hashes */
@@ -329,7 +336,7 @@ public class Core
     private static class NodeModule
     {
         @SuppressWarnings("unused")
-        public Object exports;
+        public Object exports = null;
     }
 
     /**
@@ -363,7 +370,7 @@ public class Core
         } catch (Exception e)
         {
             read_only = true;
-            System.err.println("ERROR: Could not open database connection, " + e.getMessage());
+            this.log.error("<internal> Core.openDatabase() could not open database connection, " + e.getMessage());
         }
     }
 
@@ -380,7 +387,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not close database connection, " + e.getMessage());
+            this.log.error("<internal> Core.closeDatabase() could not close database connection, " + e.getMessage());
         } finally
         {
             connect = null;
@@ -418,7 +425,7 @@ public class Core
 
     /**
      * Return the test instance matching the specified test instance number.
-     * @param testNumber
+     * @param testInstanceNumber
      * @return
      */
     DBTestInstance readReadyTestInstance_testInstance(long testInstanceNumber)
@@ -509,16 +516,16 @@ public class Core
                     dbtemplateinfo.enabled = resultSet.getBoolean("enabled");
 
                     if (resultSet.next())
-                        System.out.println("WARN: More than one ResultSet found. This is unexpected. Dropping all but the first ResultSet which was just accessed and which may be wrong data; test instance processing proceeds.");
+                        this.log.warn("<internal> Core.executeTestInstance(): More than one ResultSet found. This is unexpected. Dropping all but the first ResultSet which was just accessed and which may be wrong data; test instance processing proceeds.");
 
                     // dbtemplateinfo is used to execute this test instance by following steps; aka instantiate this test run to generate a test result
-                    System.out.println("executeTestInstance() has data base info for test instance " + dbti.pk_test_instance + " for test " + dbti.fk_test + ", finding described_template " + dbti.fk_described_template + " and template " + dbti.pk_template);
-                    System.out.println("executeTestInstance() finds test script: " + dbti.script);
-                    System.out.println("executeTestInstance() finds enabled: " + dbtemplateinfo.enabled);
-                    System.out.println("executeTestInstance() finds module set: " + dbtemplateinfo.fk_module_set);
-                    System.out.println("executeTestInstance() finds description_hash: " + dbtemplateinfo.description_hash);
-                    System.out.println("executeTestInstance() finds hash: " + dbtemplateinfo.hash);
-                    System.out.println("executeTestInstance() finds steps: \n" + dbtemplateinfo.steps);
+                    this.log.trace("<internal> Core.executeTestInstance() has data base info for test instance " + dbti.pk_test_instance + " for test " + dbti.fk_test + ", finding described_template " + dbti.fk_described_template + " and template " + dbti.pk_template);
+                    this.log.trace("<internal> Core.executeTestInstance() finds test script: " + dbti.script);
+                    this.log.trace("<internal> Core.executeTestInstance() finds enabled: " + dbtemplateinfo.enabled);
+                    this.log.trace("<internal> Core.executeTestInstance() finds module set: " + dbtemplateinfo.fk_module_set);
+                    this.log.trace("<internal> Core.executeTestInstance() finds description_hash: " + dbtemplateinfo.description_hash);
+                    this.log.trace("<internal> Core.executeTestInstance() finds hash: " + dbtemplateinfo.hash);
+                    this.log.trace("<internal> Core.executeTestInstance() finds steps: \n" + dbtemplateinfo.steps);
 
                     // Establish everything and make the test run execute.
 
@@ -539,15 +546,14 @@ public class Core
                     // simulated false condition, but database is readonly for a while, so this gives a quick return without storing anything
                     reportResult(new String("junk"), false, null, null, null, null);
 
-                    System.out.println("executeTestInstance() exits after execution msec of " + sleep);
-                    System.out.println("");
+                    this.log.debug("<internal> Core.executeTestInstance() exits after execution msec of " + sleep + "\n");
                 } else
                 {
-                    System.out.println("WARN: no DBTemplateInfo found");
+                    this.log.warn("<internal> Core.executeTestInstance: no DBTemplateInfo found");
                 }
             } catch (Exception e)
             {
-                System.err.println("ERROR: Could not read template table, " + e.getMessage());
+                this.log.error("<internal> Core.executeTestInstance(): Could not read template table, " + e.getMessage());
             } finally
             {
                 try
@@ -563,7 +569,7 @@ public class Core
             }
         } else
         {
-            System.out.println("WARN: ready test instance not found: " + testInstanceNumber);
+            this.log.warn("<internal> Core.executeTestInstance: ready test instance not found: " + testInstanceNumber);
         }
     }
 
@@ -588,7 +594,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not read artifact providers, " + e.getMessage());
+            this.log.error("<internal> Core.readArtifactProviders(): Could not read artifact providers, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -614,7 +620,7 @@ public class Core
             statement.executeUpdate();
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could update missing_count, " + e.getMessage());
+            this.log.error("<internal> Core.prepareToLoadModules(): Could not supdate missing_count, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -637,7 +643,7 @@ public class Core
             statement.executeUpdate();
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not delete module, " + e.getMessage());
+            this.log.error("<internal> Core.finalizeLoadingModules(): Could not delete module, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -673,7 +679,7 @@ public class Core
                 pk = keys.getLong(1);
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not add test plan, " + e.getMessage());
+            this.log.error("<internal> Core.addTestPlan(): Could not add test plan, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -715,7 +721,7 @@ public class Core
                 pk = keys.getLong(1);
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not add test, " + e.getMessage());
+            this.log.error("<internal> Core.addTest(): Could not add test, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -758,7 +764,7 @@ public class Core
                 pk = keys.getLong(1);
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not add module, " + e.getMessage());
+            this.log.error("<internal> Core.addModule(): Could not add module, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -792,7 +798,7 @@ public class Core
             statement.executeUpdate();
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not delete module, " + e.getMessage());
+            this.log.error("<internal> Core.deleteModule: Could not delete module, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -839,7 +845,7 @@ public class Core
                     // If we couldn't read the length this is an error, otherwise it is normal.
                     if (length > 0)
                     {
-                        System.err.println("ERROR: End of file while expanding content.");
+                        this.log.error("<internal> Core.addContent() End of file while expanding content.");
                         return null;
                     }
 
@@ -853,7 +859,7 @@ public class Core
         } catch (Exception e)
         {
             // Cannot even determine the hash, so we don't know if it has already been added or not.
-            System.err.println("ERROR: Could not add content, " + e.getMessage());
+            this.log.error("<internal> Core.addContent(): Could not add content, " + e.getMessage());
             return null;
         } finally
         {
@@ -900,7 +906,7 @@ public class Core
         {
             if (!ignore_insert_failure)
             {
-                System.err.println("ERROR: Could not add content, " + e.getMessage());
+                this.log.error("<internal> Core.addContent(): Could not add content, " + e.getMessage());
                 FileUtils.deleteQuietly(tmp);
                 return null;
             }
@@ -970,7 +976,7 @@ public class Core
                 pk = keys.getLong(1);
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not add artifact to module, " + e.getMessage());
+            this.log.error("<internal> Core.addArtifact(): Could not add artifact to module, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -998,7 +1004,7 @@ public class Core
             statement.executeUpdate();
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could update generated flags, " + e.getMessage());
+            this.log.error("<internal> Core.clearGeneratedContent(): Could update generated flags, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -1022,7 +1028,7 @@ public class Core
             statement.executeUpdate();
         } catch (Exception e)
         {
-            System.err.println("ERROR: Couldn't prune content, " + e.getMessage());
+            this.log.error("<internal> Core.pruneContent(): Couldn't prune content, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -1469,8 +1475,8 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: createModuleSet() exception " + e.getMessage());
-            e.printStackTrace(System.err);
+            this.log.error("<internal> Core.createModuleSet(): createModuleSet() exception " + e.getMessage());
+            this.log.debug("stack trace: ", e);
         } finally
         {
             safeClose(resultSet);
@@ -1505,8 +1511,8 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: createModuleSet() exception " + e.getMessage());
-            e.printStackTrace(System.err);
+            this.log.error("<internal> Core.createModuleSet(): createModuleSet() exception " + e.getMessage());
+            this.log.debug("stack trace: ", e);
         } finally
         {
             safeClose(resultSet);
@@ -1646,8 +1652,8 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: findDependencies() exception " + e.getMessage());
-            e.printStackTrace(System.err);
+            this.log.error("<internal> Core.findDependencies(): findDependencies() exception " + e.getMessage());
+            this.log.debug("stack trace: ", e);
         } finally
         {
             if(iterator != null) iterator.close();
@@ -1761,8 +1767,8 @@ public class Core
                 }
             } catch (Exception e)
             {
-                System.err.println("ERROR: createArtifactSet() exception " + e.getMessage());
-                e.printStackTrace(System.err);
+                this.log.error("<internal> Core.createArtifactSet() exception msg: " + e.getMessage());
+                this.log.debug("stack trace: ", e);
             } finally
             {
                 safeClose(resultSet);
@@ -1807,8 +1813,8 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: getGenerators() exception " + e.getMessage());
-            e.printStackTrace(System.err);
+            this.log.error("<internal> Core.getGenerators: getGenerators() exception " + e.getMessage());
+            this.log.debug("stack trace: ", e);
         } finally
         {
             safeClose(resultSet);
@@ -1844,7 +1850,7 @@ public class Core
             statement.executeUpdate();
         } catch (Exception e)
         {
-            System.err.println("ERROR: Could not update test, " + e.getMessage());
+            this.log.error("<internal> Core.updateTest(): Could not update test, " + e.getMessage());
         } finally
         {
             safeClose(statement);
@@ -1916,7 +1922,7 @@ public class Core
 
         } catch (Exception e)
         {
-            System.err.println("ERROR: getArtifacts() exception " + e.getMessage());
+            this.log.error("<internal> Core.getArtifacts(): getArtifacts() exception " + e.getMessage());
             e.printStackTrace(System.err);
         } finally
         {
@@ -1955,7 +1961,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Failure determining test association, " + e.getMessage());
+            this.log.error("<internal> Core.isAssociatedWithTest: Failure determining test association, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -1983,7 +1989,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Couldn't find test plan, " + e.getMessage());
+            this.log.error("<internal> Core.findTestPlan(): Couldn't find test plan, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -2016,7 +2022,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Couldn't find test, " + e.getMessage());
+            this.log.error("<internal> Core.findTest(): Couldn't find test, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -2053,7 +2059,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Couldn't find module, " + e.getMessage());
+            this.log.error("<internal> Core.findModule(): Couldn't find module, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -2079,6 +2085,8 @@ public class Core
             statement.executeUpdate();
         } catch (Exception e)
         {
+            this.log.error("<internal> Core.updateModule(): Couldn't update module, " + e.getMessage());
+
             //TODO: handle
         } finally
         {
@@ -2115,7 +2123,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Couldn't find module, " + e.getMessage());
+            this.log.error("<internal> Core.findModuleWithoutPriorSequence(): Couldn't find module, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -2252,7 +2260,7 @@ public class Core
                         statement = null;
                     } catch (Exception e)
                     {
-                        System.err.println("ERROR: Failed to relate artifact to line, " + e.getMessage());
+                        this.log.error("<internal> Core.addActions() Failed to relate artifact to line, " + e.getMessage());
                     }
                 }
             }
@@ -2351,8 +2359,8 @@ public class Core
             return dbdt;
         } catch (Exception e)
         {
-            System.err.println("Failed to add described template: " + e);
-            e.printStackTrace();
+            this.log.error("<internal> Core.add(): Failed to add described template: " + e);
+            this.log.debug("stack trace: ", e);
             try
             {
                 connect.rollback();
@@ -2483,7 +2491,7 @@ public class Core
                         ti.pk = keys.getLong(1);
                 } catch (Exception e)
                 {
-                    System.err.println("ERROR: Could not add described_template to test_instance: " + e.getMessage());
+                    this.log.error("<internal> Core.syncDescribedTemplates(): Could not add described_template to test_instance: " + e.getMessage());
                 }
 
                 safeClose(statement2);
@@ -2568,7 +2576,7 @@ public class Core
             }
         }
         if (checkedNotAddedDescribedTemplatesCount > 0)
-            System.out.println("Core.SyncDescribedTemplates() checked (without adding) " + checkedNotAddedDescribedTemplatesCount + " described templates in database");
+            this.log.debug("<internal> Core.syncDescribedTemplates() checked (without adding) " + checkedNotAddedDescribedTemplatesCount + " described templates in database");
         return addedDescribedTemplatesCount;
     }
 
@@ -2581,10 +2589,11 @@ public class Core
 
         if (read_only)
         {
-            System.err.println("------------------------");
-            System.err.println("Template: " + sync.getHash().toString());
-            System.err.println("Script: " + sync.toStandardString());
-            System.err.println("------------------------");
+            this.log.error("<internal> Core.syncTemplate(): database is read-only");
+            this.log.error("<internal> Core.syncTemplate(): ------------------------");
+            this.log.error("<internal> Core.syncTemplate(): Template: " + sync.getHash().toString());
+            this.log.error("<internal> Core.syncTemplate(): Script: " + sync.toStandardString());
+            this.log.error("<internal> Core.syncTemplate(): ------------------------");
             return pk;
         }
 
@@ -2624,7 +2633,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Couldn't synchronize template, " + e.getMessage());
+            this.log.error("<internal> Core.syncTemplate(): Couldn't synchronize template, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -2855,7 +2864,7 @@ public class Core
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Couldn't synchronize template relationships, " + e.getMessage());
+            this.log.error("<internal> Core.syncTemplateRelationships(): Couldn't synchronize template relationships, " + e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -2923,7 +2932,7 @@ public class Core
             }
         } catch(Exception e)
         {
-            System.err.println(e.getMessage());
+            this.log.error("<internal> Core.getTestInstances() exception msg: " + e);
             throw e;
         } finally
         {
@@ -2982,8 +2991,9 @@ public class Core
             }
         } catch (Exception e)
         {
+            this.log.error("<internal> Core.findTestInstance() exception msg: " + e);
+
             // TODO: handle
-            System.err.println(e.getMessage());
         } finally
         {
             safeClose(test_instances);
@@ -3016,13 +3026,14 @@ public class Core
         //TODO: Clean up
         if (read_only)
         {
-            System.err.println("------------------------");
-            System.err.println("Test Instance for Test " + Long.toString(pk_test));
+            this.log.error("<internal> Core.syncTestInstance(): database is read-only");
+            this.log.error("<internal> Core.syncTestInstance(): ------------------------");
             //            System.err.println( "Template: " + sync.getTemplate().getHash().toString() );
-            System.err.println("Versions:");
-            //            for ( Version v : sync.getVersions() )
-            //                System.err.println( "\t" + v.getComponent() + ", " + v.getVersion() );
-            System.err.println("------------------------");
+            this.log.error("<internal> Core.syncTestInstance(): Test Instance for Test \" + Long.toString(pk_test)");
+            this.log.error("<internal> Core.syncTestInstance(): Versions:");
+                //            for ( Version v : sync.getVersions() )
+                //                System.err.println( "\t" + v.getComponent() + ", " + v.getVersion() );
+            this.log.error("<internal> Core.syncTestInstance(): ------------------------");
             return pk;
         }
 
@@ -3101,8 +3112,8 @@ public class Core
             }
         } catch (Exception e)
         {
+            this.log.error("<internal> Core.syncTestInstance() exception msg : " + e);
             // TODO: handle
-            System.err.println(e.getMessage());
         } finally
         {
             safeClose(resultSet);
@@ -3134,7 +3145,7 @@ public class Core
             return null;
         } catch(Exception e)
         {
-            System.err.println(e.getMessage());
+            this.log.error("<internal> Core.getInstanceRun() exception msg: " + e);
             throw e;
         } finally
         {
@@ -3157,7 +3168,7 @@ public class Core
             }
         } catch(Exception e)
         {
-            System.err.println(e.getMessage());
+            this.log.error("<internal> Core.addResultToRun() exception msg: " + e);
             throw e;
         } finally
         {
@@ -3183,12 +3194,12 @@ public class Core
                 hash = new Hash(resultSet.getBytes("hash")).toString();
             }
             else{
-                System.err.println("Cannot find template for test instance " + testInstanceNumber);
+                this.log.error("<internal> Core.createInstanceRun(): Cannot find template for test instance " + testInstanceNumber);
                 throw new Exception("Cannot find template for test instance " + testInstanceNumber);
             }
         } catch(Exception e)
         {
-            System.err.println(e.getMessage());
+            this.log.error("<internal> Core.createInstanceRun() exception msg: " + e);
             throw e;
         } finally
         {
@@ -3220,8 +3231,8 @@ public class Core
                 return null;
         } catch (Exception e)
         {
+            this.log.error("<internal> Core.createInstanceRun() exception msg: " + e);
             // TODO: handle
-            System.err.println(e.getMessage());
             throw e;
         } finally
         {
@@ -3270,8 +3281,8 @@ public class Core
             statement.execute();
         } catch (Exception e)
         {
+            this.log.error("<internal> Core.reportResult() exception msg: " + e);
             // TODO: handle
-            System.err.println(e.getMessage());
         } finally
         {
             safeClose(statement);

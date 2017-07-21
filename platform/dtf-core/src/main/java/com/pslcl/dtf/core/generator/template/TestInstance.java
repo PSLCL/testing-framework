@@ -87,7 +87,10 @@ public class TestInstance
                     o2Command = o2.getCommand(template);
                     retVal = o1Command.compareTo(o2Command);
                 } catch (Exception e) {
-                    // Illogical value: used without rationale. Code things so we never get here.
+                    // Note: We cannot throw exception here because "the overridden method does not throw Exception."
+                    System.out.println("TestInstance.Action.ActionSorter.compare() catches Exception but must swallow it, msg: " + e);
+
+                    // Illogical value 0: placed without justifiable rationale. Code things so we never get here.
                     retVal = 0;
                 }
                 return retVal;
