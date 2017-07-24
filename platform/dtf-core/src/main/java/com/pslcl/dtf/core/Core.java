@@ -3153,6 +3153,12 @@ public class Core
         }
     }
 
+    /**
+     *
+     * @param runID
+     * @param result
+     * @throws Exception
+     */
     public void addResultToRun(long runID, boolean result) throws Exception {
         Statement statement = null;
 

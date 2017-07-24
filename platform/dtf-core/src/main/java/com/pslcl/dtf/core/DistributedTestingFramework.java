@@ -399,10 +399,15 @@ public final class DistributedTestingFramework
 
         private void process()
         {
+            // Annoyance: there is no way to mask the warning "used without try-with-resource statement."
+            //   It is desirable to use "try-without-resource" for both "new ByteArayOutputStream()" code lines, as requested by code analyzer tool
+            //   But that cannot be used because they are referenced in catch and finally blocks, which- though possible in "try-without-resource," give no visibility to the indicated variables
+            //   Code rewrite, however, could allow all that is intended, and yet use "try-with-resource"
             ByteArrayOutputStream stdout = new ByteArrayOutputStream();
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
             try {
+                @SuppressWarnings("MagicCharacter")
                 char notMagicSpaceChar = ' '; // this is an internationalized context magic character, which is at warning level
                 String augmented_params = shell + notMagicSpaceChar + script; // every choice is at warning level, so use this one
                 String[] params = augmented_params.split(" ");
@@ -497,6 +502,7 @@ public final class DistributedTestingFramework
         return permissions;
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored") // preferred to be placed below, but it is not effective there
     private static void synchronize(String[] args)
     {
         if (args.length > 1 && args[1].compareTo("--help") == 0)
@@ -609,6 +615,9 @@ public final class DistributedTestingFramework
                             Files.setPosixFilePermissions(P.toPath(), toPosixPermissions(A.getPosixMode()));
                         } catch (UnsupportedOperationException ignored)
                         {
+                            // this does not block warnings when placed here, instead place it at method top
+//                          @SuppressWarnings("ResultOfMethodCallIgnored")
+
                             // Windows does not support setPosixFilePermissions. Fall back.
                             Set<PosixFilePermission> perms = toPosixPermissions(A.getPosixMode());
 
@@ -667,7 +676,7 @@ public final class DistributedTestingFramework
                     try
                     {
                         Thread.sleep(500);
-                    } catch (Exception ignored)
+                    } catch (InterruptedException ignored)
                     {
                     }
                 }
@@ -778,14 +787,12 @@ public final class DistributedTestingFramework
 
     private static void result(String[] args)
     {
-        String hash = null;
-        Long run = null;
-        Boolean result = null;
-
         if (args.length < 2 || args[1].compareTo("--help") == 0)
             resultHelp();
 
-
+        String hash = null;
+        Long run = null;
+        Boolean result = null;
         for (int i = 1; i < args.length; i++)
         {
             if (args[i].compareTo("--hash") == 0 && args.length > i)
@@ -815,14 +822,19 @@ public final class DistributedTestingFramework
         if (result == null || (hash == null && run == null)){
             LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): Missing required argument");
             resultHelp();
+            // calls System.exit()
         }
 
         Core core = new Core(0);
         try{
-            if(hash != null){
+            if(hash != null) {
                 core.reportResult(hash, result, null, null, null, null);
-            } else{
+            } else if (run!=null && result!=null) {
                 core.addResultToRun(run, result);
+            } else {
+                // result will absolutrely not be null, see above
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): submitted args wrongly give null runId (or result is null)");
+                throw new IllegalArgumentException("submitted args wrongly give null runId (or result is null)");
             }
         } catch(Exception e){
             LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): Failed to add result: " + e);
@@ -872,34 +884,37 @@ public final class DistributedTestingFramework
 
             TarContent(String name, int artifacts, long start)
             {
-                try
-                {
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                try {
                     GzipCompressorOutputStream cos = new GzipCompressorOutputStream(bos);
-                    TarArchiveOutputStream os = new TarArchiveOutputStream(cos);
-
-                    for (int artifact = 0; artifact < artifacts; artifact++)
+                    try (TarArchiveOutputStream os = new TarArchiveOutputStream(cos))
                     {
-                        String content_str = name + "-" + Integer.toString(artifact + 1);
-                        TarArchiveEntry entry = new TarArchiveEntry(content_str);
-                        entry.setModTime(start);
-                        byte[] content_bytes = content_str.getBytes();
-                        entry.setSize(content_bytes.length);
-                        os.putArchiveEntry(entry);
-                        os.write(content_bytes);
-                        os.closeArchiveEntry();
+                        for (int artifact = 0; artifact < artifacts; artifact++)
+                        {
+                            @SuppressWarnings("MagicCharacter")
+                            String content_str = name + '-' + Integer.toString(artifact + 1);
+                            TarArchiveEntry entry = new TarArchiveEntry(content_str);
+                            entry.setModTime(start);
+                            byte[] content_bytes = content_str.getBytes();
+                            entry.setSize(content_bytes.length);
+                            os.putArchiveEntry(entry);
+                            os.write(content_bytes);
+                            os.closeArchiveEntry();
+                        }
+
+                        os.finish();
+                        os.close();
+                        cos.close();
+                        bos.close();
+
+                        content = bos.toByteArray();
+                        hash = new Hash(content);
+                    } catch (Exception e)
+                    {
+                        LoggerFactory.getLogger(DistributedTestingFramework.PopulateArtifact.TarContent.class).warn("DistributedTestingFramework.PopulateArtifact.TarContent constructor: Failure to create populated artifact, " + e.getMessage());
                     }
-
-                    os.finish();
-                    os.close();
-                    cos.close();
-                    bos.close();
-
-                    content = bos.toByteArray();
-                    hash = new Hash(content);
-                } catch (Exception e)
-                {
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.PopulateArtifact.TarContent constructor: Failure to create populated artifact, " + e.getMessage());
+                } catch (IOException ioe) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.PopulateArtifact.TarContent.class).warn("DistributedTestingFramework.PopulateArtifact.TarContent constructor: Failure to create populated artifact, IOException msg: " + ioe.getMessage());
                 }
             }
 
@@ -922,6 +937,7 @@ public final class DistributedTestingFramework
             }
 
             @Override
+            @SuppressWarnings("ReturnOfCollectionOrArrayField")
             public byte[] asBytes()
             {
                 return content;
@@ -941,6 +957,7 @@ public final class DistributedTestingFramework
         }
 
         @Override
+        @SuppressWarnings("MagicNumber")
         public int getPosixMode()
         {
             return 0b100_100_100;
@@ -959,7 +976,7 @@ public final class DistributedTestingFramework
 
     private static class PopulateModule implements Module
     {
-        private String org;
+        private String organization;
         private String name;
         private String version;
         private String status;
@@ -969,7 +986,7 @@ public final class DistributedTestingFramework
 
         PopulateModule(String org, String name, String version, String status, int sequence, int artifacts, long start)
         {
-            this.org = org;
+            this.organization = org;
             this.name = name;
             this.version = version;
             this.sequence = sequence;
@@ -981,7 +998,7 @@ public final class DistributedTestingFramework
         @Override
         public String getOrganization()
         {
-            return org;
+            return organization;
         }
 
         @Override
@@ -1015,10 +1032,11 @@ public final class DistributedTestingFramework
         }
 
         @Override
+        @SuppressWarnings("MagicCharacter")
         public List<Artifact> getArtifacts()
         {
             List<Artifact> result = new ArrayList<Artifact>();
-            result.add(new PopulateArtifact(this, org + "-" + name + "-" + version + ".tar.gz", artifacts, start));
+            result.add(new PopulateArtifact(this, organization + '-' + name + '-' + version + ".tar.gz", artifacts, start));
             return result;
         }
 
@@ -1068,17 +1086,26 @@ public final class DistributedTestingFramework
                     String module_str = "module" + Integer.toString(module + 1);
                     for (int version = 0; version < versions; version++)
                     {
-                        String version_str = "v" + Integer.toString(version + 1);
+                        @SuppressWarnings("MagicCharacter")
+                        String version_str = 'v' + Integer.toString(version + 1);
                         String status_str = "release";
                         switch (version % 3)
                         {
                             case 0:
                                 status_str = "nightly";
                                 break;
-
                             case 1:
                                 status_str = "integration";
                                 break;
+                            case 3:
+                                status_str = "unknownBuildStatusString";
+                                break;
+                            // july 2017: we currently only support in the build system “milestone (prerelease), release, and integration (testing)”
+
+                            default:
+                                LoggerFactory.getLogger(DistributedTestingFramework.PopulateProvider.class).warn(
+                                                        "DistributedTestingFramework.iterateModules() finds disallowed version to status string translation, for version integer " + version);
+                                throw new Exception("disallowed version to status string translation");
                         }
 
                         moduleNotifier.module(this, new PopulateModule(org_str, module_str, version_str, status_str, version + 1, artifacts, start), null);
@@ -1108,8 +1135,9 @@ public final class DistributedTestingFramework
      *   artifacts: enabled with the --artifacts option, creates the number of specified artifacts in each module.
      *   instances: enabled with the --instances option, creates test instances like a generator would.
      *   results: enabled with the --results option, creates test results.
-     * @param args
+     * @param args the command-line arguments
      */
+    @SuppressWarnings("MagicNumber")
     private static void populate(String[] args)
     {
         if (args.length < 2 || args[1].compareTo("--help") == 0)
@@ -1166,10 +1194,10 @@ public final class DistributedTestingFramework
                 results = true;
             } else if (args[i].compareTo("--start") == 0)
             {
-                SimpleDateFormat parse = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                SimpleDateFormat parseSdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 try
                 {
-                    Date d = parse.parse(args[i + 1]);
+                    Date d = parseSdf.parse(args[i + 1]);
                     start = d.getTime();
                 } catch (Exception e)
                 {
@@ -1179,10 +1207,10 @@ public final class DistributedTestingFramework
                 i += 1;
             } else if (args[i].compareTo("--end") == 0)
             {
-                SimpleDateFormat parse = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                SimpleDateFormat parseSdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 try
                 {
-                    Date d = parse.parse(args[i + 1]);
+                    Date d = parseSdf.parse(args[i + 1]);
                     end = d.getTime();
                 } catch (Exception e)
                 {
@@ -1212,17 +1240,20 @@ public final class DistributedTestingFramework
         if ((end != 0 || start != 0) && !results)
             populateHelp();
 
-        if (results && end == 0 & start == 0)
+        @SuppressWarnings("MagicNumber")
+        long week = 7L * 24 * 60 * 60 * 1000;
+
+        if (results && end==0 && start == 0)
         {
             end = System.currentTimeMillis();
-            start = end - (7L * 24 * 60 * 60 * 1000);
+            start = end - (week);
         }
 
         if (results && end == 0)
-            end = start + (7L * 24 * 60 * 60 * 1000);
+            end = start + (week);
 
         if (results && start == 0)
-            start = end - (7L * 24 * 60 * 60 * 1000);
+            start = end - (week);
 
         if (start >= end)
             populateHelp();
@@ -1259,7 +1290,8 @@ public final class DistributedTestingFramework
             long pk_test_plan = core.addTestPlan("Test Plan " + test_plan_str, "Description for test plan " + test_plan_str);
             for (int test = 0; test < tests; test++)
             {
-                String test_str = test_plan_str + "/" + Integer.toString(test + 1);
+                @SuppressWarnings("MagicCharacter")
+                String test_str = test_plan_str + '/' + Integer.toString(test + 1);
                 long pk_test = core.addTest(pk_test_plan, "Test " + test_str, "Description for test " + test_str, "");
 
                 // Create instances by acting as a generator.
@@ -1272,13 +1304,15 @@ public final class DistributedTestingFramework
                     Artifact[] artifact_list = new Artifact[instance + 1];
                     for (int name = 0; name < instance + 1; name++)
                     {
+                        final int researchMeaningOfThisMagicNumber = 13;
+
                         // Pick the appropriate artifacts to use in this instance.
                         // We will pick the number of artifacts based on the index of the instance.
                         // So, instance 2 will use 3 artifacts.
                         // We will pick artifacts based on the test we are generating sequentially.
                         //  A1, A2, A3, A4, A5, ...
                         //  com.pslcl.testing.org1-module1-v1.tar.gz-1
-                        int artifact_index = (test_plan + 1) * (test + 1) * (instance + 1) * (name + 1) * 13;
+                        int artifact_index = (test_plan + 1) * (test + 1) * (instance + 1) * (name + 1) * researchMeaningOfThisMagicNumber;
                         artifact_index %= total_artifacts;
                         int organization_index = artifact_index / (modules * versions * artifacts);
                         artifact_index -= organization_index * (modules * versions * artifacts);
@@ -1307,18 +1341,21 @@ public final class DistributedTestingFramework
                     // results.
                     if (results || owner != null)
                     {
-                        boolean need_start = false, need_complete = false;
+                        boolean need_start = false;
+                        boolean need_complete = false;
 
                         // Pass/Fail generation. Pass groups of 3 tests, then fail 3, then pend 3.
                         // Owner generation. Assign owner for groups of 7, then skip 7.
                         if (((test_sequence / 3) % 3) == 0)
                         {
                             generator.pass();
-                            need_start = need_complete = true;
+                            need_complete = true;
+                            need_start = need_complete;
                         } else if (((test_sequence / 3) % 3) == 1)
                         {
                             generator.fail();
-                            need_start = need_complete = true;
+                            need_complete = true;
+                            need_start = need_complete;
                         }
 
                         if (((test_sequence / 7) % 2) == 0)
@@ -1333,16 +1370,17 @@ public final class DistributedTestingFramework
                         // Dates are set based on the test_sequence and whether or not a result or owner is assigned.
                         Date tstart = null;
                         if (need_start)
-                            tstart = new Date(start + test_sequence * ((end - start) / total_runs));
+                            tstart = new Date(start + test_sequence*((end - start) / total_runs));
 
                         Date tready = null;
                         if (need_start)
-                            tready = new Date(tstart.getTime() + 5L * 60 * 1000);
+                            tready = new Date(tstart.getTime() + 5L*60*1000);
 
                         Date tcomplete = null;
                         if (need_complete)
-                            tcomplete = new Date(tstart.getTime() + 10L * 60 * 1000);
+                            tcomplete = new Date(tstart.getTime() + 10L*60*1000);
 
+                        // TODO: refactor this next call to use the accepted replacement for its 3 Date parameters
                         generator.setRunTimes(tstart, tready, tcomplete);
                     }
 
