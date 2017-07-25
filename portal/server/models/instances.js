@@ -29,7 +29,7 @@ function expandModules( m, ls ) {
  * Get a list of test instances and result summaries.
  */
 module.exports.list_instances = function( plan, test, module_str, against, callback ) {
-  let includeInstances = false;
+  var includeInstances = false;
   mysql.getConnection(function(err,conn) {
     if(err){
       console.log("Error getting mysql connection: " + err);
