@@ -445,7 +445,7 @@ public class Generator
          */
 
         if (addedDescribedTemplatesCount > 0)
-            this.log.error("<internal> Generator.sync() added " + addedDescribedTemplatesCount + " describedTemplates to database");
+            this.log.debug("<internal> Generator.sync() added " + addedDescribedTemplatesCount + " describedTemplates to database");
         return addedDescribedTemplatesCount;
     }
 

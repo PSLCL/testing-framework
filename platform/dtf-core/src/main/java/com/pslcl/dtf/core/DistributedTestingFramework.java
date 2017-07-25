@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -176,9 +175,12 @@ public final class DistributedTestingFramework
                 /* Uncompress and unarchive the file, creating entries for each artifact found inside. */
                 InputStream is = new GzipCompressorInputStream(archive);
                 ti = new TarArchiveInputStream(is);
-                TarArchiveEntry entry;
-                while ((entry = ti.getNextTarEntry()) != null)
+                while (true)
                 {
+                    TarArchiveEntry entry = ti.getNextTarEntry();
+                    if (entry == null)
+                        break;
+
                     if (entry.isDirectory())
                         continue;
 
@@ -407,7 +409,7 @@ public final class DistributedTestingFramework
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
             try {
-                @SuppressWarnings("MagicCharacter")
+                @SuppressWarnings("MagicCharacter") // ' '
                 char notMagicSpaceChar = ' '; // this is an internationalized context magic character, which is at warning level
                 String augmented_params = shell + notMagicSpaceChar + script; // every choice is at warning level, so use this one
                 String[] params = augmented_params.split(" ");
@@ -553,7 +555,8 @@ public final class DistributedTestingFramework
 
             if (synchronize)
             {
-                File generators = new File(core.getConfig().dirGenerators());
+                Core.Config config = core.getConfig();
+                File generators = new File(config.dirGenerators());
                 if (generators.exists())
                     //noinspection ResultOfMethodCallIgnored
                     org.apache.commons.io.FileUtils.deleteQuietly(generators);
@@ -615,9 +618,6 @@ public final class DistributedTestingFramework
                             Files.setPosixFilePermissions(P.toPath(), toPosixPermissions(A.getPosixMode()));
                         } catch (UnsupportedOperationException ignored)
                         {
-                            // this does not block warnings when placed here, instead place it at method top
-//                          @SuppressWarnings("ResultOfMethodCallIgnored")
-
                             // Windows does not support setPosixFilePermissions. Fall back.
                             Set<PosixFilePermission> perms = toPosixPermissions(A.getPosixMode());
 
@@ -703,7 +703,7 @@ public final class DistributedTestingFramework
                 core = null;
             }
         }
-    }
+    } // end synchronize()
 
     @SuppressWarnings("unused")
     private static void runner(String[] args)
@@ -1032,7 +1032,7 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        @SuppressWarnings("MagicCharacter")
+        @SuppressWarnings("MagicCharacter") // '-'
         public List<Artifact> getArtifacts()
         {
             List<Artifact> result = new ArrayList<Artifact>();
@@ -1137,7 +1137,6 @@ public final class DistributedTestingFramework
      *   results: enabled with the --results option, creates test results.
      * @param args the command-line arguments
      */
-    @SuppressWarnings("MagicNumber")
     private static void populate(String[] args)
     {
         if (args.length < 2 || args[1].compareTo("--help") == 0)

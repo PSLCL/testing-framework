@@ -47,6 +47,7 @@ import javax.script.ScriptEngineManager;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +116,7 @@ public class Core
     private final Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
 //  @SuppressWarnings("Mismatched query and update of collection MismatchedQueryAndUpdateOfCollection")
 
+    @SuppressWarnings("MagicCharacter") // ';'
     private void loadHashes()
     {
         if (connect == null)
@@ -146,7 +148,7 @@ public class Core
                     resultSet = null;
                     safeClose(statement);
                     statement = null;
-                    throw new Exception("Duplicate DescribedTemplate.Key " + dbTemplate.pk + " " + dbTemplate.key.getTemplateHash().toString() + ":" + dbTemplate.key.getModuleHash().toString());
+                    throw new Exception("Duplicate DescribedTemplate.Key " + dbTemplate.pk + ' ' + dbTemplate.key.getTemplateHash().toString() + ':' + dbTemplate.key.getModuleHash().toString());
                 }
                 keyToDT.put(dbTemplate.key, dbTemplate);
             }
@@ -183,7 +185,8 @@ public class Core
     private boolean read_only = false;
     private final Logger log;
 
-    public static class Config
+    // TODO: find out why this cannot be made private, since public .getConfig() is used by the caller
+    static class Config
     {
         private String db_host = null;
         private Integer db_port = null;
@@ -204,13 +207,13 @@ public class Core
             {
                 ScriptEngineManager manager = new ScriptEngineManager();
                 ScriptEngine engine = manager.getEngineByName("JavaScript");
-                File fs = new File("portal/config/config.js");
                 Bindings binding = engine.createBindings();
                 binding.put("process", null);
                 binding.put("env", System.getenv());
                 binding.put("module", new NodeModule());
                 binding.put("home_dir", Paths.get("").toAbsolutePath().normalize().toString());
 
+                File fs = new File("portal/config/config.js");
                 engine.eval(new FileReader(fs), binding);
                 this.db_host = (String) engine.eval("config.mysql.host;", binding);
                 this.db_port = (Integer) engine.eval("config.mysql.port;", binding);
@@ -230,64 +233,64 @@ public class Core
             }
         }
 
-        public String dbHost()
+        private String dbHost()
         {
             return db_host;
         }
 
-        public Integer dbPort()
+        private Integer dbPort()
         {
             return db_port;
         }
 
-        public String dbUser()
+        private String dbUser()
         {
             return db_user;
         }
 
-        public String dbPassword()
+        private String dbPassword()
         {
             return db_password;
         }
 
-        public String dbSchema()
+        private String dbSchema()
         {
             return db_schema;
         }
 
-        public String dirArtifacts()
+        private String dirArtifacts()
         {
             return artifacts_dir;
         }
 
-        public String dirGenerators()
+        String dirGenerators()
         {
             return generators_dir;
         }
 
-        public String shell()
+        String shell()
         {
             return shell;
         }
 
-        public String sqsEndpoint(){
+        String sqsEndpoint(){
             return sqs_endpoint;
         }
 
-        public String sqsQueueName(){
+        String sqsQueueName(){
             return sqs_queue_name;
         }
 
-        public String sqsAccessKeyID(){
+        String sqsAccessKeyID(){
             return sqs_access_key_id;
         }
 
-        public String sqsSecretAccessKey(){
+        String sqsSecretAccessKey(){
             return sqs_secret_access_key;
         }
     }
 
-    Config config = new Config();
+    private Config config = new Config();
 
     public Config getConfig()
     {
@@ -400,7 +403,7 @@ public class Core
         {
             if (r != null)
                 r.close();
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             // Ignore
         }
@@ -412,7 +415,7 @@ public class Core
         {
             if (s != null)
                 s.close();
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             // Ignore
         }
@@ -424,30 +427,33 @@ public class Core
     }
 
     /**
-     * Return the test instance matching the specified test instance number.
-     * @param testInstanceNumber
-     * @return
+     * Return the "ready" test instance matching the specified test instance number.
+     * @param testInstanceNumber The specified test instance number.
+     * @return The test instance, or null if the corresponding test instance has a matching run table entry.
      */
-    DBTestInstance readReadyTestInstance_testInstance(long testInstanceNumber)
+    @SuppressWarnings("ConditionalExpressionWithNegatedCondition")
+    private DBTestInstance readReadyTestInstance_testInstance(long testInstanceNumber)
     {
-        DBTestInstance retVal = pktiToTI.get(Long.valueOf(testInstanceNumber));
-        return (retVal.fk_run != 0) ? null : retVal;
+        DBTestInstance retVal = pktiToTI.get(testInstanceNumber);
+        return (retVal.fk_run != 0) ? null : // null for filled .fk_run (shows that test instance is past being "ready")
+                                      retVal;
     }
 
     /**
      * Return a set of all test instances matching the specified test number and test instance number that have not yet run and are ready to run.
-     * @param testNumber
-     * @return
+     * @param testNumber The specified test number.
+     * @param testInstanceNumber The specified test instance number.
+     * @return The set
      */
     Set<Long> readReadyTestInstances_test(long testNumber, long testInstanceNumber)
     {
         Set<Long> retSet = new HashSet<Long>();
         Set<Long> fullSet = readReadyTestInstances_test(testNumber);
-        if (fullSet.contains(Long.valueOf(testInstanceNumber)))
+        if (fullSet.contains(testInstanceNumber))
         {
             for (Long setMember : fullSet)
             {
-                if (setMember.longValue() == testInstanceNumber)
+                if (setMember == testInstanceNumber)
                     retSet.add(setMember);
             }
         }
@@ -456,19 +462,19 @@ public class Core
 
     /**
      * Return a set of all test instances matching the specified test number that have not yet run and are ready to run.
-     * @param testNumber
-     * @return
+     * @param testNumber The specified test number.
+     * @return The set.
      */
-    Set<Long> readReadyTestInstances_test(long testNumber)
+    private Set<Long> readReadyTestInstances_test(long testNumber)
     {
         Set<Long> retSet = new HashSet<Long>();
-        List<DBTestInstance> list_pkTest_ToMany_pkTestInstance = pktToTI.get(Long.valueOf(testNumber));
+        List<DBTestInstance> list_pkTest_ToMany_pkTestInstance = pktToTI.get(testNumber);
         if (list_pkTest_ToMany_pkTestInstance != null)
         {
             for (DBTestInstance dbti : list_pkTest_ToMany_pkTestInstance)
             {
                 if (dbti.fk_run == 0) // 0: null in database: not yet run
-                    retSet.add(Long.valueOf(dbti.pk_test_instance));
+                    retSet.add(dbti.pk_test_instance);
             }
         }
         return retSet;
@@ -479,6 +485,7 @@ public class Core
      *
      *  @param testInstanceNumber The test instance number
      */
+    @SuppressWarnings("MagicCharacter") // '\n'
     public void executeTestInstance(long testInstanceNumber)
     {
         // We are an independent process. We have access to the database,
@@ -488,8 +495,6 @@ public class Core
         DBTestInstance dbti = readReadyTestInstance_testInstance(testInstanceNumber);
         if (dbti != null && dbti.fk_described_template != 0)
         {
-            String str_fkTestInstanceNumber = Long.toString(testInstanceNumber);
-
             // This simple line requires that .pk_template be placed in DBTestInstance.
             String str_fkTemplate = Long.toString(dbti.pk_template);
 
@@ -502,7 +507,9 @@ public class Core
             try
             {
                 statement = connect.createStatement();
-                resultSet = statement.executeQuery("SELECT pk_described_template, fk_module_set, pk_template, description_hash, hash, steps, enabled FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance = " + str_fkTestInstanceNumber + " AND pk_template = " + str_fkTemplate);
+                resultSet = statement.executeQuery("SELECT pk_described_template, fk_module_set, pk_template, description_hash, hash, steps, enabled" +
+                        "                          FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template" +
+                        "                          WHERE pk_test_instance = " + Long.toString(testInstanceNumber) + " AND pk_template = " + str_fkTemplate);
                 // exactly one resultSet (because we required test_instance.fk_described_template to match described_template.pk_described_template)
                 if (resultSet.next())
                 {
@@ -533,20 +540,20 @@ public class Core
 
                     // this simulates waiting for a test result; wait a random time from 1 to 5 seconds
                     Random random = new Random();
+                    @SuppressWarnings("MagicNumber")
                     int sleep = random.nextInt(5001 - 500) + 500; // 0.5 to 5 seconds
                     try
                     {
                         Thread.sleep(sleep);
-                    } catch (Exception e)
+                    } catch (Exception ignore)
                     {
                     }
 
                     // Place the test result in the database and mark the test instance as complete in the database.
 
                     // simulated false condition, but database is readonly for a while, so this gives a quick return without storing anything
-                    reportResult(new String("junk"), false, null, null, null, null);
-
-                    this.log.debug("<internal> Core.executeTestInstance() exits after execution msec of " + sleep + "\n");
+                    reportResult("junk", false, null, null, null, null);
+                    this.log.debug("<internal> Core.executeTestInstance() exits after execution msec of " + sleep + '\n');
                 } else
                 {
                     this.log.warn("<internal> Core.executeTestInstance: no DBTemplateInfo found");
@@ -562,9 +569,9 @@ public class Core
                         resultSet.close();
                     if (statement != null)
                         statement.close();
-                } catch (SQLException e)
+                } catch (SQLException ignore)
                 {
-                    // log this?
+                    // TODO: log this?
                 }
             }
         } else
@@ -577,7 +584,7 @@ public class Core
      * Return a list of artifact providers.
      * @return The list of provider class names.
      */
-    public List<String> readArtifactProviders()
+    List<String> readArtifactProviders()
     {
         List<String> result = new ArrayList<String>();
         Statement statement = null;
@@ -606,14 +613,13 @@ public class Core
         return result;
     }
 
-    public void prepareToLoadModules()
+    void prepareToLoadModules()
     {
-        // Update missing count.
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        // Update missing count.
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("UPDATE module SET missing_count=missing_count+1");
@@ -628,14 +634,13 @@ public class Core
         }
     }
 
-    public void finalizeLoadingModules(int deleteThreshold)
+    void finalizeLoadingModules(int deleteThreshold)
     {
-        // Remove modules that have been missing for too long.
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        // Remove modules that have been missing for too long.
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("DELETE FROM module WHERE missing_count > ?");
@@ -658,15 +663,15 @@ public class Core
      * @return The primary key of the new test plan, or zero if there is an error or in read-only mode. If the test plan already exists then
      * the existing primary key is returned;
      */
-    public long addTestPlan(String name, String description)
+    long addTestPlan(String name, String description)
     {
-        PreparedStatement statement = null;
         long pk = findTestPlan(name, description);
 
         // This will work in read-only mode to return an existing module.
         if (pk != 0 || read_only)
             return pk;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("INSERT INTO test_plan (name, description) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
@@ -698,15 +703,15 @@ public class Core
      * @return The primary key of the new test, or zero if there is an error or in read-only mode. If the test already exists then
      * the existing primary key is returned;
      */
-    public long addTest(long pk_test_plan, String name, String description, String script)
+    long addTest(long pk_test_plan, String name, String description, String script)
     {
-        PreparedStatement statement = null;
         long pk = findTest(pk_test_plan, name, description, script);
 
         // This will work in read-only mode to return an existing module.
         if (pk != 0 || read_only)
             return pk;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
@@ -737,15 +742,15 @@ public class Core
      * @return The primary key of the new module, or zero if there is an error or in read-only mode. If the module already exists then
      * the existing primary key is returned;
      */
-    public long addModule(Module module)
+    long addModule(Module module)
     {
-        PreparedStatement statement = null;
         long pk = findModule(module);
 
         // This will work in read-only mode to return an existing module.
         if (pk != 0 || read_only)
             return pk;
 
+        PreparedStatement statement = null;
         String attributes = new Attributes(module.getAttributes()).toString();
         //TODO: Release date, actual release date, order all need to be added.
         try
@@ -778,13 +783,12 @@ public class Core
      * Delete a module.
      * @param pk_module The primary key of the module to delete.
      */
-    public void deleteModule(long pk_module)
+    private void deleteModule(long pk_module)
     {
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("DELETE FROM module WHERE pk_module=?");
@@ -811,11 +815,14 @@ public class Core
      * @param module The module that previous builds of should be deleted. It is required
      * that this module not be already added to the database.
      */
-    public void deletePriorBuildSequenceNumbers(Module module)
+    void deletePriorBuildSequenceNumbers(Module module)
     {
-        long pk;
-        while ((pk = findModuleWithoutPriorSequence(module)) != 0)
+        while (true) {
+            long pk = findModuleWithoutPriorSequence(module);
+            if (pk == 0)
+                break;
             deleteModule(pk);
+        }
     }
 
     /**
@@ -825,7 +832,8 @@ public class Core
      * @param length The length of the stream, or -1 if the entire stream is to be added.
      * @return Hash of the added content
      */
-    public Hash addContent(InputStream is, long length)
+    @Nullable
+    Hash addContent(InputStream is, long length)
     {
         File tmp = null;
         FileOutputStream os = null;
@@ -835,6 +843,7 @@ public class Core
             tmp = File.createTempFile("artifact", "hash");
             os = new FileOutputStream(tmp);
 
+            @SuppressWarnings("MagicNumber")
             byte[] content = new byte[1024];
             long remaining = length > 0 ? length : 1;
             while (remaining > 0)
@@ -856,8 +865,7 @@ public class Core
                     remaining -= consumed;
                 os.write(content, 0, consumed);
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             // Cannot even determine the hash, so we don't know if it has already been added or not.
             this.log.error("<internal> Core.addContent(): Could not add content, " + e.getMessage());
             return null;
@@ -868,7 +876,7 @@ public class Core
                 try
                 {
                     os.close();
-                } catch (Exception e)
+                } catch (Exception ignore)
                 {
                     // Ignore
                 }
@@ -876,6 +884,11 @@ public class Core
         }
 
         Hash h = Hash.fromContent(tmp);
+        if (h == null) {
+            this.log.error("<internal> Core.addContent() Could not compute hash of an artifact's content.");
+            return null;
+        }
+
         File target = new File(this.artifacts, h.toString());
         boolean ignore_insert_failure = false;
 
@@ -924,7 +937,8 @@ public class Core
      * @param h The hash of the file to return.
      * @return A file if it exists, null otherwise.
      */
-    public File getContentFile(Hash h)
+    @Nullable
+    File getContentFile(Hash h)
     {
         File f = new File(artifacts, h.toString());
         if (f.exists())
@@ -945,14 +959,14 @@ public class Core
      * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from.
      * @return The primary key of the added artifact, as stored in the artifact table
      */
-    public long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module)
+    @SuppressWarnings("IfStatementWithNegatedCondition")
+    long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module)
     {
-        PreparedStatement statement = null;
         long pk = 0;
-
         if (read_only)
             return pk;
 
+        PreparedStatement statement = null;
         try
         {
             if (merged_from_module != 0)
@@ -990,14 +1004,13 @@ public class Core
      * Clear the is_generated flag on all content. If not set before pruneContent() is called, then the content
      * will be deleted by pruneContent() unless associated with an artifact.
      */
-    public void clearGeneratedContent()
+    void clearGeneratedContent()
     {
-        // Mark test instances for later cleanup.
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        // Mark test instances for later cleanup.
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("UPDATE content SET is_generated=0");
@@ -1015,13 +1028,12 @@ public class Core
     /**
      * Remove all non-generated content that is not referenced by any artifact.
      */
-    public void pruneContent()
+    void pruneContent()
     {
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("DELETE content FROM content LEFT JOIN artifact ON content.pk_content = artifact.fk_content WHERE artifact.fk_content IS NULL AND content.is_generated=0");
@@ -1036,23 +1048,22 @@ public class Core
         }
     }
 
-    public void pruneTemplates()
+    void pruneTemplates()
     {
-        // Find all top-level templates.
-        PreparedStatement findTemplates = null;
-        ResultSet foundTemplates = null;
-        PreparedStatement deleteTemplate = null;
-
         if (read_only)
             return;
 
+        // Find all top-level templates.
+        ResultSet foundTemplates = null;
+        PreparedStatement deleteTemplate = null;
+
         // Determine the set of all referenced templates.
-        Set<Long> used = new HashSet<Long>();
         try
         {
             // TODO: see that fk_template is not a column of table test_instance
-            findTemplates = connect.prepareStatement("select distinct fk_template from test_instance");
+            PreparedStatement findTemplates = connect.prepareStatement("select distinct fk_template from test_instance");
             foundTemplates = findTemplates.executeQuery();
+            Set<Long> used = new HashSet<Long>();
             while (foundTemplates.next())
             {
                 long pk = foundTemplates.getLong("fk_template");
@@ -1077,7 +1088,7 @@ public class Core
                     deleteTemplate.executeUpdate();
                 }
             }
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             safeClose(foundTemplates);
             foundTemplates = null;
@@ -1237,7 +1248,7 @@ public class Core
         private Module module;
         private String configuration;
         private String name;
-        private int mode;
+        private int posixMode;
         private Hash hash;
         private String targetFilePath;
 
@@ -1253,14 +1264,14 @@ public class Core
          * @param hash The hash of the artifact contents.
          * @param targetDirectory The target directory to which the artifact should be deployed.
          */
-        public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash, String targetDirectory)
+        DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash, String targetDirectory)
         {
             this.core = core;
             this.pk = pk;
             this.module = module;
             this.configuration = configuration;
             this.name = name;
-            this.mode = mode;
+            this.posixMode = mode;
             this.hash = hash;
             this.targetFilePath = targetDirectory;
         }
@@ -1276,12 +1287,12 @@ public class Core
          * @param mode The POSIX mode of the artifact.
          * @param hash The hash of the artifact contents.
          */
-        public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash)
+        DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash)
         {
             this(core, pk, module, configuration, name, mode, hash, null);
         }
 
-        public long getPK()
+        long getPK()
         {
             return pk;
         }
@@ -1310,7 +1321,7 @@ public class Core
             try
             {
                 return URLEncoder.encode(name, "UTF-8");
-            } catch (Exception e)
+            } catch (Exception ignore)
             {
                 // This should never happen, as UTF-8 is a required charset.
                 return "error";
@@ -1326,7 +1337,7 @@ public class Core
         @Override
         public int getPosixMode()
         {
-            return mode;
+            return posixMode;
         }
 
         @Override
@@ -1345,7 +1356,7 @@ public class Core
             int result = 1;
             result = prime * result + ((configuration == null) ? 0 : configuration.hashCode());
             result = prime * result + ((hash == null) ? 0 : hash.hashCode());
-            result = prime * result + mode;
+            result = prime * result + posixMode;
             result = prime * result + ((module == null) ? 0 : module.hashCode());
             result = prime * result + ((name == null) ? 0 : name.hashCode());
             result = prime * result + (int) (pk ^ (pk >>> 32));
@@ -1372,7 +1383,7 @@ public class Core
                     return false;
             } else if (!hash.equals(other.hash))
                 return false;
-            if (mode != other.mode)
+            if (posixMode != other.posixMode)
                 return false;
             if (module == null) {
                 if (other.module != null)
@@ -1402,8 +1413,8 @@ public class Core
 
     private static class DBContent implements Content
     {
-        Core core;
-        Hash hash;
+        private Core core;
+        private Hash hash;
 
         DBContent(Core core, Hash hash)
         {
@@ -1424,30 +1435,32 @@ public class Core
         }
 
         @Override
+        @Nullable
         public InputStream asStream()
         {
             File f = core.getContentFile(hash);
-            try
-            {
-                return new FileInputStream(f);
-            } catch (Exception e)
-            {
-                // Ignore
+            if (f != null) {
+                try {
+                    return new FileInputStream(f);
+                } catch (Exception ignore) {
+                    // Ignore
+                }
             }
 
             return null;
         }
 
         @Override
+        @Nullable
         public byte[] asBytes()
         {
             File f = core.getContentFile(hash);
-            try
-            {
-                return FileUtils.readFileToString(f).getBytes();
-            } catch (Exception e)
-            {
-                // Ignore
+            if (f != null) {
+                try {
+                    return FileUtils.readFileToString(f).getBytes();
+                } catch (Exception ignore) {
+                    // Ignore
+                }
             }
 
             return null;
@@ -1503,7 +1516,7 @@ public class Core
         try
         {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery(String.format("SELECT pk_module, organization, name, attributes, version, status, sequence" + " FROM module" + " WHERE organization = " + organization + " AND name = '" + name + "'"));
+            resultSet = statement.executeQuery(new String("SELECT pk_module, organization, name, attributes, version, status, sequence" + " FROM module" + " WHERE organization = " + organization + " AND name = '" + name + "'"));
             while (resultSet.next())
             {
                 DBModule M = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
@@ -1545,13 +1558,14 @@ public class Core
     public Iterable<Artifact> findDependencies(Artifact artifact)
     {
         List<Artifact> set = new ArrayList<Artifact>();
-        Statement statement = null;
-        ResultSet resultSet = null;
 
         // Artifact searches are always done from the perspective of merged modules.
         long pk = findModule(artifact.getModule());
         if (pk == 0)
             return set; // This should not happen
+
+        Statement statement = null;
+        ResultSet resultSet = null;
         LineIterator iterator = null;
         try
         {
@@ -1610,6 +1624,7 @@ public class Core
                         String version = ver_fields[0];
                         String configuration = ver_fields.length > 1 ? ver_fields[1] : "";
 
+                        // TODO: how to @SuppressWarnings() here, or just do what it wahnts
                         organization = organization.replace("$", artifact.getModule().getOrganization());
                         module = module.replace("$", artifact.getModule().getName());
                         attributes = attributes.replace("$", artifact.getModule().getAttributes().toString());
@@ -1617,11 +1632,14 @@ public class Core
                         version = version.replace("$", artifact.getModule().getVersion());
                         configuration = configuration.replace("$", artifact.getConfiguration());
 
-                        String organization_where = organization.length() > 0 ? " AND module.organization='" + organization + "'" : "";
-                        String module_where = module.length() > 0 ? " AND module.name='" + module + "'" : "";
-                        String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + "'" : "";
-                        String version_where = version.length() > 0 ? " AND module.version='" + version + "'" : "";
-                        String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + "'" : "";
+                        @SuppressWarnings("MagicCharacter")
+                        char singleQuote = '\'';
+
+                        String organization_where = organization.length() > 0 ? " AND module.organization='" + organization + singleQuote : "";
+                        String module_where = module.length() > 0 ? " AND module.name='" + module + singleQuote : "";
+                        String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + singleQuote : "";
+                        String version_where = version.length() > 0 ? " AND module.version='" + version + singleQuote : "";
+                        String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + singleQuote : "";
 
                         query = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s"
                                         + " ORDER BY module.organization, module.name, module.attributes, module.version, artifact.configuration, module.sequence DESC", fields[2], organization_where, module_where, attributes_where, version_where, configuration_where);
@@ -1630,14 +1648,18 @@ public class Core
                         while (resultSet.next())
                         {
                             String artifact_name = resultSet.getString(10);
-                            String targetName = artifact_name;
                             if (found.contains(artifact_name))
                                 continue;
-                            if(fields.length == 4){
+
+                            String targetName = artifact_name;
+                            if(fields.length == 4)
                                 targetName = getTargetName(artifact_name, fields[3]);
-                            }
+
+                            @SuppressWarnings("MagicNumber")
                             DBModule dbmod = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
+                            @SuppressWarnings("MagicNumber")
                             Artifact A = new DBArtifact(this, resultSet.getLong(8), dbmod, resultSet.getString(9), artifact_name, resultSet.getInt(11), new Hash(resultSet.getBytes(12)), targetName);
+
                             set.add(A);
                             found.add(artifact_name);
                         }
@@ -1673,18 +1695,19 @@ public class Core
      * @param targetDirectory The target directory.
      * @return The name of the artifact in the target directory.
      */
+    @SuppressWarnings("MagicCharacter")
     private String getTargetName(String artifactName, String targetDirectory){
-        int nameStartIndex = 0;
-        if(artifactName.endsWith("/")){
+        if (artifactName.endsWith("/"))
             throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
-        }
-        if(artifactName.contains("/")){
-            nameStartIndex = artifactName.lastIndexOf("/") + 1;
-        }
+
+        int nameStartIndex = 0;
+        if(artifactName.contains("/"))
+            nameStartIndex = artifactName.lastIndexOf('/') + 1;
+
         String targetName = artifactName.substring(nameStartIndex);
-        if(!targetDirectory.endsWith("/")){
-            targetDirectory = targetDirectory + "/";
-        }
+        if(!targetDirectory.endsWith("/"))
+            targetDirectory += "/";
+
         return targetDirectory + targetName;
     }
 
