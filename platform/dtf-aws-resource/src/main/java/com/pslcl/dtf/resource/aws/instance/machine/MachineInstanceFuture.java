@@ -199,7 +199,10 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 {
                     FatalResourceException fre = pdelay.handleException(msg, e);
                     if (fre instanceof FatalException)
+                    {
+                        LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "- bind failed: " + reservedResource.format.toString());
                         throw fre;
+                    }
                 }
             } while (true);
 
