@@ -124,6 +124,14 @@ public class InstanceNames
 
     public static final String S3LogsSrcFolderDefault = "logs";  // relative to sandbox
 
+    /* ****************************************************************************
+     * deploy retries
+    ******************************************************************************/
+    public static final String DeployKeyBase = InstanceKeyBase + ".deploy";
+    public static final String DeployMaxRetriesKey = DeployKeyBase + ".max-retries";
+
+    public static final String DeployMaxRetriesDefault = "2";
+
     public static List<String> getInstanceKeys()
     {
        List<String> keys = new ArrayList<String>();
@@ -138,6 +146,7 @@ public class InstanceNames
        keys.add(Ec2RequestThrottleKey);
        keys.add(S3BucketKey);
        keys.add(S3LogsSrcFolderKey);
+       keys.add(DeployMaxRetriesKey);
        return keys;
     }
 }

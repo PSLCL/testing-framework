@@ -174,13 +174,14 @@ public class StafRunnableProgram implements RunnableProgram
                 RunFuture df = new RunFuture(
                         commandData.getHost(),
                         commandData.getSandbox(), null,
-                        cmd.toString(), executor, true, true,
+                        cmd.toString(), executor, true, false,
                         commandData.getCoordinates(), commandData.getSandbox(),
                         commandData.getLogFolder(), null);
                 //@formatter:on
             executor.submit(df).get();
 
 //aws s3 cp --recursive /var/opt/pslcl/dtf/log s3://dtf-staf-logging/testId/templateId/runId/instanceId
+
             cmd = new StringBuilder("aws s3 cp --recursive ");
             String logFolder = StrH.stripTrailingSeparator(commandData.getLogFolder());
             cmd.append(logFolder);
@@ -190,7 +191,7 @@ public class StafRunnableProgram implements RunnableProgram
                 df = new RunFuture(
                         commandData.getHost(),
                         commandData.getSandbox(), null,
-                        cmd.toString(), executor, true, true,
+                        cmd.toString(), executor, true, false,
                         commandData.getCoordinates(), commandData.getSandbox(),
                         commandData.getLogFolder(), null);
                 //@formatter:on

@@ -45,6 +45,7 @@ public class MachineConfigData
     public volatile double rootDiskSize; // in gig
     public volatile String s3Bucket;
     public volatile String loggingSourceFolder;
+    public volatile int deployRetries;
 
     private MachineConfigData()
     {
@@ -79,6 +80,8 @@ public class MachineConfigData
         data.rootDiskSize = Double.parseDouble(getAttribute(ResourceNames.MachineDiskKey, ""+defaultData.rootDiskSize, resource, format));
         data.s3Bucket = getAttribute(InstanceNames.S3BucketKey, defaultData.s3Bucket, resource, format);
         data.loggingSourceFolder = getAttribute(InstanceNames.S3LogsSrcFolderKey, defaultData.s3Bucket, resource, format);
+        data.deployRetries = Integer.parseInt(getAttribute(InstanceNames.DeployMaxRetriesKey, ""+defaultData.deployRetries, resource, format));
+
         format.level.decrementAndGet();
 
         data.subnetConfigData = SubnetConfigData.init(resource, format, pdelayData.provider.manager.subnetManager.defaultSubnetConfigData);
@@ -109,6 +112,7 @@ public class MachineConfigData
         config.initsb.level.decrementAndGet();
         data.s3Bucket = getAttribute(config, InstanceNames.S3BucketKey, null);
         data.loggingSourceFolder = getAttribute(config, InstanceNames.S3LogsSrcFolderKey, InstanceNames.S3LogsSrcFolderDefault);
+        data.deployRetries = Integer.parseInt(getAttribute(config, InstanceNames.DeployMaxRetriesKey, InstanceNames.DeployMaxRetriesDefault));
 
         data.subnetConfigData = SubnetConfigData.init(config);
         
