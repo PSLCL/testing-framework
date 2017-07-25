@@ -121,7 +121,12 @@ The Test Runner Service requires permission to several Amazon AWS APIs. The foll
                 "Effect": "Allow",
                 "Action": "ses:SendRawEmail",
                 "Resource":"*"
-            }
+            },
+	        {
+	          "Effect":"Allow",
+	          "Action":"iam:PassRole",
+	          "Resource":"*"
+	        }
         ]
     }
 
