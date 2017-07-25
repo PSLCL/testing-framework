@@ -212,7 +212,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         waitForState(pdelay, AwsInstanceState.Running);
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
         reservedResource.resource.getAttributes().put(ResourceNames.DnsHostKey, reservedResource.ec2Instance.getPublicDnsName());
-//        waitForStaf(pdelay);
+        waitForStaf(pdelay);
     }
 
     private void waitForState(ProgressiveDelay pdelay, AwsInstanceState... states) throws FatalResourceException
