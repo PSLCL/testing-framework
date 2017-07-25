@@ -141,7 +141,7 @@ public class StafRunnableProgram implements RunnableProgram
 
             StringBuilder keyprefix = new StringBuilder("/");
             keyprefix.append("runId-").append(coordinates.getRunId()).append("/");
-            keyprefix.append("templateId-").append(coordinates.templateId).append("/");
+            keyprefix.append("templateId-").append(coordinates.templateIdToHexString()).append("/");
             keyprefix.append("templateInstanceId-").append(coordinates.templateInstanceId).append("/");
             keyprefix.append("resourceId-").append(coordinates.resourceId);
 

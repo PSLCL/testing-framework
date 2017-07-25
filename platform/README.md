@@ -167,8 +167,9 @@ Multiple images will likely need to be created depending on the needs of the tes
 	  a. if windows add this to user data without quotes: "<script>\\STAF\\startSTAFProc.bat</script>"
     2. Install STAF
     3. If windows, follow the Windows Sysprep steps outlined below
-    4. Save this EC2 instance as AMI
-    5. Modify the Test Runner Service Configuration to use the new AMI.
+    4. If Linux, update the AWS command line tools. See http://docs.aws.amazon.com/cli/latest/userguide/installing.html 
+    5. Save this EC2 instance as AMI
+    6. Modify the Test Runner Service Configuration to use the new AMI.
 
 **Windows Sysprep**
 
@@ -186,6 +187,24 @@ For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AW
 	  a. create another user and assign that user administrator rights.
 	  b. select "Keep Existing" radio button.
 	  c. click the "Shutdown with Sysprep" button.
+    6. Install Powershell AWS commandline tools.
+	  a. follow instructions at http://docs.aws.amazon.com/powershell/latest/userguide/pstools-getting-set-up.html.
+	  b. Create the S3 bucket for test instance log capture. i.e. dtf-staf-logging and set its ACL appropriate to your groups needed access.  The bucket name setup here must be configured in the runners configuration.
+	  c. The instances must be started with an IAM role with S3 read/write rights. i.e.
+      {
+          "Statement": [
+          {
+              "Effect": "Allow",
+              "Action": [
+                  "s3:*"
+              ],
+              "Resource": [
+                  "arn:aws:s3:::dtf-staf-logging"
+              ]
+          }
+          ]
+      }  
+
 
 ### AWS Simple Queue Service(SQS)
 AWS SQS is used by the test runner service as a persistent queue to handle requests to run tests. From the AWS Console, launch a queue and configure it appropriately. Configure the test runner service to use the created queue.
