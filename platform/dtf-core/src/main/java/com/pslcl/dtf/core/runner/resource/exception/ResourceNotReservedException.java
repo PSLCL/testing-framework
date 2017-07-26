@@ -20,7 +20,7 @@ package com.pslcl.dtf.core.runner.resource.exception;
  */
 public class ResourceNotReservedException extends Exception {
 
-	private static final long serialVersionUID = 8827644619962087334L;
+    private static final long serialVersionUID = 8827644619962087334L;
 
     /**
      * Constructs a new exception with {@code null} as its detail message.

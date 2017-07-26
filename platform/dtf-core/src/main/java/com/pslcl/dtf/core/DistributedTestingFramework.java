@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,8 +30,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -38,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.slf4j.LoggerFactory;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -56,108 +58,110 @@ import com.pslcl.dtf.core.generator.resource.Machine;
 import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
 
-public class DistributedTestingFramework
+// this "final" class cannot be extended
+public final class DistributedTestingFramework
 {
+    private DistributedTestingFramework() {
+    }
+
     private static void generalHelp()
     {
-        System.out.println("test-platform General Help");
-        System.out.println("[program] --help (this output)");
-        System.out.println("[program] command --help (help on command)");
-        System.out.println("[program] command <arguments> (run command with arguments)");
-        System.out.println("commands are:");
-        System.out.println("  synchronize - synchronize the artifact providers with the database.");
-        System.out.println("  result - add a result to the database.");
-        System.out.println("  run - extract tests from the database and run them.");
-        System.out.println("  populate - populate the system with made-up testing data.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform General Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] command --help (help on command)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] command <arguments> (run command with arguments)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("commands are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  synchronize - synchronize the artifact providers with the database.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  result - add a result to the database.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  run - extract tests from the database and run them.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  populate - populate the system with made-up testing data.");
         System.exit(1);
     }
 
     private static void synchronizeHelp()
     {
-        System.out.println("test-platform Synchronize Help");
-        System.out.println("This command synchronizes artifact providers with the database and runs generators.");
-        System.out.println("[program] synchronize --help (this output)");
-        System.out.println("[program] synchronize <arguments>");
-        System.out.println("arguments are:");
-        System.out.println("  --no-synchronize - optional - disable synchronization.");
-        System.out.println("  --no-generators - optional - disable running generators.");
-        System.out.println("  --prune <count> - optional - enable deleting of missing modules.");
-        System.out.println("               <count> is the number of synchronize runs that the module has been missing. ");
-        System.out.println("                       Count must be greater than 0.");
-        System.out.println("  --generator-process-count <count> - optional - set the number of generator processes that may execute in parallel.");
-        System.out.println("               Count must be greater than 0. Defaults to 5.");
-
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Synchronize Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command synchronizes artifact providers with the database and runs generators.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] synchronize --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] synchronize <arguments>");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --no-synchronize - optional - disable synchronization.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --no-generators - optional - disable running generators.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --prune <count> - optional - enable deleting of missing modules.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("               <count> is the number of synchronize runs that the module has been missing. ");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("                       Count must be greater than 0.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --generator-process-count <count> - optional - set the number of generator processes that may execute in parallel.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("               Count must be greater than 0. Defaults to 5.");
         System.exit(1);
     }
 
     private static void runHelp()
     {
-        System.out.println("test-platform Run Help");
-        System.out.println("This command extracts tests from the database and runs them.");
-        System.out.println("[program] run --help (this output)");
-        System.out.println("[program] run <arguments>");
-        System.out.println("arguments are:");
-        System.out.println("  <runcount> - required unless --test or --test-instance are specified - the number of tests to run.");
-        System.out.println("  --test i - optional, to run one test on all test instances soon - supply the id number assigned for the test.");
-        System.out.println("  --test-instance j - optional, to run one test on one test instance soon - supply the id number assigned to the test instance.");
-        System.out.println("  --owner - optional, to specify the owner for all test runs started by this command.");
-
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Run Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command extracts tests from the database and runs them.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] run --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] run <arguments>");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  <runcount> - required unless --test or --test-instance are specified - the number of tests to run.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test i - optional, to run one test on all test instances soon - supply the id number assigned for the test.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test-instance j - optional, to run one test on one test instance soon - supply the id number assigned to the test instance.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --owner - optional, to specify the owner for all test runs started by this command.");
         System.exit(1);
     }
 
     private static void resultHelp()
     {
-        System.out.println("test-platform Result Help");
-        System.out.println("This command sets a result for a given component, version, and test instance.");
-        System.out.println("[program] result --help (this output)");
-        System.out.println("[program] result <arguments> <result>");
-        System.out.println("  <result> - either 'pass' or 'fail'");
-        System.out.println("arguments are:");
-        System.out.println("  --hash <hash> - required unless --run is specified - the template(identifed by its hash) to apply the result to. This argument creates a new test run.");
-        System.out.println("  --run <run-id> - required unless --hash is specified - the test run to apply the result to.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Result Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command sets a result for a given component, version, and test instance.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] result --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] result <arguments> <result>");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  <result> - either 'pass' or 'fail'");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --hash <hash> - required unless --run is specified - the template(identifed by its hash) to apply the result to. This argument creates a new test run.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --run <run-id> - required unless --hash is specified - the test run to apply the result to.");
         System.exit(1);
     }
 
     private static void populateHelp()
     {
-        System.out.println("test-platform Populate Help");
-        System.out.println("This command populates the database with made-up testing data.");
-        System.out.println("[program] populate --help (this output)");
-        System.out.println("[program] populate <arguments>");
-        System.out.println("arguments are:");
-        System.out.println("  --plans <num> - optional, specifies how many test plans to populate.");
-        System.out.println("  --tests <num> - optional, specifies how many tests to populate in each test plan (requires --plans).");
-        System.out.println("  --instances <num> - optional, specifies how many test instances to populate for each test (requires --tests).");
-        System.out.println("  --orgs <num> - optional, specifies how many organizations to populate.");
-        System.out.println("  --modules <num> - optional, specifies how many modules to populate for each organization (requires --orgs).");
-        System.out.println("  --versions <num> - optional, specifies how many versions to populate for each module (requires -modules).");
-        System.out.println("  --artifacts <num> - optional, specifies how many artifacts to populate in each module (requires --modules).");
-        System.out.println("  --owner <email> - optional, specifies that some pending tests should be assigned to this owner (requires --instances).");
-        System.out.println("  --results - optional, specifies whether or not to populate results (requires --instances).");
-        System.out.println("  --start - optional, specifies the date/time to begin creating results at (requires --results).");
-        System.out.println("  --end - optional, specifies the date/time to end creating results at (requires --results).");
-        System.out.println("When creating modules, the populator will create organizations, names, and versions. A new organization");
-        System.out.println("is created for each 10 modules, a new name for each 5.");
-        System.out.println("When creating instances, each will get progressively more complex and use different combinations of modules");
-        System.out.println("and artifacts.");
-        System.out.println("If results are generated and begin and end times are not specified then the results will be created uniformly");
-        System.out.println("during the previous week.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Populate Help");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command populates the database with made-up testing data.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] populate --help (this output)");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] populate <arguments>");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --plans <num> - optional, specifies how many test plans to populate.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --tests <num> - optional, specifies how many tests to populate in each test plan (requires --plans).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --instances <num> - optional, specifies how many test instances to populate for each test (requires --tests).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --orgs <num> - optional, specifies how many organizations to populate.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --modules <num> - optional, specifies how many modules to populate for each organization (requires --orgs).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --versions <num> - optional, specifies how many versions to populate for each module (requires -modules).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --artifacts <num> - optional, specifies how many artifacts to populate in each module (requires --modules).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --owner <email> - optional, specifies that some pending tests should be assigned to this owner (requires --instances).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --results - optional, specifies whether or not to populate results (requires --instances).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --start - optional, specifies the date/time to begin creating results at (requires --results).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --end - optional, specifies the date/time to end creating results at (requires --results).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("When creating modules, the populator will create organizations, names, and versions. A new organization");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("is created for each 10 modules, a new name for each 5.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("When creating instances, each will get progressively more complex and use different combinations of modules");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("and artifacts.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("If results are generated and begin and end times are not specified then the results will be created uniformly");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("during the previous week.");
         System.exit(1);
     }
 
     private static class HandleModule implements ArtifactProvider.ModuleNotifier
     {
-        private static class Delayed
+        private static class DelayedModuleMergeAction
         {
-            ArtifactProvider source;
-            String merge;
-            Module module;
+            private ArtifactProvider source = null;
+            private String merge = null;
+            private Module module = null;
         }
 
         private Core core;
-        private List<Delayed> delayed = new ArrayList<Delayed>();
+        private List<DelayedModuleMergeAction> delayedModuleMergeAction = new ArrayList<DelayedModuleMergeAction>();
 
-        public HandleModule(Core core)
+        HandleModule(Core core)
         {
             this.core = core;
         }
@@ -171,9 +175,12 @@ public class DistributedTestingFramework
                 /* Uncompress and unarchive the file, creating entries for each artifact found inside. */
                 InputStream is = new GzipCompressorInputStream(archive);
                 ti = new TarArchiveInputStream(is);
-                TarArchiveEntry entry;
-                while ((entry = ti.getNextTarEntry()) != null)
+                while (true)
                 {
+                    TarArchiveEntry entry = ti.getNextTarEntry();
+                    if (entry == null)
+                        break;
+
                     if (entry.isDirectory())
                         continue;
 
@@ -188,14 +195,14 @@ public class DistributedTestingFramework
                 }
             } catch (Exception e)
             {
-                System.err.println("ERROR: Failure extracting file, " + e.getMessage());
+                LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.decompress(): Failure extracting file, " + e.getMessage());
             } finally
             {
                 if (ti != null)
                     try
                     {
                         ti.close();
-                    } catch (IOException e)
+                    } catch (IOException ignored)
                     {
                         // Ignore
                     }
@@ -207,16 +214,16 @@ public class DistributedTestingFramework
         {
             try
             {
-                // Check to see if the module exists. If it does then return (assuming that artifacts do not change).
+                // Check to see if the module exists. If it does then return.
                 // If it does not exist then add the module and iterate the artifacts.
                 long pk_module = core.findModule(module);
                 if (pk_module != 0)
                 {
-                    core.updateModule(pk_module);
+                    core.updateModule(pk_module); // clear module.missing_count
                     return;
                 }
 
-                // Determine if the module contains a test generator - this triggers deletion of prior instances.
+                // Determine if the module contains a test generator - this triggers deletion of prior stored modules of same version number.
                 List<Artifact> artifacts = module.getArtifacts();
                 boolean contains_generator = false;
                 for (Artifact artifact : artifacts)
@@ -231,49 +238,69 @@ public class DistributedTestingFramework
                 boolean merge_source = false;
                 if (merge != null && merge.length() > 0)
                 {
+                    // this ALSO triggers deletion of prior stored modules of same version number
                     merge_source = true;
-                    Delayed D = new Delayed();
+                    DelayedModuleMergeAction D = new DelayedModuleMergeAction();
                     D.source = source;
                     D.merge = merge;
                     D.module = module;
-                    delayed.add(D);
+                    delayedModuleMergeAction.add(D);
+                    // delayedModuleMergeAction list is used in .markMergeFromModule(), which is called after IvyArtifactProvider.iterateModules() completes
                 }
 
-                /* Generator and merged components are "one only". This is done because they are not
-                 * meant to be the modules that are tested, but rather modules that provide
-                 * testing applications. Merging multiple "versions" of the same module would
-                 * cause conflicts. The same is true for generators, which are extracted and
-                 * executed.
+                /* Generator and merged components are of "one only" build sequence number.
+                 * This is done because they are not meant to be the modules that are tested,
+                 * but rather modules that provide testing applications.
+                 *
+                 * Merging multiple sequence numbers of the same component would cause conflicts.
+                 * The same is true for generators, which are extracted and executed.
                  * However, we do allow different versions of the component that will merge
                  * into different target modules. This means that we consider only modules
-                 * where the sequence is different.
+                 * where the build sequence number is different.
                  */
-                // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED, BELOW
-                // IT IS ASSUMED THAT THE SEQUENCE IS LATER THAN ALL EXISTING
+                // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED TO TABLS module, BELOW.
+                // IT IS ASSUMED THAT THE MODULE'S BUILD SEQUENCE NUMBER IS LATER THAN ALL EXISTING.
                 if (contains_generator || (merge != null && merge.length() > 0))
-                    core.deletePriorVersion(module);
+                    core.deletePriorBuildSequenceNumbers(module);
 
                 pk_module = core.addModule(module);
                 for (Artifact artifact : artifacts)
                 {
-                    Hash h = core.addContent(artifact.getContent().asStream(), -1);
-                    long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
-                    if (artifact.getName().endsWith(".tar.gz"))
+                    Content content = artifact.getContent();
+                    if (content != null)
                     {
-                        decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0);
+                        InputStream is = content.asStream();
+                        if (is != null)
+                        {
+                            Hash h = core.addContent(is, -1);
+                            long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
+                            if (artifact.getName().endsWith(".tar.gz"))
+                            {
+                                decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0);
+                            }
+                        } else {
+                            LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream");
+                        }
+                    } else {
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content");
                     }
                 }
-            } catch (Exception e)
+            } catch (Exception ignored)
             {
-
+                // TODO
             }
         }
 
         @Override
-        public void finalize()
+        protected void finalize() // this overrides java's Object.finalize()
+        {
+            markMergeFromModule();
+        }
+
+        private void markMergeFromModule()
         {
             Iterable<Module> modules = core.createModuleSet();
-            for (Delayed d : delayed)
+            for (DelayedModuleMergeAction d : delayedModuleMergeAction)
             {
                 Module dmod = d.module;
                 long pk_source_module = core.findModule(dmod);
@@ -301,18 +328,23 @@ public class DistributedTestingFramework
                         List<Artifact> artifacts = dmod.getArtifacts();
                         for (Artifact artifact : artifacts)
                         {
-                            Hash h = core.addContent(artifact.getContent().asStream(), -1);
-                            long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
-                            if (artifact.getName().endsWith(".tar.gz"))
+                            InputStream is = artifact.getContent().asStream();
+                            if (is != null)
                             {
-                                decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module);
+                                Hash h = core.addContent(is, -1);
+                                long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
+                                if (artifact.getName().endsWith(".tar.gz"))
+                                {
+                                    decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module);
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
+
+    } // end class HandleModule
 
     private static void inheritIO(final InputStream src, final PrintStream dest, final PrintStream save)
     {
@@ -321,17 +353,18 @@ public class DistributedTestingFramework
             @Override
             public void run()
             {
-                Scanner sc = new Scanner(src);
-                while (sc.hasNextLine())
-                {
-                    String line = sc.nextLine();
-                    if (dest != null)
-                        dest.println(line);
-                    if (save != null)
-                        save.println(line);
+                // Java 7 "try with resources"; Scanner auto closes, so sc.close() need not be called.
+                //   adding a finally block to "sc.close()" is useless, and sc is out of scope there, anyway
+                try (Scanner sc = new Scanner(src)){
+                    while (sc.hasNextLine())
+                    {
+                        String line = sc.nextLine();
+                        if (dest != null)
+                            dest.println(line);
+                        if (save != null)
+                            save.println(line);
+                    }
                 }
-
-                sc.close();
             }
         }).start();
     }
@@ -345,7 +378,7 @@ public class DistributedTestingFramework
         private long id;
         private String script;
 
-        public GeneratorExecutor(Core core, File generators, String base, String shell, long id, String script)
+        GeneratorExecutor(Core core, File generators, String base, String shell, long id, String script)
         {
             this.core = core;
             this.generators = generators;
@@ -360,20 +393,25 @@ public class DistributedTestingFramework
         {
             String tname = Thread.currentThread().getName();
             Thread.currentThread().setName("GeneratorFuture");
-            System.out.println("Script: " + this.toString() + " started.");
+            LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " started.");
             process();
-            System.out.println("Script: " + this.toString() + " completed.");
+            LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " completed.");
             Thread.currentThread().setName(tname);
         }
 
         private void process()
         {
+            // Annoyance: there is no way to mask the warning "used without try-with-resource statement."
+            //   It is desirable to use "try-without-resource" for both "new ByteArayOutputStream()" code lines, as requested by code analyzer tool
+            //   But that cannot be used because they are referenced in catch and finally blocks, which- though possible in "try-without-resource," give no visibility to the indicated variables
+            //   Code rewrite, however, could allow all that is intended, and yet use "try-with-resource"
             ByteArrayOutputStream stdout = new ByteArrayOutputStream();
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
-            try
-            {
-                String augmented_params = shell + " " + script;
+            try {
+                @SuppressWarnings("MagicCharacter") // ' '
+                char notMagicSpaceChar = ' '; // this is an internationalized context magic character, which is at warning level
+                String augmented_params = shell + notMagicSpaceChar + script; // every choice is at warning level, so use this one
                 String[] params = augmented_params.split(" ");
                 params[1] = generators.getAbsolutePath() + "/bin/" + params[1];
                 ProcessBuilder processBuilder = new ProcessBuilder();
@@ -397,34 +435,33 @@ public class DistributedTestingFramework
                         try
                         {
                             Thread.sleep(250);
-                        } catch (Exception ex)
+                        } catch (Exception ignored)
                         {
                         }
                     }
                 }
 
                 core.updateTest(id, stdout.toString(), stderr.toString());
-            } catch (Exception e)
-            {
-                String log = "ERROR: Could not run script " + script + ", " + e;
-                System.err.println(log);
-                new PrintStream(stderr).println(log);
-            } finally
-            {
+            } catch (Exception e) {
+                String msg = "ERROR: Could not run script '" + script + "', " + e;
+                LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() Script: " + msg);
+                new PrintStream(stderr).println(msg);
+            } finally {
                 core.updateTest(id, stdout.toString(), stderr.toString());
             }
         }
 
-        @Override
-        public String toString()
-        {
-            return Long.toString(id) + "/" + script;
-        }
+//      @Override
+//      public String toString()
+//      {
+//          return Long.toString(id) + "/" + script;
+//      }
     }
 
+    @SuppressWarnings("MagicNumber")
     private static Set<PosixFilePermission> toPosixPermissions(int mode)
     {
-        Set<PosixFilePermission> permissions = new HashSet<>();
+        Set<PosixFilePermission> permissions = EnumSet.noneOf(PosixFilePermission.class);
         if ((mode & 0b001_000) == 0b001_000)
         {
             permissions.add(PosixFilePermission.GROUP_EXECUTE);
@@ -467,16 +504,16 @@ public class DistributedTestingFramework
         return permissions;
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored") // preferred to be placed below, but it is not effective there
     private static void synchronize(String[] args)
     {
+        if (args.length > 1 && args[1].compareTo("--help") == 0)
+            synchronizeHelp();
+
         boolean synchronize = true;
         boolean generate = true;
         int prune = -1;
         int generatorProcessCount = 5;
-
-        if (args.length > 1 && args[1].compareTo("--help") == 0)
-            synchronizeHelp();
-
         for (int i = 1; i < args.length; i++)
         {
             if (args[i].compareTo("--no-synchronize") == 0)
@@ -487,7 +524,7 @@ public class DistributedTestingFramework
                 generate = false;
             } else if (args[i].compareTo("--prune") == 0)
             {
-                if (i == args.length)
+                if (i == args.length-1) // original code omitted "-1", warning said args.length would not be reached
                     synchronizeHelp();
 
                 prune = Integer.parseInt(args[i + 1]);
@@ -496,10 +533,10 @@ public class DistributedTestingFramework
 
                 i += 1;
             } else if (args[i].compareTo("--generator-process-count") == 0){
-            	if (i == args.length)
+                if (i == args.length-1) // original code omitted "-1", warning said args.length would not be reached
                     synchronizeHelp();
 
-            	generatorProcessCount = Integer.parseInt(args[i + 1]);
+                generatorProcessCount = Integer.parseInt(args[i + 1]);
                 if (generatorProcessCount <= 0)
                     synchronizeHelp();
 
@@ -509,7 +546,7 @@ public class DistributedTestingFramework
         }
 
         Core core = null;
-        ArtifactProvider artifactProvider = null;
+//      ArtifactProvider artifactProvider = null;
 
         try
         {
@@ -518,7 +555,8 @@ public class DistributedTestingFramework
 
             if (synchronize)
             {
-                File generators = new File(core.getConfig().dirGenerators());
+                Core.Config config = core.getConfig();
+                File generators = new File(config.dirGenerators());
                 if (generators.exists())
                     //noinspection ResultOfMethodCallIgnored
                     org.apache.commons.io.FileUtils.deleteQuietly(generators);
@@ -537,25 +575,24 @@ public class DistributedTestingFramework
 
                 for (String providerName : providers)
                 {
-                    ArtifactProvider provider = null;
                     try
                     {
                         Class<?> P = Class.forName(providerName);
-                        provider = (ArtifactProvider) P.newInstance();
-
-                        provider.init();
+                        Constructor<?> cons = P.getConstructor();
+                        ArtifactProvider provider = (ArtifactProvider) cons.newInstance();
+                        provider.init(); // setup to follow config in ../portal/config/ivysettings.xml
                         to_close.add(provider);
 
-                        /* Handle generators from this provider. */
+                        // Identify artifacts from this artifact provider. Fill tables modules/artifacts/content.
                         provider.iterateModules(handler);
                     } catch (Exception e)
                     {
-                        System.err.println(e.getMessage());
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize() exception msg: " + e);
                         noModuleErrors = false;
                     }
                 }
 
-                handler.finalize();
+                handler.markMergeFromModule();
 
                 for (ArtifactProvider p : to_close)
                 {
@@ -566,7 +603,7 @@ public class DistributedTestingFramework
                 if (noModuleErrors && prune > 0)
                     core.finalizeLoadingModules(prune);
 
-                // Extract all generators
+                // Extract all generators to new generator (configured) directory
                 Iterable<Module> find_generators = core.createModuleSet();
                 for (Module M : find_generators)
                 {
@@ -579,7 +616,7 @@ public class DistributedTestingFramework
                         try
                         {
                             Files.setPosixFilePermissions(P.toPath(), toPosixPermissions(A.getPosixMode()));
-                        } catch (UnsupportedOperationException e)
+                        } catch (UnsupportedOperationException ignored)
                         {
                             // Windows does not support setPosixFilePermissions. Fall back.
                             Set<PosixFilePermission> perms = toPosixPermissions(A.getPosixMode());
@@ -590,7 +627,17 @@ public class DistributedTestingFramework
                             P.setReadable(perms.contains(PosixFilePermission.GROUP_READ) || perms.contains(PosixFilePermission.OTHERS_READ), false);
                             P.setReadable(perms.contains(PosixFilePermission.OWNER_READ), true);
 
-                            P.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
+                            try {
+                                P.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
+                            } catch (Exception e) {
+                                // TODO: This is where issue #159 is caught, before the workaround was placed (in IvyArtifactsProvider.javas).
+                                //       A workaround gives gen.noarch.tar.gz files 666 perminssions instead of 444.
+                                //       This intercept catch code here can potenetially allow 444 permissions to
+                                //          return, and take specific action before throwing the exception.
+                                //       It is possible that issue #159 can be fixed at a more fundamental level,
+                                //          in which case the 666 workaround and this intercepting block can be removed.
+                                throw e;
+                            }
                             P.setWritable(perms.contains(PosixFilePermission.OWNER_WRITE), true);
                         }
                     }
@@ -629,7 +676,7 @@ public class DistributedTestingFramework
                     try
                     {
                         Thread.sleep(500);
-                    } catch (Exception e)
+                    } catch (InterruptedException ignored)
                     {
                     }
                 }
@@ -639,15 +686,16 @@ public class DistributedTestingFramework
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Exception " + e.getMessage());
-            e.printStackTrace(System.err);
+            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize() exception msg: " + e);
+            LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", e);
         } finally
         {
-            if (artifactProvider != null)
-            {
-                artifactProvider.close();
-                artifactProvider = null;
-            }
+            // artifactProvider is ever used
+//          if (artifactProvider != null)
+//          {
+//              artifactProvider.close();
+//              artifactProvider = null;
+//          }
 
             if (core != null)
             {
@@ -655,7 +703,7 @@ public class DistributedTestingFramework
                 core = null;
             }
         }
-    }
+    } // end synchronize()
 
     @SuppressWarnings("unused")
     private static void runner(String[] args)
@@ -669,84 +717,82 @@ public class DistributedTestingFramework
             {
                 runHelp(); // exits app
             }
-        }        
+        }
 
         int runCount = -1;
         long manualTestNumber = -1;
         long manualTestInstanceNumber = -1;
         String owner = null;
         boolean help = true;
-        
-        for (int i = 1; i < args.length; i++){
-	        try{
-	            if (args[i].compareTo("--test") == 0 && args.length > i)
-	            {
-	                i += 1;
-	                manualTestNumber = Long.parseLong(args[i]);
-	            } else if (args[i].compareTo("--test-instance") == 0 && args.length > i){
-	                i += 1;
-	            	manualTestInstanceNumber = Long.parseLong(args[i]);
-	            } else if (args[i].compareTo("--owner") == 0 && args.length > i){
-	                i += 1;
-	            	owner = args[i];
-	            } else{
-	            	System.err.println("WARN: Only manual tests supported. Use the --test or --test-instance options instead.");
-	            	runHelp();
-	            	runCount = Integer.parseInt(args[1]);            	
-	            }
-	       	}catch(NumberFormatException e){
-	        	System.err.println("Invalid argument " + args[i] + ". Expected number instead.");
-	        	runHelp();
-	       	}
-	    }
-        
+
+        for (int i = 1; i < args.length; i++) {
+            try{
+                if (args[i].compareTo("--test") == 0 && args.length > i)
+                {
+                    i += 1;
+                    manualTestNumber = Long.parseLong(args[i]);
+                } else if (args[i].compareTo("--test-instance") == 0 && args.length > i){
+                    i += 1;
+                    manualTestInstanceNumber = Long.parseLong(args[i]);
+                } else if (args[i].compareTo("--owner") == 0 && args.length > i){
+                    i += 1;
+                    owner = args[i];
+                } else{
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Only manual tests supported. Use the --test or --test-instance options instead.");
+                    runHelp();
+                    runCount = Integer.parseInt(args[1]);
+                }
+            } catch(NumberFormatException ignored) {
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Invalid argument " + args[i] + ". Expected number instead.");
+                runHelp();
+            }
+        }
+
         try{
-	        Core core = null;
-	        
-	        if(manualTestNumber > -1){
-	        	core = new Core(manualTestNumber);
-	        }
-	        else{
-	        	core = new Core(0);
-	        }
-	        
-	        String accessKeyID = core.getConfig().sqsAccessKeyID();
-	    	String secretKey = core.getConfig().sqsSecretAccessKey();
-	    	if(accessKeyID != null && !accessKeyID.isEmpty()){
-	        	System.setProperty("aws.accessKeyId", accessKeyID);
-	        	System.setProperty("aws.secretKey", secretKey);
-	        }
-	    	SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
-	    	sqs.init();
-	    	List<Long> testRuns = new ArrayList<Long>();
-	    	if(manualTestInstanceNumber > -1){
-	            	testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
-	        } else if(manualTestNumber > -1){
-	        	for(long testInstance: core.getTestInstances(manualTestNumber)){
-	            	Long run = core.createInstanceRun(testInstance, owner);
-	            	if(run != null)
-	            		testRuns.add(run);
-	        	}
-	        }
-	        for(Long runID: testRuns){
-	        	System.out.println("Queueing test run: " + runID);
-	        	sqs.publishTestRunRequest(runID);
-	        }
+            Core core = null;
+
+            if(manualTestNumber > -1){
+                core = new Core(manualTestNumber);
+            }
+            else{
+                core = new Core(0);
+            }
+
+            String accessKeyID = core.getConfig().sqsAccessKeyID();
+            String secretKey = core.getConfig().sqsSecretAccessKey();
+            if(accessKeyID != null && !accessKeyID.isEmpty()){
+                System.setProperty("aws.accessKeyId", accessKeyID);
+                System.setProperty("aws.secretKey", secretKey);
+            }
+            SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
+            sqs.init();
+            List<Long> testRuns = new ArrayList<Long>();
+            if(manualTestInstanceNumber > -1){
+                    testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
+            } else if(manualTestNumber > -1){
+                for(long testInstance: core.getTestInstances(manualTestNumber)){
+                    Long run = core.createInstanceRun(testInstance, owner);
+                    if(run != null)
+                        testRuns.add(run);
+                }
+            }
+            for(Long runID: testRuns){
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Queueing test run: " + runID);
+                sqs.publishTestRunRequest(runID);
+            }
         } catch(Exception e){
-        	System.err.println("Failed to queue test run - " + e);
+            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to queue test run - " + e);
         }
     }
 
     private static void result(String[] args)
     {
+        if (args.length < 2 || args[1].compareTo("--help") == 0)
+            resultHelp();
+
         String hash = null;
         Long run = null;
         Boolean result = null;
-
-        if (args.length < 2 || args[1].compareTo("--help") == 0)
-            resultHelp();
-                
-
         for (int i = 1; i < args.length; i++)
         {
             if (args[i].compareTo("--hash") == 0 && args.length > i)
@@ -774,21 +820,26 @@ public class DistributedTestingFramework
         }
 
         if (result == null || (hash == null && run == null)){
-        	System.err.println("Missing required argument");
+            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): Missing required argument");
             resultHelp();
+            // calls System.exit()
         }
 
         Core core = new Core(0);
         try{
-        	if(hash != null){
-        		core.reportResult(hash, result, null, null, null, null);
-        	} else{
-        		core.addResultToRun(run, result);
-        	}
+            if(hash != null) {
+                core.reportResult(hash, result, null, null, null, null);
+            } else if (run!=null && result!=null) {
+                core.addResultToRun(run, result);
+            } else {
+                // result will absolutrely not be null, see above
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): submitted args wrongly give null runId (or result is null)");
+                throw new IllegalArgumentException("submitted args wrongly give null runId (or result is null)");
+            }
         } catch(Exception e){
-        	System.err.println("Failed to add result: " + e);
+            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): Failed to add result: " + e);
         } finally{
-        	core.close();
+            core.close();
         }
     }
 
@@ -798,7 +849,7 @@ public class DistributedTestingFramework
         private String name;
         private int artifacts;
         private long start;
-        private String targetFilePath;
+        private String targetFilePath = null;
 
         PopulateArtifact(Module module, String name, int artifacts, long start)
         {
@@ -828,39 +879,42 @@ public class DistributedTestingFramework
 
         private static class TarContent implements Content
         {
-            private byte[] content;
-            private Hash hash;
+            private byte[] content = null;
+            private Hash hash = null;
 
             TarContent(String name, int artifacts, long start)
             {
-                try
-                {
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                try {
                     GzipCompressorOutputStream cos = new GzipCompressorOutputStream(bos);
-                    TarArchiveOutputStream os = new TarArchiveOutputStream(cos);
-
-                    for (int artifact = 0; artifact < artifacts; artifact++)
+                    try (TarArchiveOutputStream os = new TarArchiveOutputStream(cos))
                     {
-                        String content_str = name + "-" + Integer.toString(artifact + 1);
-                        TarArchiveEntry entry = new TarArchiveEntry(content_str);
-                        entry.setModTime(start);
-                        byte[] content_bytes = content_str.getBytes();
-                        entry.setSize(content_bytes.length);
-                        os.putArchiveEntry(entry);
-                        os.write(content_bytes);
-                        os.closeArchiveEntry();
+                        for (int artifact = 0; artifact < artifacts; artifact++)
+                        {
+                            @SuppressWarnings("MagicCharacter")
+                            String content_str = name + '-' + Integer.toString(artifact + 1);
+                            TarArchiveEntry entry = new TarArchiveEntry(content_str);
+                            entry.setModTime(start);
+                            byte[] content_bytes = content_str.getBytes();
+                            entry.setSize(content_bytes.length);
+                            os.putArchiveEntry(entry);
+                            os.write(content_bytes);
+                            os.closeArchiveEntry();
+                        }
+
+                        os.finish();
+                        os.close();
+                        cos.close();
+                        bos.close();
+
+                        content = bos.toByteArray();
+                        hash = new Hash(content);
+                    } catch (Exception e)
+                    {
+                        LoggerFactory.getLogger(DistributedTestingFramework.PopulateArtifact.TarContent.class).warn("DistributedTestingFramework.PopulateArtifact.TarContent constructor: Failure to create populated artifact, " + e.getMessage());
                     }
-
-                    os.finish();
-                    os.close();
-                    cos.close();
-                    bos.close();
-
-                    content = bos.toByteArray();
-                    hash = new Hash(content);
-                } catch (Exception e)
-                {
-                    System.err.println("ERROR: Failure to create populated artifact, " + e.getMessage());
+                } catch (IOException ioe) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.PopulateArtifact.TarContent.class).warn("DistributedTestingFramework.PopulateArtifact.TarContent constructor: Failure to create populated artifact, IOException msg: " + ioe.getMessage());
                 }
             }
 
@@ -883,6 +937,7 @@ public class DistributedTestingFramework
             }
 
             @Override
+            @SuppressWarnings("ReturnOfCollectionOrArrayField")
             public byte[] asBytes()
             {
                 return content;
@@ -902,25 +957,26 @@ public class DistributedTestingFramework
         }
 
         @Override
+        @SuppressWarnings("MagicNumber")
         public int getPosixMode()
         {
             return 0b100_100_100;
         }
 
-		@Override
-		public String getTargetFilePath() {
-			return this.targetFilePath;
-		}
+        @Override
+        public String getTargetFilePath() {
+            return this.targetFilePath;
+        }
 
-		@Override
-		public void setTargetFilePath(String targetFilePath) {
-			this.targetFilePath = targetFilePath;
-		}
+        @Override
+        public void setTargetFilePath(String targetFilePath) {
+            this.targetFilePath = targetFilePath;
+        }
     }
 
     private static class PopulateModule implements Module
     {
-        private String org;
+        private String organization;
         private String name;
         private String version;
         private String status;
@@ -930,7 +986,7 @@ public class DistributedTestingFramework
 
         PopulateModule(String org, String name, String version, String status, int sequence, int artifacts, long start)
         {
-            this.org = org;
+            this.organization = org;
             this.name = name;
             this.version = version;
             this.sequence = sequence;
@@ -942,7 +998,7 @@ public class DistributedTestingFramework
         @Override
         public String getOrganization()
         {
-            return org;
+            return organization;
         }
 
         @Override
@@ -976,10 +1032,11 @@ public class DistributedTestingFramework
         }
 
         @Override
+        @SuppressWarnings("MagicCharacter") // '-'
         public List<Artifact> getArtifacts()
         {
             List<Artifact> result = new ArrayList<Artifact>();
-            result.add(new PopulateArtifact(this, org + "-" + name + "-" + version + ".tar.gz", artifacts, start));
+            result.add(new PopulateArtifact(this, organization + '-' + name + '-' + version + ".tar.gz", artifacts, start));
             return result;
         }
 
@@ -1029,17 +1086,26 @@ public class DistributedTestingFramework
                     String module_str = "module" + Integer.toString(module + 1);
                     for (int version = 0; version < versions; version++)
                     {
-                        String version_str = "v" + Integer.toString(version + 1);
+                        @SuppressWarnings("MagicCharacter")
+                        String version_str = 'v' + Integer.toString(version + 1);
                         String status_str = "release";
                         switch (version % 3)
                         {
                             case 0:
                                 status_str = "nightly";
                                 break;
-
                             case 1:
                                 status_str = "integration";
                                 break;
+                            case 3:
+                                status_str = "unknownBuildStatusString";
+                                break;
+                            // july 2017: we currently only support in the build system “milestone (prerelease), release, and integration (testing)”
+
+                            default:
+                                LoggerFactory.getLogger(DistributedTestingFramework.PopulateProvider.class).warn(
+                                                        "DistributedTestingFramework.iterateModules() finds disallowed version to status string translation, for version integer " + version);
+                                throw new Exception("disallowed version to status string translation");
                         }
 
                         moduleNotifier.module(this, new PopulateModule(org_str, module_str, version_str, status_str, version + 1, artifacts, start), null);
@@ -1069,7 +1135,7 @@ public class DistributedTestingFramework
      *   artifacts: enabled with the --artifacts option, creates the number of specified artifacts in each module.
      *   instances: enabled with the --instances option, creates test instances like a generator would.
      *   results: enabled with the --results option, creates test results.
-     * @param args
+     * @param args the command-line arguments
      */
     private static void populate(String[] args)
     {
@@ -1127,32 +1193,32 @@ public class DistributedTestingFramework
                 results = true;
             } else if (args[i].compareTo("--start") == 0)
             {
-                SimpleDateFormat parse = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                SimpleDateFormat parseSdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 try
                 {
-                    Date d = parse.parse(args[i + 1]);
+                    Date d = parseSdf.parse(args[i + 1]);
                     start = d.getTime();
                 } catch (Exception e)
                 {
-                    System.err.println("ERROR: Could not parse date, " + e.getMessage());
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Could not parse date, " + e.getMessage());
                 }
 
                 i += 1;
             } else if (args[i].compareTo("--end") == 0)
             {
-                SimpleDateFormat parse = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                SimpleDateFormat parseSdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 try
                 {
-                    Date d = parse.parse(args[i + 1]);
+                    Date d = parseSdf.parse(args[i + 1]);
                     end = d.getTime();
                 } catch (Exception e)
                 {
-                    System.err.println("ERROR: Could not parse date, " + e.getMessage());
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Could not parse date, " + e.getMessage());
                 }
 
                 i += 1;
             } else{
-            	System.err.println("Invalid argument " + args[i]);
+                LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Invalid argument " + args[i]);
                 populateHelp();
             }
         }
@@ -1173,17 +1239,20 @@ public class DistributedTestingFramework
         if ((end != 0 || start != 0) && !results)
             populateHelp();
 
-        if (results && end == 0 & start == 0)
+        @SuppressWarnings("MagicNumber")
+        long week = 7L * 24 * 60 * 60 * 1000;
+
+        if (results && end==0 && start == 0)
         {
             end = System.currentTimeMillis();
-            start = end - (7L * 24 * 60 * 60 * 1000);
+            start = end - (week);
         }
 
         if (results && end == 0)
-            end = start + (7L * 24 * 60 * 60 * 1000);
+            end = start + (week);
 
         if (results && start == 0)
-            start = end - (7L * 24 * 60 * 60 * 1000);
+            start = end - (week);
 
         if (start >= end)
             populateHelp();
@@ -1200,7 +1269,7 @@ public class DistributedTestingFramework
             populateProvider.iterateModules(moduleNotifier);
         } catch (Exception e)
         {
-            System.err.println("ERROR: Failed to iterate modules, " + e.getMessage());
+            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Failed to iterate modules, " + e.getMessage());
         } finally
         {
             populateProvider.close();
@@ -1220,7 +1289,8 @@ public class DistributedTestingFramework
             long pk_test_plan = core.addTestPlan("Test Plan " + test_plan_str, "Description for test plan " + test_plan_str);
             for (int test = 0; test < tests; test++)
             {
-                String test_str = test_plan_str + "/" + Integer.toString(test + 1);
+                @SuppressWarnings("MagicCharacter")
+                String test_str = test_plan_str + '/' + Integer.toString(test + 1);
                 long pk_test = core.addTest(pk_test_plan, "Test " + test_str, "Description for test " + test_str, "");
 
                 // Create instances by acting as a generator.
@@ -1233,13 +1303,15 @@ public class DistributedTestingFramework
                     Artifact[] artifact_list = new Artifact[instance + 1];
                     for (int name = 0; name < instance + 1; name++)
                     {
+                        final int researchMeaningOfThisMagicNumber = 13;
+
                         // Pick the appropriate artifacts to use in this instance.
                         // We will pick the number of artifacts based on the index of the instance.
                         // So, instance 2 will use 3 artifacts.
                         // We will pick artifacts based on the test we are generating sequentially.
                         //  A1, A2, A3, A4, A5, ...
                         //  com.pslcl.testing.org1-module1-v1.tar.gz-1
-                        int artifact_index = (test_plan + 1) * (test + 1) * (instance + 1) * (name + 1) * 13;
+                        int artifact_index = (test_plan + 1) * (test + 1) * (instance + 1) * (name + 1) * researchMeaningOfThisMagicNumber;
                         artifact_index %= total_artifacts;
                         int organization_index = artifact_index / (modules * versions * artifacts);
                         artifact_index -= organization_index * (modules * versions * artifacts);
@@ -1260,7 +1332,7 @@ public class DistributedTestingFramework
                         simpleMachine.deploy(artifact_list);
                     } catch (Exception e)
                     {
-                        System.err.println("ERROR: Couldn't bind an deploy instance, " + e.getMessage());
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Couldn't bind an deploy instance, " + e.getMessage());
                     }
 
                     // Log results if either we need to have results or if there is an owner. For repeatability,
@@ -1268,18 +1340,21 @@ public class DistributedTestingFramework
                     // results.
                     if (results || owner != null)
                     {
-                        boolean need_start = false, need_complete = false;
+                        boolean need_start = false;
+                        boolean need_complete = false;
 
                         // Pass/Fail generation. Pass groups of 3 tests, then fail 3, then pend 3.
-                        // Owner generation. Assign owner for groups of 7, then skip 7.                    
+                        // Owner generation. Assign owner for groups of 7, then skip 7.
                         if (((test_sequence / 3) % 3) == 0)
                         {
                             generator.pass();
-                            need_start = need_complete = true;
+                            need_complete = true;
+                            need_start = need_complete;
                         } else if (((test_sequence / 3) % 3) == 1)
                         {
                             generator.fail();
-                            need_start = need_complete = true;
+                            need_complete = true;
+                            need_start = need_complete;
                         }
 
                         if (((test_sequence / 7) % 2) == 0)
@@ -1294,26 +1369,27 @@ public class DistributedTestingFramework
                         // Dates are set based on the test_sequence and whether or not a result or owner is assigned.
                         Date tstart = null;
                         if (need_start)
-                            tstart = new Date(start + test_sequence * ((end - start) / total_runs));
+                            tstart = new Date(start + test_sequence*((end - start) / total_runs));
 
                         Date tready = null;
                         if (need_start)
-                            tready = new Date(tstart.getTime() + 5L * 60 * 1000);
+                            tready = new Date(tstart.getTime() + 5L*60*1000);
 
                         Date tcomplete = null;
                         if (need_complete)
-                            tcomplete = new Date(tstart.getTime() + 10L * 60 * 1000);
+                            tcomplete = new Date(tstart.getTime() + 10L*60*1000);
 
+                        // TODO: refactor this next call to use the accepted replacement for its 3 Date parameters
                         generator.setRunTimes(tstart, tready, tcomplete);
                     }
 
                     test_sequence += 1;
                     try {
-						generator.completeTest();
-					} catch (Exception e) {
-						System.err.println("ERROR: Unable to complete test, " + e.getMessage());
-						e.printStackTrace();
-					}
+                        generator.completeTest();
+                    } catch (Exception e) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.populate(): Unable to complete test, " + e.getMessage());
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", e);
+                    }
                 }
 
                 generator.close();
@@ -1335,6 +1411,13 @@ public class DistributedTestingFramework
      */
     public static void main(String[] args)
     {
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.main() called");
+
+        java.net.URL logback_file_URL = DistributedTestingFramework.class.getResource("/logback.xml");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("logback.xml file URL: " + logback_file_URL);
+        java.net.URL logbacktest_file_URL = DistributedTestingFramework.class.getClassLoader().getResource("/logback-test.xml");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("logback-test.xml file URL: " + logbacktest_file_URL);
 
         // Check for no parameters, or --help
         if (args.length == 0 || args[0].compareTo("--help") == 0)

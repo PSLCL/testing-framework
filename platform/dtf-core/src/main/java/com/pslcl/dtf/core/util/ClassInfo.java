@@ -26,13 +26,13 @@ import java.util.jar.Manifest;
  * Utility class for accessing package classmap.
  */
 public class ClassInfo {
-	
-	private static final HashMap<String, ClassInfo> classmap = new HashMap<String, ClassInfo>();
-	
-	private final Class<?> c;
-	private final Package pkg;
-	private Manifest manifest;
-	private URL location;
+
+    private static final HashMap<String, ClassInfo> classmap = new HashMap<String, ClassInfo>();
+
+    private final Class<?> c;
+    private final Package pkg;
+    private Manifest manifest;
+    private URL location;
     
     /**
      * Get the version of a class's package using the current class loader.
@@ -47,8 +47,8 @@ public class ClassInfo {
         
         ClassInfo ci = classmap.get(className);
         if (ci == null) {
-        	Class<?> c = Class.forName(className);
-        	ci = new ClassInfo(c);
+            Class<?> c = Class.forName(className);
+            ci = new ClassInfo(c);
         }
         
         return ci;
@@ -85,11 +85,11 @@ public class ClassInfo {
         if( c == null )
             throw new IllegalArgumentException("ClassInfo.getInfo: c == null");
         
-    	ClassInfo ci = classmap.get(c.getName());
-    	if (ci == null) {
-    		ci = new ClassInfo(c);
-    	}
-    	return ci;
+        ClassInfo ci = classmap.get(c.getName());
+        if (ci == null) {
+            ci = new ClassInfo(c);
+        }
+        return ci;
     }
 
     private ClassInfo(Class<?> c) {
@@ -106,7 +106,7 @@ public class ClassInfo {
      * @return The cached package.
      */
     public Package getPackage() {
-    	return pkg;
+        return pkg;
     }
     
     /**
@@ -115,14 +115,14 @@ public class ClassInfo {
      * @return The cached class location. May be null if the location was not available for the class.
      */
     public URL getLocation() {
-    	if (location == null) {
-	        try {
-	            this.location = c.getProtectionDomain().getCodeSource().getLocation();
-	        }
-	        catch (Exception e) {
-	        }
-    	}
-    	return location;
+        if (location == null) {
+            try {
+                this.location = c.getProtectionDomain().getCodeSource().getLocation();
+            }
+            catch (Exception e) {
+            }
+        }
+        return location;
     }
     
     /**
@@ -131,7 +131,7 @@ public class ClassInfo {
      * @return The cached manifest. May be null if a manifest was not available for the class.
      */
     public Manifest getManifest() {
-    	if (manifest == null) {
+        if (manifest == null) {
             JarInputStream jis = null;
             try {
                 URLConnection jar_connection = getLocation().openConnection();
@@ -143,14 +143,14 @@ public class ClassInfo {
             finally {
                 if ( jis != null ) {
                     try {
-                    	jis.close();
+                        jis.close();
                     } catch (IOException ioe) {
-                    	// Ignore
+                        // Ignore
                     }
                 }
             }
-    	}
-    	return manifest;
+        }
+        return manifest;
     }
     
     /**
@@ -159,7 +159,7 @@ public class ClassInfo {
      * @return The cached class.
      */
     public Class<?> getClassRef() {
-    	return c;
+        return c;
     }
     
     /**
@@ -172,15 +172,15 @@ public class ClassInfo {
     {
         StringBuilder sb = new StringBuilder();
         sb.append(c.getName())
-        	.append(": ")
-        	.append(pkg.getImplementationTitle())
-        	.append(" ")
-        	.append(pkg.getImplementationVersion())
-        	.append(" <")
-        	.append(pkg.getImplementationVendor())
-        	.append("> (")
-        	.append(getLocation())
-        	.append(")");
+            .append(": ")
+            .append(pkg.getImplementationTitle())
+            .append(" ")
+            .append(pkg.getImplementationVersion())
+            .append(" <")
+            .append(pkg.getImplementationVendor())
+            .append("> (")
+            .append(getLocation())
+            .append(")");
         return sb.toString();
     }
 }

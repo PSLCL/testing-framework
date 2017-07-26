@@ -15,6 +15,10 @@
  */
 package com.pslcl.dtf.core.generator.template;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,7 +70,11 @@ public class Template implements Comparable<Template>
         @Override
         public String getValue(Template template) throws Exception
         {
-            return template.getReference(resource);
+            if (template != null)
+                return template.getReference(resource);
+            return "unknownValue"; // this replaces the null ptr exception that used to happen
+            // note that final template processing seems to overwrite this line "unknownValue"
+            //      if true, that would mean that we encounter this null template ONLY early in the processing stage
         }
     }
 
@@ -149,12 +157,12 @@ public class Template implements Comparable<Template>
         @Override
         public String getValue(Template template) throws Exception
         {
-        	String attributeValue;
+            String attributeValue;
             if (value != null)
             {
-            	attributeValue = value;
+                attributeValue = value;
             } else{
-            	attributeValue = "$(attribute " + resourceParameter.getValue(template) + " " + attribute + ")";
+                attributeValue = "$(attribute " + resourceParameter.getValue(template) + " " + attribute + ")";
             }
             try
             {
@@ -213,6 +221,7 @@ public class Template implements Comparable<Template>
         return getHash().compareTo(o2.getHash());
     }
 
+    private final Logger log;
     private Core core;
     private List<TestInstance.Action> actions;
     private List<DescribedTemplate> dependencies;
@@ -239,6 +248,7 @@ public class Template implements Comparable<Template>
      */
     public Template(Core core, List<TestInstance.Action> actions, List<DescribedTemplate> dependencies) throws Exception
     {
+        this.log = LoggerFactory.getLogger(getClass());
         this.core = core;
         this.actions = actions;
         Collections.sort(actions, new TestInstance.Action.ActionSorter());
@@ -273,7 +283,7 @@ public class Template implements Comparable<Template>
             int currentSetID = 0;
             for (int i = 0; i < actions.size(); i++)
             {
-            	Action action = actions.get(i);
+                Action action = actions.get(i);
                 standardString.append(action.getCommand(this));
                 standardString.append("\n");
 
@@ -283,16 +293,16 @@ public class Template implements Comparable<Template>
                 
                 //Sort again if we are about to move to next set. This allows resource references assigned in the current set to be used in the sort.
                 //This should only change the order of actions that we have not yet gotten to.
-            	if(i < actions.size() - 1 && actions.get(i + 1).getSetID() > currentSetID){
-            		Collections.sort(actions, new TestInstance.Action.ActionSorter(this));
-            	}
+                if(i < actions.size() - 1 && actions.get(i + 1).getSetID() > currentSetID){
+                    Collections.sort(actions, new TestInstance.Action.ActionSorter(this));
+                }
             }
 
             std_string = standardString.toString();
             hash = Hash.fromContent(std_string);
         } catch (Exception e)
         {
-            System.err.println("Failed to build template string: " + e);
+            this.log.error("<internal> Template.buildStrings(): Failed to build template string: " + e);
             std_string = "";
             hash = null;
             throw e;

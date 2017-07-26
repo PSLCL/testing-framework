@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.core.generator.template;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -57,34 +60,44 @@ public class TestInstance
     {
         static class ActionSorter implements Comparator<Action>
         {
-        	private Template template;
-        	
-        	public ActionSorter(){
-        		this.template = null;
-        	}
-        	
-        	public ActionSorter(Template template){
-        		this.template = template;
-        	}
-        	
+            private Template template;
+
+            public ActionSorter(){
+                this.template = null;
+            }
+
+            public ActionSorter(Template template){
+                this.template = template;
+            }
+
             @Override
             public int compare(Action o1, Action o2)
             {
                 int o1SetID = o1.getSetID();
                 int o2SetID = o2.getSetID();
 
+                if (o1SetID < o2SetID)
+                    return -1;
+                else if (o1SetID > o2SetID)
+                    return 1;
+
+                String o1Command = null;
+                String o2Command = null;
+                int retVal;
                 try
                 {
-                    if (o1SetID < o2SetID)
-                        return -1;
-                    else if (o1SetID > o2SetID)
-                        return +1;
+                    o1Command = o1.getCommand(template);
+                    o2Command = o2.getCommand(template);
+                    retVal = o1Command.compareTo(o2Command);
+                } catch (Exception e) {
+                    // Note: We cannot throw exception here because "the overridden method does not throw Exception."
+                    LoggerFactory.getLogger(getClass()).warn("TestInstance.Action.ActionSorter.compare() catches Exception but must swallow it, msg: " + e);
 
-                    return o1.getCommand(template).compareTo(o2.getCommand(template));
-                } catch (Exception e)
-                {
-                    return 0;
+                    // Illogical value 0: placed without justifiable rationale. Code things so we never get here.
+                    retVal = 0;
                 }
+                return retVal;
+
             }
         }
 
@@ -116,28 +129,28 @@ public class TestInstance
                 return artifacts;
             }
         }
-        
+
         private int setID = -1;
         protected List<Action> actionDependencies = new ArrayList<Action>();
-        
+
         /**
          * Assign the set ID for this action. Actions which are in the same set may be executed in parallel.
          * All actions within a set must complete execution before the next set begins. Set IDs are executed
-         * in increasing numeric order, beginning with 0. 
-         * 
+         * in increasing numeric order, beginning with 0.
+         *
          * @param setID The set ID.
          */
         public void assignSetID(int setID){
-        	this.setID = setID;
+            this.setID = setID;
         }
-        
+
         /**
          * Get the ID of the set to which this action is assigned.
-         * 
+         *
          * @return The setID or -1 if a set ID has not been assigned.
          */
         public int getSetID(){
-        	return setID;
+            return setID;
         }
 
         /**
@@ -181,17 +194,17 @@ public class TestInstance
          * @throws Exception Any error.
          */
         public abstract DescribedTemplate getIncludedTemplate() throws Exception;
-        
+
         /**
          * Returns a list of actions that must be completed before this action may be
          * executed. For example, a deploy may require that a machine is bound.
-         * 
+         *
          * @return A list of dependent actions. Returns an empty list if there are no dependencies.
          * @throws Exception Any error.
          */
-		public List<Action> getActionDependencies() throws Exception {
-			return actionDependencies;
-		}
+        public List<Action> getActionDependencies() throws Exception {
+            return actionDependencies;
+        }
     }
 
     @SuppressWarnings("unused")
@@ -238,17 +251,19 @@ public class TestInstance
             return include;
         }
 
-		@Override
-		public List<Action> getActionDependencies() throws Exception {
-			//Include actions may not depend on any other actions.
-			return new ArrayList<Action>();
-		}
+        @Override
+        public List<Action> getActionDependencies() throws Exception {
+            //Include actions may not depend on any other actions.
+            return new ArrayList<Action>();
+        }
 
-		@Override
-		public void assignSetID(int setID) {
-			throw new UnsupportedOperationException("Inspect actions do not have a set ID");
-		}
+        @Override
+        public void assignSetID(int setID) {
+            throw new UnsupportedOperationException("Inspect actions do not have a set ID");
+        }
     }
+
+    private final Logger log;
 
     /**
      * The core to use for database and other common access. Note that the core
@@ -310,6 +325,7 @@ public class TestInstance
      */
     public TestInstance(Core core)
     {
+        this.log = LoggerFactory.getLogger(getClass());
         this.core = core;
 
         //TODO: Cleanup
@@ -330,7 +346,7 @@ public class TestInstance
     {
         if (actions == null)
         {
-            System.err.println("ERROR: Attempt to add an action to a closed test instance.");
+            this.log.error("TestInstance.addAction(): Attempt to add an action to a closed test instance.");
             return;
         }
 
@@ -340,7 +356,7 @@ public class TestInstance
         {
             if (boundResources.contains(r.instance))
             {
-                System.err.println(String.format("Resource %s (%s) (%s) rebound.", r.name, r.codename, r.instance));
+                this.log.error("TestInstance.addAction(): " +String.format("Resource %s (%s) (%s) rebound.", r.name, r.codename, r.instance));
             }
 
             boundResources.add(r.instance);
@@ -382,8 +398,7 @@ public class TestInstance
 
     public void dump()
     {
-        System.err.println("Test Instance:");
-        System.err.println(getTemplate());
+        this.log.error("TestInstance.dump(), Test Instance: " + "\n" + this.getTemplate());
     }
 
     /**
@@ -402,10 +417,13 @@ public class TestInstance
 
         // Divide the set of actions into a set of related templates.
         //TODO: Implement breaking actions into templates.
-    	
-    	assignSetIDs();
+
+        assignSetIDs();
 
         // Sort each set of actions (only one set for now)
+        //      Note: Our template is created below, so at this moment:
+        //            We have no Template param to pass to "new Action.ActionSorter(Template)"
+        //            This is a problem, because the sorter uses template in its sort- a null pointer results.
         Collections.sort(actions, new Action.ActionSorter());
 
         // Determine dependencies for each template (none for now)
@@ -419,34 +437,34 @@ public class TestInstance
 
         dtemplate = new DescribedTemplate(template, actions, dependencies);
     }
-    
+
     private void assignSetIDs() throws Exception{
-    	List<Action> unassignedActions = new ArrayList<Action>();
-    	List<Action> assignedActions = new ArrayList<Action>();
-    	unassignedActions.addAll(actions);
-    	
-    	int setID = 0;
-    	while(unassignedActions.size() > 0){
-    		List<Action> currentSet = new ArrayList<Action>();
-    		for(Action action: unassignedActions){
-    			if(action instanceof TestInstance.IncludeAction){
-    				currentSet.add(action);
-    			}
-    			else if(action.getActionDependencies().size() == 0){
-    				action.assignSetID(setID);
-    				currentSet.add(action);
-    			} else if(assignedActions.containsAll(action.getActionDependencies())){
-    				action.assignSetID(setID);
-    				currentSet.add(action);
-    			}
-    		}
-    		unassignedActions.removeAll(currentSet);
-    		assignedActions.addAll(currentSet);
-    		if(currentSet.isEmpty()){
-    			throw new Exception("Failed to find action dependencies and assigning set ID for action: " + unassignedActions.get(0).getDescription());
-    		}
-    		setID++;
-    	}
+        List<Action> unassignedActions = new ArrayList<Action>();
+        List<Action> assignedActions = new ArrayList<Action>();
+        unassignedActions.addAll(actions);
+
+        int setID = 0;
+        while(unassignedActions.size() > 0){
+            List<Action> currentSet = new ArrayList<Action>();
+            for(Action action: unassignedActions){
+                if(action instanceof TestInstance.IncludeAction){
+                    currentSet.add(action);
+                }
+                else if(action.getActionDependencies().size() == 0){
+                    action.assignSetID(setID);
+                    currentSet.add(action);
+                } else if(assignedActions.containsAll(action.getActionDependencies())){
+                    action.assignSetID(setID);
+                    currentSet.add(action);
+                }
+            }
+            unassignedActions.removeAll(currentSet);
+            assignedActions.addAll(currentSet);
+            if(currentSet.isEmpty()){
+                throw new Exception("Failed to find action dependencies and assigning set ID for action: " + unassignedActions.get(0).getDescription());
+            }
+            setID++;
+        }
     }
 
     public DescribedTemplate getTemplate()

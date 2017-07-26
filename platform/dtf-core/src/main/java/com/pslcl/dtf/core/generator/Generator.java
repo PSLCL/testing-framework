@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.core.generator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,6 +35,8 @@ import com.pslcl.dtf.core.generator.template.TestInstance;
 
 public class Generator
 {
+    private final Logger log;
+
     public static boolean trace = false;
 
     /**
@@ -44,7 +49,7 @@ public class Generator
      * Holds test instances created by the generator until the list size reaches maxInstanceAccumlationCount or the generator is closed.
      */
     private List<TestInstance> testInstances = new ArrayList<TestInstance>();
-    
+
     /**
      * The maximum number of test instances that should be cached by the generator before syncing with the database.
      */
@@ -73,27 +78,28 @@ public class Generator
     public Generator(long pk_test)
     {
         core = new Core(pk_test);
+        this.log = LoggerFactory.getLogger(getClass());
     }
 
     /**
      * Get the maximum number of test instances that will accumulate before the generator syncs with the database.
-     * 
+     *
      * @return The maximum number of test instances to accumulate.
      */
     public int getMaxInstanceAccumulationCount() {
-		return maxInstanceAccumulationCount;
-	}
+        return maxInstanceAccumulationCount;
+    }
 
     /**
      * Set the maximum number of test instances that will accumulate before the generator syncs with the database. Defaults to 100.
-     * 
+     *
      * @param maxInstanceAccumulation The maximum number of test instances to accumulate.
      */
-	public void setMaxInstanceAccumulationCount(int maxInstanceAccumulation) {
-		this.maxInstanceAccumulationCount = maxInstanceAccumulation;
-	}
+    public void setMaxInstanceAccumulationCount(int maxInstanceAccumulation) {
+        this.maxInstanceAccumulationCount = maxInstanceAccumulation;
+    }
 
-	/**
+    /**
      * Declare an artifact in the platform. It is uniquely identified by a UUID, which defines the artifact
      * globally throughout the platform in the context of a single running test. Multiple tests running at
      * the same time receive different artifacts even if the identifier is the same.
@@ -111,17 +117,17 @@ public class Generator
 
         parameterReferenceMap.put(uuid, parameter);
     }
-    
+
     /**
      * Get the parameter referenced by the specified uuid.
      * @param uuid The reference to the parameter.
      * @return A Parameter
      */
     public Parameter getReferencedParameter(String uuid){
-    	if (parameterReferenceMap == null)
+        if (parameterReferenceMap == null)
             throw new IllegalStateException("Test has not been started.");
-    	
-    	return parameterReferenceMap.get(uuid);
+
+        return parameterReferenceMap.get(uuid);
     }
 
     //TODO: https://github.com/PSLCL/testing-framework/issues/43
@@ -162,12 +168,12 @@ public class Generator
 //
 //    /**
 //     * Create content that can be used in a test.
-//     * 
+//     *
 //     * @param content
 //     * @return
 //     */
 //    public Content createContent(String content)
-//    {    	 	
+//    {
 //        Content result = new StringContent(content);
 //        if (!addedContent.containsKey(result.getHash()))
 //        {
@@ -237,7 +243,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.pass(): There is no test being generated.");
             return;
         }
 
@@ -252,7 +258,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.fail(): There is no test being generated.");
             return;
         }
 
@@ -268,7 +274,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.assign(): There is no test being generated.");
             return;
         }
 
@@ -278,7 +284,7 @@ public class Generator
     /**
      * Declare the running times of a particular result. This would never be used except
      * when populating test data.
-     * 
+     *
      * @param start The start time
      * @param ready The ready time
      * @param complete The complete time
@@ -287,7 +293,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.setRunTimes(): There is no test being generated.");
             return;
         }
 
@@ -302,7 +308,7 @@ public class Generator
     {
         if (activeTestInstance != null)
         {
-            System.err.println("ERROR: A test has already been started, and not yet completed.");
+            this.log.error("<internal> Generator.startTest(): A test has already been started, and not yet completed.");
             return;
         }
 
@@ -320,7 +326,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            System.err.println("ERROR: There is no test being generated.");
+            this.log.error("<internal> Generator.add(): There is no test being generated.");
             return;
         }
 
@@ -331,59 +337,67 @@ public class Generator
      * Declare that the test currently being defined is complete.
      * @throws Exception Any error completing the test.
      */
-    public void completeTest() throws Exception
+    public int completeTest() throws Exception
     {
-        if (activeTestInstance == null)
-        {
-            System.err.println("ERROR: There is no active test to complete.");
-            return;
-        }
+        int addedDescribedTemplatesCount = 0;
+        try {
+            if (activeTestInstance == null)
+            {
+                this.log.error("<internal> Generator.completeTest(): There is no active test to complete.");
+                return addedDescribedTemplatesCount;
+            }
 
-        activeTestInstance.close();
-        synchronized (testInstances) {
-        	testInstances.add(activeTestInstance);
-            activeTestInstance = null;
-            parameterReferenceMap.clear();
-            parameterReferenceMap = null;
-            
-        	if(testInstances.size() >= maxInstanceAccumulationCount){
-            	try{
-            		sync();
-            	} catch (Exception e) {
-        	        System.err.println("ERROR: Failure to sync test instances, " + e.getMessage());
-        	    	e.printStackTrace();
-        	    	throw e;
-        	    }
-            	testInstances.clear();
-        	}
+            activeTestInstance.close();
+            synchronized (testInstances) {
+                testInstances.add(activeTestInstance);
+                activeTestInstance = null;
+                parameterReferenceMap.clear();
+                parameterReferenceMap = null;
+
+                if(testInstances.size() >= maxInstanceAccumulationCount){
+                    try{
+                        addedDescribedTemplatesCount = sync();
+                    } catch (Exception e) {
+                        this.log.error("<internal> Generator.completeTest(): Failure to sync test instances, " + e.getMessage());
+                        this.log.debug("stack trace", e);
+                        throw e;
+                    }
+                    testInstances.clear();
+                }
+            }
+        } catch (Exception e) {
+            this.log.error("<internal> Generator.completeTest() exits after catching exception, msg: " + e);
+            throw e;
         }
+        return addedDescribedTemplatesCount;
     }
 
     private void dumpTestInstances()
     {
-    	synchronized (testInstances) {
-	        for (TestInstance ti : testInstances)
-	        {
-	            ti.dump();
-	        }
-    	}
+        synchronized (testInstances) {
+            for (TestInstance ti : testInstances)
+            {
+                ti.dump();
+            }
+        }
     }
-    
-    private void sync() throws Exception{
-    	
+
+    private int sync() throws Exception{
+        int addedDescribedTemplatesCount = 0;
+
         // If the system is read-only, then just dump the created objects.
         if (core.isReadOnly())
         {
             dumpTestInstances();
-            return;
+            return addedDescribedTemplatesCount;
         }
 
         synchronized (testInstances) {
             /* The described template arrays are already loaded. We need to add any defined templates
              * that are not in the database, and remove any that are no longer needed.
              */
-            core.syncDescribedTemplates(testInstances);
-		}
+            addedDescribedTemplatesCount = core.syncDescribedTemplates(testInstances);
+        }
 
         /* Read the main contents of the top-level synchronized tables: Content, DescribedTemplate.
          * Content is easy, since it either exists or does not.
@@ -397,7 +411,7 @@ public class Generator
 
         // All generated content needs to be added or synchronized
         /*        for ( Content c : addedContent.values() ) {
-        	c.sync();
+            c.sync();
         }
 
         // Templates can be added to the database, this will either
@@ -429,21 +443,27 @@ public class Generator
         // Now that templates and test instances are synchronized, roll up top-level template relationships.
         core.syncTopTemplateRelationships();
          */
+
+        if (addedDescribedTemplatesCount > 0)
+            this.log.debug("<internal> Generator.sync() added " + addedDescribedTemplatesCount + " describedTemplates to database");
+        return addedDescribedTemplatesCount;
     }
 
     /**
      * Close the generator, synchronizing its results with the database.
      */
-    public void close()
+    public int close()
     {
-    	try{
-    		sync();
-    	} catch (Exception e) {
-	        System.err.println("ERROR: Failure to close generator, " + e.getMessage());
-	    	e.printStackTrace();
-	    }
-    	finally{
-    		core.close();
-    	}
+        int addedDescribedTemplatesCount = 0;
+        try{
+            addedDescribedTemplatesCount = sync();
+        } catch (Exception e) {
+            this.log.error("<internal> Generator.close(): Failure to close generator, " + e.getMessage());
+            e.printStackTrace();
+        }
+        finally{
+            core.close();
+        }
+        return addedDescribedTemplatesCount;
     }
 }

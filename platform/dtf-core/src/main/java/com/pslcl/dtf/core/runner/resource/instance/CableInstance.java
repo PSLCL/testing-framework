@@ -20,26 +20,26 @@ package com.pslcl.dtf.core.runner.resource.instance;
  * Represents a Cable Resource instance
  */
 public interface CableInstance extends ResourceInstance {
-	
-	/**
-	 * The IP address associated with this cable.
-	 * 
-	 * @return the IP address.
-	 */
-	public String getIPAddress();
-	
-	/**
-	 * The machine that this cable connects to a network.
-	 *   
-	 * @return the machine instance.
-	 */
-	public MachineInstance getMachineInstance();
 
-	
-	/**
-	 * The network that this cable connect a machine to.
-	 *   
-	 * @return the network instance.
-	 */
-	public NetworkInstance getNetworkInstance();
+    /**
+     * The IP address associated with this cable.
+     *
+     * @return the IP address.
+     */
+    public String getIPAddress();
+
+    /**
+     * The machine that this cable connects to a network.
+     *
+     * @return the machine instance.
+     */
+    public MachineInstance getMachineInstance();
+
+
+    /**
+     * The network that this cable connect a machine to.
+     *
+     * @return the network instance.
+     */
+    public NetworkInstance getNetworkInstance();
 }

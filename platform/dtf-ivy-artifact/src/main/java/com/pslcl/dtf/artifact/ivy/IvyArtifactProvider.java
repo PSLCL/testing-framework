@@ -160,30 +160,30 @@ public class IvyArtifactProvider implements ArtifactProvider
             return result;
         }
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((rmv == null) ? 0 : rmv.hashCode());
-			return result;
-		}
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((rmv == null) ? 0 : rmv.hashCode());
+            return result;
+        }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			IvyModule other = (IvyModule) obj;
-			if (rmv == null) {
-				if (other.rmv != null)
-					return false;
-			} else if (!rmv.equals(other.rmv))
-				return false;
-			return true;
-		}
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            IvyModule other = (IvyModule) obj;
+            if (rmv == null) {
+                if (other.rmv != null)
+                    return false;
+            } else if (!rmv.equals(other.rmv))
+                return false;
+            return true;
+        }
     }
 
     private static class IvyArtifact implements Artifact
@@ -230,67 +230,68 @@ public class IvyArtifactProvider implements ArtifactProvider
         @Override
         public int getPosixMode()
         {
-            return 0b100_100_100;
+//          return 0b100_100_100;
+            return 0b110_110_110; // temporary workaround to issue #159
         }
 
-		@Override
-		public String getTargetFilePath() {
-			return this.targetFilePath;
-		}
+        @Override
+        public String getTargetFilePath() {
+            return this.targetFilePath;
+        }
 
-		@Override
-		public void setTargetFilePath(String targetFilePath) {
-			this.targetFilePath = targetFilePath;
-		}
+        @Override
+        public void setTargetFilePath(String targetFilePath) {
+            this.targetFilePath = targetFilePath;
+        }
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((configuration == null) ? 0 : configuration.hashCode());
-			result = prime * result + ((content == null) ? 0 : content.hashCode());
-			result = prime * result + ((module == null) ? 0 : module.hashCode());
-			result = prime * result + ((name == null) ? 0 : name.hashCode());
-			result = prime * result + ((targetFilePath == null) ? 0 : targetFilePath.hashCode());
-			return result;
-		}
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((configuration == null) ? 0 : configuration.hashCode());
+            result = prime * result + ((content == null) ? 0 : content.hashCode());
+            result = prime * result + ((module == null) ? 0 : module.hashCode());
+            result = prime * result + ((name == null) ? 0 : name.hashCode());
+            result = prime * result + ((targetFilePath == null) ? 0 : targetFilePath.hashCode());
+            return result;
+        }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			IvyArtifact other = (IvyArtifact) obj;
-			if (configuration == null) {
-				if (other.configuration != null)
-					return false;
-			} else if (!configuration.equals(other.configuration))
-				return false;
-			if (content == null) {
-				if (other.content != null)
-					return false;
-			} else if (!content.equals(other.content))
-				return false;
-			if (module == null) {
-				if (other.module != null)
-					return false;
-			} else if (!module.equals(other.module))
-				return false;
-			if (name == null) {
-				if (other.name != null)
-					return false;
-			} else if (!name.equals(other.name))
-				return false;
-			if (targetFilePath == null) {
-				if (other.targetFilePath != null)
-					return false;
-			} else if (!targetFilePath.equals(other.targetFilePath))
-				return false;
-			return true;
-		}		
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            IvyArtifact other = (IvyArtifact) obj;
+            if (configuration == null) {
+                if (other.configuration != null)
+                    return false;
+            } else if (!configuration.equals(other.configuration))
+                return false;
+            if (content == null) {
+                if (other.content != null)
+                    return false;
+            } else if (!content.equals(other.content))
+                return false;
+            if (module == null) {
+                if (other.module != null)
+                    return false;
+            } else if (!module.equals(other.module))
+                return false;
+            if (name == null) {
+                if (other.name != null)
+                    return false;
+            } else if (!name.equals(other.name))
+                return false;
+            if (targetFilePath == null) {
+                if (other.targetFilePath != null)
+                    return false;
+            } else if (!targetFilePath.equals(other.targetFilePath))
+                return false;
+            return true;
+        }
     }
 
     private static class IvyContent implements Content
@@ -312,12 +313,21 @@ public class IvyArtifactProvider implements ArtifactProvider
             if (downloaded)
                 return;
 
-            DownloadOptions options = new DownloadOptions();
-            DownloadReport report = rmv.getArtifactResolver().download(new org.apache.ivy.core.module.descriptor.Artifact[] { artifact }, options);
-            ArtifactDownloadReport areport = report.getArtifactReport(artifact);
-            file = areport.getLocalFile();
-            hash = Hash.fromContent(file);
-            downloaded = true;
+            try {
+                DownloadOptions options = new DownloadOptions();
+                DownloadReport report = rmv.getArtifactResolver().download(new org.apache.ivy.core.module.descriptor.Artifact[] { artifact }, options);
+                ArtifactDownloadReport areport = report.getArtifactReport(artifact);
+                file = areport.getLocalFile();
+                if (file != null) {
+                    hash = Hash.fromContent(file);
+                    downloaded = true;
+                } else {
+                    System.out.println("DEBUG: IvyArtifactProvider.download() finds null file, with message: " + areport);
+                }
+            } catch (Exception e) {
+                System.out.println("ERROR: IvyArtifactProvider.download() sees exception, msg: " + e);
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -339,9 +349,15 @@ public class IvyArtifactProvider implements ArtifactProvider
             try
             {
                 download();
-                return new FileInputStream(file);
+                if (file != null)
+                    return new FileInputStream(file);
+                else {
+                    System.out.println("DEBUG: IvyArtifactProvider.asStream() sees file null, returns null");
+                    return null;
+                }
             } catch (Exception e)
             {
+                System.out.println("ERROR: IvyArtifactProvider.asStream() sees exception, returns null; msg: " + e);
                 return null;
             }
         }
@@ -372,51 +388,51 @@ public class IvyArtifactProvider implements ArtifactProvider
             return getHash().toString();
         }
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((artifact == null) ? 0 : artifact.hashCode());
-			result = prime * result + (downloaded ? 1231 : 1237);
-			result = prime * result + ((file == null) ? 0 : file.hashCode());
-			result = prime * result + ((hash == null) ? 0 : hash.hashCode());
-			result = prime * result + ((rmv == null) ? 0 : rmv.hashCode());
-			return result;
-		}
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((artifact == null) ? 0 : artifact.hashCode());
+            result = prime * result + (downloaded ? 1231 : 1237);
+            result = prime * result + ((file == null) ? 0 : file.hashCode());
+            result = prime * result + ((hash == null) ? 0 : hash.hashCode());
+            result = prime * result + ((rmv == null) ? 0 : rmv.hashCode());
+            return result;
+        }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			IvyContent other = (IvyContent) obj;
-			if (artifact == null) {
-				if (other.artifact != null)
-					return false;
-			} else if (!artifact.equals(other.artifact))
-				return false;
-			if (downloaded != other.downloaded)
-				return false;
-			if (file == null) {
-				if (other.file != null)
-					return false;
-			} else if (!file.equals(other.file))
-				return false;
-			if (hash == null) {
-				if (other.hash != null)
-					return false;
-			} else if (!hash.equals(other.hash))
-				return false;
-			if (rmv == null) {
-				if (other.rmv != null)
-					return false;
-			} else if (!rmv.equals(other.rmv))
-				return false;
-			return true;
-		}
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            IvyContent other = (IvyContent) obj;
+            if (artifact == null) {
+                if (other.artifact != null)
+                    return false;
+            } else if (!artifact.equals(other.artifact))
+                return false;
+            if (downloaded != other.downloaded)
+                return false;
+            if (file == null) {
+                if (other.file != null)
+                    return false;
+            } else if (!file.equals(other.file))
+                return false;
+            if (hash == null) {
+                if (other.hash != null)
+                    return false;
+            } else if (!hash.equals(other.hash))
+                return false;
+            if (rmv == null) {
+                if (other.rmv != null)
+                    return false;
+            } else if (!rmv.equals(other.rmv))
+                return false;
+            return true;
+        }
     }
 
     /**
@@ -426,27 +442,28 @@ public class IvyArtifactProvider implements ArtifactProvider
      */
     private static String extractMergeTo(ModuleDescriptor module)
     {
-        String result = "";
+        // added in module's ivy.xml ivy-module declaration line- attribute key/v: xmlns:e="http://com.pslcl/dtf-ivy"
         Map<String, String> ns = module.getExtraAttributesNamespaces();
         String prefix = "";
         for (Map.Entry<String, String> entry : ns.entrySet())
         {
             if (entry.getValue().equals("http://com.pslcl/dtf-ivy"))
             {
-                prefix = entry.getKey();
+                prefix = entry.getKey(); // prefix is the above key: "e"
                 break;
             }
         }
 
+        String result = "";
         String sep = "";
         for (ExtraInfoHolder extra : module.getExtraInfos())
         {
-            if (extra.getName().equals(prefix + ":" + "dtf-merge-info"))
+            if (extra.getName().equals(prefix + ":" + "dtf-merge-info")) // match xml name line: <e:dtf-merge-info .....
             {
                 Map<String, String> attributes = extra.getAttributes();
                 for (Map.Entry<String, String> attribute : attributes.entrySet())
                 {
-                    if (attribute.getKey().equals(prefix + ":merge-to"))
+                    if (attribute.getKey().equals(prefix + ":merge-to")) // match xml attribute: "e:merge-to"
                     {
                         result += sep + attribute.getValue();
                         sep = "&";
@@ -455,12 +472,12 @@ public class IvyArtifactProvider implements ArtifactProvider
             }
         }
 
-        return result;
+        return result; // value e.g. "org.opendof.core-java#dof-oal;7.0.5" from key/value e.g. e:merge-to="org.opendof.core-java#dof-oal;7.0.5"
     }
 
     /**
      * This is the ivy object that is initialized in init() and remains active until close().
-     * TBD: It is unclear if the ivy class is thread-safe. 
+     * TBD: It is unclear if the ivy class is thread-safe.
      */
     private Ivy ivy = null;
 
@@ -474,7 +491,7 @@ public class IvyArtifactProvider implements ArtifactProvider
      * @param version The version
      * @param criteria Criteria that have already been determined to apply.
      * @param optional If the current search parameter is optional then the name is passed here.
-     * @param attr A list of attribute sets that have been searched for to prevent duplicate searches.
+     * @param attrs A list of attribute sets that have been searched for to prevent duplicate searches.
      * @param moduleNotifier The callback to notify modules to.
      */
     private void scanOptions(Ivy ivy, AbstractPatternsBasedResolver pbr, String org, String module, String version, Map<String, String> criteria, String optional, List<String> attrs, ModuleNotifier moduleNotifier)
@@ -641,11 +658,11 @@ public class IvyArtifactProvider implements ArtifactProvider
                             ModuleRevisionId mrid = new ModuleRevisionId(new ModuleId(org, module), version);
                             ResolvedModuleRevision rmv;
                             try{
-                            	rmv = ivy.findModule(mrid);
+                                rmv = ivy.findModule(mrid);
                             } catch(Exception e){
-                            	System.err.println("Failed to find module: " + org + "#" + module + ";" + version);
-                            	e.printStackTrace();
-                            	continue;
+                                System.err.println("Failed to find module: " + org + "#" + module + ";" + version);
+                                e.printStackTrace();
+                                continue;
                             }
                             if (rmv != null)
                                 moduleNotifier.module(this, new IvyModule(rmv), extractMergeTo(rmv.getDescriptor()));
@@ -687,12 +704,12 @@ public class IvyArtifactProvider implements ArtifactProvider
                 continue;
 
             if(match_version.contains("*")){
-            	if (!target.getVersion().startsWith(match_version.substring(0, match_version.indexOf("*")))){
-            		continue;
-            	}
+                if (!target.getVersion().startsWith(match_version.substring(0, match_version.indexOf("*")))){
+                    continue;
+                }
             } else{
-            	if (!target.getVersion().equals(match_version))
-            		continue;
+                if (!target.getVersion().equals(match_version))
+                    continue;
             }
 
             return true;

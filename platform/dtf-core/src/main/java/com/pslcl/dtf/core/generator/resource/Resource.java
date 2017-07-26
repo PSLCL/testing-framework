@@ -15,6 +15,9 @@
  */
 package com.pslcl.dtf.core.generator.resource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,7 +51,7 @@ public abstract class Resource
             this.r = r;
             this.a = a;
             if(actionDependencies != null){
-            	this.actionDependencies.addAll(actionDependencies);
+                this.actionDependencies.addAll(actionDependencies);
             }
         }
 
@@ -99,6 +102,7 @@ public abstract class Resource
         }
     }
 
+    private final Logger log;
     public final Generator generator;
     public final String codename;
     public final String name;
@@ -115,6 +119,7 @@ public abstract class Resource
      */
     Resource(Generator generator, String name, String codename)
     {
+        this.log = LoggerFactory.getLogger(getClass());
         this.instance = UUID.randomUUID();
         this.generator = generator;
         this.name = name;
@@ -127,7 +132,12 @@ public abstract class Resource
      */
     public void bind() throws Exception
     {
-        bind(new Attributes());
+        try {
+            bind(new Attributes());
+        } catch (Exception e) {
+            this.log.error("<internal> Resource.bind() exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     /**
@@ -152,15 +162,20 @@ public abstract class Resource
     {
         if (bound != null)
         {
-            throw new IllegalStateException("Cannot bind a resource more than once."); 
+            throw new IllegalStateException("Cannot bind a resource more than once.");
         }
 
-        bound = new BindAction(this, attributes, actionDependencies);
-        generator.add(bound);
-        this.attributeMap = attributes.getAttributes();
-        if (Generator.trace)
-            System.err.println(String.format("Resource %s (%s) bound with attributes '%s'.", name, instance, attributes));
-        return bound;
+        try {
+            bound = new BindAction(this, attributes, actionDependencies);
+            generator.add(bound);
+            this.attributeMap = attributes.getAttributes();
+            if (Generator.trace)
+                this.log.debug("<internal> Resource.TestInstance.Action.bind(): " + String.format("Resource %s (%s) bound with attributes '%s'.", name, instance, attributes));
+            return bound;
+        } catch (Exception e) {
+            this.log.error("<internal> Resource.TestInstance.Action.bind() exits after catching exception, msg: " + e);
+            throw e;
+        }
     }
 
     /**
@@ -171,14 +186,14 @@ public abstract class Resource
     {
         return bound != null;
     }
-    
+
     /**
      * Return the BindAction for this resource.
-     * 
+     *
      * @return The BindAction for this resource. null if not bound.
      */
     public Action getBindAction(){
-    	return bound;
+        return bound;
     }
 
     /**
@@ -198,12 +213,12 @@ public abstract class Resource
 
     /**
      * Get a reference to an attribute whose value may be used as a parameter in a program action.
-     * 
+     *
      * This reference will be resolved by the Generator when the Template is generated. If the value of
      * the attribute is known at that time, then the reference will be replaced by the value. If the value
      * of the attribute will not be known until the test is run, then the reference will be replaced by
      * a value reference in the form of $(attribute resource-ref attribute-name).
-     * 
+     *
      * @param attributeName The name of the attribute.
      * @return a String reference to the attribute.
      */

@@ -21,6 +21,6 @@ package com.pslcl.dtf.core.runner.resource.exception;
  * no knowledge.
  */
 public class IncompatibleResourceException extends Exception {
-	private static final long serialVersionUID = 6407139875273823499L;
+    private static final long serialVersionUID = 6407139875273823499L;
 
 }
