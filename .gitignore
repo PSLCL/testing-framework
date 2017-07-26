@@ -1,7 +1,6 @@
 platform/.cache/**
 platform/.build/**
 platform/lib/**
-platform/bin/**
 platform/*/.build/**
 platform/*/bin/**
 platform/*/lib/**
@@ -19,3 +18,5 @@ sample-test/generators/target/*
 **.jar
 **.tar.gz
 **ivy-*.xml
+out/
+.idea/
