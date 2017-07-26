@@ -137,9 +137,11 @@ Note: \<dtf-system-id> should be replaced by the system ID configured in the tes
 
 This policy should be assigned to the AWS IAM User or Role that the Test Runner Instance is configured to use.
 
-#### Test Instance Policy
+### Logging to s3
 
-Test instances created by the test runner require a policy that allows the instance to upload logs to s3. The following template should be used to create an IAM policy for test instances:
+Create an s3 bucket where test logs should be uploaded. A lifecycle management policy is recommended if logs are not needed indefinitely.
+
+Test instances created by the test runner require a policy that allows the instance to upload logs to the created s3 bucket. The following template should be used to create an IAM policy for test instances:
 
       {
           "Statement": [
@@ -155,13 +157,11 @@ Test instances created by the test runner require a policy that allows the insta
           ]
       }  
 
-Note: <bucket> should be replaced by the s3 bucket name for storing testing logs.
+Note: <bucket> should be replaced by the created s3 bucket name.
 
 An IAM role should be created with this policy. The instance profile arn should be specified in dtf.properties pslcl.dtf.aws.ec2instance.iam-arn property.
 
 The name of the s3 bucket should also be specified using the pslcl.dtf.aws.ec2instance.logging.s3-bucket property.
-
-
 
 ### Install STAF
 STAF is installed via a STAF's InstallAnywhere installation application.
