@@ -78,6 +78,7 @@ The Distributed Test Framework test runner service implementation.
   </publications>
   <dependencies>
     <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->default"/>
+    <dependency org="org.mariadb.jdbc" name="mariadb-java-client" rev="2.0.2"/>
     <dependency org="org.apache.httpcomponents" name="fluent-hc" rev="[4.5.3, 4.6)" conf="compile->default"/>
     <dependency org="ch.qos.logback" name="logback-classic" rev="[1.1.2,2)" conf="compile->default"/>
     <dependency org="commons-io" name="commons-io" rev="[2.4,3)" conf="compile->default"/>
