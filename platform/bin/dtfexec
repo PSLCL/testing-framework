@@ -1,0 +1,14 @@
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $DIR/../..
+
+CP="platform/lib/*:"
+
+if [[ `uname` =~ ^CYGWIN.* ]]; then
+    CP=`cygpath -w -p $CP`
+fi
+
+if [[ `uname` =~ ^MINGW.* ]]; then
+    CP=${CP//:/;}
+fi
+
+java -cp "$CP" com.pslcl.dtf.core.DistributedTestingFramework $@ 
