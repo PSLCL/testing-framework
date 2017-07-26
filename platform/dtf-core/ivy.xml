@@ -52,6 +52,5 @@
     <dependency org="org.apache.commons" name="commons-compress" rev="[1.14, 1.15)"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="[1.7.25,1.8)"/>
     <dependency org="ch.qos.logback" name="logback-core" rev="1.2.3"/>
-    <dependency org="org.mariadb.jdbc" name="mariadb-java-client" rev="2.0.2" conf="runtime"/>
   </dependencies>
 </ivy-module>

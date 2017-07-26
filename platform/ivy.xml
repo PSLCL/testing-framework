@@ -40,6 +40,6 @@ The Distributed Test Framework Main.
     <dependency org="com.pslcl.dtf" name="dtf-aws-resource" rev="[1,2)"/>
     <dependency org="com.pslcl.dtf" name="dtf-ivy-artifact" rev="[1,2)"/>
     <dependency org="com.pslcl.dtf" name="dtf-runner" rev="[1,2)"/>
-    <dependency org="mysql" name="mysql-connector-java" rev="[5.1,6)"/>
+    <dependency org="org.mariadb.jdbc" name="mariadb-java-client" rev="2.0.2"/>
   </dependencies>
 </ivy-module>
