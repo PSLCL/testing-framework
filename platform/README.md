@@ -67,8 +67,11 @@ The following must be installed or configured on production systems
 3. Amazon AWS IAM role configured with the policies listed in this document.
 4. ports 6500 and 6550 should be available
 
-### AWS IAM Policy
-The Test Runner Service requires permission to several Amazon AWS APIs. The following template should be used to create an IAM policy:
+### AWS IAM Policies
+
+#### Test Runner Policy
+
+The Test Runner Service requires permission to several Amazon AWS APIs. The following template should be used to create an IAM policy for the Test Runner Instance:
 
     {
         "Version": "2012-10-17",
@@ -132,7 +135,33 @@ The Test Runner Service requires permission to several Amazon AWS APIs. The foll
 
 Note: \<dtf-system-id> should be replaced by the system ID configured in the test runner service configuration using the property `pslcl.dtf.system-id`. This tag is used to ensure that the test runner service can only delete resources that it creates. \<queue-arn> should also be replaced by the AWS arn of the queue configured to be used by the testing framework.
 
-This policy should be assigned to the AWS IAM User or Role that the system is configured to use.
+This policy should be assigned to the AWS IAM User or Role that the Test Runner Instance is configured to use.
+
+#### Test Instance Policy
+
+Test instances created by the test runner require a policy that allows the instance to upload logs to s3. The following template should be used to create an IAM policy for test instances:
+
+      {
+          "Statement": [
+          {
+              "Effect": "Allow",
+              "Action": [
+                  "s3:*"
+              ],
+              "Resource": [
+                  "arn:aws:s3:::<bucket>/*"
+              ]
+          }
+          ]
+      }  
+
+Note: <bucket> should be replaced by the s3 bucket name for storing testing logs.
+
+An IAM role should be created with this policy. The instance profile arn should be specified in dtf.properties pslcl.dtf.aws.ec2instance.iam-arn property.
+
+The name of the s3 bucket should also be specified using the pslcl.dtf.aws.ec2instance.logging.s3-bucket property.
+
+
 
 ### Install STAF
 STAF is installed via a STAF's InstallAnywhere installation application.
@@ -190,20 +219,7 @@ For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AW
     6. Install Powershell AWS commandline tools.
 	  a. follow instructions at http://docs.aws.amazon.com/powershell/latest/userguide/pstools-getting-set-up.html.
 	  b. Create the S3 bucket for test instance log capture. i.e. dtf-staf-logging and set its ACL appropriate to your groups needed access.  The bucket name setup here must be configured in the runners configuration.
-	  c. The instances must be started with an IAM role with S3 read/write rights. i.e.
-      {
-          "Statement": [
-          {
-              "Effect": "Allow",
-              "Action": [
-                  "s3:*"
-              ],
-              "Resource": [
-                  "arn:aws:s3:::dtf-staf-logging"
-              ]
-          }
-          ]
-      }  
+
 
 
 ### AWS Simple Queue Service(SQS)
