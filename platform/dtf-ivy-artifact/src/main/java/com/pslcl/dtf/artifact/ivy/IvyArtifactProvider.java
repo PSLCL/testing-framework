@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.ivy.Ivy;
 import org.apache.ivy.core.IvyPatternHelper;
@@ -62,7 +65,7 @@ public class IvyArtifactProvider implements ArtifactProvider
     {
         private ResolvedModuleRevision rmv;
 
-        public IvyModule(ResolvedModuleRevision rmv)
+        IvyModule(ResolvedModuleRevision rmv)
         {
             this.rmv = rmv;
         }
@@ -192,15 +195,16 @@ public class IvyArtifactProvider implements ArtifactProvider
         private String configuration;
         private String name;
         private IvyContent content;
-        private String targetFilePath;
+        private String targetFilePath = null;
 
-        public IvyArtifact(IvyModule module, ResolvedModuleRevision rmv, String configuration, org.apache.ivy.core.module.descriptor.Artifact artifact)
+        @SuppressWarnings("MagicCharacter")
+        IvyArtifact(IvyModule module, ResolvedModuleRevision rmv, String configuration, org.apache.ivy.core.module.descriptor.Artifact artifact)
         {
             this.module = module;
             this.configuration = configuration;
             this.content = new IvyContent(rmv, artifact);
 
-            this.name = artifact.getName() + "." + artifact.getExt();
+            this.name = artifact.getName() + '.' + artifact.getExt();
         }
 
         @Override
@@ -228,6 +232,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         }
 
         @Override
+        @SuppressWarnings("MagicNumber")
         public int getPosixMode()
         {
 //          return 0b100_100_100;
@@ -302,7 +307,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         private ResolvedModuleRevision rmv;
         private org.apache.ivy.core.module.descriptor.Artifact artifact;
 
-        public IvyContent(ResolvedModuleRevision rmv, org.apache.ivy.core.module.descriptor.Artifact artifact)
+        IvyContent(ResolvedModuleRevision rmv, org.apache.ivy.core.module.descriptor.Artifact artifact)
         {
             this.rmv = rmv;
             this.artifact = artifact;
@@ -322,28 +327,30 @@ public class IvyArtifactProvider implements ArtifactProvider
                     hash = Hash.fromContent(file);
                     downloaded = true;
                 } else {
-                    System.out.println("DEBUG: IvyArtifactProvider.download() finds null file, with message: " + areport);
+                    LoggerFactory.getLogger(IvyArtifactProvider.IvyContent.class).debug("<internal> IvyArtifactProavider.IvyContent.download() finds null file, with message: " + areport);
                 }
             } catch (Exception e) {
-                System.out.println("ERROR: IvyArtifactProvider.download() sees exception, msg: " + e);
-                e.printStackTrace();
+                LoggerFactory.getLogger(IvyArtifactProvider.IvyContent.class).error("<internal> IvyArtifactProvider.IvyContent.download() sees exception, msg: " + e);
+                LoggerFactory.getLogger(IvyArtifactProvider.IvyContent.class).error("<internal> IvyArtifactProvider.IvyContent.download() stack trace: ", e);
             }
         }
 
         @Override
+        @SuppressWarnings("ReturnOfNull")
         public Hash getHash()
         {
             try
             {
                 download();
                 return hash;
-            } catch (Exception e)
+            } catch (Exception ignore)
             {
                 return null;
             }
         }
 
         @Override
+        @SuppressWarnings("ReturnOfNull")
         public InputStream asStream()
         {
             try
@@ -352,17 +359,18 @@ public class IvyArtifactProvider implements ArtifactProvider
                 if (file != null)
                     return new FileInputStream(file);
                 else {
-                    System.out.println("DEBUG: IvyArtifactProvider.asStream() sees file null, returns null");
+                    LoggerFactory.getLogger(IvyArtifactProvider.IvyContent.class).debug("<internal> IvyArtifactProvider.IvyContent.asStream() sees file null, returns null");
                     return null;
                 }
             } catch (Exception e)
             {
-                System.out.println("ERROR: IvyArtifactProvider.asStream() sees exception, returns null; msg: " + e);
+                LoggerFactory.getLogger(IvyArtifactProvider.IvyContent.class).debug("<internal> IvyArtifactProvider.IvyContent.asStream() sees exception, returns null; msg: " + e);
                 return null;
             }
         }
 
         @Override
+        @SuppressWarnings("ReturnOfNull")
         public byte[] asBytes()
         {
             try
@@ -376,7 +384,7 @@ public class IvyArtifactProvider implements ArtifactProvider
                 os.close();
 
                 return os.toByteArray();
-            } catch (Exception e)
+            } catch (Exception ignore)
             {
                 return null;
             }
@@ -440,6 +448,7 @@ public class IvyArtifactProvider implements ArtifactProvider
      * @param module The module to check.
      * @return A string representing everything to merge to.
      */
+    @SuppressWarnings("MagicCharacter")
     private static String extractMergeTo(ModuleDescriptor module)
     {
         // added in module's ivy.xml ivy-module declaration line- attribute key/v: xmlns:e="http://com.pslcl/dtf-ivy"
@@ -458,7 +467,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         String sep = "";
         for (ExtraInfoHolder extra : module.getExtraInfos())
         {
-            if (extra.getName().equals(prefix + ":" + "dtf-merge-info")) // match xml name line: <e:dtf-merge-info .....
+            if (extra.getName().equals(prefix + ':' + "dtf-merge-info")) // match xml name line: <e:dtf-merge-info .....
             {
                 Map<String, String> attributes = extra.getAttributes();
                 for (Map.Entry<String, String> attribute : attributes.entrySet())
@@ -480,6 +489,11 @@ public class IvyArtifactProvider implements ArtifactProvider
      * TBD: It is unclear if the ivy class is thread-safe.
      */
     private Ivy ivy = null;
+    private final Logger log;
+
+    public IvyArtifactProvider() {
+        this.log = LoggerFactory.getLogger(getClass());
+    }
 
     /**
      * Given an ivy class, resolver, module (org/mod/ver), criteria and additional optional parameters, determine if there are additional
@@ -494,6 +508,7 @@ public class IvyArtifactProvider implements ArtifactProvider
      * @param attrs A list of attribute sets that have been searched for to prevent duplicate searches.
      * @param moduleNotifier The callback to notify modules to.
      */
+    @SuppressWarnings("MagicCharacter")
     private void scanOptions(Ivy ivy, AbstractPatternsBasedResolver pbr, String org, String module, String version, Map<String, String> criteria, String optional, List<String> attrs, ModuleNotifier moduleNotifier)
     {
         // Get all the ivy patterns from the resolver. We will search them all for optional fields.
@@ -546,9 +561,9 @@ public class IvyArtifactProvider implements ArtifactProvider
 
             Map<String, String> next_criteria = new HashMap<String, String>(criteria);
 
-            String tokenStr = "[" + token + "]";
+            String tokenStr = '[' + token + ']';
             boolean opt = pattern.indexOf('(') < pattern.indexOf(tokenStr);
-            next_criteria.put(token, "[" + token + "]");
+            next_criteria.put(token, '[' + token + ']');
             @SuppressWarnings("unchecked")
             Map<String, String>[] tokenList = pbr.listTokenValues(new String[] { token }, next_criteria);
             for (int i = 0; i < tokenList.length; i++)
@@ -586,6 +601,7 @@ public class IvyArtifactProvider implements ArtifactProvider
     }
 
     @Override
+    @SuppressWarnings("MagicCharacter")
     public void iterateModules(ModuleNotifier moduleNotifier) throws Exception
     {
         if (ivy == null)
@@ -635,7 +651,7 @@ public class IvyArtifactProvider implements ArtifactProvider
                          */
                         List<String> attrs = new ArrayList<String>();
                         for (@SuppressWarnings("rawtypes")
-                        Iterator iter = ivy.getSettings().getResolvers().iterator(); iter.hasNext();)
+                            Iterator iter = ivy.getSettings().getResolvers().iterator(); iter.hasNext();)
                         {
                             DependencyResolver resolver = (DependencyResolver) iter.next();
 
@@ -660,22 +676,22 @@ public class IvyArtifactProvider implements ArtifactProvider
                             try{
                                 rmv = ivy.findModule(mrid);
                             } catch(Exception e){
-                                System.err.println("Failed to find module: " + org + "#" + module + ";" + version);
-                                e.printStackTrace();
+                                this.log.error("<internal> IvyArtifactProvider.iterateModules() Failed to find module: " + org + '#' + module + ';' + version + ", exception msg: " + e);
+                                this.log.error("<internal> stack trace: ", e);
                                 continue;
                             }
                             if (rmv != null)
                                 moduleNotifier.module(this, new IvyModule(rmv), extractMergeTo(rmv.getDescriptor()));
                             else
-                                System.err.println("Failed to find module: " + org + "#" + module + ";" + version);
+                                this.log.error("<internal> IvyArtifactProvider.iterateModules() Failed to find module: " + org + '#' + module + ';' + version);
                         }
                     }
                 }
             }
         } catch (Exception e)
         {
-            System.err.println("ERROR: Exception during module iteration, " + e.getMessage());
-            e.printStackTrace();
+            this.log.error("<internal> IvyArtifactProvider.iterateModules(), Exception during module iteration, " + e);
+            this.log.error("<internal> stack trace: ", e);
         }
     }
 
@@ -686,6 +702,7 @@ public class IvyArtifactProvider implements ArtifactProvider
     }
 
     @Override
+    @SuppressWarnings("MagicCharacter")
     public boolean merge(String merge, Module module, Module target)
     {
         String[] matches = merge.split("&");
@@ -704,7 +721,7 @@ public class IvyArtifactProvider implements ArtifactProvider
                 continue;
 
             if(match_version.contains("*")){
-                if (!target.getVersion().startsWith(match_version.substring(0, match_version.indexOf("*")))){
+                if (!target.getVersion().startsWith(match_version.substring(0, match_version.indexOf('*')))){
                     continue;
                 }
             } else{

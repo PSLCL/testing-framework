@@ -831,6 +831,7 @@ public class Core
      * @param length The length of the stream, or -1 if the entire stream is to be added.
      * @return Hash of the added content
      */
+    @SuppressWarnings("ReturnOfNull")
     Hash addContent(InputStream is, long length)
     {
         File tmp = null;
@@ -935,6 +936,7 @@ public class Core
      * @param h The hash of the file to return.
      * @return A file if it exists, null otherwise.
      */
+    @SuppressWarnings("ReturnOfNull")
     File getContentFile(Hash h)
     {
         File f = new File(artifacts, h.toString());
@@ -1432,6 +1434,7 @@ public class Core
         }
 
         @Override
+        @SuppressWarnings("ReturnOfNull")
         public InputStream asStream()
         {
             File f = core.getContentFile(hash);
@@ -1447,6 +1450,7 @@ public class Core
         }
 
         @Override
+        @SuppressWarnings("ReturnOfNull")
         public byte[] asBytes()
         {
             File f = core.getContentFile(hash);
