@@ -47,7 +47,6 @@ import javax.script.ScriptEngineManager;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -832,7 +831,6 @@ public class Core
      * @param length The length of the stream, or -1 if the entire stream is to be added.
      * @return Hash of the added content
      */
-    @Nullable
     Hash addContent(InputStream is, long length)
     {
         File tmp = null;
@@ -937,7 +935,6 @@ public class Core
      * @param h The hash of the file to return.
      * @return A file if it exists, null otherwise.
      */
-    @Nullable
     File getContentFile(Hash h)
     {
         File f = new File(artifacts, h.toString());
@@ -1435,7 +1432,6 @@ public class Core
         }
 
         @Override
-        @Nullable
         public InputStream asStream()
         {
             File f = core.getContentFile(hash);
@@ -1451,7 +1447,6 @@ public class Core
         }
 
         @Override
-        @Nullable
         public byte[] asBytes()
         {
             File f = core.getContentFile(hash);
