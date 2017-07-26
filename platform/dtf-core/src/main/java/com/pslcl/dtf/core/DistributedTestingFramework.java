@@ -1411,6 +1411,13 @@ public final class DistributedTestingFramework
      */
     public static void main(String[] args)
     {
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.main() called");
+
+        java.net.URL logback_file_URL = DistributedTestingFramework.class.getResource("/logback.xml");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("logback.xml file URL: " + logback_file_URL);
+        java.net.URL logbacktest_file_URL = DistributedTestingFramework.class.getClassLoader().getResource("/logback-test.xml");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("logback-test.xml file URL: " + logbacktest_file_URL);
 
         // Check for no parameters, or --help
         if (args.length == 0 || args[0].compareTo("--help") == 0)
