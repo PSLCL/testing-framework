@@ -18,41 +18,41 @@ package com.pslcl.dtf.runner.process;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RunEntryStateStore {
-   
+
     /**
      *  Used for pure storage, order of element access is determined by other means.
      *  Neither Long key nor InstanceState value may be null.
      *  Writes by any one thread locks only the relevant element, other threads freely access other elements
      */
-    ConcurrentHashMap<Long, RunEntryState> map; 
-    
+    ConcurrentHashMap<Long, RunEntryState> map;
+
     public RunEntryStateStore() {
         map = new ConcurrentHashMap<>();
     }
-    
+
     /**
-     * 
+     *
      * @param configurationMaxSize
      * @return
      */
     public synchronized boolean isMaxSizeReached(int configurationMaxSize) {
-    	boolean limitReached = (configurationMaxSize <= map.size());
-    	return limitReached;
+        boolean limitReached = (configurationMaxSize <= map.size());
+        return limitReached;
     }
-    
+
     /**
-     * 
+     *
      * Note: Put to an existing Long key overwrites previous the previously held InstanceState
      * @param iNum
      * @param reState
-     * @return Previously stored InstanceState when put overwrites it, null otherwise. 
+     * @return Previously stored InstanceState when put overwrites it, null otherwise.
      */
     synchronized RunEntryState put(long reNum, RunEntryState reState) {
         return map.put(Long.valueOf(reNum), reState);
     }
-   
+
     /**
-     * 
+     *
      * @param iNum
      * @return
      */
@@ -61,7 +61,7 @@ public class RunEntryStateStore {
     }
 
     synchronized RunEntryState remove(long reNum) {
-    	return map.remove(Long.valueOf(reNum));
+        return map.remove(Long.valueOf(reNum));
     }
-    
+
 }

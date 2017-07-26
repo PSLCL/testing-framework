@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-**  Copyright (c) 2015, Panasonic Corporation.
+**  Copyright (c) 2017, Panasonic Corporation.
 **
 **  Permission to use, copy, modify, and/or distribute this software for any
 **  purpose with or without fee is hereby granted, provided that the above
@@ -15,11 +15,11 @@
 **  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
 <ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd" xmlns:m="http://ant.apache.org/ivy/maven">
-  <info organisation="com.pslcl.dtf" module="dtf-core" revision="1.0">
-    <license name="ISC License" url="https://opensource.org/licenses/ISC"/>
-    <repository name="PSLCL/testing-framework" url="https://github.com" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
+  <info organisation="com.pslcl.dtf" module="under-test" revision="1.0">
+    <license name="ISC License" url="https://opensource.org/licenses/ISC/"/>
+    <repository name="PSLCL/testing-framework/" url="https://github.com/" pattern="ivy2/[organisation]/[module]/[revision]/ivy(.[platform]).xml" ivys="true" artifacts="true"/>
     <description homepage="https://github.com/PSLCL/testing-framework/">
-The Distributed Test Framework common interfaces and core implementation.
+        The Distributed Test Framework under-test dummy component.
     </description>
   </info>
   <configurations>
@@ -40,36 +40,6 @@ The Distributed Test Framework common interfaces and core implementation.
     <artifact conf="master" name="${jar.name}" type="jar" ext="jar"/>
     <artifact conf="javadoc" name="${jar.name}" type="javadoc" ext="jar" m:classifier="javadoc"/>
   </publications>
-
   <dependencies>
-    <dependency org="ch.qos.logback" name="logback-classic" rev="[1.2.3, 1.3)" conf="compile->default"/>
-    <dependency org="commons-cli" name="commons-cli" rev="[1.4, 1.5)" conf="compile->default"/>
-    <dependency org="javax.jms" name="jms-api" rev="1.1-rev-1" conf="compile->default"/>
-    <dependency org="net.sf.staf" name="jstaf" rev="[3.4.4, 3.5)" conf="compile->default"/>
-    <dependency org="commons-io" name="commons-io" rev="[2.5, 2.6)" conf="compile->default"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk-sqs" rev="[1.11.155,1.12)" conf="compile->default"/>
-    <dependency org="org.apache.commons" name="commons-compress" rev="[1.14, 1.15)" conf="compile->default"/>
   </dependencies>
-
-  <!-- the following dependencies block built with ivyidea transitives turned off, thus there is redundancy here
-    <dependency org="javax.jms" name="jms" rev="[1.1, 1.2)" conf="compile->default"/>
-  <dependencies>
-    <dependency org="commons-daemon" name="commons-daemon" rev="[1.0.15,2)" conf="compile->master,compile;javadoc"/>
-    <dependency org="commons-io" name="commons-io" rev="[2.4,3)" conf="compile->master,compile;javadoc"/>
-    <dependency org="commons-cli" name="commons-cli" rev="[1.3.1,2)" conf="compile->master,compile;javadoc"/>
-    <dependency org="ch.qos.logback" name="logback-classic" rev="[1.1.2,2)" conf="compile->master,compile;javadoc"/>
-    <dependency org="org.slf4j" name="slf4j-api" rev="[1.7.25,1.8)"/>
-    <dependency org="ch.qos.logback" name="logback-core" rev="1.2.3"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="[1.11.155,1.12)"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk" rev="[1.11.155,1.12)"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk-sqs" rev="[1.11.155,1.12)"/>
-    <dependency org="javax" name="javaee-api" rev="[7,8)" conf="compile->master,compile;javadoc"/>
-    <dependency org="net.sf.staf" name="jstaf" rev="3.4.4"/>
-    <dependency org="org.apache.commons" name="commons-compress" rev="1.10"/>
-    <dependency org="org.mariadb.jdbc" name="mariadb-java-client" rev="2.0.2"/>
-
-    <!-- runtime restriction avoids compile-time circular dependency  -->
-    <dependency org="com.pslcl.dtf" name="dtf-ivy-artifact" rev="[1.0,2)" conf="runtime->master"/>
-  </dependencies>
-  -->
 </ivy-module>

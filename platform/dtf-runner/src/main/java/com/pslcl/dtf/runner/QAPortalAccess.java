@@ -18,21 +18,21 @@ import com.pslcl.dtf.runner.template.QAPaResponse;
 
 
 /**
- * 
- * 
+ *
+ *
  *
  */
 public class QAPortalAccess {
 
     // private class
-    
+
     private class QAPortalReadTask implements Runnable {
         private InspectHandler inspectHandler;
         private QAPortalAccess qaPortalAccess;
         private String contentSpecifier;
-    
+
         /**
-         * 
+         *
          * @param inspectHandler
          * @param qaPortalAccess
          * @param contentSpecifier
@@ -41,39 +41,39 @@ public class QAPortalAccess {
             this.inspectHandler = inspectHandler;
             this.qaPortalAccess = qaPortalAccess;
             this.contentSpecifier = contentSpecifier;
-            
+
             inspectHandler.getRunnerMachine().getConfig().blockingExecutor.execute(this); // schedules call to this.run(); this is the full execution of the x
         }
-        
+
         @Override
         public void run() {
-            
+
             String tname = Thread.currentThread().getName();
             Thread.currentThread().setName("PortalAccessFuture");
-        	QAPaResponse qapaResponse = null;
+            QAPaResponse qapaResponse = null;
             try {
                 Response response = this.qaPortalAccess.request(this.contentSpecifier);
                 qapaResponse = new QAPaResponse(response);
             } catch (Exception e) {
-            	qapaResponse = new QAPaResponse(); // empty: will be interpreted as an error
+                qapaResponse = new QAPaResponse(); // empty: will be interpreted as an error
             }
             // inform QAPortalAccess originator (inspectHandler) by setting its QAPaResponse
             this.inspectHandler.setQAPaResponse(qapaResponse);
             Thread.currentThread().setName(tname);
         }
-        
+
     }
 
-    
+
     // Class instance variables
-    private final Executor executor; // is pooling, uses PoolingHttpClientConnectionManager 
+    private final Executor executor; // is pooling, uses PoolingHttpClientConnectionManager
     private volatile String hostQAPortal = null;
     private final Logger log;
     private final String simpleName;
 
-    
+
     /**
-     * 
+     *
      * @param contentSpecifier
      * @return
      * @throws Exception
@@ -92,7 +92,7 @@ public class QAPortalAccess {
         }
         return retResponse;
     }
-    
+
     /**
      * Constructor
      */
@@ -103,20 +103,20 @@ public class QAPortalAccess {
     }
 
     /**
-     * 
+     *
      * @param runnerConfig
      */
     void init(RunnerConfig runnerConfig) throws Exception {
         hostQAPortal = runnerConfig.properties.getProperty(ResourceNames.PortalHostKey);
         hostQAPortal = StrH.trim(hostQAPortal);
-		if(hostQAPortal == null){
-			this.log.error("Missing required property: " + ResourceNames.PortalHostKey);
-			throw new Exception("QAPortalAccess.init() fails");
-		}
+        if(hostQAPortal == null){
+            this.log.error("Missing required property: " + ResourceNames.PortalHostKey);
+            throw new Exception("QAPortalAccess.init() fails");
+        }
     }
-    
+
     /**
-     * 
+     *
      * @param contentSpecifier The string that identifies the content
      * @return The content as a String
      * @throws Exception on any error
@@ -124,7 +124,7 @@ public class QAPortalAccess {
     public String getContentAsString(String contentSpecifier) throws Exception {
         String retString = null;
         try {
-            Response response = this.request(contentSpecifier); 
+            Response response = this.request(contentSpecifier);
             retString = response.returnContent().asString();
         } catch (Exception e) {
             log.debug(this.simpleName + "getContentAsString() http content request exception for contentSpecifier " + contentSpecifier + ", exception message: " + e.getMessage());
@@ -132,9 +132,9 @@ public class QAPortalAccess {
         }
         return retString;
     }
-    
+
     /**
-     * 
+     *
      * @param contentSpecifier The string that identifies the content
      * @return The content as an InputStream
      * @throws Exception on any error
@@ -142,7 +142,7 @@ public class QAPortalAccess {
     public InputStream getContentAsStream(String contentSpecifier) throws Exception {
         InputStream retStream = null;
         try {
-            Response response = this.request(contentSpecifier); 
+            Response response = this.request(contentSpecifier);
             retStream = response.returnContent().asStream();
         } catch (Exception e) {
             log.debug(this.simpleName + "getContentAsStream() http content request exception for contentSpecifier " + contentSpecifier + ", exception message: " + e.getMessage());
@@ -152,7 +152,7 @@ public class QAPortalAccess {
     }
 
     /**
-     * 
+     *
      * Note: Does not block.
      * @param inspectHandler The InspectHandler
      * @param contentHash The hash of the content
@@ -160,10 +160,10 @@ public class QAPortalAccess {
     public void launchReadContent(InspectHandler inspectHandler, String contentHash) {
         // launch independent thread to request and receive content, then to notify dtf-runner
         new QAPortalReadTask(inspectHandler, this, contentHash);
-    }	
-	
+    }
+
     /**
-     * 
+     *
      * @param artifactHash The hash of the artifact
      * @return The URL
      * @throws Exception on any error
@@ -180,10 +180,10 @@ public class QAPortalAccess {
 
         //b.addParameter("content", artifactHash);
         // http://54.85.89.189?content=2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
-        
+
         //b.setParameter("content", artifactHash);
         // http://54.85.89.189?content=2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
-        
+
         //b.setFragment("/" + "content/" + artifactHash);
         // http://54.85.89.189##/content/2320BADC148B562CC6F6D914CC0122E310BA047B48A7C8E378054F903919D2E7
 
@@ -206,30 +206,30 @@ public class QAPortalAccess {
 
 //private ResponseHandler rh = null;
 
-//			Document result;
-//			result = Request.Get("").execute().handleResponse(new ResponseHandler<Document>() {
-//				
-//				public Document handleResponse(HttpResponse response) {
-//					
-//					
-//					DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
-//					try {
-//						
-//						HttpEntity entity = response.getEntity();
-//						ContentType contentType = ContentType.getOrDefault(entity);
-//						if (!contentType.equals(ContentType.APPLICATION_XML)) {
-//							//throw 
-//						}
-//						String charset = contentType.getCharset().toString();
-//						
-//						DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-//						return docBuilder.parse(entity.getContent(), charset);
-//					} catch (Exception e) {
-//						
-//					}
-//					return null;
-//				}
-//			});
-//			
-//			if (result != null)
-//				return result.toString();
+//            Document result;
+//            result = Request.Get("").execute().handleResponse(new ResponseHandler<Document>() {
+//
+//                public Document handleResponse(HttpResponse response) {
+//
+//
+//                    DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
+//                    try {
+//
+//                        HttpEntity entity = response.getEntity();
+//                        ContentType contentType = ContentType.getOrDefault(entity);
+//                        if (!contentType.equals(ContentType.APPLICATION_XML)) {
+//                            //throw
+//                        }
+//                        String charset = contentType.getCharset().toString();
+//
+//                        DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
+//                        return docBuilder.parse(entity.getContent(), charset);
+//                    } catch (Exception e) {
+//
+//                    }
+//                    return null;
+//                }
+//            });
+//
+//            if (result != null)
+//                return result.toString();

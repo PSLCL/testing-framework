@@ -39,7 +39,7 @@ public class StafRunnableProgram implements RunnableProgram
     
     public StafRunnableProgram(ProcessCommandData commandData) throws Exception
     {
-    	this(null, commandData);
+        this(null, commandData);
     }
     
     public StafRunnableProgram(STAFResult result, ProcessCommandData commandData) throws Exception

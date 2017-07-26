@@ -1,0 +1,19 @@
+<ivysettings>
+  <property name="dtf.dir" value="${ivy.settings.dir}/.."/>
+  <property name="com.pslcl.component.dummy.url" override="false" value="file://${dtf.dir}/portal/repo"/>
+  <settings defaultResolver="default" />
+  <include file="${com.pslcl.component.dummy.url}/ivysettings.pslcl-dtf.xml"/>
+  <include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>
+  <resolvers>
+    <filesystem name="local" descriptor="required">
+      <ivy pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision]/ivy.xml"/>
+      <artifact pattern="${dtf.dir}/portal/repo/[organisation]/[module]/[revision](/[type]s)/[artifact]-[revision](-[classifier]).[ext]"/>
+    </filesystem>
+
+    <chain name="default" returnFirst="true">
+      <resolver ref="com.pslcl.dtf"/>
+      <resolver ref="public"/>
+    </chain>
+  </resolvers>
+
+</ivysettings>

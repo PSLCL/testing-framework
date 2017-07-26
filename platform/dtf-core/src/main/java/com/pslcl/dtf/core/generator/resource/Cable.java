@@ -51,7 +51,7 @@ public class Cable
         @Override
         public String getValue(Template template) throws Exception
         {
-        	String ipReference = "$(ip " + template.getReference(machine) + " " + template.getReference(network) + ")";
+            String ipReference = "$(ip " + template.getReference(machine) + " " + template.getReference(network) + ")";
             try
             {
                 return URLEncoder.encode(ipReference, "UTF-8");
@@ -65,7 +65,7 @@ public class Cable
 
     public Cable(Generator generator, Machine machine, Network network, TestInstance.Action connectAction)
     {
-    	this.connectAction = connectAction;
+        this.connectAction = connectAction;
         generator.addParameterReference(ipReference, new IPReference(machine, network));
     }
 
@@ -130,7 +130,7 @@ public class Cable
         return exported.toString().toUpperCase();
     }
 
-	public TestInstance.Action getConnectAction() {
-		return connectAction;
-	}
+    public TestInstance.Action getConnectAction() {
+        return connectAction;
+    }
 }

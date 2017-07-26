@@ -42,8 +42,8 @@ public class DescribedTemplate
 
         public Key(Hash template, Hash modules)
         {
-        	if(template == null) throw new IllegalArgumentException("DescribedTemplate.Key: template hash must not be null.");
-        	if(modules == null) throw new IllegalArgumentException("DescribedTemplate.Key: modules hash must not be null.");
+            if(template == null) throw new IllegalArgumentException("DescribedTemplate.Key: template hash must not be null.");
+            if(modules == null) throw new IllegalArgumentException("DescribedTemplate.Key: modules hash must not be null.");
             this.template = template;
             this.modules = modules;
         }

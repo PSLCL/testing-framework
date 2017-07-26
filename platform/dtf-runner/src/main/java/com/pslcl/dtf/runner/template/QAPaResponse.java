@@ -9,28 +9,28 @@ import org.apache.http.client.fluent.Response;
 public class QAPaResponse {
 
     private Response qaPortalResponse; // null is interpreted as error
-    
+
     /**
-     * 
+     *
      */
     public QAPaResponse() {
         this.qaPortalResponse = null;
     }
-    
+
     /**
-     * 
+     *
      * @param qaPortalResponse The org.apache.http.client.fluent.Response
      */
     public QAPaResponse(Response qaPortalResponse) {
         this.qaPortalResponse = qaPortalResponse;
     }
-    
+
     public boolean isFilled() {
-    	return this.qaPortalResponse!=null;
+        return this.qaPortalResponse!=null;
     }
-    
+
     /**
-     * 
+     *
      * @return
      * @throws ClientProtocolException
      * @throws IOException
@@ -39,9 +39,9 @@ public class QAPaResponse {
         String retString = this.qaPortalResponse.returnContent().asString();
         return retString;
     }
-    
+
     /**
-     * 
+     *
      * @return
      * @throws ClientProtocolException
      * @throws IOException
