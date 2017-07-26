@@ -112,7 +112,9 @@ public class AwsMachineInstance implements MachineInstance
         DeployFuture deployFuture = new DeployFuture(
                         ec2Instance.getPublicIpAddress(), 
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
-                        partialDestPath, url, windows, reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder);
+                        partialDestPath, url, windows, reservedResource.resource.getCoordinates(),
+                        mconfig.s3Bucket, mconfig.loggingSourceFolder,
+                        mconfig.deployRetries);
         //@formatter:on
         return reservedResource.provider.config.blockingExecutor.submit(deployFuture);
     }

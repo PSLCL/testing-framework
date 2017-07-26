@@ -96,7 +96,10 @@ public class RunFuture implements Callable<RunnableProgram>
             return runnableProgram;
         }
         // linux
-        cmdData.setCommand("./" + cmdData.getFileName());
+        if(cmdData.getFileName().startsWith(StafRunnableProgram.NotALinuxFile))
+            cmdData.setCommand(cmdData.getFileName().substring(StafRunnableProgram.NotALinuxFile.length()));
+        else
+            cmdData.setCommand("./" + cmdData.getFileName());
         StafRunnableProgram runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
         runnableProgram.setExecutorService(executor);
         Thread.currentThread().setName(tname);

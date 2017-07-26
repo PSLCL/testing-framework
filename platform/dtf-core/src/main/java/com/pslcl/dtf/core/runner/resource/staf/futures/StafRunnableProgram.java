@@ -31,6 +31,8 @@ import java.util.concurrent.Future;
 @SuppressWarnings("javadoc")
 public class StafRunnableProgram implements RunnableProgram
 {
+    public static final String NotALinuxFile = "<nodot>";
+
     private final static String ProcessQueryHandle = "query handle ";
     private final static String ProcessStopHandle = "stop handle ";
     private final static String ProcessFreeHandle = "free handle ";
@@ -166,7 +168,7 @@ public class StafRunnableProgram implements RunnableProgram
                 return;
             }
 //aws s3api put-object --bucket dtf-staf-logging --key testId/templateId/runId/
-            StringBuilder cmd = new StringBuilder("aws s3api put-object --bucket ");
+            StringBuilder cmd = new StringBuilder(NotALinuxFile + "aws s3api put-object --bucket ");
             cmd.append(commandData.getS3Bucket());
             String key = StrH.addTrailingSeparator(keyprefix.toString(), '/');
             cmd.append(" --key ").append(key);
@@ -181,8 +183,7 @@ public class StafRunnableProgram implements RunnableProgram
             executor.submit(df).get();
 
 //aws s3 cp --recursive /var/opt/pslcl/dtf/log s3://dtf-staf-logging/testId/templateId/runId/instanceId
-
-            cmd = new StringBuilder("aws s3 cp --recursive ");
+            cmd = new StringBuilder(NotALinuxFile+ "aws s3 cp --recursive ");
             String logFolder = StrH.stripTrailingSeparator(commandData.getLogFolder());
             cmd.append(logFolder);
             cmd.append(" s3://").append(commandData.getS3Bucket()).append(keyprefix);

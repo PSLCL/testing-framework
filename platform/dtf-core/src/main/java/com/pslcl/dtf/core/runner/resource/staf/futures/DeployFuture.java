@@ -39,8 +39,9 @@ public class DeployFuture implements Callable<Void>
     private final ResourceCoordinates coordinates;
     private final String s3Bucket;
     private final String loggingSourceFolder;
+    private final int retries;
 
-    public DeployFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, String sourceUrl, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String loggingSourceFolder)
+    public DeployFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, String sourceUrl, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String loggingSourceFolder, int retries)
     {
         this.host = host;
         this.linuxSandbox = linuxSandbox;
@@ -51,6 +52,7 @@ public class DeployFuture implements Callable<Void>
         this.coordinates = coordinates;
         this.s3Bucket = s3Bucket;
         this.loggingSourceFolder = loggingSourceFolder;
+        this.retries = retries;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
         {
@@ -110,7 +112,7 @@ public class DeployFuture implements Callable<Void>
         
         cmdData = new ProcessCommandData(cmdData);
         cmdData.setUseWorkingDir(true);
-        cmdData.setCommand("sudo wget " + sourceUrl);
+        cmdData.setCommand("sudo wget -t " + retries + " " + sourceUrl);
         executeStafProcess(cmdData, false, true);
         
         cmdData = new ProcessCommandData(cmdData);
