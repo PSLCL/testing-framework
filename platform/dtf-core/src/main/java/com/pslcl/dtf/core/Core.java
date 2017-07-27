@@ -367,7 +367,7 @@ public class Core
                 read_only = true;
             }
 
-            String connectstring = String.format("jdbc:mariadb://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
+            String connectstring = String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
             connect = DriverManager.getConnection(connectstring);
         } catch (Exception e)
         {
