@@ -205,22 +205,20 @@ Multiple images will likely need to be created depending on the needs of the tes
 For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ami-create-standard.html before saving the image.
 
     1. Bring up a remote desktop client to the EC2 image established in the above steps.
-    2. If Windows Firewall is enabled, ensure that inbound traffic from ports 6500 and 6550 is allowed.
-    3. Run the "EC2ConfigService Settings" application
-    4. In the "General" tab	
+    2. Install Powershell AWS commandline tools.
+	  a. follow instructions at http://docs.aws.amazon.com/powershell/latest/userguide/pstools-getting-set-up.html.
+	  b. Create the S3 bucket for test instance log capture. i.e. dtf-staf-logging and set its ACL appropriate to your groups needed access.  The bucket name setup here must be configured in the runners configuration.    2. 
+    3. If Windows Firewall is enabled, ensure that inbound traffic from ports 6500 and 6550 is allowed.
+    4. Run the "EC2ConfigService Settings" application (c:\Program Files\Amazon\Ec2ConfigService\Ec2ConfigServiceSettings.exe)
+    5. In the "General" tab	
 	  a. select "Set Computer Name" check box.
 	  b. select "User Data" check box.
 	  c. select "Event Log" check box.
 	  d. select "Wallpaper Information" check box.
-    5. In the "Image" tab:
+    6. In the "Image" tab:
 	  a. create another user and assign that user administrator rights.
 	  b. select "Keep Existing" radio button.
 	  c. click the "Shutdown with Sysprep" button.
-    6. Install Powershell AWS commandline tools.
-	  a. follow instructions at http://docs.aws.amazon.com/powershell/latest/userguide/pstools-getting-set-up.html.
-	  b. Create the S3 bucket for test instance log capture. i.e. dtf-staf-logging and set its ACL appropriate to your groups needed access.  The bucket name setup here must be configured in the runners configuration.
-
-
 
 ### AWS Simple Queue Service(SQS)
 AWS SQS is used by the test runner service as a persistent queue to handle requests to run tests. From the AWS Console, launch a queue and configure it appropriately. Configure the test runner service to use the created queue.
