@@ -45,13 +45,13 @@ public class AwsMachineInstance implements MachineInstance
     public volatile MachineReservedResource reservedResource;
     public final Instance ec2Instance;
     public volatile MachineConfigData mconfig;
-    public final RunnerConfig rconfig;
+    private final RunnerConfig rconfig;
     public final AtomicBoolean sanitizing;
     public final AtomicBoolean destroyed;
     public final AtomicBoolean taken;
     public final long instantiationTime;
     
-    public AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
+    AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
         this.reservedResource = reservedResource;
         this.mconfig = mconfig;
@@ -73,9 +73,10 @@ public class AwsMachineInstance implements MachineInstance
     public Map<String, String> getAttributes()
     {
         Map<String, String> map = reservedResource.resource.getAttributes();
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (map)
         {
-            return new HashMap<String, String>(map);
+            return new HashMap<>(map);
         }
     }
 
@@ -83,6 +84,7 @@ public class AwsMachineInstance implements MachineInstance
     public void addAttribute(String key, String value)
     {
         Map<String, String> map = reservedResource.resource.getAttributes();
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (map)
         {
             map.put(key, value);
@@ -203,7 +205,6 @@ public class AwsMachineInstance implements MachineInstance
     @Override
     public Future<Void> disconnect(NetworkInstance network)
     {
-        AwsNetworkInstance instance = (AwsNetworkInstance) network;
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(reservedResource.provider, reservedResource.resource.getCoordinates());
         DisconnectFuture future = new DisconnectFuture(this, (AwsNetworkInstance) network, pdelayData);
         return rconfig.blockingExecutor.submit(future);
@@ -259,7 +260,7 @@ public class AwsMachineInstance implements MachineInstance
             throw new Exception("Unknown AWS Instance State: " + awsState);
         }
 
-        private AwsInstanceState(String awsState)
+        AwsInstanceState(String awsState)
         {
             this.awsState = awsState;
         }

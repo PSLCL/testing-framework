@@ -27,11 +27,13 @@ import com.pslcl.dtf.core.util.TabToLevel;
 @SuppressWarnings("javadoc")
 public class StafSupport
 {
-    public final static String StafHandleName = "dtf-staf-handle";
-    public final static String ProcessService = "process";
-    public final static String PingService = "ping";
-    public final static String ProcessRequest = "start shell command ";
-    public final static String ServiceReturnCode = "Return Code:";
+    private final static String StafHandleName = "dtf-staf-handle";
+    private final static String ProcessService = "process";
+    private final static String PingService = "ping";
+    @SuppressWarnings("unused")
+    private final static String ProcessRequest = "start shell command ";
+    @SuppressWarnings("unused")
+    private final static String ServiceReturnCode = "Return Code:";
 
     private static Logger log = LoggerFactory.getLogger(StafSupport.class);
     private static STAFHandle handle;
@@ -53,7 +55,7 @@ public class StafSupport
         }
         
         StopResult stopResult = null;
-        STAFResult result = null;
+        STAFResult result;
         boolean resultParse = false;
         try
         {
@@ -85,6 +87,7 @@ public class StafSupport
         return stopResult;
     }
     
+    @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
     public static FreeResult processFree(StafRunnableProgram runnableProg) throws Exception
     {
         String cmd = runnableProg.getProcessFreeCommand();
@@ -98,7 +101,7 @@ public class StafSupport
         }
         
         FreeResult freeResult = null;
-        STAFResult result = null;
+        STAFResult result;
         boolean resultParse = false;
         try
         {
@@ -141,7 +144,7 @@ public class StafSupport
         }
         
         QueryResult queryResult = null;
-        STAFResult result = null;
+        STAFResult result;
         boolean resultParse = false;
         try
         {
@@ -191,6 +194,7 @@ public class StafSupport
                     log.debug(result.toString());
                 else
                 {
+                    //noinspection ConstantConditions
                     format.ttl("\nPing Ping failed");
                     log.debug(format.toString());
                 }
@@ -216,13 +220,14 @@ public class StafSupport
         if (log.isDebugEnabled())
         {
             format = new TabToLevel();
-            format.sb.append("\n" + StafSupport.class.getSimpleName());
+            format.sb.append("\n").append(StafSupport.class.getSimpleName());
             if(!powershell)
                 format.sb.append(".issueProcessShellRequest:");
             else
                 format.sb.append(".issueProcessPowershellRequest:");
             format.sb.append("\n");
             format.level.incrementAndGet();
+            //noinspection ResultOfMethodCallIgnored
             commandData.toString(format);
         }
 
@@ -230,10 +235,11 @@ public class StafSupport
         if(!powershell)
             cmd = commandData.getShellCommand();
         if (log.isDebugEnabled())
+            //noinspection ConstantConditions
             format.ttl("stafCmd = ", ProcessService + " " + cmd);
         
         StafRunnableProgram runnableProgram = null;
-        STAFResult result = null;
+        STAFResult result;
         boolean resultParse = false;
         try
         {
@@ -249,7 +255,9 @@ public class StafSupport
                 else
                 {
                     if(resultParse)
+                        //noinspection ConstantConditions
                         format.ttl("\nStafRunnableProgram failed to parse the result");
+                    //noinspection ConstantConditions
                     log.debug(format.toString());
                 }
             }
@@ -269,6 +277,7 @@ public class StafSupport
         return result;
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static STAFHandle getStafHandle() throws Exception
     {
         synchronized (StafHandleName)
@@ -287,11 +296,13 @@ public class StafSupport
         return handle;
     }
 
+    @SuppressWarnings("SameParameterValue")
     public static void ping(String host) throws Exception
     {
         request(host, "ping", "ping");
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static void checkStafResult(STAFResult result, TabToLevel format) throws Exception
     {
         try
@@ -303,9 +314,10 @@ public class StafSupport
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static String getResultRc(STAFResult result, boolean throwOnError, TabToLevel format)
     {
-        String msg = null;
+        String msg;
         switch (result.rc)
         {
             case 0:

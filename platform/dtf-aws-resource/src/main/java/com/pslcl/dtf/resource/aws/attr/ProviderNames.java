@@ -23,18 +23,18 @@ import org.slf4j.Logger;
 import com.amazonaws.services.ec2.model.ImageAttributeName;
 import com.amazonaws.services.ec2.model.InstanceType;
 
-@SuppressWarnings("javadoc")
+@SuppressWarnings({"javadoc", "WeakerAccess", "unused"})
 public class ProviderNames
 {
     // see dtf-core ResourceNames.PslclKeyBase, ResourceKeyBase and ResourceShortNameDefault.
     // Did not want to depend on dtf-core
-    public static final String PslclKeyBase = "pslcl.dtf";  
+    public static final String PslclKeyBase = "pslcl.dtf";
     public static final String AwsKeyBase = PslclKeyBase + ".aws";
     public static final String ResourceKeyBase = AwsKeyBase + ".resource";
     
     public static final String ResourcePrefixNameKey = ResourceKeyBase + ".prefix-name";
     public static final String ResourcePrefixNameDefault = "dtf";
-    
+
     public static final String ShortMaxDelayDefault = "5000"; // 5 seconds
     public static final String ShortMaxRetriesDefault = "17"; // roughly 1 minute
     public static final String LongMaxDelayDefault = "15000"; // 15 seconds
@@ -45,7 +45,7 @@ public class ProviderNames
      * see com.pslcl.dtf.resource.aws.provider.AwsMachineProvider     
      * 
      * Instance type declarations    
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String InstanceKeyBase = AwsKeyBase + ".instance";
     
     public static final String InstanceTypeKey = InstanceKeyBase + ".type";
@@ -68,8 +68,8 @@ public class ProviderNames
     public static void logInstanceTypes(Logger log)
     {
         StringBuilder sb = new StringBuilder("\nInstance Types:\n");
-        for(int i=0; i < instanceTypes.length; i++)
-            sb.append("\t"+instanceTypes[i].name() + "(" + instanceTypes[i].toString() + ")\n");
+        for(InstanceType instanceType : instanceTypes)
+            sb.append("\t").append(instanceType.name()).append("(").append(instanceType.toString()).append(")\n");
         sb.append("\n");
         log.info(sb.toString());
     }
@@ -100,18 +100,18 @@ public class ProviderNames
     public static final String ImageHypervisorXen = "xen";
     public static final String ImageHypervisorDefault = ImageHypervisorXen;
     public static final String ImageHypervisorFilter = "hypervisor";
-    
+
     public static final String ImageImageTypeMachine = "machine";
     public static final String ImageImageTypeKernel = "kernel";
     public static final String ImageImageTypeRamdisk = "ramdisk";
     public static final String ImageImageTypeDefault = ImageImageTypeMachine;
     public static final String ImageImageTypeFilter = "image-type";
-    
+
     public static final String ImageRootDevTypeEbs = "ebs";
     public static final String ImageRootDevTypeInstaceStore = "instance-store";
     public static final String ImageRootDevTypeDefault = ImageRootDevTypeEbs;
     public static final String ImageRootDevTypeFilter = "root-device-type";
-    
+
     public static final String ImageStateAvailable = "available";
     public static final String ImageStatePending = "pending";
     public static final String ImageStateFailed = "failed";
@@ -119,7 +119,7 @@ public class ProviderNames
     public static final String ImageStateFilter = "state";
 
     public static final String ImagePlatformNonWindows = null;
-    public static final String ImagePlatformWindows = "windows"; 
+    public static final String ImagePlatformWindows = "windows";
     public static final String ImagePlatformDefault = ImagePlatformNonWindows;
     public static final String ImagePlatformFilter = "platform"; 
 
@@ -146,8 +146,8 @@ public class ProviderNames
     public static void logImageAttributeNames(Logger log)
     {
         StringBuilder sb = new StringBuilder("\nImage attribute names:\n");
-        for(int i=0; i < imageAttributeNames.length; i++)
-            sb.append("\t"+imageAttributeNames[i].name() + "(" + imageAttributeNames[i].toString() + ")\n");
+        for(ImageAttributeName imageAttributeName : imageAttributeNames)
+            sb.append("\t").append(imageAttributeName.name()).append("(").append(imageAttributeName.toString()).append(")\n");
         sb.append("\n");
         log.info(sb.toString());
     }
@@ -155,7 +155,7 @@ public class ProviderNames
     /* ****************************************************************************
      * Block Device - sub image declarations    
     ******************************************************************************/
-    
+
     public static final String BlockingDeviceKeyBase = ImageKeyBase + ".block-device";
     
     public static final String BlockingDeviceVolumeSizeKey = BlockingDeviceKeyBase + ".volume-size";
@@ -169,7 +169,7 @@ public class ProviderNames
     public static final String BlockingDeviceVolumeTypeFilter = "block-device-mapping.volume-type";
     
     // size in gig, 1 min, 1024 is max, the following were see on amazon only images
-    
+
     public static final String BlockingDeviceVolumeSize2 = "2";     // 27
     public static final String BlockingDeviceVolumeSize8 = "8";     // 340
     public static final String BlockingDeviceVolumeSize10 = "10";   // 4
@@ -225,11 +225,10 @@ public class ProviderNames
     public static final String LocationYearDefault = null;
     public static final String LocationMonthDefault = null;
     public static final String LocationDotDefault = null;
-    
-    
+
     /* ****************************************************************************
      * SES Inspect    
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String SesKeyBase = AwsKeyBase + ".ses";
     
     public static final String SesMaxDelayKey = SesKeyBase + ".max-delay";
@@ -240,7 +239,7 @@ public class ProviderNames
     ******************************************************************************/
     public static List<String> getMachineKeys()
     {
-       List<String> keys = new ArrayList<String>();
+       List<String> keys = new ArrayList<>();
        keys.add(ResourcePrefixNameKey);
        keys.add(InstanceTypeKey);
        keys.add(ImageArchitectureKey);
@@ -271,7 +270,7 @@ public class ProviderNames
     
     public static List<String> getNetworkKeys()
     {
-        List<String> keys = new ArrayList<String>();
+        List<String> keys = new ArrayList<>();
         keys.add(InstanceNames.VpcIdKey);  
         keys.add(InstanceNames.VpcCidrKey);
         keys.add(InstanceNames.VpcTenancyKey);
@@ -291,7 +290,7 @@ public class ProviderNames
     }
     public static List<String> getSesKeys()
     {
-        List<String> keys = new ArrayList<String>();
+        List<String> keys = new ArrayList<>();
         keys.add(SesMaxDelayKey);  
         keys.add(SesMaxRetriesKey);  
         return keys;

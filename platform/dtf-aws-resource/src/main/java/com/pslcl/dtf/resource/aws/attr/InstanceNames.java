@@ -18,7 +18,7 @@ package com.pslcl.dtf.resource.aws.attr;
 import java.util.ArrayList;
 import java.util.List;
 
-@SuppressWarnings("javadoc")
+@SuppressWarnings({"javadoc", "WeakerAccess", "unused"})
 public class InstanceNames
 {
     public static final String InstanceKeyBase = ProviderNames.AwsKeyBase + ".ec2instance";
@@ -41,7 +41,7 @@ public class InstanceNames
     
     /* ****************************************************************************
      * VPC declarations
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String VpcKeyBase = InstanceKeyBase + ".vpc";
     
     public static final String VpcIdKey = VpcKeyBase + ".id";
@@ -58,7 +58,7 @@ public class InstanceNames
 
     /* ****************************************************************************
      * Subnet declarations
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String SubnetKeyBase = InstanceKeyBase + ".subnet";
     public static final String SubnetSizeKey = SubnetKeyBase + ".size";
     public static final String SubnetNameKey = SubnetKeyBase + ".name";
@@ -72,7 +72,7 @@ public class InstanceNames
     
     /* ****************************************************************************
      * Security Group declarations
-    ******************************************************************************/    
+    ******************************************************************************/
     public static final String SgKeyBase = InstanceKeyBase + ".sg";
     
     public static final String SgGroupIdKey = SgKeyBase + ".group-id";
@@ -86,8 +86,8 @@ public class InstanceNames
     
     /* ****************************************************************************
      * VPC Permissions
-    ******************************************************************************/    
-    public static final String PermKeyBase = InstanceKeyBase + ".perm";
+    ******************************************************************************/
+    public  static final String PermKeyBase = InstanceKeyBase + ".perm";
     
     // note that the following are base keys and can be numbered from 0 on up, to add as many permissions as desired
     // these are optional, but if one is given, they are must be given with matching numbers.
@@ -127,14 +127,14 @@ public class InstanceNames
     /* ****************************************************************************
      * deploy retries
     ******************************************************************************/
-    public static final String DeployKeyBase = InstanceKeyBase + ".deploy";
+    public  static final String DeployKeyBase = InstanceKeyBase + ".deploy";
     public static final String DeployMaxRetriesKey = DeployKeyBase + ".max-retries";
 
     public static final String DeployMaxRetriesDefault = "2";
 
     public static List<String> getInstanceKeys()
     {
-       List<String> keys = new ArrayList<String>();
+       List<String> keys = new ArrayList<>();
        keys.add(Ec2LinuxUserDataKey);
        keys.add(Ec2WinUserDataKey);       
        keys.add(Ec2MaxDelayKey);

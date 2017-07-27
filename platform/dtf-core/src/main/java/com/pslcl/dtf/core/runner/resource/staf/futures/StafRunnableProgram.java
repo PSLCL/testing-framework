@@ -31,7 +31,7 @@ import java.util.concurrent.Future;
 @SuppressWarnings("javadoc")
 public class StafRunnableProgram implements RunnableProgram
 {
-    public static final String NotALinuxFile = "<nodot>";
+    static final String NotALinuxFile = "<nodot>";
 
     private final static String ProcessQueryHandle = "query handle ";
     private final static String ProcessStopHandle = "stop handle ";
@@ -56,6 +56,7 @@ public class StafRunnableProgram implements RunnableProgram
             this.result = new ProcessResult(result, commandData.isWait());
     }
 
+    @SuppressWarnings("unused")
     public synchronized boolean isStopped()
     {
         return stopped;
@@ -67,23 +68,23 @@ public class StafRunnableProgram implements RunnableProgram
         this.result.setStopResult(result);
     }
 
+    @SuppressWarnings("unused")
     public synchronized ExecutorService getExecutorService()
     {
         return executor;
     }
 
-    public synchronized void setExecutorService(ExecutorService executor)
+    synchronized void setExecutorService(ExecutorService executor)
     {
         this.executor = executor;
     }
 
     public synchronized String getProcessQueryCommand()
     {
-        StringBuilder cmd = new StringBuilder(ProcessQueryHandle).append(" ").append(getProcessHandle());
-        return cmd.toString();
+        return ProcessQueryHandle + " " + getProcessHandle();
     }
 
-    public String getProcessHandle()
+    private String getProcessHandle()
     {
         if(commandData.isWait())
             return null;
@@ -92,14 +93,12 @@ public class StafRunnableProgram implements RunnableProgram
 
     public synchronized String getProcessStopCommand()
     {
-        StringBuilder cmd = new StringBuilder(ProcessStopHandle).append(" ").append(getProcessHandle());
-        return cmd.toString();
+        return ProcessStopHandle + " " + getProcessHandle();
     }
 
     public synchronized String getProcessFreeCommand()
     {
-        StringBuilder cmd = new StringBuilder(ProcessFreeHandle).append(" ").append(getProcessHandle());
-        return cmd.toString();
+        return ProcessFreeHandle + " " + getProcessHandle();
     }
 
     public ProcessResult getResult()
@@ -167,29 +166,29 @@ public class StafRunnableProgram implements RunnableProgram
                 executor.submit(df).get();
                 return;
             }
-//aws s3api put-object --bucket dtf-staf-logging --key testId/templateId/runId/
-            StringBuilder cmd = new StringBuilder(NotALinuxFile + "aws s3api put-object --bucket ");
-            cmd.append(commandData.getS3Bucket());
-            String key = StrH.addTrailingSeparator(keyprefix.toString(), '/');
-            cmd.append(" --key ").append(key);
-            //@formatter:off
-                RunFuture df = new RunFuture(
-                        commandData.getHost(),
-                        commandData.getSandbox(), null,
-                        cmd.toString(), executor, true, false,
-                        commandData.getCoordinates(), commandData.getSandbox(),
-                        commandData.getLogFolder(), null);
-                //@formatter:on
-            executor.submit(df).get();
+////aws s3api put-object --bucket dtf-staf-logging --key testId/templateId/runId/
+//            StringBuilder cmd = new StringBuilder(NotALinuxFile + "aws s3api put-object --bucket ");
+//            cmd.append(commandData.getS3Bucket());
+//            String key = StrH.addTrailingSeparator(keyprefix.toString(), '/');
+//            cmd.append(" --key ").append(key);
+//            //@formatter:off
+//                RunFuture df = new RunFuture(
+//                        commandData.getHost(),
+//                        commandData.getSandbox(), null,
+//                        cmd.toString(), executor, true, false,
+//                        commandData.getCoordinates(), commandData.getSandbox(),
+//                        commandData.getLogFolder(), null);
+//                //@formatter:on
+//            executor.submit(df).get();
 
 //aws s3 cp --recursive /var/opt/pslcl/dtf/log s3://dtf-staf-logging/testId/templateId/runId/instanceId
-            cmd = new StringBuilder(NotALinuxFile+ "aws s3 cp --recursive ");
+            StringBuilder cmd = new StringBuilder(NotALinuxFile+ "aws s3 cp --recursive ");
             String logFolder = StrH.stripTrailingSeparator(commandData.getLogFolder());
             cmd.append(logFolder);
             cmd.append(" s3://").append(commandData.getS3Bucket()).append(keyprefix);
 
             //@formatter:off
-                df = new RunFuture(
+                RunFuture df = new RunFuture(
                         commandData.getHost(),
                         commandData.getSandbox(), null,
                         cmd.toString(), executor, true, false,
@@ -211,6 +210,7 @@ public class StafRunnableProgram implements RunnableProgram
         return toString(format).toString();
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public synchronized TabToLevel toString(TabToLevel format)
     {
         format.ttl(getClass().getSimpleName() + ":");

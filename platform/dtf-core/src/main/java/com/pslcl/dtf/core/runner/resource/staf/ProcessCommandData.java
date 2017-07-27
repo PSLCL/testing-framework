@@ -22,8 +22,8 @@ import com.pslcl.dtf.core.util.TabToLevel;
 @SuppressWarnings("javadoc")
 public class ProcessCommandData
 {
-    public final static String ProcessShellRequest = "start shell command ";
-    public final static String ProcessPowershellRequest = "start shell \"powershell.exe %c\" command ";
+    private final static String ProcessShellRequest = "start shell command ";
+    private final static String ProcessPowershellRequest = "start shell \"powershell.exe %c\" command ";
     
     private boolean fdn;
     private boolean fileOnly;
@@ -73,6 +73,7 @@ public class ProcessCommandData
         windows = commandData.windows;
     }
 
+    @SuppressWarnings("WeakerAccess")
     public synchronized boolean isFdn()
     {
         return fdn;
@@ -95,11 +96,13 @@ public class ProcessCommandData
 
     public synchronized String getLogFolder() {return logFolder;}
 
+    @SuppressWarnings("WeakerAccess")
     public synchronized boolean isFileOnly()
     {
         return fileOnly;
     }
 
+    @SuppressWarnings("WeakerAccess")
     public synchronized boolean isUseWorkingDir()
     {
         return useWorkingDir;
@@ -120,11 +123,13 @@ public class ProcessCommandData
         this.sandbox = sandbox;
     }
 
+    @SuppressWarnings("WeakerAccess")
     public synchronized String getPowershellCommand()
     {
         return getProcessCmd(ProcessPowershellRequest);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public synchronized String getShellCommand()
     {
         return getProcessCmd(ProcessShellRequest);
@@ -133,14 +138,20 @@ public class ProcessCommandData
     private String getProcessCmd(String stafPrefix)
     {
         StringBuilder cmd = new StringBuilder(stafPrefix).append("\"");
-        cmd.append(command);
+        if(!fdn)
+            cmd.append(command);
+        else
+            cmd.append(basePath);
         if (wait)
             cmd.append("\" wait ");
         else
             cmd.append("\" ");
 //            cmd.append("\" notify onend ");
-        cmd.append("stdout ").append(logFolder).append("stdout.log ");
-        cmd.append("stderr ").append(logFolder).append("stderr.log ");
+        if(logFolder != null)
+        {
+            cmd.append("stdout ").append(logFolder).append("stdout.log ");
+            cmd.append("stderr ").append(logFolder).append("stderr.log ");
+        }
         cmd.append("returnstdout ")
         .append("returnstderr ");
         if(!fdn && useWorkingDir)
@@ -153,6 +164,7 @@ public class ProcessCommandData
         return basePath;
     }
 
+    @SuppressWarnings("unused")
     public synchronized void setBasePath(String basePath)
     {
         this.basePath = basePath;
@@ -163,6 +175,7 @@ public class ProcessCommandData
         return fileName;
     }
 
+    @SuppressWarnings("unused")
     public synchronized void setFileName(String fileName)
     {
         this.fileName = fileName;
@@ -236,12 +249,23 @@ public class ProcessCommandData
         format.ttl("basePath: ", basePath);
         format.ttl("fileName: ", fileName);
         format.ttl("fileOnly: ", fileOnly);
+        format.ttl("windows: ", windows);
         format.ttl("sandbox: ", sandbox);
         format.ttl("command: ", command);
         format.ttl("wait: ", wait);
         format.ttl("timeout: ", timeout);
         format.ttl("useWorkingDir: ", useWorkingDir);
         format.ttl("context: ", (context == null ? "null" : context.getClass().getName()));
+        format.ttl("s3Bucket: ", s3Bucket);
+        format.ttl("logFolder: ", logFolder);
+        format.ttl("coordinates:");
+        format.level.incrementAndGet();
+        if(coordinates == null)
+            format.ttl("null");
+        else
+            coordinates.toString(format);
+        format.level.decrementAndGet();
+        format.level.decrementAndGet();
         return format;
     }
 }

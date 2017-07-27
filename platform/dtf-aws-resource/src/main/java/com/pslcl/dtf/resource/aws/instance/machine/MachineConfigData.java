@@ -29,23 +29,23 @@ import com.pslcl.dtf.resource.aws.provider.SubnetManager;
 @SuppressWarnings("javadoc")
 public class MachineConfigData
 {
-    public volatile SubnetConfigData subnetConfigData;
-    public volatile String iamArn;
-    public volatile String iamName;
-    public volatile String keyName;
-    public volatile int ec2MaxDelay;
-    public volatile int ec2MaxRetries;
+    volatile SubnetConfigData subnetConfigData;
+    volatile String iamArn;
+    private volatile String iamName;
+    volatile String keyName;
+    volatile int ec2MaxDelay;
+    volatile int ec2MaxRetries;
     public volatile String resourcePrefixName;
     public volatile boolean windows;
-    public volatile String linuxUserData;
-    public volatile String winUserData;
-    public volatile String linuxSandboxPath;
-    public volatile String winSandboxPath;
+    volatile String linuxUserData;
+    volatile String winUserData;
+    volatile String linuxSandboxPath;
+    volatile String winSandboxPath;
     public volatile int stallReleaseMinutes;   
-    public volatile double rootDiskSize; // in gig
-    public volatile String s3Bucket;
-    public volatile String loggingSourceFolder;
-    public volatile int deployRetries;
+    volatile double rootDiskSize; // in gig
+    volatile String s3Bucket;
+    volatile String loggingSourceFolder;
+    volatile int deployRetries;
 
     private MachineConfigData()
     {

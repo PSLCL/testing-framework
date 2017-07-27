@@ -177,7 +177,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             runInstancesRequest.setIamInstanceProfile(profile);
         }
 
-        RunInstancesResult runResult = null;
+        RunInstancesResult runResult;
         pdelayData.maxDelay = config.ec2MaxDelay;
         pdelayData.maxRetries = config.ec2MaxRetries;
         pdelay.reset();
@@ -234,9 +234,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 if (inst != null)
                 {
                     boolean found = false;
-                    for (int i = 0; i < states.length; i++)
+                    for(AwsInstanceState state : states)
                     {
-                        if (AwsInstanceState.getState(inst.getState().getName()) == states[i])
+                        if(AwsInstanceState.getState(inst.getState().getName()) == state)
                         {
                             found = true;
                             break;
@@ -311,13 +311,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 throw fstoe;
             } catch (Exception e)
             {
-                try
-                {
-                    pdelay.retry(msg);
-                } catch (FatalServerTimeoutException fstoe)
-                {
-                    throw fstoe;
-                }
+                pdelay.retry(msg);
             }
         } while (true);
     }
@@ -357,7 +351,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
             String msg = pdelayData.getHumanName(KeyPairMidStr, "describeKeyPairs");
             DescribeKeyPairsRequest dkpr = new DescribeKeyPairsRequest();//.withKeyNames(name);
-            DescribeKeyPairsResult keyPairsResult = null;
+            DescribeKeyPairsResult keyPairsResult;
             do
             {
                 try
@@ -380,7 +374,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             }
 
             CreateKeyPairRequest ckpr = new CreateKeyPairRequest().withKeyName(name);
-            CreateKeyPairResult keypairResult = null;
+            CreateKeyPairResult keypairResult;
             pdelay.reset();
             msg = pdelayData.getHumanName(KeyPairMidStr, "createKeyPair");
             do

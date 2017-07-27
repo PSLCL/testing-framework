@@ -91,13 +91,9 @@ public class DeployFuture implements Callable<Void>
             StafSupport.issueProcessShellRequest(cmdData);  // if sandbox exists we ignore the error
             cmdData = new ProcessCommandData(cmdData);
             cmdData.setUseWorkingDir(true);
-            
-            StringBuilder cmd = new StringBuilder()
-                            .append("wget -Outfile ")
-                            .append(urlFile)
-                            .append(" ")
-                            .append(sourceUrl);
-            cmdData.setCommand(cmd.toString());
+
+            String cmd = "wget -Outfile " + urlFile + " " + sourceUrl;
+            cmdData.setCommand(cmd);
             executeStafProcess(cmdData, true, true);
             
             cmdData = new ProcessCommandData(cmdData);
@@ -126,9 +122,10 @@ public class DeployFuture implements Callable<Void>
         return null;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void executeStafProcess(ProcessCommandData cmdData, boolean powershell, boolean failOnServiceError) throws Exception
     {
-        StafRunnableProgram runnableProgram = null;
+        StafRunnableProgram runnableProgram;
         if(powershell)
             runnableProgram = StafSupport.issueProcessPowershellRequest(cmdData);
         else
@@ -141,7 +138,7 @@ public class DeployFuture implements Callable<Void>
         }
     }
 
-    public static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String logFolder) throws Exception
+    static ProcessCommandData getCommandPath(String partialDestPath, String linuxSandbox, String winSandbox, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String logFolder) throws Exception
     {
         // where partialDestPath is one of these three
         // 1. lib/someApp.jar arg1 arg2
@@ -158,6 +155,8 @@ public class DeployFuture implements Callable<Void>
 //        3. c:\\opt\\dtf\\sandbox\\OperationsTest -requestorMode - maxiterations 10 -address addr -testset
 
         String args = "";
+        if(partialDestPath == null)
+            partialDestPath = "";
         String cmdPath = partialDestPath;
         int idx = partialDestPath.indexOf(' ');
         if(idx != -1)
@@ -166,10 +165,8 @@ public class DeployFuture implements Callable<Void>
             cmdPath = partialDestPath.substring(0, idx);
         }
         // deal with cmdPath as if linux for now
-        String path = null;
+        String path;
         String absoluteLogPath = null;
-        if(partialDestPath == null)
-            partialDestPath = "";
         String penultimate = cmdPath.replace('\\', '/');        // bin/OperationsTest, OperationsTest, /opt/dtf/sandbox/OperationsTest
         String fileName = StrH.getAtomicName(penultimate, '/');         // OperationsTest, OperationsTest, OperationsTest
         boolean fileOnly = penultimate.equals(fileName);                         // false, true, false
@@ -187,11 +184,13 @@ public class DeployFuture implements Callable<Void>
             {
                 penultimate = penultimate.replace('/', '\\');   // lib\someApp.jr, topLevelFile
                 path = StrH.addTrailingSeparator(winSandbox + "\\" + coordinates.getRunId(), '\\');     // c:\opt\dtf\sandbox\
-                absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '\\');
+                if(logFolder != null)
+                    absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '\\');
             }else
             {
                 path = StrH.addTrailingSeparator(linuxSandbox + "/" + coordinates.getRunId(), '/');     // /opt/dtf/sandbox/80/
-                absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '/');
+                if(logFolder != null)
+                    absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '/');
             }
 
             if (!fileOnly)
@@ -202,13 +201,15 @@ public class DeployFuture implements Callable<Void>
             if(windows)
             {
                 path = path.replace('/', '\\');   // lib\someApp.jr, topLevelFile
-                absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '\\');
+                if(logFolder != null)
+                    absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '\\');
             }
             else
+            if(logFolder != null)
                 absoluteLogPath = StrH.addTrailingSeparator(path + logFolder, '/');
         }
         path = StrH.stripTrailingSeparator(path);
-        fileName = fileName += args;
+        fileName = fileName + args;
         return new ProcessCommandData((windows ? winSandbox : linuxSandbox), path, fileName, fdn, fileOnly, coordinates, s3Bucket, absoluteLogPath, windows);
     }
 }
