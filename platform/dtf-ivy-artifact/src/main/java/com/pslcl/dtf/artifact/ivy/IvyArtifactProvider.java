@@ -327,7 +327,7 @@ public class IvyArtifactProvider implements ArtifactProvider
                     hash = Hash.fromContent(file);
                     downloaded = true;
                 } else {
-                    LoggerFactory.getLogger(IvyArtifactProvider.IvyContent.class).debug("<internal> IvyArtifactProavider.IvyContent.download() finds null file, with message: " + areport);
+                    LoggerFactory.getLogger(IvyArtifactProvider.IvyContent.class).debug("<internal> IvyArtifactProvider.IvyContent.download() finds null file, with message: " + areport);
                 }
             } catch (Exception e) {
                 LoggerFactory.getLogger(IvyArtifactProvider.IvyContent.class).error("<internal> IvyArtifactProvider.IvyContent.download() sees exception, msg: " + e);
