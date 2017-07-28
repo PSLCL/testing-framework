@@ -161,7 +161,7 @@ public class StafRunnableProgram implements RunnableProgram
                         null, commandData.getSandbox(),
                         cmd.toString(), executor, true, true,
                         commandData.getCoordinates(), commandData.getSandbox(),
-                        commandData.getLogFolder(), null);
+                        null, null);
                 //@formatter:on
                 executor.submit(df).get();
                 return;
@@ -193,7 +193,7 @@ public class StafRunnableProgram implements RunnableProgram
                         commandData.getSandbox(), null,
                         cmd.toString(), executor, true, false,
                         commandData.getCoordinates(), commandData.getSandbox(),
-                        commandData.getLogFolder(), null);
+                        null, null);
                 //@formatter:on
             executor.submit(df).get();
         }catch(Exception e)
