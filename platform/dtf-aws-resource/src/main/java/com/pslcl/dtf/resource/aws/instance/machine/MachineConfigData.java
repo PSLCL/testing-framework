@@ -79,7 +79,7 @@ public class MachineConfigData
         data.winSandboxPath = getAttribute(ResourceNames.DeployWinSandboxKey, defaultData.winSandboxPath, resource, format);
         data.rootDiskSize = Double.parseDouble(getAttribute(ResourceNames.MachineDiskKey, ""+defaultData.rootDiskSize, resource, format));
         data.s3Bucket = getAttribute(InstanceNames.S3BucketKey, defaultData.s3Bucket, resource, format);
-        data.loggingSourceFolder = getAttribute(InstanceNames.S3LogsSrcFolderKey, defaultData.s3Bucket, resource, format);
+        data.loggingSourceFolder = getAttribute(InstanceNames.S3LogsSrcFolderKey, defaultData.loggingSourceFolder, resource, format);
         data.deployRetries = Integer.parseInt(getAttribute(InstanceNames.DeployMaxRetriesKey, ""+defaultData.deployRetries, resource, format));
 
         format.level.decrementAndGet();
