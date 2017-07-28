@@ -148,12 +148,14 @@ public class StafRunnableProgram implements RunnableProgram
 
             if(commandData.isWindows())
             {
+                // powershell -NoExit -Command "& {Import-Module 'C:\Program Files (x86)\AWS Tools\PowerShell\AWSPowerShell\AWSPowerShell.psd1'; Initialize-AWSDefaultConfiguration; write-s3object -keyprefix /testId/templateId/runid/instanceid -folder C:\var\opt\pslcl\dtf\log -bucketname dtf-staf-logging}
                 // "write-s3object -keyprefix /testId/templateId/runid/instanceid -folder C:\var\opt\pslcl\dtf\log -bucketname dtf-staf-logging";
-                StringBuilder cmd = new StringBuilder("write-s3object -keyprefix ");
+                StringBuilder cmd = new StringBuilder("powershell -NoExit -Command \"& {Import-Module 'C:\\Program Files (x86)\\AWS Tools\\PowerShell\\AWSPowerShell\\AWSPowerShell.psd1'; Initialize-AWSDefaultConfiguration; write-s3object -keyprefix ");
                 cmd.append(keyprefix);
                 String logFolder = StrH.stripTrailingSeparator(commandData.getLogFolder());
                 cmd.append(" -folder ").append(logFolder);
                 cmd.append(" -bucketname ").append(commandData.getS3Bucket());
+                cmd.append("}");
 
                 //@formatter:off
                 RunFuture df = new RunFuture(
