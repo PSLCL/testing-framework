@@ -33,7 +33,7 @@ import com.pslcl.dtf.core.generator.template.TestInstance.Action;
  * This class represents a resource. Resources can represent any shared object, and are identified
  * by a codename (string) and a set of attributes. Resources are bound to become an instance of the resource.
  * At run time the resource may present additional attributes, but will always have at least the
- * attributes specified in the bind request. Thay can also be assigned a human readable name for
+ * attributes specified in the bind request. They can also be assigned a human readable name for
  * descriptions.
  */
 public abstract class Resource
