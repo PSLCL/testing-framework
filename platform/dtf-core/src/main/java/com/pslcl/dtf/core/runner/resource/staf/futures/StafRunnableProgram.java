@@ -165,7 +165,8 @@ public class StafRunnableProgram implements RunnableProgram
                         commandData.getCoordinates(), commandData.getSandbox(),
                         null, null);
                 //@formatter:on
-                executor.submit(df).get();
+                RunnableProgram rp = executor.submit(df).get();
+                RunnableProgram.logProgramResults(rp, commandData.getCoordinates().getRunId());
                 return;
             }
 ////aws s3api put-object --bucket dtf-staf-logging --key testId/templateId/runId/
@@ -197,7 +198,8 @@ public class StafRunnableProgram implements RunnableProgram
                         commandData.getCoordinates(), commandData.getSandbox(),
                         null, null);
                 //@formatter:on
-            executor.submit(df).get();
+            RunnableProgram rp = executor.submit(df).get();
+            RunnableProgram.logProgramResults(rp, commandData.getCoordinates().getRunId());
         }catch(Exception e)
         {
             LoggerFactory.getLogger(getClass()).warn("failed to capture logs to s3:\n" + commandData.toString());

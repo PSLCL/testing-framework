@@ -15,6 +15,10 @@
  */
 package com.pslcl.dtf.core.runner.resource.instance;
 
+import com.pslcl.dtf.core.runner.resource.staf.ProcessResult;
+import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.Future;
 
 /**
@@ -53,4 +57,21 @@ public interface RunnableProgram
      * This method will block.
      */
     public void captureLogsToS3();
+
+    public static void logProgramResults(RunnableProgram runnableProgram, long runID){
+        String syserr = null;
+        String sysout = null;
+        String command = null;
+        Integer result = runnableProgram.getRunResult();
+        if(runnableProgram instanceof StafRunnableProgram){
+            ProcessResult processResult = ((StafRunnableProgram)runnableProgram).getResult();
+            if(processResult != null){
+                syserr = processResult.getCompletionSysErr();
+                sysout = processResult.getCompletionSysOut();
+            }
+            command = ((StafRunnableProgram)runnableProgram).getCommandData().getCommand();
+        }
+        LoggerFactory.getLogger(RunnableProgram.class).info("Executed run command for test run {}. Command: {}, result: {}, sysout: {}, syserr: {}", runID, command, result, sysout, syserr );
+    }
+
 }

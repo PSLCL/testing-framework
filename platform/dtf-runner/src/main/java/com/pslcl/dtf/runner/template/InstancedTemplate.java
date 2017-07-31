@@ -668,7 +668,7 @@ public class InstancedTemplate {
                                         break;
                                     }
                                     needsLogsCaptured.add(runnableProgram);
-                                    logProgramResults(runnableProgram, getRunID());
+                                    RunnableProgram.logProgramResults(runnableProgram, getRunID());
                                     Integer programRunResult = runnableProgram.getRunResult();
                                     if (programRunResult==null) {
                                         runStepErroredOut = true;
@@ -753,21 +753,21 @@ public class InstancedTemplate {
             log.debug(this.simpleName + "runSteps() completes without error, for reNum " + this.getRunID() + ", templateID " + templateID);
     }
 
-    private void logProgramResults(RunnableProgram runnableProgram, long runID){
-        String syserr = null;
-        String sysout = null;
-        String command = null;
-        Integer result = runnableProgram.getRunResult();
-        if(runnableProgram instanceof StafRunnableProgram){
-            ProcessResult processResult = ((StafRunnableProgram)runnableProgram).getResult();
-            if(processResult != null){
-                syserr = processResult.getCompletionSysErr();
-                sysout = processResult.getCompletionSysOut();
-            }
-            command = ((StafRunnableProgram)runnableProgram).getCommandData().getCommand();
-        }
-        log.info("Executed run command for test run {}. Command: {}, result: {}, sysout: {}, syserr: {}", runID, command, result, sysout, syserr );
-    }
+//    private void logProgramResults(RunnableProgram runnableProgram, long runID){
+//        String syserr = null;
+//        String sysout = null;
+//        String command = null;
+//        Integer result = runnableProgram.getRunResult();
+//        if(runnableProgram instanceof StafRunnableProgram){
+//            ProcessResult processResult = ((StafRunnableProgram)runnableProgram).getResult();
+//            if(processResult != null){
+//                syserr = processResult.getCompletionSysErr();
+//                sysout = processResult.getCompletionSysOut();
+//            }
+//            command = ((StafRunnableProgram)runnableProgram).getCommandData().getCommand();
+//        }
+//        log.info("Executed run command for test run {}. Command: {}, result: {}, sysout: {}, syserr: {}", runID, command, result, sysout, syserr );
+//    }
 
     /**
      *
