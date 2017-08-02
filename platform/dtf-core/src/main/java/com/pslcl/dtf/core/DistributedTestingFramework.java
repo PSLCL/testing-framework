@@ -708,20 +708,34 @@ public final class DistributedTestingFramework
         }
     } // end synchronize()
 
-    private static void dbStoreTestRuns(/*SQSTestPublisher sqs,*/ Core core, String owner, Collection<Long> manualTestInstanceNumbers, Collection<Long> testRuns) {
+    /**
+     *
+     * @note For each test instance/run pair, we store in sequence to db and then to queue. This minimizes storing one without the other, especially for large lists
+     * @param sqs must not be null
+     * @param core
+     * @param owner
+     * @param manualTestInstanceNumbers
+     * @param testRuns
+     */
+    private static void storeTestRuns_db_queue(SQSTestPublisher sqs, Core core, String owner, Collection<Long> manualTestInstanceNumbers, Collection<Long> testRuns) {
         for (Long manualTestInstanceNumber : manualTestInstanceNumbers) {
             try {
-                Long dbStoredRunNumber = core.createInstanceRun(manualTestInstanceNumber, owner);
-                if (dbStoredRunNumber != null) {
-                    testRuns.add(dbStoredRunNumber);
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.dbStoreTestRuns(): test run stored for testInstance number " + manualTestInstanceNumber);
+                Long runID = core.createInstanceRun(manualTestInstanceNumber, owner);
+                if (runID != null) {
+                    testRuns.add(runID);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).trace("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
+
+                    // place just now database-stored test run in dtf's test run queue
+                    sqs.publishTestRunRequest(runID);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).trace("DistributedTestingFramework.runner(): Queued test run: " + runID);
                 } else {
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.dbStoreTestRuns(): test run NOT stored for testInstance number " + manualTestInstanceNumber +
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run NOT stored to db for testInstance number " + manualTestInstanceNumber +
                             "; test run may already be stored");
                     // in this case the test run number will not be written to the dtf queue- presumably it is there already
                 }
+
             } catch (Exception e) {
-                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.dbStoreTestRuns(): Failed to store test run for testInstance number " + manualTestInstanceNumber + ", exception msg: " + e);
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.storeTestRuns_db_queue(): Failed to store test run for testInstance number " + manualTestInstanceNumber + ", exception msg: " + e);
             }
         }
     }
@@ -849,7 +863,7 @@ public final class DistributedTestingFramework
             Core core = new Core(0);
             sqs = sqsSetup(core);
             if (sqs != null)
-                dbStoreTestRuns(/*sqs.*/ core, owner, manualTestInstanceNumbers, testRuns);
+                storeTestRuns_db_queue(sqs, core, owner, manualTestInstanceNumbers, testRuns);
         } else {
             // we have n testNumbers, process them then exit
             boolean sqsNeedsSetup = true;
@@ -869,20 +883,13 @@ public final class DistributedTestingFramework
                         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to store test run for test number " + manualTestNumber + ", exception msg: " + e);
                     }
                     if (testInstanceNumbersFromLookup != null)
-                        dbStoreTestRuns(core, owner, testInstanceNumbersFromLookup, testRuns);
+                        storeTestRuns_db_queue(sqs, core, owner, testInstanceNumbersFromLookup, testRuns);
                 }
             }
         }
 
-        // place just now database-stored test runs in dtf's test run queue
-        if (sqs != null) {
-            for(Long runID: testRuns) {
-                sqs.publishTestRunRequest(runID);
-                LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + runID);
-            }
-        } else {
+        if (sqs == null)
             LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to connect to dtf queue, test runs not stored to database or to dtf queue");
-        }
     }
 
     private static void result(String[] args)
