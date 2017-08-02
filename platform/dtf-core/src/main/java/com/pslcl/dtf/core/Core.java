@@ -3239,7 +3239,7 @@ public class Core
         {
             runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
             runStatement.setString(1, hash);
-               runStatement.setNull(2, Types.BOOLEAN);
+            runStatement.setNull(2, Types.BOOLEAN);
 
             if (owner != null)
                 runStatement.setString(3, owner);
@@ -3250,6 +3250,7 @@ public class Core
             runStatement.setNull(5, Types.TIMESTAMP);
             runStatement.setNull(6, Types.TIMESTAMP);
             if(runStatement.execute()){
+                // we have a ResultSet
                 resultSet = runStatement.getResultSet();
                 boolean result = resultSet.next();
                 if(result){
@@ -3257,7 +3258,7 @@ public class Core
                 }
             }
             else
-                return null;
+                return null; // no ResultSet
         } catch (Exception e)
         {
             this.log.error("<internal> Core.createInstanceRun() exception msg: " + e);

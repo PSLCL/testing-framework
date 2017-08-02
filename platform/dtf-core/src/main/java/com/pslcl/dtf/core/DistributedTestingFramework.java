@@ -29,9 +29,12 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -705,7 +708,62 @@ public final class DistributedTestingFramework
         }
     } // end synchronize()
 
-    @SuppressWarnings("unused")
+    private static void dbStoreTestRuns(/*SQSTestPublisher sqs,*/ Core core, String owner, Collection<Long> manualTestInstanceNumbers, Collection<Long> testRuns) {
+        for (Long manualTestInstanceNumber : manualTestInstanceNumbers) {
+            try {
+                Long dbStoredRunNumber = core.createInstanceRun(manualTestInstanceNumber, owner);
+                if (dbStoredRunNumber != null) {
+                    testRuns.add(dbStoredRunNumber);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.dbStoreTestRuns(): test run stored for testInstance number " + manualTestInstanceNumber);
+                } else {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.dbStoreTestRuns(): test run NOT stored for testInstance number " + manualTestInstanceNumber +
+                            "; test run may already be stored");
+                    // in this case the test run number will not be written to the dtf queue- presumably it is there already
+                }
+            } catch (Exception e) {
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.dbStoreTestRuns(): Failed to store test run for testInstance number " + manualTestInstanceNumber + ", exception msg: " + e);
+            }
+        }
+    }
+
+
+    private static SQSTestPublisher sqsSetup(Core core) {
+        String accessKeyID = core.getConfig().sqsAccessKeyID();
+        String secretKey = core.getConfig().sqsSecretAccessKey();
+        if(accessKeyID != null && !accessKeyID.isEmpty()){
+            System.setProperty("aws.accessKeyId", accessKeyID);
+            System.setProperty("aws.secretKey", secretKey);
+        }
+        SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
+        sqs.init();
+        return sqs;
+    }
+
+    /**
+     * Get list of consecutive String-specified numbers from String array
+     * @param argsOffset begin offset
+     * @param args list of String arguments that may hold String-represented numbers
+     * @return list
+     */
+    private static List<Long> nextSpecifiedNumbers(int argsOffset, String [] args) {
+        List<Long> retList = new ArrayList<Long>();
+        int argsLength = args.length;
+        for (int i=argsOffset; i<args.length; i++) {
+            try {
+                Long number = Long.parseLong(args[i]);
+                retList.add(number);
+            } catch (NumberFormatException ignore) {
+                break;
+            }
+        }
+        return retList;
+    }
+
+    /**
+     *
+     * @param args list of String arguments
+     */
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
     private static void runner(String[] args)
     {
         if (args.length < 2)
@@ -719,24 +777,52 @@ public final class DistributedTestingFramework
             }
         }
 
-        int runCount = -1;
-        long manualTestNumber = -1;
-        long manualTestInstanceNumber = -1;
+        // parse command line
+        int runCount = -1; // ignored, for now
+        Collection<Long> manualTestNumbers = new HashSet<>(); // HashSet rejects dups
+        Collection<Long> manualTestInstanceNumbers = new HashSet<>();
         String owner = null;
-        boolean help = true;
 
         for (int i = 1; i < args.length; i++) {
             try{
-                if (args[i].compareTo("--test") == 0 && args.length > i)
-                {
-                    i += 1;
-                    manualTestNumber = Long.parseLong(args[i]);
-                } else if (args[i].compareTo("--test-instance") == 0 && args.length > i){
-                    i += 1;
-                    manualTestInstanceNumber = Long.parseLong(args[i]);
-                } else if (args[i].compareTo("--owner") == 0 && args.length > i){
-                    i += 1;
-                    owner = args[i];
+                if (args[i].compareTo("--test") == 0 && args.length > i) {
+                    List<Long> numbers = nextSpecifiedNumbers(++i, args);
+                    for (Long number : numbers) {
+                        try {
+                            boolean ok = manualTestNumbers.add(number);
+                            if (!ok) {
+                                // manualTestNumbers did not change, apparently by rejecting a duplicate test number
+                                runHelp();
+                            }
+                            ++i;
+                        } catch (Exception e) {
+                            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.runner() exception msg: " + e);
+                            System.exit(1);
+                        }
+                    }
+                    if (manualTestNumbers.isEmpty())
+                        runHelp();
+                    --i; // account for the for loop i++ that will now happen
+                } else if (args[i].compareTo("--test-instance") == 0 && args.length > i) {
+                    List<Long> numbers = nextSpecifiedNumbers(++i, args);
+                    for (Long number : numbers) {
+                        try {
+                            boolean ok = manualTestInstanceNumbers.add(number);
+                            if (!ok) {
+                                // manualTestNumbers did not change, apparently by rejecting a duplicate test number
+                                runHelp();
+                            }
+                            ++i;
+                        } catch (Exception e) {
+                            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.runner() exception msg: " + e);
+                            System.exit(1);
+                        }
+                    }
+                    if (manualTestInstanceNumbers.isEmpty())
+                        runHelp();
+                    --i; // account for the for loop i++ that will now happen
+                } else if (args[i].compareTo("--owner")==0 && args.length > i) {
+                    owner = args[++i];
                 } else{
                     LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Only manual tests supported. Use the --test or --test-instance options instead.");
                     runHelp();
@@ -748,40 +834,54 @@ public final class DistributedTestingFramework
             }
         }
 
-        try{
-            Core core = null;
+        // args must specify --test or --test-instance numbers, but not both
+        boolean bothNotSame = manualTestNumbers.isEmpty() ^ manualTestInstanceNumbers.isEmpty();
+        if (!bothNotSame)
+            runHelp();
 
-            if(manualTestNumber > -1){
-                core = new Core(manualTestNumber);
-            }
-            else{
-                core = new Core(0);
-            }
-
-            String accessKeyID = core.getConfig().sqsAccessKeyID();
-            String secretKey = core.getConfig().sqsSecretAccessKey();
-            if(accessKeyID != null && !accessKeyID.isEmpty()){
-                System.setProperty("aws.accessKeyId", accessKeyID);
-                System.setProperty("aws.secretKey", secretKey);
-            }
-            SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
-            sqs.init();
-            List<Long> testRuns = new ArrayList<Long>();
-            if(manualTestInstanceNumber > -1){
-                    testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
-            } else if(manualTestNumber > -1){
-                for(long testInstance: core.getTestInstances(manualTestNumber)){
-                    Long run = core.createInstanceRun(testInstance, owner);
-                    if(run != null)
-                        testRuns.add(run);
+        // use parsed command line to store run data; parsed commands will have:
+        //    manualTestNumbers (each will individually specify Core instantiation with manualTestNumber as pk_test), or
+        //    manualTestInstanceNumbers (Core will be instantiated with 0 pk_test)
+        Collection<Long> testRuns = new ArrayList<Long>();
+        SQSTestPublisher sqs = null;
+        if (!manualTestNumbers.iterator().hasNext()) {
+            // we have n testInstanceNumbers, process them then exit
+            Core core = new Core(0);
+            sqs = sqsSetup(core);
+            if (sqs != null)
+                dbStoreTestRuns(/*sqs.*/ core, owner, manualTestInstanceNumbers, testRuns);
+        } else {
+            // we have n testNumbers, process them then exit
+            boolean sqsNeedsSetup = true;
+            Iterator<Long> iterManualTestNumbers = manualTestNumbers.iterator();
+            while (iterManualTestNumbers.hasNext()) {
+                Long manualTestNumber = iterManualTestNumbers.next();
+                Core core = new Core(manualTestNumber);
+                if (sqsNeedsSetup) {
+                    sqs = sqsSetup(core);
+                    sqsNeedsSetup = false;
+                }
+                if (sqs != null) {
+                    List<Long> testInstanceNumbersFromLookup = null;
+                    try {
+                        testInstanceNumbersFromLookup = core.getTestInstances(manualTestNumber);
+                    } catch (Exception e) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to store test run for test number " + manualTestNumber + ", exception msg: " + e);
+                    }
+                    if (testInstanceNumbersFromLookup != null)
+                        dbStoreTestRuns(core, owner, testInstanceNumbersFromLookup, testRuns);
                 }
             }
-            for(Long runID: testRuns){
-                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Queueing test run: " + runID);
+        }
+
+        // place just now database-stored test runs in dtf's test run queue
+        if (sqs != null) {
+            for(Long runID: testRuns) {
                 sqs.publishTestRunRequest(runID);
+                LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + runID);
             }
-        } catch(Exception e){
-            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to queue test run - " + e);
+        } else {
+            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to connect to dtf queue, test runs not stored to database or to dtf queue");
         }
     }
 
@@ -822,7 +922,7 @@ public final class DistributedTestingFramework
         if (result == null || (hash == null && run == null)){
             LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): Missing required argument");
             resultHelp();
-            // calls System.exit()
+            // calls System.exit(1)
         }
 
         Core core = new Core(0);
