@@ -51,6 +51,9 @@ The Distributed Test Framework common interfaces and core implementation.
     <dependency org="com.amazonaws" name="aws-java-sdk-sqs" rev="[1.11.155,1.12)" conf="compile->default"/>
     <dependency org="org.apache.commons" name="commons-compress" rev="[1.14, 1.15)" conf="compile->default"/>
     <dependency org="org.mariadb.jdbc" name="mariadb-java-client" rev="2.0.2"/>
+    <!-- only for @Nullable, not ready to bring in a jar just for @Nullable
+        <dependency org="com.google.code.findbugs" name="jsr305" rev="3.0.2"/>
+    -->
 
     <!-- runtime restriction avoids compile-time circular dependency  -->
     <dependency org="com.pslcl.dtf" name="dtf-ivy-artifact" rev="[1.0,2)" conf="runtime->master"/>

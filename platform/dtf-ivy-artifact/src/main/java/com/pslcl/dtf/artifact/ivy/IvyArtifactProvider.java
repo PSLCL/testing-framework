@@ -59,6 +59,8 @@ import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.Template;
 
+//import javax.annotation.Nullable; // requires an external jar
+
 public class IvyArtifactProvider implements ArtifactProvider
 {
     private static class IvyModule implements Module
@@ -197,14 +199,13 @@ public class IvyArtifactProvider implements ArtifactProvider
         private IvyContent content;
         private String targetFilePath = null;
 
-        @SuppressWarnings("MagicCharacter")
         IvyArtifact(IvyModule module, ResolvedModuleRevision rmv, String configuration, org.apache.ivy.core.module.descriptor.Artifact artifact)
         {
             this.module = module;
             this.configuration = configuration;
             this.content = new IvyContent(rmv, artifact);
 
-            this.name = artifact.getName() + '.' + artifact.getExt();
+            this.name = artifact.getName() + "." + artifact.getExt();
         }
 
         @Override
@@ -336,6 +337,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         }
 
         @Override
+//      @Nullable
         @SuppressWarnings("ReturnOfNull")
         public Hash getHash()
         {
@@ -350,6 +352,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         }
 
         @Override
+//      @Nullable
         @SuppressWarnings("ReturnOfNull")
         public InputStream asStream()
         {
@@ -370,6 +373,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         }
 
         @Override
+//      @Nullable
         @SuppressWarnings("ReturnOfNull")
         public byte[] asBytes()
         {
@@ -448,7 +452,6 @@ public class IvyArtifactProvider implements ArtifactProvider
      * @param module The module to check.
      * @return A string representing everything to merge to.
      */
-    @SuppressWarnings("MagicCharacter")
     private static String extractMergeTo(ModuleDescriptor module)
     {
         // added in module's ivy.xml ivy-module declaration line- attribute key/v: xmlns:e="http://com.pslcl/dtf-ivy"
@@ -467,7 +470,7 @@ public class IvyArtifactProvider implements ArtifactProvider
         String sep = "";
         for (ExtraInfoHolder extra : module.getExtraInfos())
         {
-            if (extra.getName().equals(prefix + ':' + "dtf-merge-info")) // match xml name line: <e:dtf-merge-info .....
+            if (extra.getName().equals(prefix + ":" + "dtf-merge-info")) // match xml name line: <e:dtf-merge-info .....
             {
                 Map<String, String> attributes = extra.getAttributes();
                 for (Map.Entry<String, String> attribute : attributes.entrySet())
@@ -561,9 +564,9 @@ public class IvyArtifactProvider implements ArtifactProvider
 
             Map<String, String> next_criteria = new HashMap<String, String>(criteria);
 
-            String tokenStr = '[' + token + ']';
+            String tokenStr = "[" + token + "]";
             boolean opt = pattern.indexOf('(') < pattern.indexOf(tokenStr);
-            next_criteria.put(token, '[' + token + ']');
+            next_criteria.put(token, "[" + token + "]");
             @SuppressWarnings("unchecked")
             Map<String, String>[] tokenList = pbr.listTokenValues(new String[] { token }, next_criteria);
             for (int i = 0; i < tokenList.length; i++)
@@ -601,7 +604,6 @@ public class IvyArtifactProvider implements ArtifactProvider
     }
 
     @Override
-    @SuppressWarnings("MagicCharacter")
     public void iterateModules(ModuleNotifier moduleNotifier) throws Exception
     {
         if (ivy == null)
@@ -676,14 +678,14 @@ public class IvyArtifactProvider implements ArtifactProvider
                             try{
                                 rmv = ivy.findModule(mrid);
                             } catch(Exception e){
-                                this.log.error("<internal> IvyArtifactProvider.iterateModules() Failed to find module: " + org + '#' + module + ';' + version + ", exception msg: " + e);
+                                this.log.error("<internal> IvyArtifactProvider.iterateModules() Failed to find module: " + org + "#" + module + ";" + version + ", exception msg: " + e);
                                 this.log.error("<internal> stack trace: ", e);
                                 continue;
                             }
                             if (rmv != null)
                                 moduleNotifier.module(this, new IvyModule(rmv), extractMergeTo(rmv.getDescriptor()));
                             else
-                                this.log.error("<internal> IvyArtifactProvider.iterateModules() Failed to find module: " + org + '#' + module + ';' + version);
+                                this.log.error("<internal> IvyArtifactProvider.iterateModules() Failed to find module: " + org + "#" + module + ";" + version);
                         }
                     }
                 }

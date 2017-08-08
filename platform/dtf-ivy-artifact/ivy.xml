@@ -45,6 +45,9 @@ The Distributed Test Framework Ivy artifact provider implementation.
     <dependency org="commons-io" name="commons-io" rev="[2.5, 2.6)" conf="compile->default"/>
     <dependency org="com.pslcl.dtf" name="dtf-core" rev="[1,2)" conf="compile->default"/>
     <dependency org="org.apache.ivy" name="ivy" rev="[2.4,2.5)" conf="compile->default"/>
+<!-- only for @Nullable, not ready to bring in a jar just for @Nullable
+    <dependency org="com.google.code.findbugs" name="jsr305" rev="3.0.2"/>
+-->
 
   </dependencies>
   <!-- the following dependencies block built with iveidea transitives turned off, thus there is redundancy here

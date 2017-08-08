@@ -21,7 +21,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStream;
-import java.net.URLEncoder;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -39,8 +38,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
+//import javax.annotation.Nullable; // requires an external jar
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -74,12 +75,11 @@ public class Core
         private Hash description = null;
     }
 
+    @SuppressWarnings("unused")
     private static class DBTestInstance
     {
         private long fk_test = 0L; // INT(11) in test
-        @SuppressWarnings("unused")
         private String name = null; // VARCHAR(100) from test
-        @SuppressWarnings("unused")
         private String description = null; // LONGTEXT from test
         private String script = null; // VARCHAR(200) from test
         private long pk_test_instance = 0L;
@@ -88,13 +88,12 @@ public class Core
         private long pk_template = 0L; // added here to avoid a lookup in the executeTestInstance()
     }
 
+    @SuppressWarnings("unused")
     private static class DBTemplateInfo
     {
-        @SuppressWarnings("unused")
         private long pk_described_template = 0L; // INT(11) in described_template
         private byte[] fk_module_set = null; // BINARY(32) in described_template
-        @SuppressWarnings("unused")
-        private long pk_template = 0L; // INT(11) in described_template
+        private long fk_template = 0L; // INT(11) in described_template
         private byte[] description_hash = null; // BINARY(32) in described_template
         private byte[] hash = null; // BINARY(32) in template
         private String steps = null; // MEDIUMTEXT in template
@@ -102,8 +101,7 @@ public class Core
     }
 
     private final Logger log;
-    @SuppressWarnings("MagicCharacter")
-    private char singleQuote = '\'';
+    private String singleQuote = "'";
 
     /**
      * The connection to the database.
@@ -115,8 +113,8 @@ public class Core
     // these 2 maps coordinate table described_template with table test_instance, to minimize table-reading activity
     //    these are filled by .loadHashes() and (.add() or .syncDescribedTemplates())
     //    these are read back by .add() and .check()
-    private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<DescribedTemplate.Key, DBDescribedTemplate>();
-    private Map<Long, Long> dtToTI = new HashMap<Long, Long>();
+    private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<>();
+    private Map<Long, Long> dtToTI = new HashMap<>();
 
     // this map had been filled by .loadHashes() and .add(), but was never read back (because an alternate approach is used to achieve its benefit)
     // private final Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
@@ -127,7 +125,6 @@ public class Core
     private long pk_target_test = 0;
     private boolean read_only = false;
 
-    @SuppressWarnings("MagicCharacter") // ';'
     private void loadHashes()
     {
         if (connect == null)
@@ -158,7 +155,7 @@ public class Core
                     resultSet = null;
                     safeClose(statement);
                     statement = null;
-                    throw new Exception("Duplicate DescribedTemplate.Key " + dbTemplate.pk + ' ' + dbTemplate.key.getTemplateHash().toString() + ':' + dbTemplate.key.getModuleHash().toString());
+                    throw new Exception("Duplicate DescribedTemplate.Key " + dbTemplate.pk + " " + dbTemplate.key.getTemplateHash().toString() + ":" + dbTemplate.key.getModuleHash().toString());
                 }
                 keyToDT.put(dbTemplate.key, dbTemplate);
             }
@@ -189,6 +186,7 @@ public class Core
     }
 
     // TODO: find out why this cannot be made private, since public .getConfig() is used by the caller
+    @SuppressWarnings("PackageVisibleInnerClass")
     static class Config
     {
         private String db_host = null;
@@ -314,7 +312,7 @@ public class Core
         }
 
         if (!this.artifacts.isDirectory())
-            //noinspection ResultOfMethodCallIgnored
+           //noinspection ResultOfMethodCallIgnored
             this.artifacts.mkdirs();
 
         openDatabase();
@@ -341,8 +339,8 @@ public class Core
 
     private static class NodeModule
     {
-        @SuppressWarnings("unused")
-        public Object exports = null;
+//      @SuppressWarnings("unused")
+//      public Object exports = null;
     }
 
     /**
@@ -372,6 +370,7 @@ public class Core
             }
 
             String connectstring = String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
+            // TODO: replace superseded javax.sql.DriverManager with javax.sql.DataSource
             connect = DriverManager.getConnection(connectstring);
         } catch (Exception e)
         {
@@ -490,7 +489,6 @@ public class Core
 //     *
 //     *  @param testInstanceNumber The test instance number
 //     */
-//    @SuppressWarnings("MagicCharacter") // '\n'
 //    public void executeTestInstance(long testInstanceNumber)
 //    {
 //        // We are an independent process. We have access to the database,
@@ -838,6 +836,7 @@ public class Core
      * @param length The length of the stream, or -1 if the entire stream is to be added.
      * @return Hash of the added content
      */
+//  @Nullable
     @SuppressWarnings("ReturnOfNull")
     Hash addContent(InputStream is, long length)
     {
@@ -942,7 +941,9 @@ public class Core
      * Return a file for content that exists in the cache.
      * @param h The hash of the file to return.
      * @return A file if it exists, null otherwise.
+     *
      */
+//  @Nullable
     @SuppressWarnings("ReturnOfNull")
     File getContentFile(Hash h)
     {
@@ -1321,18 +1322,18 @@ public class Core
             return name;
         }
 
-        @SuppressWarnings("unused")
-        public String getEncodedName()
-        {
-            try
-            {
-                return URLEncoder.encode(name, "UTF-8");
-            } catch (Exception ignore)
-            {
-                // This should never happen, as UTF-8 is a required charset.
-                return "error";
-            }
-        }
+//        @SuppressWarnings("unused")
+//        public String getEncodedName()
+//        {
+//            try
+//            {
+//                return URLEncoder.encode(name, "UTF-8");
+//            } catch (Exception ignore)
+//            {
+//                // This should never happen, as UTF-8 is a required charset.
+//                return "error";
+//            }
+//        }
 
         @Override
         public Content getContent()
@@ -1441,6 +1442,7 @@ public class Core
         }
 
         @Override
+//      @Nullable
         @SuppressWarnings("ReturnOfNull")
         public InputStream asStream()
         {
@@ -1457,7 +1459,7 @@ public class Core
         }
 
         @Override
-        @SuppressWarnings("ReturnOfNull")
+        @SuppressWarnings("ZeroLengthArrayAllocation")
         public byte[] asBytes()
         {
             File f = core.getContentFile(hash);
@@ -1468,8 +1470,7 @@ public class Core
                     // Ignore
                 }
             }
-
-            return null;
+            return new byte[0]; // this is better than returning null, which poses a null pointer threat to the caller
         }
     }
 
@@ -1630,7 +1631,7 @@ public class Core
                         String version = ver_fields[0];
                         String configuration = ver_fields.length > 1 ? ver_fields[1] : "";
 
-                        // TODO: how to @SuppressWarnings() here, or just do what it wahnts
+                        // TODO: how to @SuppressWarnings() here, or just do what it wants
                         organization = organization.replace("$", artifact.getModule().getOrganization());
                         module = module.replace("$", artifact.getModule().getName());
                         attributes = attributes.replace("$", artifact.getModule().getAttributes().toString());
@@ -1698,14 +1699,13 @@ public class Core
      * @param targetDirectory The target directory.
      * @return The name of the artifact in the target directory.
      */
-    @SuppressWarnings("MagicCharacter")
     private String getTargetName(String artifactName, String targetDirectory){
         if (artifactName.endsWith("/"))
             throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
 
         int nameStartIndex = 0;
         if(artifactName.contains("/"))
-            nameStartIndex = artifactName.lastIndexOf('/') + 1;
+            nameStartIndex = artifactName.lastIndexOf("/") + 1;
 
         String targetName = artifactName.substring(nameStartIndex);
         if(!targetDirectory.endsWith("/"))
@@ -1720,7 +1720,7 @@ public class Core
      * acceptable to MySQL regex search.
      * The result set includes a list of sets of matching artifacts. For each element in the list the array of results contains the
      * artifact that matches the parameter in the same position, all of which will come from the same module.
-     * @param required A parameter set or null. Any module considered for artifacts must contain at least these attributes.
+     * @param required A parameter set or null. Any module wed for artifacts must contain at least these attributes.
      * @param configuration the configuration to check, or null.
      * @param name Artifact names, including MySQL REGEXP patterns.
      * @return The set of artifacts
@@ -2488,12 +2488,13 @@ public class Core
 
             if (!keyToDT.containsKey(key))
             {
-                // Add the template
+                // add the template
                 dbdt = add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;
 
             } else
             {
+                // check the stored template
                 dbdt = check(ti.getTemplate());
                 ++checkedNotAddedDescribedTemplatesCount;
             }
@@ -2595,7 +2596,8 @@ public class Core
                     }
 
                     // Check the run status, fix it if the status is known.
-                    if ((dbResult != ti.getResult()) || !(dbOwner == null ? ti.getOwner() == null : dbOwner.equals(ti.getOwner())))
+                    if (!Objects.equals(dbResult, ti.getResult()) ||
+                        (dbOwner==null ? ti.getOwner()!=null : !Objects.equals(dbOwner, ti.getOwner())))
                     {
                         reportResult(ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                     }
@@ -2615,9 +2617,6 @@ public class Core
     {
         long pk = 0;
 
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
         if (read_only)
         {
             this.log.error("<internal> Core.syncTemplate(): database is read-only");
@@ -2628,6 +2627,8 @@ public class Core
             return pk;
         }
 
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
         try
         {
             statement = connect.prepareStatement("SELECT pk_template FROM template WHERE hash=?");
@@ -2692,7 +2693,7 @@ public class Core
                 Hash hash = new Hash(foundArtifacts.getBytes(1));
                 result.add(hash);
             }
-        } catch (Exception ignore)
+        } catch (SQLException ignore)
         {
             // Ignore
         } finally
@@ -3076,12 +3077,13 @@ public class Core
                 // Get the component list associated with the test
                 statement = connect.prepareStatement(String.format("SELECT distinct pk_component" + " FROM component" + " JOIN component_to_test_plan ON component_to_test_plan.fk_component = component.pk_component" + " JOIN test_plan ON test_plan.pk_test_plan = component_to_test_plan.fk_test_plan" + " JOIN test ON test.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test='%d'", pk_test));
                 resultSet = statement.executeQuery();
+
+                // TODO: See why components here is never read. Is impl incomplete?
                 List<Long> components = new ArrayList<Long>();
                 while (resultSet.next())
                 {
                     components.add(resultSet.getLong(1));
                 }
-                // TODO: See why components, above, is never read. Is impl incomplete?
 
                 safeClose(resultSet);
                 resultSet = null;
@@ -3152,6 +3154,7 @@ public class Core
         return pk;
     }
 
+//  @Nullable
     @SuppressWarnings("ReturnOfNull")
     public Long getInstanceRun(long testInstanceNumber) throws Exception
     {
@@ -3205,6 +3208,7 @@ public class Core
         }
     }
 
+//  @Nullable
     @SuppressWarnings("ReturnOfNull")
     Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {

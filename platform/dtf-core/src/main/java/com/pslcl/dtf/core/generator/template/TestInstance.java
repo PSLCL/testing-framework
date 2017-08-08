@@ -207,7 +207,7 @@ public class TestInstance
         }
     }
 
-    @SuppressWarnings("unused")
+//  @SuppressWarnings("unused")
     private static class IncludeAction extends Action
     {
         private DescribedTemplate include;
