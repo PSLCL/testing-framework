@@ -110,7 +110,7 @@ public final class DistributedTestingFramework
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test-instance j - optional, to run one test on one test instance soon - supply the id number assigned to the test instance.");
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --owner - optional, to specify the owner for all test runs started by this command.");
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: may not specify both --test and --test-instance");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: --test or --test-instance may each be followed by multiple numbers");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: --test or --test-instance may each be followed by multiple space-separated numbers");
         System.exit(1);
     }
 
@@ -732,13 +732,13 @@ public final class DistributedTestingFramework
                 Long runID = core.createInstanceRun(manualTestInstanceNumber, owner);
                 if (runID != null) {
                     testRuns.add(runID);
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).trace("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
 
                     // place just now database-stored test run in dtf's test run queue
                     sqs.publishTestRunRequest(runID);
                     LoggerFactory.getLogger(DistributedTestingFramework.class).trace("DistributedTestingFramework.runner(): Queued test run: " + runID);
                 } else {
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run NOT stored to db for testInstance number " + manualTestInstanceNumber +
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).trace("DistributedTestingFramework.storeTestRuns_db_queue(): test run NOT stored to db for testInstance number " + manualTestInstanceNumber +
                             "; test run may already be stored");
                     // in this case the test run number will not be written to the dtf queue- presumably it is there already
                 }
@@ -1530,9 +1530,12 @@ public final class DistributedTestingFramework
         LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.main() called");
 
         java.net.URL logback_file_URL = DistributedTestingFramework.class.getResource("/logback.xml");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("logback.xml file URL: " + logback_file_URL);
+        LoggerFactory.getLogger(DistributedTestingFramework.class).info("logback.xml file URL: " + logback_file_URL);
         java.net.URL logbacktest_file_URL = DistributedTestingFramework.class.getClassLoader().getResource("/logback-test.xml");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("logback-test.xml file URL: " + logbacktest_file_URL);
+        LoggerFactory.getLogger(DistributedTestingFramework.class).info("logback-test.xml file URL: " + logbacktest_file_URL);
+
+        LoggerFactory.getLogger(DistributedTestingFramework.class).info("DistributedTestingFramework.main() message at info level, execution proceeds");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.main() message at debug level, execution proceeds");
 
         // Check for no parameters, or --help
         if (args.length == 0 || args[0].compareTo("--help") == 0)
