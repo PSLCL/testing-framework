@@ -21,7 +21,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStream;
-import java.net.URLEncoder;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -32,15 +31,17 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.Objects;
 import java.util.Set;
 
+//import javax.annotation.Nullable; // requires an external jar
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -74,12 +75,11 @@ public class Core
         private Hash description = null;
     }
 
+    @SuppressWarnings("unused")
     private static class DBTestInstance
     {
         private long fk_test = 0L; // INT(11) in test
-        @SuppressWarnings("unused")
         private String name = null; // VARCHAR(100) from test
-        @SuppressWarnings("unused")
         private String description = null; // LONGTEXT from test
         private String script = null; // VARCHAR(200) from test
         private long pk_test_instance = 0L;
@@ -88,34 +88,43 @@ public class Core
         private long pk_template = 0L; // added here to avoid a lookup in the executeTestInstance()
     }
 
+    @SuppressWarnings("unused")
     private static class DBTemplateInfo
     {
-        @SuppressWarnings("unused")
         private long pk_described_template = 0L; // INT(11) in described_template
         private byte[] fk_module_set = null; // BINARY(32) in described_template
-        @SuppressWarnings("unused")
-        private long pk_template = 0L; // INT(11) in described_template
+        private long fk_template = 0L; // INT(11) in described_template
         private byte[] description_hash = null; // BINARY(32) in described_template
         private byte[] hash = null; // BINARY(32) in template
         private String steps = null; // MEDIUMTEXT in template
         private boolean enabled = false; // BOOLEAN in template
     }
 
+    private final Logger log;
+    private String singleQuote = "'";
+
     /**
      * The connection to the database.
      */
     private Connection connect = null;
+
     private File artifacts = null;
-    private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<DescribedTemplate.Key, DBDescribedTemplate>();
-    private Map<Long, Long> dtToTI = new HashMap<Long, Long>();
 
-    // TODO: Find out why these 3 are either not filled, or are not queried
-    private Map<Long, DBTestInstance> pktiToTI = new HashMap<Long, DBTestInstance>();
-    private Map<Long, List<DBTestInstance>> pktToTI = new HashMap<Long, List<DBTestInstance>>();
-    private final Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
-//  @SuppressWarnings("Mismatched query and update of collection MismatchedQueryAndUpdateOfCollection")
+    // these 2 maps coordinate table described_template with table test_instance, to minimize table-reading activity
+    //    these are filled by .loadHashes() and (.add() or .syncDescribedTemplates())
+    //    these are read back by .add() and .check()
+    private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<>();
+    private Map<Long, Long> dtToTI = new HashMap<>();
 
-    @SuppressWarnings("MagicCharacter") // ';'
+    // this map had been filled by .loadHashes() and .add(), but was never read back (because an alternate approach is used to achieve its benefit)
+    // private final Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
+
+    /**
+     * The private key of the test that is being generated.
+     */
+    private long pk_target_test = 0;
+    private boolean read_only = false;
+
     private void loadHashes()
     {
         if (connect == null)
@@ -138,8 +147,7 @@ public class Core
                 dbTemplate.fk_template = resultSet.getLong("fk_template");
                 dbTemplate.key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")), new Hash(resultSet.getBytes("fk_module_set")));
                 dbTemplate.description = new Hash(resultSet.getBytes("description_hash"));
-
-                pkToDT.put(dbTemplate.pk, dbTemplate);
+//              pkToDT.put(dbTemplate.pk, dbTemplate);
 
                 if (keyToDT.containsKey(dbTemplate.key))
                 {
@@ -147,7 +155,7 @@ public class Core
                     resultSet = null;
                     safeClose(statement);
                     statement = null;
-                    throw new Exception("Duplicate DescribedTemplate.Key " + dbTemplate.pk + ' ' + dbTemplate.key.getTemplateHash().toString() + ':' + dbTemplate.key.getModuleHash().toString());
+                    throw new Exception("Duplicate DescribedTemplate.Key " + dbTemplate.pk + " " + dbTemplate.key.getTemplateHash().toString() + ":" + dbTemplate.key.getModuleHash().toString());
                 }
                 keyToDT.put(dbTemplate.key, dbTemplate);
             }
@@ -177,14 +185,8 @@ public class Core
         }
     }
 
-    /**
-     * The private key of the test that is being generated.
-     */
-    private long pk_target_test = 0;
-    private boolean read_only = false;
-    private final Logger log;
-
     // TODO: find out why this cannot be made private, since public .getConfig() is used by the caller
+    @SuppressWarnings("PackageVisibleInnerClass")
     static class Config
     {
         private String db_host = null;
@@ -310,7 +312,7 @@ public class Core
         }
 
         if (!this.artifacts.isDirectory())
-            //noinspection ResultOfMethodCallIgnored
+           //noinspection ResultOfMethodCallIgnored
             this.artifacts.mkdirs();
 
         openDatabase();
@@ -337,8 +339,8 @@ public class Core
 
     private static class NodeModule
     {
-        @SuppressWarnings("unused")
-        public Object exports = null;
+//      @SuppressWarnings("unused")
+//      public Object exports = null;
     }
 
     /**
@@ -368,6 +370,7 @@ public class Core
             }
 
             String connectstring = String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
+            // TODO: replace superseded javax.sql.DriverManager with javax.sql.DataSource
             connect = DriverManager.getConnection(connectstring);
         } catch (Exception e)
         {
@@ -425,159 +428,161 @@ public class Core
         return read_only;
     }
 
-    /**
-     * Return the "ready" test instance matching the specified test instance number.
-     * @param testInstanceNumber The specified test instance number.
-     * @return The test instance, or null if the corresponding test instance has a matching run table entry.
-     */
-    @SuppressWarnings("ConditionalExpressionWithNegatedCondition")
-    private DBTestInstance readReadyTestInstance_testInstance(long testInstanceNumber)
-    {
-        DBTestInstance retVal = pktiToTI.get(testInstanceNumber);
-        return (retVal.fk_run != 0) ? null : // null for filled .fk_run (shows that test instance is past being "ready")
-                                      retVal;
-    }
+//  private Map<Long, DBTestInstance> pktiToTI = new HashMap<Long, DBTestInstance>();
+//    /**
+//     * Return the "ready" test instance matching the specified test instance number.
+//     * @param testInstanceNumber The specified test instance number.
+//     * @return The test instance, or null if the corresponding test instance does not exist or has a matching run table entry.
+//     */
+//    @SuppressWarnings("ConditionalExpressionWithNegatedCondition")
+//    private DBTestInstance readReadyTestInstance_testInstance(long testInstanceNumber)
+//    {
+//        DBTestInstance retVal = pktiToTI.get(testInstanceNumber);
+//        return (retVal.fk_run != 0) ? null : // null for filled .fk_run (shows that test instance is past being "ready")
+//                                      retVal;
+//    }
 
-    /**
-     * Return a set of all test instances matching the specified test number and test instance number that have not yet run and are ready to run.
-     * @param testNumber The specified test number.
-     * @param testInstanceNumber The specified test instance number.
-     * @return The set
-     */
-    Set<Long> readReadyTestInstances_test(long testNumber, long testInstanceNumber)
-    {
-        Set<Long> retSet = new HashSet<Long>();
-        Set<Long> fullSet = readReadyTestInstances_test(testNumber);
-        if (fullSet.contains(testInstanceNumber))
-        {
-            for (Long setMember : fullSet)
-            {
-                if (setMember == testInstanceNumber)
-                    retSet.add(setMember);
-            }
-        }
-        return retSet;
-    }
+//    /**
+//     * Return a set of all test instances matching the specified test number and test instance number that have not yet run and are ready to run.
+//     * @param testNumber The specified test number.
+//     * @param testInstanceNumber The specified test instance number.
+//     * @return The set
+//     */
+//    Set<Long> readReadyTestInstances_test(long testNumber, long testInstanceNumber)
+//    {
+//        Set<Long> retSet = new HashSet<Long>();
+//        Set<Long> fullSet = readReadyTestInstances_test(testNumber);
+//        if (fullSet.contains(testInstanceNumber))
+//        {
+//            for (Long setMember : fullSet)
+//            {
+//                if (setMember == testInstanceNumber)
+//                    retSet.add(setMember);
+//            }
+//        }
+//        return retSet;
+//    }
 
-    /**
-     * Return a set of all test instances matching the specified test number that have not yet run and are ready to run.
-     * @param testNumber The specified test number.
-     * @return The set.
-     */
-    private Set<Long> readReadyTestInstances_test(long testNumber)
-    {
-        Set<Long> retSet = new HashSet<Long>();
-        List<DBTestInstance> list_pkTest_ToMany_pkTestInstance = pktToTI.get(testNumber);
-        if (list_pkTest_ToMany_pkTestInstance != null)
-        {
-            for (DBTestInstance dbti : list_pkTest_ToMany_pkTestInstance)
-            {
-                if (dbti.fk_run == 0) // 0: null in database: not yet run
-                    retSet.add(dbti.pk_test_instance);
-            }
-        }
-        return retSet;
-    }
+//    private Map<Long, List<DBTestInstance>> pktToTI = new HashMap<Long, List<DBTestInstance>>();
+//    /**
+//     * Return a set of all test instances matching the specified test number that have not yet run and are ready to run.
+//     * @param testNumber The specified test number.
+//     * @return The set.
+//     */
+//    private Set<Long> readReadyTestInstances_test(long testNumber)
+//    {
+//        Set<Long> retSet = new HashSet<Long>();
+//        List<DBTestInstance> list_pkTest_ToMany_pkTestInstance = pktToTI.get(testNumber);
+//        if (list_pkTest_ToMany_pkTestInstance != null)
+//        {
+//            for (DBTestInstance dbti : list_pkTest_ToMany_pkTestInstance)
+//            {
+//                if (dbti.fk_run == 0) // 0: null in database: not yet run
+//                    retSet.add(dbti.pk_test_instance);
+//            }
+//        }
+//        return retSet;
+//    }
 
-    /**
-     * From a given test instance number, execute the corresponding test instance (aka test run).
-     *
-     *  @param testInstanceNumber The test instance number
-     */
-    @SuppressWarnings("MagicCharacter") // '\n'
-    public void executeTestInstance(long testInstanceNumber)
-    {
-        // We are an independent process. We have access to the database,
-        //   to a Resource Manager that has access to artifacts and resources,
-        //   and to everything else needed to cause our test instance to be executed.
-
-        DBTestInstance dbti = readReadyTestInstance_testInstance(testInstanceNumber);
-        if (dbti != null && dbti.fk_described_template != 0)
-        {
-            // This simple line requires that .pk_template be placed in DBTestInstance.
-            String str_fkTemplate = Long.toString(dbti.pk_template);
-
-            //            // This lookup works just as well to fill str_fkTemplate, and does not require the presence of .pk_template being placed in DBTestInstance.
-            //            DBDescribedTemplate dbdt = pkToDT.get(Long.valueOf(dbti.fk_described_template));
-            //            str_fkTemplate = Long.toString(dbdt.fk_template);
-
-            Statement statement = null;
-            ResultSet resultSet = null;
-            try
-            {
-                statement = connect.createStatement();
-                resultSet = statement.executeQuery("SELECT pk_described_template, fk_module_set, pk_template, description_hash, hash, steps, enabled" +
-                        "                          FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template" +
-                        "                          WHERE pk_test_instance = " + Long.toString(testInstanceNumber) + " AND pk_template = " + str_fkTemplate);
-                // exactly one resultSet (because we required test_instance.fk_described_template to match described_template.pk_described_template)
-                if (resultSet.next())
-                {
-                    DBTemplateInfo dbtemplateinfo = new DBTemplateInfo();
-                    dbtemplateinfo.pk_described_template = resultSet.getLong("pk_described_template"); // table entry will not be null
-                    dbtemplateinfo.fk_module_set = resultSet.getBytes("fk_module_set");
-                    dbtemplateinfo.pk_template = resultSet.getLong("pk_template");
-                    dbtemplateinfo.description_hash = resultSet.getBytes("description_hash");
-                    dbtemplateinfo.hash = resultSet.getBytes("hash");
-                    dbtemplateinfo.steps = resultSet.getString("steps");
-                    dbtemplateinfo.enabled = resultSet.getBoolean("enabled");
-
-                    if (resultSet.next())
-                        this.log.warn("<internal> Core.executeTestInstance(): More than one ResultSet found. This is unexpected. Dropping all but the first ResultSet which was just accessed and which may be wrong data; test instance processing proceeds.");
-
-                    // dbtemplateinfo is used to execute this test instance by following steps; aka instantiate this test run to generate a test result
-                    this.log.trace("<internal> Core.executeTestInstance() has data base info for test instance " + dbti.pk_test_instance + " for test " + dbti.fk_test + ", finding described_template " + dbti.fk_described_template + " and template " + dbti.pk_template);
-                    this.log.trace("<internal> Core.executeTestInstance() finds test script: " + dbti.script);
-                    this.log.trace("<internal> Core.executeTestInstance() finds enabled: " + dbtemplateinfo.enabled);
-                    this.log.trace("<internal> Core.executeTestInstance() finds module set: " + dbtemplateinfo.fk_module_set);
-                    this.log.trace("<internal> Core.executeTestInstance() finds description_hash: " + dbtemplateinfo.description_hash);
-                    this.log.trace("<internal> Core.executeTestInstance() finds hash: " + dbtemplateinfo.hash);
-                    this.log.trace("<internal> Core.executeTestInstance() finds steps: \n" + dbtemplateinfo.steps);
-
-                    // Establish everything and make the test run execute.
-
-                    // Wait for a test result.
-
-                    // this simulates waiting for a test result; wait a random time from 1 to 5 seconds
-                    Random random = new Random();
-                    @SuppressWarnings("MagicNumber")
-                    int sleep = random.nextInt(5001 - 500) + 500; // 0.5 to 5 seconds
-                    try
-                    {
-                        Thread.sleep(sleep);
-                    } catch (Exception ignore)
-                    {
-                    }
-
-                    // Place the test result in the database and mark the test instance as complete in the database.
-
-                    // simulated false condition, but database is readonly for a while, so this gives a quick return without storing anything
-                    reportResult("junk", false, null, null, null, null);
-                    this.log.debug("<internal> Core.executeTestInstance() exits after execution msec of " + sleep + '\n');
-                } else
-                {
-                    this.log.warn("<internal> Core.executeTestInstance: no DBTemplateInfo found");
-                }
-            } catch (Exception e)
-            {
-                this.log.error("<internal> Core.executeTestInstance(): Could not read template table, " + e.getMessage());
-            } finally
-            {
-                try
-                {
-                    if (resultSet != null)
-                        resultSet.close();
-                    if (statement != null)
-                        statement.close();
-                } catch (SQLException ignore)
-                {
-                    // TODO: log this?
-                }
-            }
-        } else
-        {
-            this.log.warn("<internal> Core.executeTestInstance: ready test instance not found: " + testInstanceNumber);
-        }
-    }
+//    /**
+//     * From a given test instance number, execute the corresponding test instance (aka test run).
+//     *
+//     *  @param testInstanceNumber The test instance number
+//     */
+//    public void executeTestInstance(long testInstanceNumber)
+//    {
+//        // We are an independent process. We have access to the database,
+//        //   to a Resource Manager that has access to artifacts and resources,
+//        //   and to everything else needed to cause our test instance to be executed.
+//
+//        DBTestInstance dbti = readReadyTestInstance_testInstance(testInstanceNumber);
+//        if (dbti != null && dbti.fk_described_template != 0)
+//        {
+//            // This simple line requires that .pk_template be placed in DBTestInstance.
+//            String str_fkTemplate = Long.toString(dbti.pk_template);
+//
+////          // This lookup works just as well to fill str_fkTemplate, and does not require the presence of .pk_template being placed in DBTestInstance.
+////          //  We choose instead to eliminate map pkToDT, which has no other use
+////          DBDescribedTemplate dbdt = pkToDT.get(Long.valueOf(dbti.fk_described_template));
+////          str_fkTemplate = Long.toString(dbdt.fk_template);
+//
+//            Statement statement = null;
+//            ResultSet resultSet = null;
+//            try
+//            {
+//                statement = connect.createStatement();
+//                resultSet = statement.executeQuery("SELECT pk_described_template, fk_module_set, pk_template, description_hash, hash, steps, enabled" +
+//                        "                          FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template" +
+//                        "                          WHERE pk_test_instance = " + Long.toString(testInstanceNumber) + " AND pk_template = " + str_fkTemplate);
+//                // exactly one resultSet (because we required test_instance.fk_described_template to match described_template.pk_described_template)
+//                if (resultSet.next())
+//                {
+//                    DBTemplateInfo dbtemplateinfo = new DBTemplateInfo();
+//                    dbtemplateinfo.pk_described_template = resultSet.getLong("pk_described_template"); // table entry will not be null
+//                    dbtemplateinfo.fk_module_set = resultSet.getBytes("fk_module_set");
+//                    dbtemplateinfo.pk_template = resultSet.getLong("pk_template");
+//                    dbtemplateinfo.description_hash = resultSet.getBytes("description_hash");
+//                    dbtemplateinfo.hash = resultSet.getBytes("hash");
+//                    dbtemplateinfo.steps = resultSet.getString("steps");
+//                    dbtemplateinfo.enabled = resultSet.getBoolean("enabled");
+//
+//                    if (resultSet.next())
+//                        this.log.warn("<internal> Core.executeTestInstance(): More than one ResultSet found. This is unexpected. Dropping all but the first ResultSet which was just accessed and which may be wrong data; test instance processing proceeds.");
+//
+//                    // dbtemplateinfo is used to execute this test instance by following steps; aka instantiate this test run to generate a test result
+//                    this.log.trace("<internal> Core.executeTestInstance() has data base info for test instance " + dbti.pk_test_instance + " for test " + dbti.fk_test + ", finding described_template " + dbti.fk_described_template + " and template " + dbti.pk_template);
+//                    this.log.trace("<internal> Core.executeTestInstance() finds test script: " + dbti.script);
+//                    this.log.trace("<internal> Core.executeTestInstance() finds enabled: " + dbtemplateinfo.enabled);
+//                    this.log.trace("<internal> Core.executeTestInstance() finds module set: " + dbtemplateinfo.fk_module_set);
+//                    this.log.trace("<internal> Core.executeTestInstance() finds description_hash: " + dbtemplateinfo.description_hash);
+//                    this.log.trace("<internal> Core.executeTestInstance() finds hash: " + dbtemplateinfo.hash);
+//                    this.log.trace("<internal> Core.executeTestInstance() finds steps: \n" + dbtemplateinfo.steps);
+//
+//                    // Establish everything and make the test run execute.
+//
+//                    // Wait for a test result.
+//
+//                    // this simulates waiting for a test result; wait a random time from 1 to 5 seconds
+//                    Random random = new Random();
+//                    @SuppressWarnings("MagicNumber")
+//                    int sleep = random.nextInt(5001 - 500) + 500; // 0.5 to 5 seconds
+//                    try
+//                    {
+//                        Thread.sleep(sleep);
+//                    } catch (Exception ignore)
+//                    {
+//                    }
+//
+//                    // Place the test result in the database and mark the test instance as complete in the database.
+//
+//                    // simulated false condition, but database is readonly for a while, so this gives a quick return without storing anything
+//                    reportResult("junk", false, null, null, null, null);
+//                    this.log.debug("<internal> Core.executeTestInstance() exits after execution msec of " + sleep + '\n');
+//                } else
+//                {
+//                    this.log.warn("<internal> Core.executeTestInstance: no DBTemplateInfo found");
+//                }
+//            } catch (Exception e)
+//            {
+//                this.log.error("<internal> Core.executeTestInstance(): Could not read template table, " + e.getMessage());
+//            } finally
+//            {
+//                try
+//                {
+//                    if (resultSet != null)
+//                        resultSet.close();
+//                    if (statement != null)
+//                        statement.close();
+//                } catch (SQLException ignore)
+//                {
+//                    // TODO: log this?
+//                }
+//            }
+//        } else
+//        {
+//            this.log.warn("<internal> Core.executeTestInstance: ready test instance not found: " + testInstanceNumber);
+//        }
+//    }
 
     /**
      * Return a list of artifact providers.
@@ -831,6 +836,8 @@ public class Core
      * @param length The length of the stream, or -1 if the entire stream is to be added.
      * @return Hash of the added content
      */
+//  @Nullable
+    @SuppressWarnings("ReturnOfNull")
     Hash addContent(InputStream is, long length)
     {
         File tmp = null;
@@ -934,10 +941,13 @@ public class Core
      * Return a file for content that exists in the cache.
      * @param h The hash of the file to return.
      * @return A file if it exists, null otherwise.
+     *
      */
+//  @Nullable
+    @SuppressWarnings("ReturnOfNull")
     File getContentFile(Hash h)
     {
-        File f = new File(artifacts, h.toString());
+        File f = new File(this.artifacts, h.toString());
         if (f.exists())
             return f;
 
@@ -1312,18 +1322,18 @@ public class Core
             return name;
         }
 
-        @SuppressWarnings("unused")
-        public String getEncodedName()
-        {
-            try
-            {
-                return URLEncoder.encode(name, "UTF-8");
-            } catch (Exception ignore)
-            {
-                // This should never happen, as UTF-8 is a required charset.
-                return "error";
-            }
-        }
+//        @SuppressWarnings("unused")
+//        public String getEncodedName()
+//        {
+//            try
+//            {
+//                return URLEncoder.encode(name, "UTF-8");
+//            } catch (Exception ignore)
+//            {
+//                // This should never happen, as UTF-8 is a required charset.
+//                return "error";
+//            }
+//        }
 
         @Override
         public Content getContent()
@@ -1432,6 +1442,8 @@ public class Core
         }
 
         @Override
+//      @Nullable
+        @SuppressWarnings("ReturnOfNull")
         public InputStream asStream()
         {
             File f = core.getContentFile(hash);
@@ -1447,6 +1459,7 @@ public class Core
         }
 
         @Override
+        @SuppressWarnings("ZeroLengthArrayAllocation")
         public byte[] asBytes()
         {
             File f = core.getContentFile(hash);
@@ -1457,8 +1470,7 @@ public class Core
                     // Ignore
                 }
             }
-
-            return null;
+            return new byte[0]; // this is better than returning null, which poses a null pointer threat to the caller
         }
     }
 
@@ -1468,7 +1480,7 @@ public class Core
      */
     public Iterable<Module> createModuleSet()
     {
-        List<Module> set = new ArrayList<Module>();
+        Collection<Module> set = new ArrayList<Module>();
         Statement statement = null;
         ResultSet resultSet = null;
 
@@ -1504,7 +1516,7 @@ public class Core
      */
     public Iterable<Module> createModuleSet(String organization, String name)
     {
-        List<Module> set = new ArrayList<Module>();
+        Collection<Module> set = new ArrayList<Module>();
         Statement statement = null;
         ResultSet resultSet = null;
 
@@ -1552,7 +1564,7 @@ public class Core
      */
     public Iterable<Artifact> findDependencies(Artifact artifact)
     {
-        List<Artifact> set = new ArrayList<Artifact>();
+        Collection<Artifact> set = new ArrayList<Artifact>();
 
         // Artifact searches are always done from the perspective of merged modules.
         long pk = findModule(artifact.getModule());
@@ -1619,7 +1631,7 @@ public class Core
                         String version = ver_fields[0];
                         String configuration = ver_fields.length > 1 ? ver_fields[1] : "";
 
-                        // TODO: how to @SuppressWarnings() here, or just do what it wahnts
+                        // TODO: how to @SuppressWarnings() here, or just do what it wants
                         organization = organization.replace("$", artifact.getModule().getOrganization());
                         module = module.replace("$", artifact.getModule().getName());
                         attributes = attributes.replace("$", artifact.getModule().getAttributes().toString());
@@ -1627,19 +1639,16 @@ public class Core
                         version = version.replace("$", artifact.getModule().getVersion());
                         configuration = configuration.replace("$", artifact.getConfiguration());
 
-                        @SuppressWarnings("MagicCharacter")
-                        char singleQuote = '\'';
-
-                        String organization_where = organization.length() > 0 ? " AND module.organization='" + organization + singleQuote : "";
-                        String module_where = module.length() > 0 ? " AND module.name='" + module + singleQuote : "";
-                        String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + singleQuote : "";
-                        String version_where = version.length() > 0 ? " AND module.version='" + version + singleQuote : "";
-                        String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + singleQuote : "";
+                        String organization_where = organization.length() > 0 ? " AND module.organization='" + organization + this.singleQuote : "";
+                        String module_where = module.length() > 0 ? " AND module.name='" + module + this.singleQuote : "";
+                        String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + this.singleQuote : "";
+                        String version_where = version.length() > 0 ? " AND module.version='" + version + this.singleQuote : "";
+                        String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + this.singleQuote : "";
 
                         query = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s%s%s%s%s"
                                         + " ORDER BY module.organization, module.name, module.attributes, module.version, artifact.configuration, module.sequence DESC", fields[2], organization_where, module_where, attributes_where, version_where, configuration_where);
                         resultSet = statement.executeQuery(query);
-                        Set<String> found = new HashSet<String>();
+                        Collection<String> found = new HashSet<String>();
                         while (resultSet.next())
                         {
                             String artifact_name = resultSet.getString(10);
@@ -1690,14 +1699,13 @@ public class Core
      * @param targetDirectory The target directory.
      * @return The name of the artifact in the target directory.
      */
-    @SuppressWarnings("MagicCharacter")
     private String getTargetName(String artifactName, String targetDirectory){
         if (artifactName.endsWith("/"))
             throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
 
         int nameStartIndex = 0;
         if(artifactName.contains("/"))
-            nameStartIndex = artifactName.lastIndexOf('/') + 1;
+            nameStartIndex = artifactName.lastIndexOf("/") + 1;
 
         String targetName = artifactName.substring(nameStartIndex);
         if(!targetDirectory.endsWith("/"))
@@ -1712,7 +1720,7 @@ public class Core
      * acceptable to MySQL regex search.
      * The result set includes a list of sets of matching artifacts. For each element in the list the array of results contains the
      * artifact that matches the parameter in the same position, all of which will come from the same module.
-     * @param required A parameter set or null. Any module considered for artifacts must contain at least these attributes.
+     * @param required A parameter set or null. Any module wed for artifacts must contain at least these attributes.
      * @param configuration the configuration to check, or null.
      * @param name Artifact names, including MySQL REGEXP patterns.
      * @return The set of artifacts
@@ -1721,7 +1729,6 @@ public class Core
     {
         Statement statement = null;
         ResultSet resultSet = null;
-        List<Artifact[]> set = new ArrayList<Artifact[]>();
         Map<Long, DBModule> moduleMap = new HashMap<Long, DBModule>();
         Map<Long, Artifact[]> artifactMap = new HashMap<Long, Artifact[]>();
 
@@ -1733,7 +1740,7 @@ public class Core
                 statement = connect.createStatement();
                 String configuration_match = "";
                 if (configuration != null)
-                    configuration_match = " AND artifact.configuration='" + configuration + "'";
+                    configuration_match = " AND artifact.configuration='" + configuration + this.singleQuote;
 
                 String queryStr = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s"
                                 + " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC", artifact_name, configuration_match);
@@ -1747,7 +1754,8 @@ public class Core
                         boolean mismatch = false;
                         for (Map.Entry<String, String> entry : required.getAttributes().entrySet())
                         {
-                            if (possesses.get(entry.getKey()) != entry.getValue())
+                            if (!possesses.get(entry.getKey())
+                                          .equals(entry.getValue()))
                             {
                                 mismatch = true;
                                 break;
@@ -1759,13 +1767,13 @@ public class Core
                     }
 
                     long pk_found = resultSet.getLong(1);
-                    Artifact[] artifacts;
+                    Artifact[] locArtifacts;
                     if (artifactMap.containsKey(pk_found))
-                        artifacts = artifactMap.get(pk_found);
+                        locArtifacts = artifactMap.get(pk_found);
                     else
                     {
-                        artifacts = new Artifact[name.length];
-                        artifactMap.put(pk_found, artifacts);
+                        locArtifacts = new Artifact[name.length];
+                        artifactMap.put(pk_found, locArtifacts);
                     }
 
                     DBModule module = null;
@@ -1777,10 +1785,10 @@ public class Core
                         moduleMap.put(pk_found, module);
                     }
 
-                    if (artifacts[name_index] == null)
+                    if (locArtifacts[name_index] == null)
                     {
                         Artifact A = new DBArtifact(this, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
-                        artifacts[name_index] = A;
+                        locArtifacts[name_index] = A;
                     }
                 }
             } catch (Exception e)
@@ -1796,12 +1804,13 @@ public class Core
             }
         }
 
-        for (Long pk : artifactMap.keySet())
+        Collection<Artifact[]> set = new ArrayList<Artifact[]>();
+        for (Map.Entry<Long, Artifact[]> longEntry : artifactMap.entrySet())
         {
-            Artifact[] list = artifactMap.get(pk);
+            Artifact[] list = longEntry.getValue();
             int found = 0;
-            for (int i = 0; i < list.length; i++)
-                if (list[i] != null)
+            for (Artifact artifactElement : list)
+                if (artifactElement != null)
                     found += 1;
 
             if (found == name.length)
@@ -1824,7 +1833,7 @@ public class Core
         try
         {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery(String.format("SELECT test.pk_test, test.script" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " WHERE test.script != ''"));
+            resultSet = statement.executeQuery("SELECT test.pk_test, test.script" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " WHERE test.script != ''");
             while (resultSet.next())
             {
                 result.put(resultSet.getLong(1), resultSet.getString(2));
@@ -1850,14 +1859,14 @@ public class Core
      * @param stdout The standard output of the generator run.
      * @param stderr The standard error of the generator run.
      */
-    public void updateTest(long pk_test, String stdout, String stderr)
+    void updateTest(long pk_test, String stdout, String stderr)
     {
         // Mark a module as found.
-        PreparedStatement statement = null;
 
         if (read_only)
             return;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("UPDATE test SET last_run=?, last_stdout=?, last_stderr=? WHERE pk_test=?");
@@ -1886,33 +1895,34 @@ public class Core
      */
     public List<Artifact> getArtifacts(long pk_module, String name, String configuration)
     {
-        Statement statement = null;
-        ResultSet resultSet = null;
-        List<Artifact> set = new ArrayList<Artifact>();
         String name_match = "";
-        String configuration_match = "";
-        String separator = "";
-        String intro = "";
 
         if (name != null)
-            name_match = "artifact.name REGEXP '" + name + "'";
+            name_match = "artifact.name REGEXP '" + name + this.singleQuote;
 
+        String configuration_match = "";
         if (configuration != null)
-            configuration_match = "artifact.configuration = '" + configuration + "'";
+            configuration_match = "artifact.configuration = '" + configuration + this.singleQuote;
 
+        String separator = "";
         if (name != null && configuration != null)
             separator = " AND ";
 
+        String intro = "";
         if (name != null || configuration != null)
             intro = " AND ";
 
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        // Choose Set over List because Set automatically rejects duplicate entries
+        HashSet<Artifact> set = new HashSet<Artifact>();
         try
         {
-            Map<Long, DBModule> modules = new HashMap<Long, DBModule>();
-
             statement = connect.createStatement();
             resultSet = statement.executeQuery("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content, artifact.merged_from_module" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE module.pk_module = " + pk_module + intro + name_match + separator + configuration_match
                             + " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC");
+            Map<Long, DBModule> modules = new HashMap<Long, DBModule>();
             while (resultSet.next())
             {
                 // Ignore dtf_test_generator artifacts that are merged from other modules
@@ -1931,17 +1941,19 @@ public class Core
                     modules.put(pk_found, module);
                 }
 
-                if (set.contains(resultSet.getString(8)))
-                    continue;
+//                // set is now changed to HashSet<Artifact>, which cannot contain duplicate elements.
+//                // When set was List<Artifact>, it was hard to detect matching entry: this next line of code could not return true: set is not List<String>
+//                if (set.contains(resultSet.getString(8)))
+//                    continue;
 
                 Artifact A = new DBArtifact(this, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
-                set.add(A);
+                set.add(A); // ignored return value is true for "added," false for already in place
             }
 
         } catch (Exception e)
         {
             this.log.error("<internal> Core.getArtifacts(): getArtifacts() exception " + e.getMessage());
-            e.printStackTrace(System.err);
+            this.log.error("stack trace", e);
         } finally
         {
             safeClose(resultSet);
@@ -1950,23 +1962,23 @@ public class Core
             statement = null;
         }
 
-        return set;
+        return new ArrayList<Artifact>(set);
     }
 
     /**
-     * Return whether the specified version is associated with the current core target test. This is true
+     * Return whether the specified module is associated with the current core target test. This is true
      * if there is a relationship from the test through the test plan to the component and version.
-     * @param module
-     * @return
+     * @param module The module.
+     * @return boolean
      */
     boolean isAssociatedWithTest(Module module)
     {
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
         long pk = findModule(module);
         if (pk == 0)
             return false;
 
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
         try
         {
             statement = connect.prepareStatement("SELECT test.pk_test" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test = ? AND module_to_test_plan.fk_module = ?");
@@ -1991,14 +2003,15 @@ public class Core
         return false;
     }
 
-    public long findTestPlan(String name, String description)
+    private long findTestPlan(String name, String description)
     {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
 
         try
         {
-            statement = connect.prepareStatement("SELECT test_plan.pk_test_plan" + " FROM test_plan" + " WHERE test_plan.name = '" + name + "'" + " AND test_plan.description = '" + description + "'");
+            statement = connect.prepareStatement("SELECT test_plan.pk_test_plan" + " FROM test_plan" +
+                                                      " WHERE test_plan.name = '" + name + this.singleQuote + " AND test_plan.description = '" + description + this.singleQuote);
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
             {
@@ -2019,7 +2032,7 @@ public class Core
         return 0;
     }
 
-    long findTest(long pk_test_plan, String name, String description, String script)
+    private long findTest(long pk_test_plan, String name, String description, String script)
     {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
@@ -2052,11 +2065,12 @@ public class Core
         return 0;
     }
 
-    public long findModule(Module module)
+    long findModule(Module module)
     {
         // Short-cut the lookup if it is one of our modules.
         if (module instanceof DBModule)
         {
+            @SuppressWarnings("CastToConcreteClass")
             DBModule dbmod = (DBModule) module;
             if (dbmod.pk != 0)
                 return dbmod.pk;
@@ -2089,14 +2103,13 @@ public class Core
         return 0;
     }
 
-    public void updateModule(long pk_module)
+    void updateModule(long pk_module)
     {
         // Mark a module as found.
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement(String.format("UPDATE module SET missing_count=0 WHERE pk_module=%d", pk_module));
@@ -2113,11 +2126,12 @@ public class Core
         }
     }
 
-    public long findModuleWithoutPriorSequence(Module module)
+    private long findModuleWithoutPriorSequence(Module module)
     {
         // Short-cut the lookup if it is one of our modules (i.e. is already in the database).
         if (module instanceof DBModule)
         {
+            @SuppressWarnings("CastToConcreteClass")
             DBModule dbmod = (DBModule) module;
             if (dbmod.pk != 0)
                 return dbmod.pk;
@@ -2210,20 +2224,19 @@ public class Core
             }
         }
     */
-    void addToSet(DescribedTemplate dt, Set<DescribedTemplate> set)
-    {
-        if (!set.contains(dt))
-        {
-            set.add(dt);
-            for (DescribedTemplate child : dt.getDependencies())
-                addToSet(child, set);
-        }
-    }
+//    void addToSet(DescribedTemplate dt, Set<DescribedTemplate> set)
+//    {
+//        if (!set.contains(dt))
+//        {
+//            set.add(dt);
+//            for (DescribedTemplate child : dt.getDependencies())
+//                addToSet(child, set);
+//        }
+//    }
 
     private void addActions(DescribedTemplate dt, long pk) throws Exception
     {
         PreparedStatement statement = null;
-        ResultSet keys;
 
         for (int i = 0; i < dt.getActionCount(); i++)
         {
@@ -2243,7 +2256,7 @@ public class Core
             statement.executeUpdate();
 
             long linepk = 0;
-            keys = statement.getGeneratedKeys();
+            ResultSet keys = statement.getGeneratedKeys();
             if (keys.next())
                 linepk = keys.getLong(1);
 
@@ -2264,6 +2277,7 @@ public class Core
                 Iterator<Artifact> iter = au.getArtifacts();
                 while (iter.hasNext())
                 {
+                    @SuppressWarnings("CastToConcreteClass")
                     DBArtifact artifact = (DBArtifact) iter.next();
 
                     try
@@ -2306,12 +2320,11 @@ public class Core
         // TODO: Figure out if this logic is correct. Doesn't appear to be.
         for (DescribedTemplate child : dt.getDependencies())
         {
-            @SuppressWarnings("unused")
-            DBDescribedTemplate dbdt;
-            if (!keyToDT.containsKey(child.getKey()))
-                dbdt = add(child, null, null, null, null, null);
-            else
-                dbdt = check(child);
+            if (!keyToDT.containsKey(child.getKey())) {
+                DBDescribedTemplate dbdt = add(child, null, null, null, null, null);
+            } else {
+                DBDescribedTemplate dbdt = check(child);
+            }
         }
 
         try
@@ -2319,13 +2332,12 @@ public class Core
             /* All described template additions are handled as transactions. */
             connect.setAutoCommit(false);
 
-            long pk = 0;
             long pk_template = syncTemplate(dt.getTemplate());
             if (result != null || owner != null)
                 reportResult(dt.getTemplate().getHash().toString(), result, owner, start, ready, complete);
 
             PreparedStatement statement = null;
-            ResultSet query = null;
+            long pk = 0;
             try
             {
                 statement = connect.prepareStatement("INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
@@ -2343,7 +2355,7 @@ public class Core
                 statement = null;
 
                 addActions(dt, pk);
-            } catch (SQLException e)
+            } catch (SQLException ignore)
             {
                 //TODO: Figure out that this is a duplicate key or not.
                 safeClose(statement);
@@ -2352,7 +2364,7 @@ public class Core
                 statement = connect.prepareStatement("SELECT pk_described_template FROM described_template WHERE fk_module_set=? AND fk_template=?");
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
                 statement.setLong(2, pk_template);
-                query = statement.executeQuery();
+                ResultSet query = statement.executeQuery();
 
                 if (query.next())
                     pk = query.getLong(1);
@@ -2372,7 +2384,7 @@ public class Core
             DBDescribedTemplate dbdt = new DBDescribedTemplate();
             dbdt.pk = pk;
             dbdt.key = dt.getKey();
-            pkToDT.put(dbdt.pk, dbdt);
+//          pkToDT.put(dbdt.pk, dbdt);
             keyToDT.put(dbdt.key, dbdt);
             return dbdt;
         } catch (Exception e)
@@ -2383,7 +2395,7 @@ public class Core
             {
                 connect.rollback();
                 connect.setAutoCommit(true);
-            } catch (Exception ex)
+            } catch (Exception e1)
             {
                 // TODO: This is really bad - failure to restore state.
             }
@@ -2396,7 +2408,7 @@ public class Core
      * Check that an existing template is correct. If the template exists then the children
      * must exist, but their documentation may be out of date.
      * @param dt The described template to check. Results are not currently checked.
-     * @return
+     * @return DBDescribedTemplate
      */
     private DBDescribedTemplate check(DescribedTemplate dt) throws Exception
     {
@@ -2404,11 +2416,9 @@ public class Core
         for (DescribedTemplate child : dt.getDependencies())
         {
             // TODO: Figure out if this is correct.
-            @SuppressWarnings("unused")
-            DBDescribedTemplate dbdt;
             if (!keyToDT.containsKey(child.getKey()))
                 throw new Exception("Parent template exists, child does not.");
-            dbdt = check(child);
+            DBDescribedTemplate dbdt = check(child);
         }
 
         DBDescribedTemplate me = keyToDT.get(dt.getKey());
@@ -2451,7 +2461,7 @@ public class Core
 
             connect.commit();
             connect.setAutoCommit(true);
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             connect.rollback();
             connect.setAutoCommit(true);
@@ -2467,7 +2477,7 @@ public class Core
      * @param testInstances A list of test instances to be synced.
      * @throws Exception on any error
      */
-    public int syncDescribedTemplates(List<TestInstance> testInstances) throws Exception
+    public int syncDescribedTemplates(Iterable<TestInstance> testInstances) throws Exception
     {
         int addedDescribedTemplatesCount = 0;
         int checkedNotAddedDescribedTemplatesCount = 0;
@@ -2478,121 +2488,126 @@ public class Core
 
             if (!keyToDT.containsKey(key))
             {
-                // Add the template
+                // add the template
                 dbdt = add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;
 
             } else
             {
+                // check the stored template
                 dbdt = check(ti.getTemplate());
                 ++checkedNotAddedDescribedTemplatesCount;
             }
 
-            // We have the described template. There should be a Test Instance that relates the
-            // current test (pk_test) to the current described template.
-            if (!dtToTI.containsKey(dbdt.pk))
-            {
-                // No test instance, add it.
-                PreparedStatement statement2 = null;
-                try
+            if (dbdt != null) {
+                // We have the described template. There should be a Test Instance that relates the
+                // current test (pk_test) to the current described template.
+                if (!dtToTI.containsKey(dbdt.pk))
                 {
-                    statement2 = connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-                    statement2.setLong(1, pk_target_test);
-                    statement2.setLong(2, dbdt.pk);
-                    //TODO: Determine the phase
-                    statement2.setLong(3, 0);
-                    statement2.setInt(4, 1); // Default is synchronized.
-                    statement2.executeUpdate();
-
-                    ResultSet keys = statement2.getGeneratedKeys();
-                    if (keys.next())
-                        ti.pk = keys.getLong(1);
-                } catch (Exception e)
-                {
-                    this.log.error("<internal> Core.syncDescribedTemplates(): Could not add described_template to test_instance: " + e.getMessage());
-                }
-
-                safeClose(statement2);
-                statement2 = null;
-
-                // Insert all of the module references
-                List<TestInstance.Action> actions = ti.getActions();
-                for (TestInstance.Action action : actions)
-                {
-                    ArtifactUses au = action.getArtifactUses();
-                    if (au == null)
-                        continue;
-
-                    Iterator<Artifact> iter = au.getArtifacts();
-                    while (iter.hasNext())
+                    // No test instance, add it.
+                    PreparedStatement statement2 = null;
+                    try
                     {
-                        Artifact artifact = iter.next();
+                        statement2 = connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                        statement2.setLong(1, pk_target_test);
+                        statement2.setLong(2, dbdt.pk);
+                        //TODO: Determine the phase
+                        statement2.setLong(3, 0);
+                        statement2.setInt(4, 1); // Default is synchronized.
+                        statement2.executeUpdate();
 
-                        try
-                        {
-                            // TODO: When adding 529 test instances, is it ok that 1000 entries are added to this table?
-                            //       This table has a 1000 entry limit. Is this a bug?
-                            long pk_module = findModule(artifact.getModule());
-                            statement2 = connect.prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
-                            statement2.setLong(1, pk_module);
-                            statement2.setLong(2, ti.pk);
-                            statement2.execute();
-                            safeClose(statement2);
-                            statement2 = null;
-                        } catch (Exception e)
-                        {
-                            // Ignore, since many times this will be a duplicate.
-                        }
-                    }
-                }
-
-                safeClose(statement2);
-                statement2 = null;
-                dbdt.pk = ti.pk;
-                dtToTI.put(dbdt.pk, ti.pk);
-            }
-
-            // If the ti has a result recorded, then make sure it is reflected in the run table.
-            Statement statement2 = null;
-            ResultSet resultSet = null;
-            Boolean dbResult = null;
-            String dbOwner = null;
-
-            if (ti.getResult() != null || ti.getOwner() != null)
-            {
-                try
-                {
-                    statement2 = connect.createStatement();
-                    resultSet = statement2.executeQuery("SELECT result, owner FROM run JOIN test_instance ON test_instance.fk_run = run.pk_run WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
-
-                    if (resultSet.next())
+                        ResultSet keys = statement2.getGeneratedKeys();
+                        if (keys.next())
+                            ti.pk = keys.getLong(1);
+                    } catch (Exception e)
                     {
-                        dbResult = resultSet.getBoolean("result");
-                        if (resultSet.wasNull())
-                            dbResult = null;
-
-                        dbOwner = resultSet.getString("owner");
-                        if (resultSet.wasNull())
-                            dbOwner = null;
+                        this.log.error("<internal> Core.syncDescribedTemplates(): Could not add described_template to test_instance: " + e.getMessage());
                     }
-                } catch (Exception e)
-                {
-                    // Ignore
-                } finally
-                {
-                    safeClose(resultSet);
-                    resultSet = null;
+
                     safeClose(statement2);
                     statement2 = null;
+
+                    // Insert all of the module references
+                    List<TestInstance.Action> actions = ti.getActions();
+                    for (TestInstance.Action action : actions)
+                    {
+                        ArtifactUses au = action.getArtifactUses();
+                        if (au == null)
+                            continue;
+
+                        Iterator<Artifact> iter = au.getArtifacts();
+                        while (iter.hasNext())
+                        {
+                            Artifact artifact = iter.next();
+
+                            try
+                            {
+                                // TODO: When adding 529 test instances, is it ok that 1000 entries are added to this table?
+                                //       This table has a 1000 entry limit. Is this a bug?
+                                long pk_module = findModule(artifact.getModule());
+                                statement2 = connect.prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
+                                statement2.setLong(1, pk_module);
+                                statement2.setLong(2, ti.pk);
+                                statement2.execute();
+                                safeClose(statement2);
+                                statement2 = null;
+                            } catch (Exception ignore)
+                            {
+                                // Ignore, since many times this will be a duplicate.
+                            }
+                        }
+                    }
+
+                    safeClose(statement2);
+                    statement2 = null;
+                    dbdt.pk = ti.pk;
+                    dtToTI.put(dbdt.pk, ti.pk);
                 }
 
-                // Check the run status, fix it if the status is known.
-                if ((dbResult != ti.getResult()) || !(dbOwner == null ? ti.getOwner() == null : dbOwner.equals(ti.getOwner())))
+                // If the ti has a result recorded, then make sure it is reflected in the run table.
+                if (ti.getResult() != null || ti.getOwner() != null)
                 {
-                    reportResult(ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                    Statement statement2 = null;
+                    ResultSet resultSet = null;
+                    Boolean dbResult = null;
+                    String dbOwner = null;
+                    try
+                    {
+                        statement2 = connect.createStatement();
+                        resultSet = statement2.executeQuery("SELECT result, owner FROM run JOIN test_instance ON test_instance.fk_run = run.pk_run WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
+
+                        if (resultSet.next())
+                        {
+                            dbResult = resultSet.getBoolean("result");
+                            if (resultSet.wasNull())
+                                dbResult = null;
+
+                            dbOwner = resultSet.getString("owner");
+                            if (resultSet.wasNull())
+                                dbOwner = null;
+                        }
+                    } catch (Exception ignore) {
+                        // Ignore
+                    } finally {
+                        safeClose(resultSet);
+                        resultSet = null;
+                        safeClose(statement2);
+                        statement2 = null;
+                    }
+
+                    // Check the run status, fix it if the status is known.
+                    if (!Objects.equals(dbResult, ti.getResult()) ||
+                        (dbOwner==null ? ti.getOwner()!=null : !Objects.equals(dbOwner, ti.getOwner())))
+                    {
+                        reportResult(ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                    }
                 }
-            }
-        }
+            } else {
+                this.log.debug("<internal> Core.syncDescribedTemplates() computes null DBDescribedTemplate");
+                throw new Exception("null DBDescribedTemplate");
+            } // end if (dbdt)
+        } // end for()
+
         if (checkedNotAddedDescribedTemplatesCount > 0)
             this.log.debug("<internal> Core.syncDescribedTemplates() checked (without adding) " + checkedNotAddedDescribedTemplatesCount + " described templates in database");
         return addedDescribedTemplatesCount;
@@ -2601,9 +2616,6 @@ public class Core
     public long syncTemplate(Template sync)
     {
         long pk = 0;
-
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
 
         if (read_only)
         {
@@ -2615,6 +2627,8 @@ public class Core
             return pk;
         }
 
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
         try
         {
             statement = connect.prepareStatement("SELECT pk_template FROM template WHERE hash=?");
@@ -2679,7 +2693,7 @@ public class Core
                 Hash hash = new Hash(foundArtifacts.getBytes(1));
                 result.add(hash);
             }
-        } catch (Exception e)
+        } catch (SQLException ignore)
         {
             // Ignore
         } finally
@@ -2697,7 +2711,6 @@ public class Core
     {
         PreparedStatement findArtifacts = null;
         ResultSet foundArtifacts = null;
-        PreparedStatement findChildren = null;
         ResultSet foundChildren = null;
 
         // Read all the related artifacts
@@ -2711,14 +2724,14 @@ public class Core
                 combined.add(hash);
             }
 
-            findChildren = connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
+            PreparedStatement findChildren = connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
             foundChildren = findChildren.executeQuery();
             while (foundChildren.next())
             {
                 long fk = foundChildren.getLong("fk_child");
                 getRequiredTopArtifacts(fk, combined);
             }
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             // Ignore
         } finally
@@ -2732,9 +2745,6 @@ public class Core
 
     private void getRequiredTemplates(long pk, Set<Long> combined)
     {
-        PreparedStatement findChildren = null;
-        ResultSet foundChildren = null;
-
         // If a template is already added then its children must also already be added.
         if (combined.contains(pk))
             return;
@@ -2743,6 +2753,8 @@ public class Core
         combined.add(pk);
 
         // Find and add all my children.
+        PreparedStatement findChildren = null;
+        ResultSet foundChildren = null;
         try
         {
             findChildren = connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
@@ -2752,7 +2764,7 @@ public class Core
                 long fk = foundChildren.getLong("fk_child");
                 getRequiredTemplates(fk, combined);
             }
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             // Ignore.
         } finally
@@ -2769,13 +2781,9 @@ public class Core
      * directly from a test instance. This roll-up allows SQL queries to map from an artifact to a test instance
      * for artifact result reports.
      */
-    public void syncTopTemplateRelationships()
+    void syncTopTemplateRelationships()
     {
         // Find all top-level templates.
-        PreparedStatement findTemplates = null;
-        ResultSet foundTemplates = null;
-        PreparedStatement insertArtifact = null;
-
         if (read_only)
             return;
 
@@ -2783,9 +2791,11 @@ public class Core
          * means that the worst synchronization problem can be a crash while we were in the process of adding
          * relationships. An existing relationship will never be wrong.
          */
+        ResultSet foundTemplates = null;
+        PreparedStatement insertArtifact = null;
         try
         {
-            findTemplates = connect.prepareStatement("select distinct fk_template from test_instance");
+            PreparedStatement findTemplates = connect.prepareStatement("select distinct fk_template from test_instance");
             foundTemplates = findTemplates.executeQuery();
             while (foundTemplates.next())
             {
@@ -2805,7 +2815,7 @@ public class Core
                     insertArtifact.executeUpdate();
                 }
             }
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             // Ignore.
         } finally
@@ -2819,12 +2829,11 @@ public class Core
 
     public void syncTemplateRelationships(Template sync)
     {
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
         if (read_only)
             return;
 
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
         try
         {
             for (Template t : sync.allTemplates)
@@ -2895,16 +2904,15 @@ public class Core
     public void startSyncTestInstance(long pk_test)
     {
         // Mark test instances for later cleanup.
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement(String.format("UPDATE test_instance SET synchronized=0 WHERE fk_test=%d", pk_test));
             statement.executeUpdate();
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             //TODO: handle
         } finally
@@ -2916,11 +2924,10 @@ public class Core
 
     public void stopSyncTestInstance(long pk_test)
     {
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement(String.format("DELETE FROM test_instance WHERE synchronized=0 AND fk_test=%d", pk_test));
@@ -2935,15 +2942,14 @@ public class Core
         }
     }
 
-    public List<Long> getTestInstances(long pk_test) throws Exception{
+    List<Long> getTestInstances(long pk_test) throws Exception{
         Statement find_test_instance = null;
-        ResultSet test_instances = null;
         List<Long> testInstanceList = new ArrayList<Long>();
 
         try
         {
             find_test_instance = connect.createStatement();
-            test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test);
+            ResultSet test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test);
             while (test_instances.next())
             {
                 testInstanceList.add(test_instances.getLong("pk_test_instance"));
@@ -2977,14 +2983,14 @@ public class Core
                 long pk = test_instances.getLong("pk_test_instance");
 
                 // We found a candidate, but need to verify that its version references exactly match.
-                List<Long> my_versions = new ArrayList<Long>();
-                //                for ( Version v : sync.getVersions() )
-                //                    my_versions.add( v.getPK() );
-
                 find_versions = connect.prepareStatement("SELECT fk_version FROM test_instance_to_version WHERE fk_test_instance=?");
                 find_versions.setLong(1, pk);
                 his_versions = find_versions.executeQuery();
                 boolean extras = false;
+
+                Collection<Long> my_versions = new ArrayList<Long>();
+                //                for ( Version v : sync.getVersions() )
+                //                    my_versions.add( v.getPK() );
                 while (his_versions.next() && !extras)
                 {
                     Long vk = his_versions.getLong("fk_version");
@@ -3038,8 +3044,6 @@ public class Core
     public long syncTestInstance(TestInstance sync, long pk_test)
     {
         long pk = 0;
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
 
         //TODO: Clean up
         if (read_only)
@@ -3060,6 +3064,8 @@ public class Core
         //        for ( Version v : sync.getVersions() )
         //            v.sync();
 
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
         try
         {
             pk = findTestInstance(sync, pk_test);
@@ -3071,6 +3077,8 @@ public class Core
                 // Get the component list associated with the test
                 statement = connect.prepareStatement(String.format("SELECT distinct pk_component" + " FROM component" + " JOIN component_to_test_plan ON component_to_test_plan.fk_component = component.pk_component" + " JOIN test_plan ON test_plan.pk_test_plan = component_to_test_plan.fk_test_plan" + " JOIN test ON test.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test='%d'", pk_test));
                 resultSet = statement.executeQuery();
+
+                // TODO: See why components here is never read. Is impl incomplete?
                 List<Long> components = new ArrayList<Long>();
                 while (resultSet.next())
                 {
@@ -3146,14 +3154,15 @@ public class Core
         return pk;
     }
 
+//  @Nullable
+    @SuppressWarnings("ReturnOfNull")
     public Long getInstanceRun(long testInstanceNumber) throws Exception
     {
         Statement statement = null;
-        ResultSet resultSet = null;
         try
         {
             statement = connect.createStatement();
-            resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
+            ResultSet resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
             if(resultSet.next()){
 
                 long result = resultSet.getLong("fk_run");
@@ -3173,16 +3182,15 @@ public class Core
 
     /**
      *
-     * @param runID
-     * @param result
-     * @throws Exception
+     * @param runID The runID
+     * @param result The result
+     * @throws Exception on failure
      */
-    public void addResultToRun(long runID, boolean result) throws Exception {
-        Statement statement = null;
-
+    void addResultToRun(long runID, boolean result) throws Exception {
         if (read_only)
             return;
 
+        Statement statement = null;
         try
         {
             statement = connect.createStatement();
@@ -3200,16 +3208,16 @@ public class Core
         }
     }
 
-    public Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
+//  @Nullable
+    @SuppressWarnings("ReturnOfNull")
+    Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {
-        PreparedStatement runStatement = null;
-        Statement templateStatement = null;
-
         if (read_only)
             throw new Exception("Database connection is read only.");
 
         String hash;
         ResultSet resultSet = null;
+        Statement templateStatement = null;
         try
         {
             templateStatement = connect.createStatement();
@@ -3230,11 +3238,12 @@ public class Core
             safeClose(templateStatement);
         }
 
+        PreparedStatement runStatement = null;
         try
         {
             runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
             runStatement.setString(1, hash);
-               runStatement.setNull(2, Types.BOOLEAN);
+            runStatement.setNull(2, Types.BOOLEAN);
 
             if (owner != null)
                 runStatement.setString(3, owner);
@@ -3245,6 +3254,7 @@ public class Core
             runStatement.setNull(5, Types.TIMESTAMP);
             runStatement.setNull(6, Types.TIMESTAMP);
             if(runStatement.execute()){
+                // we have a ResultSet
                 resultSet = runStatement.getResultSet();
                 boolean result = resultSet.next();
                 if(result){
@@ -3252,7 +3262,7 @@ public class Core
                 }
             }
             else
-                return null;
+                return null; // no ResultSet
         } catch (Exception e)
         {
             this.log.error("<internal> Core.createInstanceRun() exception msg: " + e);
@@ -3266,13 +3276,12 @@ public class Core
         throw new Exception("Failed to add new run for test instance " + testInstanceNumber);
     }
 
-    public void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)
+    void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)
     {
-        PreparedStatement statement = null;
-
         if (read_only)
             return;
 
+        PreparedStatement statement = null;
         try
         {
             statement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
@@ -3314,21 +3323,21 @@ public class Core
         }
     }
 
-    public static class TestTopLevelRelationships
-    {
-        public static void main(String[] args)
-        {
-            Core core = new Core(0);
-            core.syncTopTemplateRelationships();
-        }
-    }
-
-    public static class TestPruneTemplates
-    {
-        public static void main(String[] args)
-        {
-            Core core = new Core(0);
-            core.pruneTemplates();
-        }
-    }
+//    public static class TestTopLevelRelationships
+//    {
+//        public static void main(String[] args)
+//        {
+//            Core core = new Core(0);
+//            core.syncTopTemplateRelationships();
+//        }
+//    }
+//
+//    public static class TestPruneTemplates
+//    {
+//        public static void main(String[] args)
+//        {
+//            Core core = new Core(0);
+//            core.pruneTemplates();
+//        }
+//    }
 }

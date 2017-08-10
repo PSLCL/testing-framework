@@ -29,9 +29,12 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -106,6 +109,8 @@ public final class DistributedTestingFramework
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test i - optional, to run one test on all test instances soon - supply the id number assigned for the test.");
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test-instance j - optional, to run one test on one test instance soon - supply the id number assigned to the test instance.");
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --owner - optional, to specify the owner for all test runs started by this command.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: may not specify both --test and --test-instance");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: --test or --test-instance may each be followed by multiple space-separated numbers");
         System.exit(1);
     }
 
@@ -171,7 +176,14 @@ public final class DistributedTestingFramework
             TarArchiveInputStream ti = null;
             try
             {
-                InputStream archive = new FileInputStream(core.getContentFile(hash));
+                File f = core.getContentFile(hash);
+                if (f == null) {
+                    String msg = ".getContentFile() returned null";
+                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).warn(msg);
+                    throw new Exception(msg);
+                }
+
+                InputStream archive = new FileInputStream(f);
                 /* Uncompress and unarchive the file, creating entries for each artifact found inside. */
                 InputStream is = new GzipCompressorInputStream(archive);
                 ti = new TarArchiveInputStream(is);
@@ -260,10 +272,10 @@ public final class DistributedTestingFramework
                  */
                 // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED TO TABLS module, BELOW.
                 // IT IS ASSUMED THAT THE MODULE'S BUILD SEQUENCE NUMBER IS LATER THAN ALL EXISTING.
-                if (contains_generator || (merge != null && merge.length() > 0))
+                if (contains_generator || (merge!=null && merge.length()>0))
                     core.deletePriorBuildSequenceNumbers(module);
 
-                pk_module = core.addModule(module);
+                long pkModule = core.addModule(module);
                 for (Artifact artifact : artifacts)
                 {
                     Content content = artifact.getContent();
@@ -273,10 +285,10 @@ public final class DistributedTestingFramework
                         if (is != null)
                         {
                             Hash h = core.addContent(is, -1);
-                            long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
+                            long pk_artifact = core.addArtifact(pkModule, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
                             if (artifact.getName().endsWith(".tar.gz"))
                             {
-                                decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), merge_source, 0);
+                                decompress(h, pkModule, pk_artifact, artifact.getConfiguration(), merge_source, 0);
                             }
                         } else {
                             LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream");
@@ -409,9 +421,7 @@ public final class DistributedTestingFramework
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
             try {
-                @SuppressWarnings("MagicCharacter") // ' '
-                char notMagicSpaceChar = ' '; // this is an internationalized context magic character, which is at warning level
-                String augmented_params = shell + notMagicSpaceChar + script; // every choice is at warning level, so use this one
+                String augmented_params = shell + " " + script; // every choice is at warning level, so use this one
                 String[] params = augmented_params.split(" ");
                 params[1] = generators.getAbsolutePath() + "/bin/" + params[1];
                 ProcessBuilder processBuilder = new ProcessBuilder();
@@ -424,19 +434,15 @@ public final class DistributedTestingFramework
                 inheritIO(run.getErrorStream(), System.err, new PrintStream(stderr));
 
                 boolean running = true;
-                while (running == true)
+                while (running)
                 {
-                    try
-                    {
+                    try {
                         run.exitValue();
                         running = false;
-                    } catch (IllegalThreadStateException its)
-                    {
-                        try
-                        {
+                    } catch (IllegalThreadStateException ignored) {
+                        try {
                             Thread.sleep(250);
-                        } catch (Exception ignored)
-                        {
+                        } catch (Exception ignored1) {
                         }
                     }
                 }
@@ -504,7 +510,6 @@ public final class DistributedTestingFramework
         return permissions;
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored") // preferred to be placed below, but it is not effective there
     private static void synchronize(String[] args)
     {
         if (args.length > 1 && args[1].compareTo("--help") == 0)
@@ -557,12 +562,14 @@ public final class DistributedTestingFramework
             {
                 Core.Config config = core.getConfig();
                 File generators = new File(config.dirGenerators());
-                if (generators.exists())
-                    //noinspection ResultOfMethodCallIgnored
+                if (generators.exists()) {
+                    // TODO: check for false return
                     org.apache.commons.io.FileUtils.deleteQuietly(generators);
-                //noinspection ResultOfMethodCallIgnored
-                generators.mkdirs();
-                //noinspection ResultOfMethodCallIgnored
+                }
+                //noinspection ResultOfMethodCallIgnored /* specific line form of @SuppressWarnings("ResultOfMethodCallIgnored") */
+                generators.mkdirs(); // true/false return is useless
+
+                // TODO: check for false return
                 generators.setWritable(true);
 
                 // Get the list of artifact providers from the database, prepare the modules table for updates.
@@ -621,13 +628,16 @@ public final class DistributedTestingFramework
                             // Windows does not support setPosixFilePermissions. Fall back.
                             Set<PosixFilePermission> perms = toPosixPermissions(A.getPosixMode());
 
+                            // TODO: check for false return
                             P.setExecutable(perms.contains(PosixFilePermission.GROUP_EXECUTE) || perms.contains(PosixFilePermission.OTHERS_EXECUTE), false);
                             P.setExecutable(perms.contains(PosixFilePermission.OWNER_EXECUTE), true);
 
+                            // TODO: check for false return
                             P.setReadable(perms.contains(PosixFilePermission.GROUP_READ) || perms.contains(PosixFilePermission.OTHERS_READ), false);
                             P.setReadable(perms.contains(PosixFilePermission.OWNER_READ), true);
 
                             try {
+                                // TODO: check for false return
                                 P.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
                             } catch (Exception e) {
                                 // TODO: This is where issue #159 is caught, before the workaround was placed (in IvyArtifactsProvider.javas).
@@ -638,6 +648,7 @@ public final class DistributedTestingFramework
                                 //          in which case the 666 workaround and this intercepting block can be removed.
                                 throw e;
                             }
+                            // TODO: check for false return
                             P.setWritable(perms.contains(PosixFilePermission.OWNER_WRITE), true);
                         }
                     }
@@ -705,7 +716,76 @@ public final class DistributedTestingFramework
         }
     } // end synchronize()
 
-    @SuppressWarnings("unused")
+    /**
+     * For each test instance/run pair, store in sequence to db and then to queue.
+     * This minimizes storing one without the other, especially for large lists.
+     *
+     * @param sqs must not be null
+     * @param core the relevant Core object
+     * @param owner the test run owner
+     * @param manualTestInstanceNumbers the collection of test instances
+     * @param testRuns the collection of matching test runs
+     */
+    private static void storeTestRuns_db_queue(SQSTestPublisher sqs, Core core, String owner, Collection<Long> manualTestInstanceNumbers, Collection<Long> testRuns) {
+        for (Long manualTestInstanceNumber : manualTestInstanceNumbers) {
+            try {
+                Long runID = core.createInstanceRun(manualTestInstanceNumber, owner);
+                if (runID != null) {
+                    testRuns.add(runID);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
+
+                    // place just now database-stored test run in dtf's test run queue
+                    sqs.publishTestRunRequest(runID);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).trace("DistributedTestingFramework.runner(): Queued test run: " + runID);
+                } else {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).trace("DistributedTestingFramework.storeTestRuns_db_queue(): test run NOT stored to db for testInstance number " + manualTestInstanceNumber +
+                            "; test run may already be stored");
+                    // in this case the test run number will not be written to the dtf queue- presumably it is there already
+                }
+
+            } catch (Exception e) {
+                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.storeTestRuns_db_queue(): Failed to store test run for testInstance number " + manualTestInstanceNumber + ", exception msg: " + e);
+            }
+        }
+    }
+
+    private static SQSTestPublisher sqsSetup(Core core) {
+        String accessKeyID = core.getConfig().sqsAccessKeyID();
+        String secretKey = core.getConfig().sqsSecretAccessKey();
+        if(accessKeyID != null && !accessKeyID.isEmpty()){
+            System.setProperty("aws.accessKeyId", accessKeyID);
+            System.setProperty("aws.secretKey", secretKey);
+        }
+        SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
+        sqs.init();
+        return sqs;
+    }
+
+    /**
+     * Get list of consecutive String-specified numbers from String array
+     * @param argsOffset begin offset
+     * @param args list of String arguments that may hold String-represented numbers
+     * @return list
+     */
+    private static List<Long> nextSpecifiedNumbers(int argsOffset, String [] args) {
+        List<Long> retList = new ArrayList<Long>();
+        int argsLength = args.length;
+        for (int i=argsOffset; i<args.length; i++) {
+            try {
+                Long number = Long.parseLong(args[i]);
+                retList.add(number);
+            } catch (NumberFormatException ignore) {
+                break;
+            }
+        }
+        return retList;
+    }
+
+    /**
+     *
+     * @param args list of String arguments
+     */
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
     private static void runner(String[] args)
     {
         if (args.length < 2)
@@ -719,24 +799,52 @@ public final class DistributedTestingFramework
             }
         }
 
-        int runCount = -1;
-        long manualTestNumber = -1;
-        long manualTestInstanceNumber = -1;
+        // parse command line
+        int runCount = -1; // ignored, for now
+        Collection<Long> manualTestNumbers = new HashSet<>(); // HashSet rejects dups
+        Collection<Long> manualTestInstanceNumbers = new HashSet<>();
         String owner = null;
-        boolean help = true;
 
         for (int i = 1; i < args.length; i++) {
             try{
-                if (args[i].compareTo("--test") == 0 && args.length > i)
-                {
-                    i += 1;
-                    manualTestNumber = Long.parseLong(args[i]);
-                } else if (args[i].compareTo("--test-instance") == 0 && args.length > i){
-                    i += 1;
-                    manualTestInstanceNumber = Long.parseLong(args[i]);
-                } else if (args[i].compareTo("--owner") == 0 && args.length > i){
-                    i += 1;
-                    owner = args[i];
+                if (args[i].compareTo("--test") == 0 && args.length > i) {
+                    List<Long> numbers = nextSpecifiedNumbers(++i, args);
+                    for (Long number : numbers) {
+                        try {
+                            boolean badAdd = !manualTestNumbers.add(number);
+                            if (badAdd) {
+                                // manualTestNumbers did not change, apparently rejected as a duplicate test number
+                                runHelp();
+                            }
+                            ++i;
+                        } catch (Exception e) {
+                            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.runner() exception msg: " + e);
+                            System.exit(1);
+                        }
+                    }
+                    if (manualTestNumbers.isEmpty())
+                        runHelp();
+                    --i; // account for the for loop i++ that will now happen
+                } else if (args[i].compareTo("--test-instance") == 0 && args.length > i) {
+                    List<Long> numbers = nextSpecifiedNumbers(++i, args);
+                    for (Long number : numbers) {
+                        try {
+                            boolean badAdd = !manualTestInstanceNumbers.add(number);
+                            if (badAdd) {
+                                // manualTestNumbers did not change, apparently rejected as a duplicate test number
+                                runHelp();
+                            }
+                            ++i;
+                        } catch (Exception e) {
+                            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.runner() exception msg: " + e);
+                            System.exit(1);
+                        }
+                    }
+                    if (manualTestInstanceNumbers.isEmpty())
+                        runHelp();
+                    --i; // account for the for loop i++ that will now happen
+                } else if (args[i].compareTo("--owner")==0 && args.length > i) {
+                    owner = args[++i];
                 } else{
                     LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Only manual tests supported. Use the --test or --test-instance options instead.");
                     runHelp();
@@ -748,41 +856,48 @@ public final class DistributedTestingFramework
             }
         }
 
-        try{
-            Core core = null;
+        // args must specify --test or --test-instance numbers, but not both
+        boolean bothSame = manualTestNumbers.isEmpty()==manualTestInstanceNumbers.isEmpty();
+        if (bothSame)
+            runHelp();
 
-            if(manualTestNumber > -1){
-                core = new Core(manualTestNumber);
-            }
-            else{
-                core = new Core(0);
-            }
-
-            String accessKeyID = core.getConfig().sqsAccessKeyID();
-            String secretKey = core.getConfig().sqsSecretAccessKey();
-            if(accessKeyID != null && !accessKeyID.isEmpty()){
-                System.setProperty("aws.accessKeyId", accessKeyID);
-                System.setProperty("aws.secretKey", secretKey);
-            }
-            SQSTestPublisher sqs = new SQSTestPublisher(core.getConfig().sqsEndpoint(), null, null, core.getConfig().sqsQueueName());
-            sqs.init();
-            List<Long> testRuns = new ArrayList<Long>();
-            if(manualTestInstanceNumber > -1){
-                    testRuns.add(core.createInstanceRun(manualTestInstanceNumber, owner));
-            } else if(manualTestNumber > -1){
-                for(long testInstance: core.getTestInstances(manualTestNumber)){
-                    Long run = core.createInstanceRun(testInstance, owner);
-                    if(run != null)
-                        testRuns.add(run);
+        // use parsed command line to store run data; parsed commands will have:
+        //    manualTestNumbers (each will individually specify Core instantiation with manualTestNumber as pk_test), or
+        //    manualTestInstanceNumbers (Core will be instantiated with 0 pk_test)
+        Collection<Long> testRuns = new ArrayList<Long>();
+        SQSTestPublisher sqs = null;
+        if (!manualTestNumbers.iterator().hasNext()) {
+            // we have n testInstanceNumbers, process them then exit
+            Core core = new Core(0);
+            sqs = sqsSetup(core);
+            if (sqs != null)
+                storeTestRuns_db_queue(sqs, core, owner, manualTestInstanceNumbers, testRuns);
+        } else {
+            // we have n testNumbers, process them then exit
+            boolean sqsNeedsSetup = true;
+            Iterator<Long> iterManualTestNumbers = manualTestNumbers.iterator();
+            while (iterManualTestNumbers.hasNext()) {
+                Long manualTestNumber = iterManualTestNumbers.next();
+                Core core = new Core(manualTestNumber);
+                if (sqsNeedsSetup) {
+                    sqs = sqsSetup(core);
+                    sqsNeedsSetup = false;
+                }
+                if (sqs != null) {
+                    List<Long> testInstanceNumbersFromLookup = null;
+                    try {
+                        testInstanceNumbersFromLookup = core.getTestInstances(manualTestNumber);
+                    } catch (Exception e) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to store test run for test number " + manualTestNumber + ", exception msg: " + e);
+                    }
+                    if (testInstanceNumbersFromLookup != null)
+                        storeTestRuns_db_queue(sqs, core, owner, testInstanceNumbersFromLookup, testRuns);
                 }
             }
-            for(Long runID: testRuns){
-                LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Queueing test run: " + runID);
-                sqs.publishTestRunRequest(runID);
-            }
-        } catch(Exception e){
-            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to queue test run - " + e);
         }
+
+        if (sqs == null)
+            LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to connect to dtf queue, test runs not stored to database or to dtf queue");
     }
 
     private static void result(String[] args)
@@ -822,7 +937,7 @@ public final class DistributedTestingFramework
         if (result == null || (hash == null && run == null)){
             LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): Missing required argument");
             resultHelp();
-            // calls System.exit()
+            // calls System.exit(1)
         }
 
         Core core = new Core(0);
@@ -891,8 +1006,7 @@ public final class DistributedTestingFramework
                     {
                         for (int artifact = 0; artifact < artifacts; artifact++)
                         {
-                            @SuppressWarnings("MagicCharacter")
-                            String content_str = name + '-' + Integer.toString(artifact + 1);
+                            String content_str = name + "-" + Integer.toString(artifact + 1);
                             TarArchiveEntry entry = new TarArchiveEntry(content_str);
                             entry.setModTime(start);
                             byte[] content_bytes = content_str.getBytes();
@@ -1032,11 +1146,10 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        @SuppressWarnings("MagicCharacter") // '-'
         public List<Artifact> getArtifacts()
         {
             List<Artifact> result = new ArrayList<Artifact>();
-            result.add(new PopulateArtifact(this, organization + '-' + name + '-' + version + ".tar.gz", artifacts, start));
+            result.add(new PopulateArtifact(this, organization + "-" + name + "-" + version + ".tar.gz", artifacts, start));
             return result;
         }
 
@@ -1086,8 +1199,7 @@ public final class DistributedTestingFramework
                     String module_str = "module" + Integer.toString(module + 1);
                     for (int version = 0; version < versions; version++)
                     {
-                        @SuppressWarnings("MagicCharacter")
-                        String version_str = 'v' + Integer.toString(version + 1);
+                        String version_str = "v" + Integer.toString(version + 1);
                         String status_str = "release";
                         switch (version % 3)
                         {
@@ -1289,8 +1401,7 @@ public final class DistributedTestingFramework
             long pk_test_plan = core.addTestPlan("Test Plan " + test_plan_str, "Description for test plan " + test_plan_str);
             for (int test = 0; test < tests; test++)
             {
-                @SuppressWarnings("MagicCharacter")
-                String test_str = test_plan_str + '/' + Integer.toString(test + 1);
+                String test_str = test_plan_str + "/" + Integer.toString(test + 1);
                 long pk_test = core.addTest(pk_test_plan, "Test " + test_str, "Description for test " + test_str, "");
 
                 // Create instances by acting as a generator.
@@ -1371,15 +1482,19 @@ public final class DistributedTestingFramework
                         if (need_start)
                             tstart = new Date(start + test_sequence*((end - start) / total_runs));
 
+                        @SuppressWarnings("MagicNumber")
+                        int minute = 60*1000;
+                        @SuppressWarnings("MagicNumber")
+                        long five = 5L;
+
                         Date tready = null;
                         if (need_start)
-                            tready = new Date(tstart.getTime() + 5L*60*1000);
+                            tready = new Date(tstart.getTime() + five*minute);
 
                         Date tcomplete = null;
                         if (need_complete)
-                            tcomplete = new Date(tstart.getTime() + 10L*60*1000);
+                            tcomplete = new Date(tstart.getTime() + 2*five*minute);
 
-                        // TODO: refactor this next call to use the accepted replacement for its 3 Date parameters
                         generator.setRunTimes(tstart, tready, tcomplete);
                     }
 
@@ -1415,9 +1530,12 @@ public final class DistributedTestingFramework
         LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.main() called");
 
         java.net.URL logback_file_URL = DistributedTestingFramework.class.getResource("/logback.xml");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("logback.xml file URL: " + logback_file_URL);
+        LoggerFactory.getLogger(DistributedTestingFramework.class).info("logback.xml file URL: " + logback_file_URL);
         java.net.URL logbacktest_file_URL = DistributedTestingFramework.class.getClassLoader().getResource("/logback-test.xml");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("logback-test.xml file URL: " + logbacktest_file_URL);
+        LoggerFactory.getLogger(DistributedTestingFramework.class).info("logback-test.xml file URL: " + logbacktest_file_URL);
+
+        LoggerFactory.getLogger(DistributedTestingFramework.class).info("DistributedTestingFramework.main() message at info level, execution proceeds");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.main() message at debug level, execution proceeds");
 
         // Check for no parameters, or --help
         if (args.length == 0 || args[0].compareTo("--help") == 0)
