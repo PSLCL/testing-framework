@@ -207,7 +207,7 @@ For windows the EC2 image must be "Sysprep'ed" see http://docs.aws.amazon.com/AW
     1. Bring up a remote desktop client to the EC2 image established in the above steps.
     2. Install Powershell AWS commandline tools.
 	  a. follow instructions at http://docs.aws.amazon.com/powershell/latest/userguide/pstools-getting-set-up.html.
-	  b. Create the S3 bucket for test instance log capture. i.e. dtf-staf-logging and set its ACL appropriate to your groups needed access.  The bucket name setup here must be configured in the runners configuration.    2. 
+	  b. Create the S3 bucket for test instance log capture. i.e. dtf-staf-logging and set its ACL appropriate to your groups needed access.  The bucket name setup here must be configured in the runners configuration.
     3. If Windows Firewall is enabled, ensure that inbound traffic from ports 6500 and 6550 is allowed.
     4. Run the "EC2ConfigService Settings" application (c:\Program Files\Amazon\Ec2ConfigService\Ec2ConfigServiceSettings.exe)
     5. In the "General" tab	
