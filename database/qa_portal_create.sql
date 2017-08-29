@@ -20,7 +20,7 @@ USE `qa_portal` ;
 CREATE TABLE IF NOT EXISTS `qa_portal`.`module` (
   `pk_module` INT(11) NOT NULL AUTO_INCREMENT,
   `organization` VARCHAR(100) NOT NULL,
-  `name` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(256) NOT NULL,
   `version` VARCHAR(45) NOT NULL,
   `status` VARCHAR(45) NOT NULL DEFAULT '',
   `sequence` VARCHAR(45) NOT NULL,
@@ -89,7 +89,7 @@ DEFAULT CHARACTER SET = latin1;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `qa_portal`.`test_plan` (
   `pk_test_plan` INT(11) NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(50) NULL DEFAULT NULL,
+  `name` VARCHAR(256) NULL DEFAULT NULL,
   `description` LONGTEXT NULL DEFAULT NULL,
   PRIMARY KEY (`pk_test_plan`))
 ENGINE = InnoDB
@@ -103,9 +103,9 @@ DEFAULT CHARACTER SET = latin1;
 CREATE TABLE IF NOT EXISTS `qa_portal`.`test` (
   `pk_test` INT(11) NOT NULL AUTO_INCREMENT,
   `fk_test_plan` INT(11) NOT NULL,
-  `name` VARCHAR(100) NULL DEFAULT NULL,
+  `name` VARCHAR(256) NULL DEFAULT NULL,
   `description` LONGTEXT NULL DEFAULT NULL,
-  `script` VARCHAR(200) NOT NULL,
+  `script` VARCHAR(256) NOT NULL,
   `last_run` DATETIME NULL DEFAULT NULL,
   `last_stdout` LONGTEXT NULL DEFAULT NULL,
   `last_stderr` LONGTEXT NULL DEFAULT NULL,
