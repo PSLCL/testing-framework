@@ -85,9 +85,9 @@ public class RunnerService implements Runner, RunnerServiceMBean
 
     /**
      * Determine RunnerService overload, by configuration or otherwise
-     * @param reNum
-     * @param reState
-     * @return
+     * @param reNum The Runner Service's test instance limit, "this" object's test instance limit is used.
+     * @param reState The Runner Service's entry state, "this" object's configured maximum size of the test instance limit is used.
+     * @return Whether or not the runner service has reached its test instance limit.
      */
     public boolean isOverload(long reNum, RunEntryState reState) {
         // configured parallel test instance limit

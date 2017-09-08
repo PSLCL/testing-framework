@@ -2476,6 +2476,7 @@ public class Core
      * Updates are limited to documentation changes.
      * @param testInstances A list of test instances to be synced.
      * @throws Exception on any error
+	 * @return count of added Described Templates.
      */
     public int syncDescribedTemplates(Iterable<TestInstance> testInstances) throws Exception
     {

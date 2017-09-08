@@ -32,8 +32,8 @@ public class RunEntryStateStore {
 
     /**
      *
-     * @param configurationMaxSize
-     * @return
+     * @param configurationMaxSize The stored, configured max size to compare against the Run Entry State storage map.
+     * @return Whether or not the stored max size or limit is reached.
      */
     public synchronized boolean isMaxSizeReached(int configurationMaxSize) {
         boolean limitReached = (configurationMaxSize <= map.size());

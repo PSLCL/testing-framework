@@ -336,6 +336,7 @@ public class Generator
     /**
      * Declare that the test currently being defined is complete.
      * @throws Exception Any error completing the test.
+	 * @return count of added Described Templates.
      */
     public int completeTest() throws Exception
     {
@@ -451,6 +452,7 @@ public class Generator
 
     /**
      * Close the generator, synchronizing its results with the database.
+	 * @return the count of added Described Templates.
      */
     public int close()
     {

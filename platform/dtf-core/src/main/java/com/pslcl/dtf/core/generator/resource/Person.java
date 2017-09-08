@@ -162,8 +162,9 @@ public class Person extends Resource
      * @param body Content that contains an HTML snippet that will be included in the instructions
      * to the person performing the inspection.
      * @param attachments Artifacts that will be passed to the inspector.
-     * @param A list of actions that should be completed before the inspect is performed.
+     * @param actionDependencies A list of actions that should be completed before the inspect is performed.
      * @throws Exception If the inspection request is invalid.
+	 * @return The created inspect action that was added to the generator.
      */
     public TestInstance.Action inspect(Content body, Artifact[] attachments, List<Action> actionDependencies) throws Exception
     {
@@ -181,6 +182,7 @@ public class Person extends Resource
      * to the person performing the inspection.
      * @param attachments Artifacts that will be passed to the inspector.
      * @throws Exception If the inspection request is invalid.
+	 * @return The created inspect action that was added to the generator.
      */
     public TestInstance.Action inspect(Content body, Artifact[] attachments) throws Exception
     {
