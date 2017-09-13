@@ -38,7 +38,7 @@ sudo mv /usr/lib/python2.7/dist-packages/gyp /usr/lib/python2.7/dist-packages/gy
 
 ## Install Database Schema
 
-The MySQL database schema can be found at `testing-framework/database/qa_portal.mwb`. Using the MySQL Workbench import the schema into the MySQL database.
+The MySQL database schema can be found at `testing-framework/database/qa_portal_create.sql`. Using the MySQL Workbench or MySQL client execute the SQL script in order to create the database.
 
 ## Configuration 
 
