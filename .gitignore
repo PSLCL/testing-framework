@@ -20,3 +20,4 @@ sample-test/generators/target/*
 **ivy-*.xml
 out/
 .idea/
+*.iml
