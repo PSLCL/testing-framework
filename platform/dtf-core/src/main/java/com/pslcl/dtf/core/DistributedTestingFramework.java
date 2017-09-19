@@ -98,19 +98,30 @@ public final class DistributedTestingFramework
         System.exit(1);
     }
 
-    private static void runHelp()
+    private static void runHelp(String args[])
     {
+        StringBuilder builder = new StringBuilder();
+        for (String arg : args) {
+            builder.append(" ");
+            builder.append(arg);
+        }
+        String strArgs = builder.toString();
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("found disallowed argument combination:" + strArgs);
+
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("test-platform Run Help");
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("This command extracts tests from the database and runs them.");
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] run --help (this output)");
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("[program] run <arguments>");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments are:");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  <runcount> - required unless --test or --test-instance are specified - the number of tests to run.");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test i - optional, to run one test on all test instances soon - supply the id number assigned for the test.");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test-instance j - optional, to run one test on one test instance soon - supply the id number assigned to the test instance.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("arguments description:");
+//      LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  <runcount> - required unless --test or --test-instance are specified - the number of tests to run.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test i - optional, to run test(s) on all test instances soon - supply the id number(s) assigned for the test(s).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --test-instance j - optional, to run one test on test instance(s) soon - supply the id number(s) assigned to the test instance(s).");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --module k - optional, to run test(s) on test instance(s) that have matching module, soon - supply the id number assigned to the module.");
         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("  --owner - optional, to specify the owner for all test runs started by this command.");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: may not specify both --test and --test-instance");
-        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: --test or --test-instance may each be followed by multiple space-separated numbers");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: must specify either --test or --test-instance, but not both.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: --test or --test-instance may each be followed by multiple space-separated numbers.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: if --module is specified, --test must also be specified.");
+        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("note: --module must be followed by exactly one module number.");
         System.exit(1);
     }
 
@@ -789,32 +800,32 @@ public final class DistributedTestingFramework
     private static void runner(String[] args)
     {
         if (args.length < 2)
-            runHelp(); // exits app
+            runHelp(args); // exits app
 
         for (int i = 1; i < args.length; i++)
         {
             if (args[i].compareTo("--help") == 0)
-            {
-                runHelp(); // exits app
-            }
+                runHelp(args); // exits app
         }
 
         // parse command line
         int runCount = -1; // ignored, for now
         Collection<Long> manualTestNumbers = new HashSet<>(); // HashSet rejects dups
         Collection<Long> manualTestInstanceNumbers = new HashSet<>();
+        Long idModule = -1L;
         String owner = null;
 
         for (int i = 1; i < args.length; i++) {
             try{
-                if (args[i].compareTo("--test") == 0 && args.length > i) {
+                String strArg = args[i];
+                if (strArg.compareTo("--test")==0 && args.length>i) {
                     List<Long> numbers = nextSpecifiedNumbers(++i, args);
                     for (Long number : numbers) {
                         try {
                             boolean badAdd = !manualTestNumbers.add(number);
                             if (badAdd) {
                                 // manualTestNumbers did not change, apparently rejected as a duplicate test number
-                                runHelp();
+                                runHelp(args);
                             }
                             ++i;
                         } catch (Exception e) {
@@ -823,16 +834,16 @@ public final class DistributedTestingFramework
                         }
                     }
                     if (manualTestNumbers.isEmpty())
-                        runHelp();
+                        runHelp(args);
                     --i; // account for the for loop i++ that will now happen
-                } else if (args[i].compareTo("--test-instance") == 0 && args.length > i) {
+                } else if (strArg.compareTo("--test-instance")==0 && args.length>i) {
                     List<Long> numbers = nextSpecifiedNumbers(++i, args);
                     for (Long number : numbers) {
                         try {
                             boolean badAdd = !manualTestInstanceNumbers.add(number);
                             if (badAdd) {
-                                // manualTestNumbers did not change, apparently rejected as a duplicate test number
-                                runHelp();
+                                // manualTestNumbers did not change, apparently "number" is rejected as a duplicate test number
+                                runHelp(args);
                             }
                             ++i;
                         } catch (Exception e) {
@@ -841,25 +852,35 @@ public final class DistributedTestingFramework
                         }
                     }
                     if (manualTestInstanceNumbers.isEmpty())
-                        runHelp();
+                        runHelp(args);
                     --i; // account for the for loop i++ that will now happen
-                } else if (args[i].compareTo("--owner")==0 && args.length > i) {
+                } else if (strArg.compareTo("--module")==0 && args.length>i) {
+                    List<Long> numbers = nextSpecifiedNumbers(++i, args);
+                    if (numbers.size() != 1) {
+                        // --module parameter must be followed by exactly one number
+                        runHelp(args);
+                    }
+                    idModule = numbers.get(0);
+                } else if (strArg.compareTo("--owner")==0 && args.length>i) {
                     owner = args[++i];
                 } else{
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Only manual tests supported. Use the --test or --test-instance options instead.");
-                    runHelp();
-                    runCount = Integer.parseInt(args[1]);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Submitted command line parameter not supported: " + strArg);
+                    runHelp(args);
                 }
             } catch(NumberFormatException ignored) {
                 LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Invalid argument " + args[i] + ". Expected number instead.");
-                runHelp();
+                runHelp(args);
             }
-        }
+        } // end for()
 
         // args must specify --test or --test-instance numbers, but not both
         boolean bothSame = manualTestNumbers.isEmpty()==manualTestInstanceNumbers.isEmpty();
         if (bothSame)
-            runHelp();
+            runHelp(args);
+
+        // args must not specify --module unless --test is also specifiedd
+        if (idModule != -1 && manualTestNumbers.isEmpty())
+            runHelp(args);
 
         // use parsed command line to store run data; parsed commands will have:
         //    manualTestNumbers (each will individually specify Core instantiation with manualTestNumber as pk_test), or
@@ -873,7 +894,7 @@ public final class DistributedTestingFramework
             if (sqs != null)
                 storeTestRuns_db_queue(sqs, core, owner, manualTestInstanceNumbers, testRuns);
         } else {
-            // we have n testNumbers, process them then exit
+            // we have n testNumbers (n > 0), process them then exit
             boolean sqsNeedsSetup = true;
             Iterator<Long> iterManualTestNumbers = manualTestNumbers.iterator();
             while (iterManualTestNumbers.hasNext()) {
@@ -886,7 +907,10 @@ public final class DistributedTestingFramework
                 if (sqs != null) {
                     List<Long> testInstanceNumbersFromLookup = null;
                     try {
-                        testInstanceNumbersFromLookup = core.getTestInstances(manualTestNumber);
+                        if (idModule != -1)
+                            testInstanceNumbersFromLookup = core.getTestInstances(manualTestNumber, idModule);
+                        else
+                            testInstanceNumbersFromLookup = core.getTestInstances(manualTestNumber);
                     } catch (Exception e) {
                         LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to store test run for test number " + manualTestNumber + ", exception msg: " + e);
                     }

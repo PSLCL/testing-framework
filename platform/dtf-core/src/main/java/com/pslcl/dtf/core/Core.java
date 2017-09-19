@@ -374,8 +374,8 @@ public class Core
             connect = DriverManager.getConnection(connectstring);
         } catch (Exception e)
         {
-            read_only = true;
             this.log.error("<internal> Core.openDatabase() could not open database connection, " + e.getMessage());
+            read_only = true;
         }
     }
 
@@ -2476,7 +2476,7 @@ public class Core
      * Updates are limited to documentation changes.
      * @param testInstances A list of test instances to be synced.
      * @throws Exception on any error
-	 * @return count of added Described Templates.
+     * @return count of added Described Templates.
      */
     public int syncDescribedTemplates(Iterable<TestInstance> testInstances) throws Exception
     {
@@ -2943,6 +2943,12 @@ public class Core
         }
     }
 
+    /**
+     *
+     * @param pk_test
+     * @return
+     * @throws Exception
+     */
     List<Long> getTestInstances(long pk_test) throws Exception{
         Statement find_test_instance = null;
         List<Long> testInstanceList = new ArrayList<Long>();
@@ -2957,7 +2963,38 @@ public class Core
             }
         } catch(Exception e)
         {
-            this.log.error("<internal> Core.getTestInstances() exception msg: " + e);
+            this.log.error("<internal> Core.getTestInstances(pk_test) exception msg: " + e);
+            throw e;
+        } finally
+        {
+            safeClose(find_test_instance);
+        }
+        return testInstanceList;
+    }
+
+    /**
+     *
+     * @param pk_test
+     * @param idModule
+     * @return
+     * @throws Exception
+     */
+    List<Long> getTestInstances(long pk_test, long idModule) throws Exception{
+        Statement find_test_instance = null;
+        List<Long> testInstanceList = new ArrayList<Long>();
+
+        try
+        {
+            find_test_instance = connect.createStatement();
+            ResultSet test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test);
+            while (test_instances.next())
+            {
+                // TODO; use db queries to ignore test instances that do not involve the module identified by pk_module idModule
+                testInstanceList.add(test_instances.getLong("pk_test_instance"));
+            }
+        } catch(Exception e)
+        {
+            this.log.error("<internal> Core.getTestInstances(pk_test, idModule) exception msg: " + e);
             throw e;
         } finally
         {
