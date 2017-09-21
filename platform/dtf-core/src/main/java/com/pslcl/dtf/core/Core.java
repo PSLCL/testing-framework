@@ -683,9 +683,10 @@ public class Core
             statement.setString(2, description);
             statement.executeUpdate();
 
-            ResultSet keys = statement.getGeneratedKeys();
-            if (keys.next())
-                pk = keys.getLong(1);
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next())
+                    pk = keys.getLong(1);
+            }
         } catch (Exception e)
         {
             this.log.error("<internal> Core.addTestPlan(): Could not add test plan, " + e.getMessage());
@@ -725,9 +726,10 @@ public class Core
             statement.setString(4, script);
             statement.executeUpdate();
 
-            ResultSet keys = statement.getGeneratedKeys();
-            if (keys.next())
-                pk = keys.getLong(1);
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next())
+                    pk = keys.getLong(1);
+            }
         } catch (Exception e)
         {
             this.log.error("<internal> Core.addTest(): Could not add test, " + e.getMessage());
@@ -768,9 +770,10 @@ public class Core
             statement.setString(6, module.getSequence());
             statement.executeUpdate();
 
-            ResultSet keys = statement.getGeneratedKeys();
-            if (keys.next())
-                pk = keys.getLong(1);
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next())
+                    pk = keys.getLong(1);
+            }
         } catch (Exception e)
         {
             this.log.error("<internal> Core.addModule(): Could not add module, " + e.getMessage());
@@ -992,9 +995,10 @@ public class Core
                 statement.setLong(8, merged_from_module);
             statement.executeUpdate();
 
-            ResultSet keys = statement.getGeneratedKeys();
-            if (keys.next())
-                pk = keys.getLong(1);
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next())
+                    pk = keys.getLong(1);
+            }
         } catch (Exception e)
         {
             this.log.error("<internal> Core.addArtifact(): Could not add artifact to module, " + e.getMessage());
@@ -1699,13 +1703,14 @@ public class Core
      * @param targetDirectory The target directory.
      * @return The name of the artifact in the target directory.
      */
+    @SuppressWarnings("MagicCharacter")
     private String getTargetName(String artifactName, String targetDirectory){
         if (artifactName.endsWith("/"))
             throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
 
         int nameStartIndex = 0;
         if(artifactName.contains("/"))
-            nameStartIndex = artifactName.lastIndexOf("/") + 1;
+            nameStartIndex = artifactName.lastIndexOf('/') + 1;
 
         String targetName = artifactName.substring(nameStartIndex);
         if(!targetDirectory.endsWith("/"))
@@ -2256,9 +2261,10 @@ public class Core
             statement.executeUpdate();
 
             long linepk = 0;
-            ResultSet keys = statement.getGeneratedKeys();
-            if (keys.next())
-                linepk = keys.getLong(1);
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next())
+                    linepk = keys.getLong(1);
+            }
 
             safeClose(statement);
             statement = null;
@@ -2271,7 +2277,7 @@ public class Core
             safeClose(statement);
             statement = null;
 
-            TestInstance.Action.ArtifactUses au = A.getArtifactUses();
+            ArtifactUses au = A.getArtifactUses();
             if (au != null)
             {
                 Iterator<Artifact> iter = au.getArtifacts();
@@ -2347,9 +2353,10 @@ public class Core
                 statement.setInt(4, 1); // Default is synchronized.
                 statement.executeUpdate();
 
-                ResultSet keys = statement.getGeneratedKeys();
-                if (keys.next())
-                    pk = keys.getLong(1);
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next())
+                        pk = keys.getLong(1);
+                }
 
                 safeClose(statement);
                 statement = null;
@@ -2517,9 +2524,10 @@ public class Core
                         statement2.setInt(4, 1); // Default is synchronized.
                         statement2.executeUpdate();
 
-                        ResultSet keys = statement2.getGeneratedKeys();
-                        if (keys.next())
-                            ti.pk = keys.getLong(1);
+                        try (ResultSet keys = statement2.getGeneratedKeys()) {
+                            if (keys.next())
+                                ti.pk = keys.getLong(1);
+                        }
                     } catch (Exception e)
                     {
                         this.log.error("<internal> Core.syncDescribedTemplates(): Could not add described_template to test_instance: " + e.getMessage());
@@ -2649,9 +2657,10 @@ public class Core
                 statement.setInt(3, 1); // Default is enabled.
                 statement.executeUpdate();
 
-                ResultSet keys = statement.getGeneratedKeys();
-                if (keys.next())
-                    pk = keys.getLong(1);
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next())
+                        pk = keys.getLong(1);
+                }
 
                 safeClose(statement);
                 statement = null;
@@ -3132,9 +3141,10 @@ public class Core
                 statement.setInt(5, 1); // Default is synchronized.
                 statement.executeUpdate();
 
-                ResultSet keys = statement.getGeneratedKeys();
-                if (keys.next())
-                    pk = keys.getLong(1);
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next())
+                        pk = keys.getLong(1);
+                }
 
                 safeClose(statement);
                 statement = null;
