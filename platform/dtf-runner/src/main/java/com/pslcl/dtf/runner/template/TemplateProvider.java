@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015, Panasonic Corporation.
+ * Copyright (c) 2010-2017, Panasonic Corporation.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -41,9 +41,9 @@ import com.pslcl.dtf.runner.process.RunnerMachine;
  */
 public class TemplateProvider implements ResourceStatusListener {
     // template tracking is synchronized
-    private Object synchObj;
+    private final Object synchObj;
     private final MultiValuedMap<byte[],InstancedTemplate> reusableInstancedTemplates; // MultiValuedMap: more than one template may exist for any one template hash key
-    private long templateInstanceID;
+    private long templateUniqueInstanceID;
     private final Map<Long,InstancedTemplate> templateReleaseMap; // tracks each instance by unique marker number key
     // Note: Although Java is strictly pass by value, the value we store in this map is a reference to an InstancedTemplate object. The map does not hold the Java object itself.
     //       When that value is eventually extracted from this map, it is still a reference to the original object; all transitory changes in that object are reflected.
@@ -56,7 +56,7 @@ public class TemplateProvider implements ResourceStatusListener {
 
     /**
      *
-     * @param templateHash
+     * @param templateHash byte array hash of the template
      * @return
      */
     private Object[] getStoredReusableInstancedTemplates(byte [] templateHash) {
@@ -80,11 +80,11 @@ public class TemplateProvider implements ResourceStatusListener {
 
             // this is the "working" workaround to the bug with MultiValuedMap<byte[], InstancedTemplate>
             // 1st: find that our templateHash is stored (which refers to 1+ InstancedTemplate objects)
+            @SuppressWarnings("ZeroLengthArrayAllocation ")
             byte[] matchedTemplateHash = this.getMatchedHeldHashKey(templateHash); // this method is a workaround to failing this.reusabeInstancedTemplates.get(templateHash);
             if (matchedTemplateHash == null) {
-                log.debug(".getStoredReusabeInstancedTemplates() has no stored reusableITs for templateHash: " + DBTemplate.getId(templateHash));
-                Object[] emptyObjectArray = {};
-                return emptyObjectArray;
+                log.debug(".getStoredReusableInstancedTemplates() has no stored reusableITs for templateHash: " + DBTemplate.getId(templateHash));
+                return new Object[]{};
             }
             Collection<InstancedTemplate> localCollectionIT = this.reusableInstancedTemplates.get(matchedTemplateHash);
             arrayIT = localCollectionIT.toArray();
@@ -96,8 +96,8 @@ public class TemplateProvider implements ResourceStatusListener {
 
     /**
      * Note: Call this only with this.synchObj locked
-     * @param templateHash
-     * @return
+     * @param templateHash byte array hash of the template
+     * @return InstancedTemplate
      */
     private InstancedTemplate obtainOneReusableInstancedTemplate(byte[] templateHash) {
         // get the collection of matching but identical reusable InstancedTemplates, and pick one
@@ -113,7 +113,7 @@ public class TemplateProvider implements ResourceStatusListener {
     /**
      * Workaround technique
      *
-     * @param templateHash
+     * @param templateHash byte array hash of the template
      * @return
      */
     private byte[] getMatchedHeldHashKey(byte [] templateHash) {
@@ -131,7 +131,7 @@ public class TemplateProvider implements ResourceStatusListener {
 
     /**
      * Note: Caller must lock on this.synchObj
-     * @param templateHash
+     * @param templateHash byte array hash of the template
      * @return boolean true for one entry removed
      */
     private boolean removeOneEntry_reusableTemplateList(byte [] templateHash) {
@@ -168,7 +168,7 @@ public class TemplateProvider implements ResourceStatusListener {
     {
         this.log = LoggerFactory.getLogger(getClass());
         this.simpleName = getClass().getSimpleName() + " ";
-        this.templateInstanceID = 0;
+        this.templateUniqueInstanceID = 0;
         this.synchObj = new Object();
         this.templateReleaseMap = new HashMap<>();
         this.reusableInstancedTemplates = new ArrayListValuedHashMap<byte[],InstancedTemplate>();
@@ -217,9 +217,9 @@ public class TemplateProvider implements ResourceStatusListener {
     long addToReleaseMap(InstancedTemplate iT) {
         synchronized(this.synchObj) {
             // leave this.reusableInstancedTemplates alone (this method has nothing to do with that)
-            long retUnique = this.templateInstanceID++;
+            long retUnique = this.templateUniqueInstanceID++;
             this.templateReleaseMap.put(retUnique, iT);
-            log.debug(this.simpleName + "addToReleaseMap() adds " + iT.getTemplateID() + " to templateReleaseMap, assigns templateInstanceID " + retUnique);
+            log.debug(this.simpleName + "addToReleaseMap() adds " + iT.getTemplateID() + " to templateReleaseMap, assigns templateUniqueInstanceID " + retUnique);
             return retUnique;
         } // end synchronized()
     }
@@ -243,10 +243,8 @@ public class TemplateProvider implements ResourceStatusListener {
 
             if (reuse) {
                 byte[] templateHash = iT.getTemplateHash();
-                synchronized (this.synchObj) {
                     this.reusableInstancedTemplates.put(templateHash, iT);
                     log.debug(this.simpleName + "releaseTemplate() will reuse templateID  " + iT.getTemplateID() +  ", of templateInstanceID " + templateInstanceID +  "; adds templateHash key to reusableInstancedTemplates: " + DBTemplate.getId(templateHash));
-                }
             } else {
                 // if no entry is found here, then this template had bound no resources
                 if (this.templateReleaseMap.containsKey(templateInstanceID)) {
@@ -303,6 +301,7 @@ public class TemplateProvider implements ResourceStatusListener {
         return iT;
     }
 
+    @Override
     public void resourceStatusChanged(ResourceStatusEvent status)
     {
 //        int templateStepNumber = StepsParser.resourceToLineMap.get(status.coordinate);
@@ -317,7 +316,7 @@ public class TemplateProvider implements ResourceStatusListener {
                 break;
             case Warn:
                 break;
-            default:
+            case Down:
                 break;
         }
     }

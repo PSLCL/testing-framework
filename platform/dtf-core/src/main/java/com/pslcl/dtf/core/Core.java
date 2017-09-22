@@ -841,27 +841,22 @@ public class Core
      */
 //  @Nullable
     @SuppressWarnings("ReturnOfNull")
-    Hash addContent(InputStream is, long length)
-    {
+    Hash addContent(InputStream is, long length) {
         File tmp = null;
         FileOutputStream os = null;
 
-        try
-        {
+        try {
             tmp = File.createTempFile("artifact", "hash");
             os = new FileOutputStream(tmp);
 
             @SuppressWarnings("MagicNumber")
             byte[] content = new byte[1024];
             long remaining = length > 0 ? length : 1;
-            while (remaining > 0)
-            {
+            while (remaining > 0) {
                 int consumed = is.read(content, 0, content.length);
-                if (consumed < 0)
-                {
+                if (consumed < 0) {
                     // If we couldn't read the length this is an error, otherwise it is normal.
-                    if (length > 0)
-                    {
+                    if (length > 0) {
                         this.log.error("<internal> Core.addContent() End of file while expanding content.");
                         return null;
                     }
@@ -877,15 +872,11 @@ public class Core
             // Cannot even determine the hash, so we don't know if it has already been added or not.
             this.log.error("<internal> Core.addContent(): Could not add content, " + e.getMessage());
             return null;
-        } finally
-        {
-            if (os != null)
-            {
-                try
-                {
+        } finally {
+            if (os != null) {
+                try {
                     os.close();
-                } catch (Exception ignore)
-                {
+                } catch (Exception ignore) {
                     // Ignore
                 }
             }
@@ -900,39 +891,33 @@ public class Core
         File target = new File(this.artifacts, h.toString());
         boolean ignore_insert_failure = false;
 
-        if (target.exists())
-        {
+        if (target.exists()) {
             FileUtils.deleteQuietly(tmp);
             ignore_insert_failure = true;
         }
 
         // If read-only and it doesn't exist, then it cannot be added. If it was already cached, assume exists.
-        if (read_only)
-        {
+        if (read_only) {
             //TODO: Really need to check the DB and remove the file if it isn't present, otherwise the
             // cache and DB are out of sync.
             return ignore_insert_failure ? h : null;
         }
 
         PreparedStatement statement = null;
-        try
-        {
+        try {
             // Move the file to the cache
             FileUtils.moveFile(tmp, target);
 
             statement = connect.prepareStatement("INSERT INTO content (pk_content, is_generated) VALUES (?,1)");
             statement.setBinaryStream(1, new ByteArrayInputStream(h.toBytes()));
             statement.executeUpdate();
-        } catch (Exception e)
-        {
-            if (!ignore_insert_failure)
-            {
+        } catch (Exception e) {
+            if (!ignore_insert_failure) {
                 this.log.error("<internal> Core.addContent(): Could not add content, " + e.getMessage());
                 FileUtils.deleteQuietly(tmp);
                 return null;
             }
-        } finally
-        {
+        } finally {
             safeClose(statement);
             statement = null;
         }
