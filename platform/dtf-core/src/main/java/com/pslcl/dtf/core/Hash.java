@@ -27,9 +27,10 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class Hash implements Comparable<Hash>
 {
-    private static final int buffsize = 16384; // must be int and not long
+    private static final int buffsize = 16384; // cannot be java long
     private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
+    @SuppressWarnings("MagicNumber")
     private static String bytesToHex(byte[] bytes)
     {
         char[] hexChars = new char[bytes.length * 2];
@@ -49,27 +50,24 @@ public class Hash implements Comparable<Hash>
     {
         try {
             MessageDigest hashSum;
-            byte[] partialHash;
             try (RandomAccessFile file = new RandomAccessFile(f, "r")) {
                 hashSum = MessageDigest.getInstance("SHA-256");
-
-                partialHash = null;
-
                 long read = 0;
 
-                long offset = file.length();
-                byte[] buffer = new byte[buffsize]; // max buffsize is Integer.MAX_VALUE
-                while (read < offset) {
-                    // TODO: Fix this- offset-read can be greater than Integer.MAX_VALUE
-                    int unitsize = (int) (((offset - read) >= buffsize) ? buffsize : (offset - read));
+                long filelength = file.length();
+                byte[] buffer = new byte[buffsize];
+                while (read < filelength) {
+                    long filelengthMinusRead = filelength - read;
+                    long constrainedUnitsize = filelengthMinusRead>buffsize ? buffsize:filelengthMinusRead; // max buffsize is Integer.MAX_VALUE
+                    @SuppressWarnings("NumericCastThatLosesPrecision") // we constrained it to Integer.MAX_VALUE (or buffsize if that is smaller)
+                    int unitsize = (int)constrainedUnitsize;
                     file.read(buffer, 0, unitsize);
                     hashSum.update(buffer, 0, unitsize);
                     read += unitsize;
                 }
-
-                file.close();
+//              file.close(); // Auto close happens (with our use of try-with-resources)
             }
-            partialHash = hashSum.digest();
+            byte[] partialHash = hashSum.digest();
             return new Hash(partialHash);
         } catch (Exception ignore) {
             return null;
@@ -88,7 +86,7 @@ public class Hash implements Comparable<Hash>
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(content.getBytes("UTF-8"));
             return new Hash(hash);
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             // This should never happen.
             return null;
@@ -104,15 +102,16 @@ public class Hash implements Comparable<Hash>
             final int BUFFER_MAX_SIZE = 8192;
             byte[] buffer = new byte[BUFFER_MAX_SIZE];
 
-            int count = 0;
-            while ((count = stream.read(buffer, 0, BUFFER_MAX_SIZE)) != -1)
-            {
+            while (true) {
+                int count = stream.read(buffer, 0, BUFFER_MAX_SIZE);
+                if (count == -1)
+                    break;
                 digest.update(buffer, 0, count);
             }
 
             stream.close();
             return new Hash(digest.digest());
-        } catch (Exception e)
+        } catch (Exception ignore)
         {
             // This should never happen
             return null;
@@ -131,6 +130,8 @@ public class Hash implements Comparable<Hash>
     }
 
     @Override
+    // Warning appears wrong "Not annotated param overrides @NotNull param." .compareTo() has not @NotNull requirement.
+    // noinspection
     public int compareTo(Hash o)
     {
         return value.compareTo(o.value);
