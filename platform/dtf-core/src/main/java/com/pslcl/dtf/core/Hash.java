@@ -27,7 +27,8 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class Hash implements Comparable<Hash>
 {
-    final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    private static final int buffsize = 16384; // must be int and not long
+    private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     private static String bytesToHex(byte[] bytes)
     {
@@ -46,32 +47,31 @@ public class Hash implements Comparable<Hash>
 
     public static Hash fromContent(File f)
     {
-        int buff = 16384;
-        try
-        {
-            RandomAccessFile file = new RandomAccessFile(f, "r");
-            MessageDigest hashSum = MessageDigest.getInstance("SHA-256");
+        try {
+            MessageDigest hashSum;
+            byte[] partialHash;
+            try (RandomAccessFile file = new RandomAccessFile(f, "r")) {
+                hashSum = MessageDigest.getInstance("SHA-256");
 
-            byte[] buffer = new byte[buff];
-            byte[] partialHash = null;
+                partialHash = null;
 
-            long read = 0;
+                long read = 0;
 
-            long offset = file.length();
-            int unitsize;
-            while (read < offset)
-            {
-                unitsize = (int) (((offset - read) >= buff) ? buff : (offset - read));
-                file.read(buffer, 0, unitsize);
-                hashSum.update(buffer, 0, unitsize);
-                read += unitsize;
+                long offset = file.length();
+                byte[] buffer = new byte[buffsize]; // max buffsize is Integer.MAX_VALUE
+                while (read < offset) {
+                    // TODO: Fix this- offset-read can be greater than Integer.MAX_VALUE
+                    int unitsize = (int) (((offset - read) >= buffsize) ? buffsize : (offset - read));
+                    file.read(buffer, 0, unitsize);
+                    hashSum.update(buffer, 0, unitsize);
+                    read += unitsize;
+                }
+
+                file.close();
             }
-
-            file.close();
             partialHash = hashSum.digest();
             return new Hash(partialHash);
-        } catch (Exception e)
-        {
+        } catch (Exception ignore) {
             return null;
         }
     }
