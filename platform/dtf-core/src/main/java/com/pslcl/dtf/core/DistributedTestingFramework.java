@@ -281,7 +281,7 @@ public final class DistributedTestingFramework
                  * into different target modules. This means that we consider only modules
                  * where the build sequence number is different.
                  */
-                // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED TO TABLS module, BELOW.
+                // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED TO THE MODULE TABLE, BELOW (core.addModule()).
                 // IT IS ASSUMED THAT THE MODULE'S BUILD SEQUENCE NUMBER IS LATER THAN ALL EXISTING.
                 if (contains_generator || (merge!=null && merge.length()>0))
                     core.deletePriorBuildSequenceNumbers(module);
@@ -295,7 +295,7 @@ public final class DistributedTestingFramework
                         InputStream is = content.asStream();
                         if (is != null)
                         {
-                            Hash h = core.addContent(is, -1);
+                            Hash h = core.addContent(is, -1); // 0 or -1: consume entire stream
                             long pk_artifact = core.addArtifact(pkModule, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
                             if (artifact.getName().endsWith(".tar.gz"))
                             {
