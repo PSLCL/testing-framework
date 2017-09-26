@@ -833,57 +833,41 @@ public class Core
     }
 
     /**
-     * Add content given an input stream. If the content is already stored then a new file is created anyway,
-     * assumed to be correct, and the new file is stored and the database is updated.
+     * Add content given an inputstream. If the content exist then the file is assumed to be correct
+     * and the database is still updated.
      * @param is An input stream for the content.
-     * @param length The length of the stream, or (0 or -1) if the entire stream is to be added.
+     * @param length The length of the stream, or -1 if the entire stream is to be added.
      * @return Hash of the added content
      */
 //  @Nullable
     @SuppressWarnings("ReturnOfNull")
     Hash addContent(InputStream is, long length) {
-        File tmp;
+        File tmp = null;
         FileOutputStream os = null;
 
         try {
-            tmp = File.createTempFile("artifact", "hash"); // tmp has filename "artifact.hash"
+            tmp = File.createTempFile("artifact", "hash");
             os = new FileOutputStream(tmp);
 
             @SuppressWarnings("MagicNumber")
             byte[] content = new byte[1024];
-            long remaining = length;
-            while (true) {
+            long remaining = length > 0 ? length : 1;
+            while (remaining > 0) {
                 int consumed = is.read(content, 0, content.length);
                 if (consumed < 0) {
-                    // consumed -1: no data was read into buffer content because end of stream is reached
-                    if (length > 0) { // for length of (0 or -1), we are asked to consume all bytes of stream is
-                        // full length was specified but not every byte was consumed
-                        this.log.error("<internal> Core.addContent(): End of file while expanding content.");
+                    // If we couldn't read the length this is an error, otherwise it is normal.
+                    if (length > 0) {
+                        this.log.error("<internal> Core.addContent() End of file while expanding content.");
                         return null;
                     }
-                    // We are asked to consume entire stream (no length specified) and we finally encountered stream end.
-                    // There is an odd case where the input stream contained 0 bytes, for that case: output stream os AND file temp are empty.
+
                     break;
                 }
 
-                if (consumed > 0) {
-                    os.write(content, 0, consumed);
-                    if (length > 0) {
-                        // we were given actual length, so check byte consumption
-                        remaining -= consumed;
-                        if (remaining == 0)
-                            break;
-                        if (remaining < 0) {
-                            this.log.error("<internal> Core.addContent(): incorrect bytes consumed while expanding content. Expected/actual consumed: " + length + "/" + length+remaining);
-                            return null;
-                        }
-                    }
-                } else {
-                    // Exit for problem: We are here for consumed 0. This would be an infinite loop because "remaining" is not reduced.
-                    this.log.error("<internal> Core.addContent(): Infinite loop exited while expanding content.");
-                    return null;
-                }
-            } // end while()
+                if (length > 0)
+                    remaining -= consumed;
+                os.write(content, 0, consumed);
+            }
         } catch (Exception e) {
             // Cannot even determine the hash, so we don't know if it has already been added or not.
             this.log.error("<internal> Core.addContent(): Could not add content, " + e.getMessage());
