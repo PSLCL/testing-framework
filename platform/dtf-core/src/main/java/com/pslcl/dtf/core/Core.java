@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -833,6 +834,42 @@ public class Core
     }
 
     /**
+     *
+     * @param h The hash to find in database
+     * @return true/false
+     */
+    private boolean dbKnowsOfFileHash(Hash h) {
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            statement = connect.prepareStatement("SELECT pk_content FROM content WHERE pk_content = ?");
+            statement.setBytes(1, h.toBytes());
+            resultSet = statement.executeQuery();
+            return resultSet.next();
+
+//          // this alternate exit is a double check
+//          while (resultSet.next()) {
+//              byte [] bytes = resultSet.getBytes("pk_content");
+//              String strDbContent = Hash.bytesToHex(bytes);
+//              String strParamContent = h.toString();
+//              if (strDbContent.equals(strParamContent))
+//                  return true;
+//              return true;
+//          }
+//          return false;
+        } catch (Exception e) {
+            this.log.error("<internal> Core.dbKnowsOfFileHash(): exception msg: " + e);
+            return false;
+        } finally {
+            safeClose(resultSet);
+            resultSet = null;
+            safeClose(statement);
+            statement = null;
+        }
+    }
+
+    /**
      * Add content given an input stream. If the content is already stored, then a new file is created anyway,
      * and assumed to be correct. Then the new file is stored and the database is updated.
      * @param is An input stream for the content.
@@ -840,7 +877,7 @@ public class Core
      * @return Hash of the added content
      */
 //  @Nullable
-    @SuppressWarnings("ReturnOfNull")
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "ReturnOfNull"})
     Hash addContent(InputStream is, long length) {
         File tmp;
         FileOutputStream os = null;
@@ -881,7 +918,7 @@ public class Core
                     this.log.error("<internal> Core.addContent(): Infinite loop detected and exited, while expanding content.");
                     return null;
                 }
-            }
+            } // end while()
         } catch (Exception e) {
             // Cannot even determine the hash, so we don't know if it has already been added or not.
             this.log.error("<internal> Core.addContent(): Could not add content, " + e.getMessage());
@@ -902,41 +939,64 @@ public class Core
             return null;
         }
 
-        File target = new File(this.artifacts, h.toString());
-        boolean ignore_insert_failure = false;
+        String strHash = h.toString();
+        File target = new File(this.artifacts, strHash);
+        boolean dbKnowsOfFileHash = dbKnowsOfFileHash(h);
+        if (!read_only) {
+            try {
+                // Move the file to the cache, then update db based on success/fail, then if fail, cleanup.
+                FileUtils.deleteQuietly(target); // in case target file exists
+                FileUtils.moveFile(tmp, target);
 
-        if (target.exists()) {
-            FileUtils.deleteQuietly(tmp);
-            ignore_insert_failure = true;
-        }
-
-        // If read-only and it doesn't exist, then it cannot be added. If it was already cached, assume exists.
-        if (read_only) {
-            //TODO: Really need to check the DB and remove the file if it isn't present, otherwise the
-            // cache and DB are out of sync.
-            return ignore_insert_failure ? h : null;
-        }
-
-        PreparedStatement statement = null;
-        try {
-            // Move the file to the cache
-            FileUtils.moveFile(tmp, target);
-
-            statement = connect.prepareStatement("INSERT INTO content (pk_content, is_generated) VALUES (?,1)");
-            statement.setBinaryStream(1, new ByteArrayInputStream(h.toBytes()));
-            statement.executeUpdate();
-        } catch (Exception e) {
-            if (!ignore_insert_failure) {
-                this.log.error("<internal> Core.addContent(): Could not add content, " + e.getMessage());
-                FileUtils.deleteQuietly(tmp);
+                if (dbKnowsOfFileHash) {
+                    return h;
+                } else {
+                    PreparedStatement statement = null;
+                    try {
+                        statement = connect.prepareStatement("INSERT INTO content (pk_content, is_generated) VALUES (?,1)");
+                        statement.setBinaryStream(1, new ByteArrayInputStream(h.toBytes()));
+                        statement.executeUpdate();
+                        return h;
+                    } catch (Exception e) {
+                        this.log.error("<internal> Core.addContent(): Could not add content " + strHash + " to db, " + e.getMessage());
+                        FileUtils.deleteQuietly(target);
+                        return null;
+                    } finally {
+                        safeClose(statement);
+                        statement = null;
+                    }
+                }
+            } catch (IOException ioe) {
+                FileUtils.deleteQuietly(tmp); // cleanup
+                this.log.error("<internal> Core.addContent(): Could not store content file of hash " + strHash + " , exception message" + ioe);
+                // TODO: cleanup this unlikely case that an entry is stored
+//              if (dbKnowsOfFileHash) {
+//              }
                 return null;
             }
-        } finally {
-            safeClose(statement);
-            statement = null;
+        } else {
+            // readonly db
+            if (dbKnowsOfFileHash) {
+                try {
+                    FileUtils.deleteQuietly(target); // in case target already exists
+                    // move the file to the cache
+                    FileUtils.moveFile(tmp, target);
+                    return h;
+                } catch (IOException ioe) {
+                    FileUtils.deleteQuietly(tmp); // cleanup
+                    this.log.error("<internal> Core.addContent(): db readonly case, could not write new content file of hash " + strHash + " to storage cache, exception msg " + ioe);
+                    return target.exists() ? h : null;
+                }
+            } else {
+                // Cannot write db: the new file hash cannot be saved, so also do not store the new file.
+                // But do cleanup the unlikely case that a file of that hash name is stored.
+                if (!FileUtils.deleteQuietly(tmp)) {
+                    this.log.error("<internal> Core.addContent(), db readonly case: Could not delete content file, of hash " + h.toString());
+                    return h;
+                }
+                return null;
+            }
         }
-
-        return h;
     }
 
     /**
