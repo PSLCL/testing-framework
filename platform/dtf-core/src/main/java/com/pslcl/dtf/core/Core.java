@@ -969,7 +969,7 @@ public class Core
             } catch (IOException ioe) {
                 FileUtils.deleteQuietly(tmp); // cleanup
                 this.log.error("<internal> Core.addContent(): Could not store content file of hash " + strHash + " , exception message" + ioe);
-                // TODO: cleanup this unlikely case that an entry is stored
+                // TODO: cleanup this unlikely case that our entry is stored in db
 //              if (dbKnowsOfFileHash) {
 //              }
                 return null;
@@ -989,8 +989,9 @@ public class Core
                 }
             } else {
                 // Cannot write db: the new file hash cannot be saved, so also do not store the new file.
+                FileUtils.deleteQuietly(tmp); // basic cleanup
                 // But do cleanup the unlikely case that a file of that hash name is stored.
-                if (!FileUtils.deleteQuietly(tmp)) {
+                if (!FileUtils.deleteQuietly(target)) {
                     this.log.error("<internal> Core.addContent(), db readonly case: Could not delete content file, of hash " + h.toString());
                     return h;
                 }
