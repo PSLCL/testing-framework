@@ -561,16 +561,13 @@ public final class DistributedTestingFramework
                 synchronizeHelp();
         }
 
+        // proceed
         Core core = null;
-//      ArtifactProvider artifactProvider = null;
-
-        try
-        {
+        try {
             /* Instantiate the platform and artifact provider. */
             core = new Core(0);
 
-            if (synchronize)
-            {
+            if (synchronize) {
                 Core.Config config = core.getConfig();
                 File generators = new File(config.dirGenerators());
                 if (generators.exists()) {
@@ -585,7 +582,7 @@ public final class DistributedTestingFramework
 
                 // Get the list of artifact providers from the database, prepare the modules table for updates.
                 List<String> providers = core.readArtifactProviders();
-                core.prepareToLoadModules();
+                core.prepareToLoadModules(); // adds 1 to missing_count of every pk_module row
                 boolean noModuleErrors = true;
 
                 HandleModule handler = new HandleModule(core);
@@ -593,8 +590,7 @@ public final class DistributedTestingFramework
 
                 for (String providerName : providers)
                 {
-                    try
-                    {
+                    try {
                         Class<?> P = Class.forName(providerName);
                         Constructor<?> cons = P.getConstructor();
                         ArtifactProvider provider = (ArtifactProvider) cons.newInstance();
@@ -602,47 +598,38 @@ public final class DistributedTestingFramework
                         to_close.add(provider);
 
                         // Identify artifacts from this artifact provider. Fill tables modules/artifacts/content.
-                        provider.iterateModules(handler);
-                    } catch (Exception e)
-                    {
+                        provider.iterateModules(handler);  // can influence missing_count
+                    } catch (Exception e) {
                         LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize() exception msg: " + e);
                         noModuleErrors = false;
                     }
                 }
 
                 handler.markMergeFromModule();
-
                 for (ArtifactProvider p : to_close)
-                {
                     p.close();
-                }
 
                 // Finalize module loading
                 if (noModuleErrors && prune > 0)
-                    core.finalizeLoadingModules(prune);
+                    core.finalizeLoadingModules(prune); // can influence missing_count
 
                 // Extract all generators to new generator (configured) directory
                 Iterable<Module> find_generators = core.createModuleSet();
-                for (Module M : find_generators)
-                {
+                for (Module M : find_generators) {
                     List<Artifact> artifacts = M.getArtifacts(null, "dtf_test_generator");
-                    for (Artifact A : artifacts)
-                    {
+                    for (Artifact A : artifacts) {
                         File f = core.getContentFile(A.getContent().getHash());
                         File P = new File(generators, A.getName());
                         FileUtils.copyFile(f, P);
-                        try
-                        {
+                        try {
                             Files.setPosixFilePermissions(P.toPath(), toPosixPermissions(A.getPosixMode()));
-                        } catch (UnsupportedOperationException ignored)
-                        {
+                        } catch (UnsupportedOperationException ignored) {
                             // Windows does not support setPosixFilePermissions. Fall back.
                             Set<PosixFilePermission> perms = toPosixPermissions(A.getPosixMode());
 
                             // TODO: check for false return
                             P.setExecutable(perms.contains(PosixFilePermission.GROUP_EXECUTE) || perms.contains(PosixFilePermission.OTHERS_EXECUTE), false);
                             P.setExecutable(perms.contains(PosixFilePermission.OWNER_EXECUTE), true);
-
                             // TODO: check for false return
                             P.setReadable(perms.contains(PosixFilePermission.GROUP_READ) || perms.contains(PosixFilePermission.OTHERS_READ), false);
                             P.setReadable(perms.contains(PosixFilePermission.OWNER_READ), true);
@@ -650,13 +637,11 @@ public final class DistributedTestingFramework
                             try {
                                 // TODO: check for false return
                                 P.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
-                            } catch (Exception e) {
-                                // TODO: This is where issue #159 is caught, before the workaround was placed (in IvyArtifactsProvider.javas).
-                                //       A workaround gives gen.noarch.tar.gz files 666 perminssions instead of 444.
-                                //       This intercept catch code here can potenetially allow 444 permissions to
+                            } catch (Exception e) { // TODO: This is where issue #159 is caught, before the workaround was placed (in IvyArtifactsProvider.javas).
+                                //       A workaround gives gen.noarch.tar.gz files 666 permissions instead of 444.
+                                //       This intercept catch code here can potentially allow 444 permissions to
                                 //          return, and take specific action before throwing the exception.
-                                //       It is possible that issue #159 can be fixed at a more fundamental level,
-                                //          in which case the 666 workaround and this intercepting block can be removed.
+                                //       It is possible that issue #159 can be fixed at a more fundamental level.
                                 throw e;
                             }
                             // TODO: check for false return
@@ -706,12 +691,10 @@ public final class DistributedTestingFramework
                 /* Remove all content that is not referenced or generated. */
                 core.pruneContent();
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize() exception msg: " + e);
             LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", e);
-        } finally
-        {
+        } finally {
             // artifactProvider is ever used
 //          if (artifactProvider != null)
 //          {

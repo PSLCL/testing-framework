@@ -631,7 +631,7 @@ public class Core
             statement.executeUpdate();
         } catch (Exception e)
         {
-            this.log.error("<internal> Core.prepareToLoadModules(): Could not supdate missing_count, " + e.getMessage());
+            this.log.error("<internal> Core.prepareToLoadModules(): Could not update missing_count, " + e.getMessage());
         } finally
         {
             safeClose(statement);
