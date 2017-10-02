@@ -77,7 +77,7 @@ public class DeployFuture implements Callable<Void>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("DeployFuture");
-        ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, loggingSourceFolder);
+        ProcessCommandData cmdData = getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, null);
         cmdData.setUseWorkingDir(false);
         String urlFile = StrH.getAtomicName(sourceUrl, '/');            // hashname
         

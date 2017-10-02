@@ -19,12 +19,16 @@ import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
 import com.pslcl.dtf.core.util.StrH;
 import com.pslcl.dtf.core.util.TabToLevel;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 @SuppressWarnings("javadoc")
 public class ProcessCommandData
 {
     private final static String ProcessShellRequest = "start shell command ";
     private final static String ProcessPowershellRequest = "start shell \"powershell.exe %c\" command ";
-    
+
+    private static final AtomicInteger uniqueStdIo = new AtomicInteger(-1);
+
     private boolean fdn;
     private boolean fileOnly;
     private String sandbox;
@@ -149,8 +153,9 @@ public class ProcessCommandData
 //            cmd.append("\" notify onend ");
         if(logFolder != null)
         {
-            cmd.append("stdout ").append(logFolder).append("stdout.log ");
-            cmd.append("stderr ").append(logFolder).append("stderr.log ");
+            int idx = uniqueStdIo.incrementAndGet();
+            cmd.append("stdout ").append(logFolder).append("stdout" + idx + ".log ");
+            cmd.append("stderr ").append(logFolder).append("stderr" + idx + ".log ");
         }
         cmd.append("returnstdout ")
         .append("returnstderr ");
