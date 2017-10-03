@@ -628,16 +628,23 @@ public class InstancedTemplate {
                         stepsNeedCompletionForThisStepSet = true;
 
                         // we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
-                        deployHandler.proceed();
+                        deployHandler.proceed(); // if exception is thrown, it is caught far below
                         if (deployHandler.isDone()) {
                             List<DeployInfo> localDeployInfos = deployHandler.getDeployInfos();
                             this.deployedInfos.addAll(localDeployInfos);
-                            if (DeployInfo.getAllDeployedSuccess() && localDeployInfos.size()==deployHandler.getDeployRequestCount()) {
-                                log.debug(simpleName + "deployHandler() completes " + deployHandler.getDeployRequestCount() + " deploys(s) for setID " + setID);
+                            int deployRequestCount = deployHandler.getDeployRequestCount();
+                            int localDeployInfosCount = localDeployInfos.size();
+                            boolean allDeployedSuccessful = DeployInfo.getAllDeployedSuccess();
+                            if (allDeployedSuccessful && localDeployInfosCount==deployRequestCount) {
+                                log.debug(simpleName + " runSteps() deploy handling completes " + deployRequestCount + " deploys(s) for setID " + setID);
                             } else {
-                                // one or more deploy steps errored out; this template is errored out
-                                throw new Exception("InstancedTemplate.runSteps() deploy handling has incomplete successful deployed list, for setID " + setID);
-                                // initiate cleanup/destroy of this template run; this.deployedInfos holds all information
+                                // one or more deploy steps errored out; this template must error out
+                                String msg = "InstancedTemplate.runSteps() deploy handling for setID " + setID + " not fully successful.";
+                                this.log.debug(msg +
+                                               " deployRequestCount/deployInfosCount: " + deployRequestCount + "/" + localDeployInfosCount +
+                                               "; allDeployedSuccessful boolean is " + allDeployedSuccessful);
+                                // exception initiates cleanup/destroy of this template run; this.deployedInfos holds all information
+                               throw new Exception(msg);
                             }
                         }
                     }
