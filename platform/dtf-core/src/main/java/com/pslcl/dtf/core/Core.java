@@ -126,23 +126,18 @@ public class Core
     private long pk_target_test = 0;
     private boolean read_only = false;
 
-    private void loadHashes()
-    {
-        if (connect == null)
-        {
+    private void loadHashes() {
+        if (this.connect == null) {
             this.log.warn("<internal> Core.loadHashes() finds no database connection and exits");
             return;
         }
 
         Statement statement = null;
         ResultSet resultSet = null;
-
-        try
-        {
-            statement = connect.createStatement();
+        try {
+            statement = this.connect.createStatement();
             resultSet = statement.executeQuery("SELECT pk_described_template, fk_module_set, fk_template, hash, description_hash FROM described_template JOIN template ON fk_template = pk_template");
-            while (resultSet.next())
-            {
+            while (resultSet.next()) {
                 DBDescribedTemplate dbTemplate = new DBDescribedTemplate();
                 dbTemplate.pk = resultSet.getLong("pk_described_template");
                 dbTemplate.fk_template = resultSet.getLong("fk_template");
@@ -150,8 +145,7 @@ public class Core
                 dbTemplate.description = new Hash(resultSet.getBytes("description_hash"));
 //              pkToDT.put(dbTemplate.pk, dbTemplate);
 
-                if (keyToDT.containsKey(dbTemplate.key))
-                {
+                if (keyToDT.containsKey(dbTemplate.key)) {
                     safeClose(resultSet);
                     resultSet = null;
                     safeClose(statement);
@@ -160,25 +154,21 @@ public class Core
                 }
                 keyToDT.put(dbTemplate.key, dbTemplate);
             }
-
             safeClose(resultSet);
             resultSet = null;
             safeClose(statement);
             statement = null;
 
-            statement = connect.createStatement();
-            resultSet = statement.executeQuery("SELECT pk_test_instance, fk_described_template FROM test_instance WHERE fk_test=" + Long.toString(pk_target_test));
-            while (resultSet.next())
-            {
+            statement = this.connect.createStatement();
+            resultSet = statement.executeQuery("SELECT pk_test_instance, fk_described_template FROM test_instance WHERE fk_test=" + Long.toString(this.pk_target_test));
+            while (resultSet.next()) {
                 long pk = resultSet.getLong("pk_test_instance");
                 long fk = resultSet.getLong("fk_described_template");
                 dtToTI.put(fk, pk);
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             this.log.error("<internal> Core.loadHashes() could not read described_template, " + e.getMessage());
-        } finally
-        {
+        } finally {
             safeClose(resultSet);
             resultSet = null;
             safeClose(statement);
@@ -316,17 +306,16 @@ public class Core
            //noinspection ResultOfMethodCallIgnored
             this.artifacts.mkdirs();
 
-        openDatabase();
+        this.openDatabase(); // instantiates this.connect
 
-        if (connect == null)
+        if (this.connect == null)
         {
             this.log.error("<internal> Core constructor fails without database connection");
         } else
         {
             /* Load the description and template hashes */
             loadHashes();
-
-            //            loadTestInstances();
+//          loadTestInstances();
         }
     }
 
@@ -353,7 +342,7 @@ public class Core
      */
     private void openDatabase()
     {
-        if (connect != null)
+        if (this.connect != null)
             return;
 
         try
@@ -372,7 +361,7 @@ public class Core
 
             String connectstring = String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
             // TODO: replace superseded javax.sql.DriverManager with javax.sql.DataSource
-            connect = DriverManager.getConnection(connectstring);
+            this.connect = DriverManager.getConnection(connectstring);
         } catch (Exception e)
         {
             this.log.error("<internal> Core.openDatabase() could not open database connection, " + e.getMessage());
@@ -387,16 +376,16 @@ public class Core
     {
         try
         {
-            if (connect != null)
+            if (this.connect != null)
             {
-                connect.close();
+                this.connect.close();
             }
         } catch (Exception e)
         {
             this.log.error("<internal> Core.closeDatabase() could not close database connection, " + e.getMessage());
         } finally
         {
-            connect = null;
+            this.connect = null;
         }
     }
 
@@ -597,7 +586,7 @@ public class Core
 
         try
         {
-            statement = connect.createStatement();
+            statement = this.connect.createStatement();
             resultSet = statement.executeQuery("SELECT * FROM artifact_provider");
             while (resultSet.next())
             {
@@ -627,7 +616,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("UPDATE module SET missing_count=missing_count+1");
+            statement = this.connect.prepareStatement("UPDATE module SET missing_count=missing_count+1");
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -648,7 +637,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("DELETE FROM module WHERE missing_count > ?");
+            statement = this.connect.prepareStatement("DELETE FROM module WHERE missing_count > ?");
             statement.setLong(1, deleteThreshold);
             statement.executeUpdate();
         } catch (Exception e)
@@ -679,7 +668,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("INSERT INTO test_plan (name, description) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
+            statement = this.connect.prepareStatement("INSERT INTO test_plan (name, description) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, name);
             statement.setString(2, description);
             statement.executeUpdate();
@@ -720,7 +709,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            statement = this.connect.prepareStatement("INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setLong(1, pk_test_plan);
             statement.setString(2, name);
             statement.setString(3, description);
@@ -762,7 +751,7 @@ public class Core
         //TODO: Release date, actual release date, order all need to be added.
         try
         {
-            statement = connect.prepareStatement("INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            statement = this.connect.prepareStatement("INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, module.getOrganization());
             statement.setString(2, module.getName());
             statement.setString(3, attributes);
@@ -799,13 +788,13 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("DELETE FROM module WHERE pk_module=?");
+            statement = this.connect.prepareStatement("DELETE FROM module WHERE pk_module=?");
             statement.setLong(1, pk_module);
             statement.executeUpdate();
             safeClose(statement);
             statement = null;
 
-            statement = connect.prepareStatement("DELETE FROM artifact WHERE merged_from_module=?");
+            statement = this.connect.prepareStatement("DELETE FROM artifact WHERE merged_from_module=?");
             statement.setLong(1, pk_module);
             statement.executeUpdate();
         } catch (Exception e)
@@ -843,7 +832,7 @@ public class Core
         ResultSet resultSet = null;
 
         try {
-            statement = connect.prepareStatement("SELECT pk_content FROM content WHERE pk_content = ?");
+            statement = this.connect.prepareStatement("SELECT pk_content FROM content WHERE pk_content = ?");
             statement.setBytes(1, h.toBytes());
             resultSet = statement.executeQuery();
             return resultSet.next();
@@ -953,7 +942,7 @@ public class Core
                 } else {
                     PreparedStatement statement = null;
                     try {
-                        statement = connect.prepareStatement("INSERT INTO content (pk_content, is_generated) VALUES (?,1)");
+                        statement = this.connect.prepareStatement("INSERT INTO content (pk_content, is_generated) VALUES (?,1)");
                         statement.setBinaryStream(1, new ByteArrayInputStream(h.toBytes()));
                         statement.executeUpdate();
                         return h;
@@ -1040,9 +1029,9 @@ public class Core
         try
         {
             if (merged_from_module != 0)
-                statement = connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             else
-                statement = connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
 
             statement.setLong(1, pk_module);
             statement.setBinaryStream(2, new ByteArrayInputStream(content.toBytes()));
@@ -1084,7 +1073,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("UPDATE content SET is_generated=0");
+            statement = this.connect.prepareStatement("UPDATE content SET is_generated=0");
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -1107,7 +1096,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("DELETE content FROM content LEFT JOIN artifact ON content.pk_content = artifact.fk_content WHERE artifact.fk_content IS NULL AND content.is_generated=0");
+            statement = this.connect.prepareStatement("DELETE content FROM content LEFT JOIN artifact ON content.pk_content = artifact.fk_content WHERE artifact.fk_content IS NULL AND content.is_generated=0");
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -1132,7 +1121,7 @@ public class Core
         try
         {
             // TODO: see that fk_template is not a column of table test_instance
-            PreparedStatement findTemplates = connect.prepareStatement("select distinct fk_template from test_instance");
+            PreparedStatement findTemplates = this.connect.prepareStatement("select distinct fk_template from test_instance");
             foundTemplates = findTemplates.executeQuery();
             Set<Long> used = new HashSet<Long>();
             while (foundTemplates.next())
@@ -1146,8 +1135,8 @@ public class Core
             safeClose(foundTemplates);
             foundTemplates = null;
 
-            deleteTemplate = connect.prepareStatement("DELETE FROM template WHERE pk_template=?");
-            findTemplates = connect.prepareStatement("select pk_template from template");
+            deleteTemplate = this.connect.prepareStatement("DELETE FROM template WHERE pk_template=?");
+            findTemplates = this.connect.prepareStatement("select pk_template from template");
             foundTemplates = findTemplates.executeQuery();
             while (foundTemplates.next())
             {
@@ -1550,7 +1539,7 @@ public class Core
 
         try
         {
-            statement = connect.createStatement();
+            statement = this.connect.createStatement();
             resultSet = statement.executeQuery("SELECT pk_module, organization, name, attributes, version, status, sequence FROM module");
             while (resultSet.next())
             {
@@ -1586,7 +1575,7 @@ public class Core
 
         try
         {
-            statement = connect.createStatement();
+            statement = this.connect.createStatement();
             resultSet = statement.executeQuery(new String("SELECT pk_module, organization, name, attributes, version, status, sequence" + " FROM module" + " WHERE organization = " + organization + " AND name = '" + name + "'"));
             while (resultSet.next())
             {
@@ -1641,7 +1630,7 @@ public class Core
         try
         {
             // We are willing to find any artifact from any merged module
-            statement = connect.createStatement();
+            statement = this.connect.createStatement();
             String query = String.format("SELECT artifact.fk_content" + " FROM artifact" + " WHERE artifact.fk_module = %d AND artifact.name = '%s.dep'", pk, artifact.getName());
             resultSet = statement.executeQuery(query);
             if (resultSet.next())
@@ -1663,7 +1652,7 @@ public class Core
                     String[] fields = line.split(",");
                     if (fields.length == 1 || fields.length == 2)
                     {
-                        statement = connect.createStatement();
+                        statement = this.connect.createStatement();
                         query = String.format("SELECT artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " WHERE artifact.fk_module = %d AND artifact.name REGEXP '%s" + "'", pk, fields[0]);
                         resultSet = statement.executeQuery(query);
                         while (resultSet.next())
@@ -1684,7 +1673,7 @@ public class Core
 
                     } else if (fields.length == 3 || fields.length == 4)
                     {
-                        statement = connect.createStatement();
+                        statement = this.connect.createStatement();
 
                         String[] mod_fields = fields[0].split("#");
                         String[] ver_fields = fields[1].split("/");
@@ -1802,7 +1791,7 @@ public class Core
             String artifact_name = name[name_index];
             try
             {
-                statement = connect.createStatement();
+                statement = this.connect.createStatement();
                 String configuration_match = "";
                 if (configuration != null)
                     configuration_match = " AND artifact.configuration='" + configuration + this.singleQuote;
@@ -1897,7 +1886,7 @@ public class Core
 
         try
         {
-            statement = connect.createStatement();
+            statement = this.connect.createStatement();
             resultSet = statement.executeQuery("SELECT test.pk_test, test.script" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " WHERE test.script != ''");
             while (resultSet.next())
             {
@@ -1934,7 +1923,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("UPDATE test SET last_run=?, last_stdout=?, last_stderr=? WHERE pk_test=?");
+            statement = this.connect.prepareStatement("UPDATE test SET last_run=?, last_stdout=?, last_stderr=? WHERE pk_test=?");
             statement.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
             statement.setString(2, stdout);
             statement.setString(3, stderr);
@@ -1984,7 +1973,7 @@ public class Core
         HashSet<Artifact> set = new HashSet<Artifact>();
         try
         {
-            statement = connect.createStatement();
+            statement = this.connect.createStatement();
             resultSet = statement.executeQuery("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content, artifact.merged_from_module" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE module.pk_module = " + pk_module + intro + name_match + separator + configuration_match
                             + " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC");
             Map<Long, DBModule> modules = new HashMap<Long, DBModule>();
@@ -2046,8 +2035,8 @@ public class Core
         ResultSet resultSet = null;
         try
         {
-            statement = connect.prepareStatement("SELECT test.pk_test" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test = ? AND module_to_test_plan.fk_module = ?");
-            statement.setLong(1, pk_target_test);
+            statement = this.connect.prepareStatement("SELECT test.pk_test" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test = ? AND module_to_test_plan.fk_module = ?");
+            statement.setLong(1, this.pk_target_test);
             statement.setLong(2, pk);
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
@@ -2075,7 +2064,7 @@ public class Core
 
         try
         {
-            statement = connect.prepareStatement("SELECT test_plan.pk_test_plan" + " FROM test_plan" +
+            statement = this.connect.prepareStatement("SELECT test_plan.pk_test_plan" + " FROM test_plan" +
                                                       " WHERE test_plan.name = '" + name + this.singleQuote + " AND test_plan.description = '" + description + this.singleQuote);
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
@@ -2104,7 +2093,7 @@ public class Core
 
         try
         {
-            statement = connect.prepareStatement("SELECT test.pk_test" + " FROM test" + " WHERE test.fk_test_plan = ?" + " AND test.name = ?" + " AND test.description = ? " + " AND test.script = ?");
+            statement = this.connect.prepareStatement("SELECT test.pk_test" + " FROM test" + " WHERE test.fk_test_plan = ?" + " AND test.name = ?" + " AND test.description = ? " + " AND test.script = ?");
             statement.setLong(1, pk_test_plan);
             statement.setString(2, name);
             statement.setString(3, description);
@@ -2147,7 +2136,7 @@ public class Core
         String attributes = new Attributes(module.getAttributes()).toString();
         try
         {
-            statement = connect.prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'" + " AND module.sequence = '" + module.getSequence() + "'");
+            statement = this.connect.prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'" + " AND module.sequence = '" + module.getSequence() + "'");
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
             {
@@ -2177,7 +2166,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement(String.format("UPDATE module SET missing_count=0 WHERE pk_module=%d", pk_module));
+            statement = this.connect.prepareStatement(String.format("UPDATE module SET missing_count=0 WHERE pk_module=%d", pk_module));
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -2209,7 +2198,7 @@ public class Core
         String attributes = new Attributes(module.getAttributes()).toString();
         try
         {
-            statement = connect.prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'");
+            statement = this.connect.prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'");
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
             {
@@ -2307,7 +2296,7 @@ public class Core
         {
             TestInstance.Action A = dt.getAction(i);
 
-            statement = connect.prepareStatement("INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            statement = this.connect.prepareStatement("INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setLong(1, pk);
             statement.setInt(2, i);
 
@@ -2330,7 +2319,7 @@ public class Core
             statement = null;
 
             //TODO: This doesn't handle dependencies, which need to roll up.
-            statement = connect.prepareStatement("INSERT INTO dt_to_dt (fk_parent,fk_child) VALUES (?,?)");
+            statement = this.connect.prepareStatement("INSERT INTO dt_to_dt (fk_parent,fk_child) VALUES (?,?)");
             statement.setLong(1, pk);
             statement.setLong(2, linepk);
             statement.executeUpdate();
@@ -2348,7 +2337,7 @@ public class Core
 
                     try
                     {
-                        statement = connect.prepareStatement("INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)");
+                        statement = this.connect.prepareStatement("INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)");
                         statement.setLong(1, artifact.getPK());
                         statement.setLong(2, linepk);
                         statement.setInt(3, au.getPrimary() ? 1 : 0);
@@ -2396,7 +2385,7 @@ public class Core
         try
         {
             /* All described template additions are handled as transactions. */
-            connect.setAutoCommit(false);
+            this.connect.setAutoCommit(false);
 
             long pk_template = syncTemplate(dt.getTemplate());
             if (result != null || owner != null)
@@ -2406,7 +2395,7 @@ public class Core
             long pk = 0;
             try
             {
-                statement = connect.prepareStatement("INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.connect.prepareStatement("INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
                 statement.setLong(2, pk_template);
                 statement.setBinaryStream(3, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
@@ -2428,7 +2417,7 @@ public class Core
                 safeClose(statement);
                 statement = null;
 
-                statement = connect.prepareStatement("SELECT pk_described_template FROM described_template WHERE fk_module_set=? AND fk_template=?");
+                statement = this.connect.prepareStatement("SELECT pk_described_template FROM described_template WHERE fk_module_set=? AND fk_template=?");
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
                 statement.setLong(2, pk_template);
                 ResultSet query = statement.executeQuery();
@@ -2445,8 +2434,8 @@ public class Core
                 statement = null;
             }
 
-            connect.commit();
-            connect.setAutoCommit(true);
+            this.connect.commit();
+            this.connect.setAutoCommit(true);
 
             DBDescribedTemplate dbdt = new DBDescribedTemplate();
             dbdt.pk = pk;
@@ -2460,8 +2449,8 @@ public class Core
             this.log.debug("stack trace: ", e);
             try
             {
-                connect.rollback();
-                connect.setAutoCommit(true);
+                this.connect.rollback();
+                this.connect.setAutoCommit(true);
             } catch (Exception e1)
             {
                 // TODO: This is really bad - failure to restore state.
@@ -2499,7 +2488,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("DELETE FROM dt_line WHERE fk_described_template = ?");
+            statement = this.connect.prepareStatement("DELETE FROM dt_line WHERE fk_described_template = ?");
             statement.setLong(1, me.pk);
             statement.executeUpdate();
         } finally
@@ -2510,11 +2499,11 @@ public class Core
 
         try
         {
-            connect.setAutoCommit(false);
+            this.connect.setAutoCommit(false);
 
             try
             {
-                statement = connect.prepareStatement("UPDATE described_template SET description_hash=? WHERE pk_described_template=?");
+                statement = this.connect.prepareStatement("UPDATE described_template SET description_hash=? WHERE pk_described_template=?");
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
                 statement.setLong(2, me.pk);
                 statement.executeUpdate();
@@ -2526,12 +2515,12 @@ public class Core
 
             addActions(dt, me.pk);
 
-            connect.commit();
-            connect.setAutoCommit(true);
+            this.connect.commit();
+            this.connect.setAutoCommit(true);
         } catch (Exception ignore)
         {
-            connect.rollback();
-            connect.setAutoCommit(true);
+            this.connect.rollback();
+            this.connect.setAutoCommit(true);
         }
 
         return me;
@@ -2576,8 +2565,8 @@ public class Core
                     PreparedStatement statement2 = null;
                     try
                     {
-                        statement2 = connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-                        statement2.setLong(1, pk_target_test);
+                        statement2 = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                        statement2.setLong(1, this.pk_target_test);
                         statement2.setLong(2, dbdt.pk);
                         //TODO: Determine the phase
                         statement2.setLong(3, 0);
@@ -2614,7 +2603,7 @@ public class Core
                                 // TODO: When adding 529 test instances, is it ok that 1000 entries are added to this table?
                                 //       This table has a 1000 entry limit. Is this a bug?
                                 long pk_module = findModule(artifact.getModule());
-                                statement2 = connect.prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
+                                statement2 = this.connect.prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
                                 statement2.setLong(1, pk_module);
                                 statement2.setLong(2, ti.pk);
                                 statement2.execute();
@@ -2642,7 +2631,7 @@ public class Core
                     String dbOwner = null;
                     try
                     {
-                        statement2 = connect.createStatement();
+                        statement2 = this.connect.createStatement();
                         resultSet = statement2.executeQuery("SELECT result, owner FROM run JOIN test_instance ON test_instance.fk_run = run.pk_run WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
 
                         if (resultSet.next())
@@ -2700,7 +2689,7 @@ public class Core
         ResultSet resultSet = null;
         try
         {
-            statement = connect.prepareStatement("SELECT pk_template FROM template WHERE hash=?");
+            statement = this.connect.prepareStatement("SELECT pk_template FROM template WHERE hash=?");
             statement.setBinaryStream(1, new ByteArrayInputStream(sync.getHash().toBytes()));
 
             resultSet = statement.executeQuery();
@@ -2711,7 +2700,7 @@ public class Core
                 safeClose(statement);
                 statement = null;
 
-                statement = connect.prepareStatement("INSERT INTO template (hash, steps, enabled) VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.connect.prepareStatement("INSERT INTO template (hash, steps, enabled) VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setBinaryStream(1, new ByteArrayInputStream(sync.getHash().toBytes()));
                 statement.setString(2, sync.toStandardString());
                 statement.setInt(3, 1); // Default is enabled.
@@ -2756,7 +2745,7 @@ public class Core
         // Read all the related artifacts
         try
         {
-            findArtifacts = connect.prepareStatement(String.format("select fk_content from template_to_all_content where fk_template='%d'", pk));
+            findArtifacts = this.connect.prepareStatement(String.format("select fk_content from template_to_all_content where fk_template='%d'", pk));
             foundArtifacts = findArtifacts.executeQuery();
             while (foundArtifacts.next())
             {
@@ -2786,7 +2775,7 @@ public class Core
         // Read all the related artifacts
         try
         {
-            findArtifacts = connect.prepareStatement(String.format("select fk_content from template_to_content where fk_template='%d'", pk));
+            findArtifacts = this.connect.prepareStatement(String.format("select fk_content from template_to_content where fk_template='%d'", pk));
             foundArtifacts = findArtifacts.executeQuery();
             while (foundArtifacts.next())
             {
@@ -2794,7 +2783,7 @@ public class Core
                 combined.add(hash);
             }
 
-            PreparedStatement findChildren = connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
+            PreparedStatement findChildren = this.connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
             foundChildren = findChildren.executeQuery();
             while (foundChildren.next())
             {
@@ -2827,7 +2816,7 @@ public class Core
         ResultSet foundChildren = null;
         try
         {
-            findChildren = connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
+            findChildren = this.connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
             foundChildren = findChildren.executeQuery();
             while (foundChildren.next())
             {
@@ -2865,7 +2854,7 @@ public class Core
         PreparedStatement insertArtifact = null;
         try
         {
-            PreparedStatement findTemplates = connect.prepareStatement("select distinct fk_template from test_instance");
+            PreparedStatement findTemplates = this.connect.prepareStatement("select distinct fk_template from test_instance");
             foundTemplates = findTemplates.executeQuery();
             while (foundTemplates.next())
             {
@@ -2879,7 +2868,7 @@ public class Core
                 for (Hash h : required)
                 {
                     // Need to add the relationship.
-                    insertArtifact = connect.prepareStatement("INSERT INTO template_to_all_content (fk_template, fk_content) VALUES (?,?)");
+                    insertArtifact = this.connect.prepareStatement("INSERT INTO template_to_all_content (fk_template, fk_content) VALUES (?,?)");
                     insertArtifact.setLong(1, pk);
                     insertArtifact.setBinaryStream(2, new ByteArrayInputStream(h.toBytes()));
                     insertArtifact.executeUpdate();
@@ -2908,7 +2897,7 @@ public class Core
         {
             for (Template t : sync.allTemplates)
             {
-                statement = connect.prepareStatement(String.format("select fk_parent, fk_child from template_to_template where fk_parent='%d' and fk_child='%d'", sync.getPK(), t.getPK()));
+                statement = this.connect.prepareStatement(String.format("select fk_parent, fk_child from template_to_template where fk_parent='%d' and fk_child='%d'", sync.getPK(), t.getPK()));
                 resultSet = statement.executeQuery();
                 if (!resultSet.isBeforeFirst())
                 {
@@ -2918,7 +2907,7 @@ public class Core
                     safeClose(statement);
                     statement = null;
 
-                    statement = connect.prepareStatement("INSERT INTO template_to_template (fk_parent, fk_child) VALUES (?,?)");
+                    statement = this.connect.prepareStatement("INSERT INTO template_to_template (fk_parent, fk_child) VALUES (?,?)");
                     statement.setLong(1, sync.getPK());
                     statement.setLong(2, t.getPK());
                     statement.executeUpdate();
@@ -2934,7 +2923,7 @@ public class Core
 
             for (Content a : sync.artifacts)
             {
-                statement = connect.prepareStatement("select fk_template, fk_content from template_to_content where fk_template=? and fk_content=?");
+                statement = this.connect.prepareStatement("select fk_template, fk_content from template_to_content where fk_template=? and fk_content=?");
                 statement.setLong(1, sync.getPK());
                 statement.setBinaryStream(2, new ByteArrayInputStream(a.getHash().toBytes()));
                 resultSet = statement.executeQuery();
@@ -2946,7 +2935,7 @@ public class Core
                     safeClose(statement);
                     statement = null;
 
-                    statement = connect.prepareStatement("INSERT INTO template_to_content (fk_template, fk_content) VALUES (?,?)");
+                    statement = this.connect.prepareStatement("INSERT INTO template_to_content (fk_template, fk_content) VALUES (?,?)");
                     statement.setLong(1, sync.getPK());
                     statement.setBinaryStream(2, new ByteArrayInputStream(a.getHash().toBytes()));
                     statement.executeUpdate();
@@ -2980,7 +2969,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement(String.format("UPDATE test_instance SET synchronized=0 WHERE fk_test=%d", pk_test));
+            statement = this.connect.prepareStatement(String.format("UPDATE test_instance SET synchronized=0 WHERE fk_test=%d", pk_test));
             statement.executeUpdate();
         } catch (Exception ignore)
         {
@@ -3000,7 +2989,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement(String.format("DELETE FROM test_instance WHERE synchronized=0 AND fk_test=%d", pk_test));
+            statement = this.connect.prepareStatement(String.format("DELETE FROM test_instance WHERE synchronized=0 AND fk_test=%d", pk_test));
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -3023,7 +3012,7 @@ public class Core
         List<Long> testInstanceList = new ArrayList<Long>();
 
         try {
-            find_test_instance = connect.createStatement();
+            find_test_instance = this.connect.createStatement();
             try (ResultSet test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test)) {
                 while (test_instances.next())
                     testInstanceList.add(test_instances.getLong("pk_test_instance"));
@@ -3049,7 +3038,7 @@ public class Core
         List<Long> testInstanceList = new ArrayList<Long>();
 
         try {
-            find_test_instance = connect.createStatement();
+            find_test_instance = this.connect.createStatement();
             try (ResultSet test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance" +
                                                                             " INNER JOIN module_to_test_instance" +
                                                                             "  ON pk_test_instance = fk_test_instance " +
@@ -3076,7 +3065,7 @@ public class Core
 
         try
         {
-            find_test_instance = connect.prepareStatement("SELECT pk_test_instance FROM test_instance WHERE fk_template=? AND fk_test=?");
+            find_test_instance = this.connect.prepareStatement("SELECT pk_test_instance FROM test_instance WHERE fk_template=? AND fk_test=?");
             find_test_instance.setLong(1, sync.getTemplate().getPK());
             find_test_instance.setLong(2, pk_test);
             test_instances = find_test_instance.executeQuery();
@@ -3085,7 +3074,7 @@ public class Core
                 long pk = test_instances.getLong("pk_test_instance");
 
                 // We found a candidate, but need to verify that its version references exactly match.
-                find_versions = connect.prepareStatement("SELECT fk_version FROM test_instance_to_version WHERE fk_test_instance=?");
+                find_versions = this.connect.prepareStatement("SELECT fk_version FROM test_instance_to_version WHERE fk_test_instance=?");
                 find_versions.setLong(1, pk);
                 his_versions = find_versions.executeQuery();
                 boolean extras = false;
@@ -3177,7 +3166,7 @@ public class Core
                 // There were no matches. Time to insert. Need to determine if the content exists.
 
                 // Get the component list associated with the test
-                statement = connect.prepareStatement(String.format("SELECT distinct pk_component" + " FROM component" + " JOIN component_to_test_plan ON component_to_test_plan.fk_component = component.pk_component" + " JOIN test_plan ON test_plan.pk_test_plan = component_to_test_plan.fk_test_plan" + " JOIN test ON test.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test='%d'", pk_test));
+                statement = this.connect.prepareStatement(String.format("SELECT distinct pk_component" + " FROM component" + " JOIN component_to_test_plan ON component_to_test_plan.fk_component = component.pk_component" + " JOIN test_plan ON test_plan.pk_test_plan = component_to_test_plan.fk_test_plan" + " JOIN test ON test.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test='%d'", pk_test));
                 resultSet = statement.executeQuery();
 
                 // TODO: See why components here is never read. Is impl incomplete?
@@ -3192,7 +3181,7 @@ public class Core
                 safeClose(statement);
                 statement = null;
 
-                statement = connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_template, fk_description, phase, synchronized) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_template, fk_description, phase, synchronized) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setLong(1, pk_test);
                 //                statement.setLong(2, sync.getTemplate().getPK());
                 //                statement.setLong(3, sync.getDescription().getPK());
@@ -3234,7 +3223,7 @@ public class Core
             } else
             {
                 // TODO: Validate the due date and phase
-                statement = connect.prepareStatement("UPDATE test_instance SET synchronized=1, fk_description=? WHERE pk_test_instance=?");
+                statement = this.connect.prepareStatement("UPDATE test_instance SET synchronized=1, fk_description=? WHERE pk_test_instance=?");
                 //                statement.setLong( 1, sync.getDescription().getPK() );
                 statement.setLong(2, pk);
                 statement.executeUpdate();
@@ -3264,7 +3253,7 @@ public class Core
         Statement statement = null;
         try
         {
-            statement = connect.createStatement();
+            statement = this.connect.createStatement();
             ResultSet resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
             if(resultSet.next()){
 
@@ -3296,7 +3285,7 @@ public class Core
         Statement statement = null;
         try
         {
-            statement = connect.createStatement();
+            statement = this.connect.createStatement();
             int rowsUpdated = statement.executeUpdate("Update run SET result = " + result + ", end_time = NOW() WHERE pk_run = " + runID);
             if(rowsUpdated == 0){
                 throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
@@ -3323,7 +3312,7 @@ public class Core
         Statement templateStatement = null;
         try
         {
-            templateStatement = connect.createStatement();
+            templateStatement = this.connect.createStatement();
             resultSet = templateStatement.executeQuery("SELECT hash FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance = " + testInstanceNumber);
             if(resultSet.next()){
                 hash = new Hash(resultSet.getBytes("hash")).toString();
@@ -3344,7 +3333,7 @@ public class Core
         PreparedStatement runStatement = null;
         try
         {
-            runStatement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
+            runStatement = this.connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
             runStatement.setString(1, hash);
             runStatement.setNull(2, Types.BOOLEAN);
 
@@ -3387,7 +3376,7 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            statement = connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
+            statement = this.connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
             statement.setString(1, hash);
 
             if (result != null)
