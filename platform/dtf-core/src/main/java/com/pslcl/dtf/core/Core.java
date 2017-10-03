@@ -110,21 +110,22 @@ public class Core
     private Connection connect = null;
 
     private File artifacts = null;
+    private boolean read_only = false;
+
+    /**
+     * The private key of the test that is being generated.
+     */
+    private long pk_target_test = 0;
+
+    // this map had been filled by .loadHashes() and .add(), but was never read back (because an alternate approach is used to achieve its benefit)
+    // private final Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
+
 
     // these 2 maps coordinate table described_template with table test_instance, to minimize table-reading activity
     //    these are filled by .loadHashes() and (.add() or .syncDescribedTemplates())
     //    these are read back by .add() and .check()
     private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<>();
     private Map<Long, Long> dtToTI = new HashMap<>();
-
-    // this map had been filled by .loadHashes() and .add(), but was never read back (because an alternate approach is used to achieve its benefit)
-    // private final Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
-
-    /**
-     * The private key of the test that is being generated.
-     */
-    private long pk_target_test = 0;
-    private boolean read_only = false;
 
     private void loadHashes() {
         if (this.connect == null) {
@@ -159,6 +160,8 @@ public class Core
             safeClose(statement);
             statement = null;
 
+
+            // 2nd db query
             statement = this.connect.createStatement();
             resultSet = statement.executeQuery("SELECT pk_test_instance, fk_described_template FROM test_instance WHERE fk_test=" + Long.toString(this.pk_target_test));
             while (resultSet.next()) {
@@ -2364,17 +2367,14 @@ public class Core
      * @param complete The complete time, or null.
      * @return The key information for the added described template.
      */
-    private DBDescribedTemplate add(DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete) throws Exception
-    {
+    private DBDescribedTemplate add(DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete) throws Exception {
         DescribedTemplate.Key proposed_key = dt.getKey();
-
         if (keyToDT.containsKey(proposed_key))
             return keyToDT.get(proposed_key);
 
         // Recursive check for all dependencies
         // TODO: Figure out if this logic is correct. Doesn't appear to be.
-        for (DescribedTemplate child : dt.getDependencies())
-        {
+        for (DescribedTemplate child : dt.getDependencies()) {
             if (!keyToDT.containsKey(child.getKey())) {
                 DBDescribedTemplate dbdt = add(child, null, null, null, null, null);
             } else {
@@ -2382,8 +2382,7 @@ public class Core
             }
         }
 
-        try
-        {
+        try {
             /* All described template additions are handled as transactions. */
             this.connect.setAutoCommit(false);
 
@@ -2393,8 +2392,7 @@ public class Core
 
             PreparedStatement statement = null;
             long pk = 0;
-            try
-            {
+            try {
                 statement = this.connect.prepareStatement("INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
                 statement.setLong(2, pk_template);
@@ -2406,13 +2404,11 @@ public class Core
                     if (keys.next())
                         pk = keys.getLong(1);
                 }
-
                 safeClose(statement);
                 statement = null;
 
                 addActions(dt, pk);
-            } catch (SQLException ignore)
-            {
+            } catch (SQLException ignore) {
                 //TODO: Figure out that this is a duplicate key or not.
                 safeClose(statement);
                 statement = null;
@@ -2421,15 +2417,13 @@ public class Core
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
                 statement.setLong(2, pk_template);
                 ResultSet query = statement.executeQuery();
-
                 if (query.next())
                     pk = query.getLong(1);
 
                 safeClose(statement);
                 statement = null;
                 safeClose(query);
-            } finally
-            {
+            } finally {
                 safeClose(statement);
                 statement = null;
             }
@@ -2443,16 +2437,13 @@ public class Core
 //          pkToDT.put(dbdt.pk, dbdt);
             keyToDT.put(dbdt.key, dbdt);
             return dbdt;
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             this.log.error("<internal> Core.add(): Failed to add described template: " + e);
             this.log.debug("stack trace: ", e);
-            try
-            {
+            try {
                 this.connect.rollback();
                 this.connect.setAutoCommit(true);
-            } catch (Exception e1)
-            {
+            } catch (Exception e1) {
                 // TODO: This is really bad - failure to restore state.
             }
         }
@@ -2466,11 +2457,9 @@ public class Core
      * @param dt The described template to check. Results are not currently checked.
      * @return DBDescribedTemplate
      */
-    private DBDescribedTemplate check(DescribedTemplate dt) throws Exception
-    {
+    private DBDescribedTemplate check(DescribedTemplate dt) throws Exception {
         // Recursive check for all dependencies
-        for (DescribedTemplate child : dt.getDependencies())
-        {
+        for (DescribedTemplate child : dt.getDependencies()) {
             // TODO: Figure out if this is correct.
             if (!keyToDT.containsKey(child.getKey()))
                 throw new Exception("Parent template exists, child does not.");
@@ -2486,29 +2475,24 @@ public class Core
 
         // Documentation needs to be recreated.
         PreparedStatement statement = null;
-        try
-        {
+        try {
             statement = this.connect.prepareStatement("DELETE FROM dt_line WHERE fk_described_template = ?");
             statement.setLong(1, me.pk);
             statement.executeUpdate();
-        } finally
-        {
+        } finally {
             safeClose(statement);
             statement = null;
         }
 
-        try
-        {
+        try {
             this.connect.setAutoCommit(false);
 
-            try
-            {
+            try {
                 statement = this.connect.prepareStatement("UPDATE described_template SET description_hash=? WHERE pk_described_template=?");
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
                 statement.setLong(2, me.pk);
                 statement.executeUpdate();
-            } finally
-            {
+            } finally {
                 safeClose(statement);
                 statement = null;
             }
@@ -2517,8 +2501,7 @@ public class Core
 
             this.connect.commit();
             this.connect.setAutoCommit(true);
-        } catch (Exception ignore)
-        {
+        } catch (Exception ignore) {
             this.connect.rollback();
             this.connect.setAutoCommit(true);
         }
@@ -2534,23 +2517,19 @@ public class Core
      * @throws Exception on any error
      * @return count of added Described Templates.
      */
-    public int syncDescribedTemplates(Iterable<TestInstance> testInstances) throws Exception
-    {
+    public int syncDescribedTemplates(Iterable<TestInstance> testInstances) throws Exception {
         int addedDescribedTemplatesCount = 0;
         int checkedNotAddedDescribedTemplatesCount = 0;
-        for (TestInstance ti : testInstances)
-        {
+        for (TestInstance ti : testInstances) {
             DBDescribedTemplate dbdt;
             DescribedTemplate.Key key = ti.getTemplate().getKey();
 
-            if (!keyToDT.containsKey(key))
-            {
+            if (!keyToDT.containsKey(key)) {
                 // add the template
                 dbdt = add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;
 
-            } else
-            {
+            } else {
                 // check the stored template
                 dbdt = check(ti.getTemplate());
                 ++checkedNotAddedDescribedTemplatesCount;
@@ -2559,12 +2538,10 @@ public class Core
             if (dbdt != null) {
                 // We have the described template. There should be a Test Instance that relates the
                 // current test (pk_test) to the current described template.
-                if (!dtToTI.containsKey(dbdt.pk))
-                {
+                if (!dtToTI.containsKey(dbdt.pk)) {
                     // No test instance, add it.
                     PreparedStatement statement2 = null;
-                    try
-                    {
+                    try {
                         statement2 = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                         statement2.setLong(1, this.pk_target_test);
                         statement2.setLong(2, dbdt.pk);
@@ -2577,8 +2554,7 @@ public class Core
                             if (keys.next())
                                 ti.pk = keys.getLong(1);
                         }
-                    } catch (Exception e)
-                    {
+                    } catch (Exception e) {
                         this.log.error("<internal> Core.syncDescribedTemplates(): Could not add described_template to test_instance: " + e.getMessage());
                     }
 
@@ -2587,19 +2563,16 @@ public class Core
 
                     // Insert all of the module references
                     List<TestInstance.Action> actions = ti.getActions();
-                    for (TestInstance.Action action : actions)
-                    {
+                    for (TestInstance.Action action : actions) {
                         ArtifactUses au = action.getArtifactUses();
                         if (au == null)
                             continue;
 
                         Iterator<Artifact> iter = au.getArtifacts();
-                        while (iter.hasNext())
-                        {
+                        while (iter.hasNext()) {
                             Artifact artifact = iter.next();
 
-                            try
-                            {
+                            try {
                                 // TODO: When adding 529 test instances, is it ok that 1000 entries are added to this table?
                                 //       This table has a 1000 entry limit. Is this a bug?
                                 long pk_module = findModule(artifact.getModule());
@@ -2609,8 +2582,7 @@ public class Core
                                 statement2.execute();
                                 safeClose(statement2);
                                 statement2 = null;
-                            } catch (Exception ignore)
-                            {
+                            } catch (Exception ignore) {
                                 // Ignore, since many times this will be a duplicate.
                             }
                         }
@@ -2623,19 +2595,16 @@ public class Core
                 }
 
                 // If the ti has a result recorded, then make sure it is reflected in the run table.
-                if (ti.getResult() != null || ti.getOwner() != null)
-                {
+                if (ti.getResult() != null || ti.getOwner() != null) {
                     Statement statement2 = null;
                     ResultSet resultSet = null;
                     Boolean dbResult = null;
                     String dbOwner = null;
-                    try
-                    {
+                    try {
                         statement2 = this.connect.createStatement();
                         resultSet = statement2.executeQuery("SELECT result, owner FROM run JOIN test_instance ON test_instance.fk_run = run.pk_run WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
 
-                        if (resultSet.next())
-                        {
+                        if (resultSet.next()) {
                             dbResult = resultSet.getBoolean("result");
                             if (resultSet.wasNull())
                                 dbResult = null;
@@ -2655,9 +2624,8 @@ public class Core
 
                     // Check the run status, fix it if the status is known.
                     if (!Objects.equals(dbResult, ti.getResult()) ||
-                        (dbOwner==null ? ti.getOwner()!=null : !Objects.equals(dbOwner, ti.getOwner())))
-                    {
-                        reportResult(ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                        (dbOwner==null ? ti.getOwner()!=null : !Objects.equals(dbOwner, ti.getOwner()))) {
+                       reportResult(ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                     }
                 }
             } else {
