@@ -391,10 +391,9 @@ public class RunEntryCore {
      * Execute the test run specified by the run entry number.
      *
      * @param runnerMachine The RunnerMachine
-     * @return the result of this test run; result is stored already
      * @throws Exception on any error
      */
-    public boolean testRun(RunnerMachine runnerMachine) throws Exception {
+    public void testRun(RunnerMachine runnerMachine) throws Throwable {
         // We are an independent process in our own thread. We have access
         //   to an Artifact Provider
         //   to a Resource Provider
@@ -433,14 +432,13 @@ public class RunEntryCore {
             // Start our test run. This executes all the template steps of our top level template (represented by this.topDBTemplate).
             iT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
             if (!this.isTestRunCanceled()) {
-                result = iT.getResult(); //True = passed, false = failed, null = no result(inspect).
+                result = iT.getResult(); // true = passed, false = failed, null = no result(inspect).
             }
             log.info("Test run " + reNum + " completed with result " + result);
             testRunSuccess = true; // a canceled test run is still a "successful" test run, i.e. there was no exception thrown
         } catch (Throwable t) {
             // result is still new Boolean(false)
-            log.debug(simpleName + "testRun errors out, reNum : " + this.reNum);
-            log.warn("Failed to execute test run " + reNum + " - " + t, t);
+            log.warn(".testRun() failed to execute test run " + reNum + ", throwable msg: " + t,t);
             throw t;
         } finally {
             this.closeCancelTaskStoreResultAckMessageQueue(runnerMachine.getService(), result);
@@ -449,8 +447,6 @@ public class RunEntryCore {
         // note: for !testRunSuccess, the template has already cleaned itself up (it was handled internally, by exception processing code, because we can't do it- iT is null for that)
         if (testRunSuccess)
             runnerMachine.getTemplateProvider().releaseTemplate(iT); // A top level template is never reused, so cleanup; this call then releases those nested templates that are not held for reuse
-
-        return testRunSuccess; // always true, for exception not thrown
     }
 
     public boolean isTestRunCanceled() {
@@ -510,7 +506,7 @@ public class RunEntryCore {
                 log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
             } catch (Exception e) {
                 // swallow this exception, it does not relate to the actual test run
-                log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", FAILED to store to database this result: " + this.topDBTemplate.result + "; message queue not acked"); // result can be null, true, or false
+                log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", failed to store to database this result: " + this.topDBTemplate.result + "; message queue not acked"); // result can be null, true, or false
             }
         } else {
                log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum);
@@ -527,7 +523,7 @@ public class RunEntryCore {
                 log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
             } catch (Exception e) {
                 // swallow this exception, it does not relate to the actual test run
-                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but FAILED to ack the message queue. The attempt to ack gives this message: " + e.getMessage());
+                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but failed to ack the message queue. The attempt to ack gives this message: " + e.getMessage());
             }
         }
     }
