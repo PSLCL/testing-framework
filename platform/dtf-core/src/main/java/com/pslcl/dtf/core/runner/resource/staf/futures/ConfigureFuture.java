@@ -74,7 +74,7 @@ public class ConfigureFuture implements Callable<RunnableProgram>
     {
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("ConfigureFuture");
-        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, logFolder);
+        ProcessCommandData cmdData = DeployFuture.getCommandPath(partialDestPath, linuxSandbox, winSandbox, windows, coordinates, s3Bucket, null);
         cmdData.setHost(host);
         cmdData.setWait(true);
         cmdData.setContext(machineInstance);

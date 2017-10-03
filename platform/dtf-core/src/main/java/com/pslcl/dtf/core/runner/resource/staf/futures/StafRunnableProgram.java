@@ -138,6 +138,8 @@ public class StafRunnableProgram implements RunnableProgram
     {
         try
         {
+            if(commandData.getLogFolder() == null)
+                return;
             ResourceCoordinates coordinates = commandData.getCoordinates();
 
             StringBuilder keyprefix = new StringBuilder("/");
