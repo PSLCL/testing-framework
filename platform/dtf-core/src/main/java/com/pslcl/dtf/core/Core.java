@@ -117,50 +117,10 @@ public class Core
      */
     private long pk_target_test = 0;
 
-    // this map had been filled by .loadHashes() and .add(), but was never read back (because an alternate approach is used to achieve its benefit)
-    // private final Map<Long, DBDescribedTemplate> pkToDT = new HashMap<Long, DBDescribedTemplate>();
-
-
-    // these 2 maps coordinate table described_template with table test_instance, to minimize table-reading activity
-    //    these are filled by .loadHashes() and (.add() or .syncDescribedTemplates())
-    //    these are read back by .add() and .check()
+    // this map coordinates table described_template with table test_instance, to minimize table-reading activity
+    //    this is filled by .loadHashes() and .add()
+    //    this is read back by .add() and .check()
     private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<>();
-
-
-    /**
-     * This map is used only by Generators, and is filled and maintanined only while generators run.
-     */
-    private Map<Long, Long> dtToTI = new HashMap<>();
-
-    /**
-     * From the database, load local Java map of describedTemplate entry to testInstance.
-     *
-     * This is called before a generator runs. While a generator runs, .syncDescribedTemplates() is called to update both database and the local Java map.
-     */
-    public void loadGeneratorHashes() {
-        if (this.connect == null) {
-            this.log.warn("<internal> Core.loadGeneratorHashes() finds no database connection and exits");
-            return;
-        }
-
-        Statement statement = null;
-        ResultSet resultSet = null;
-        try {
-            statement = this.connect.createStatement();
-            resultSet = statement.executeQuery("SELECT pk_test_instance, fk_described_template FROM test_instance WHERE fk_test=" + Long.toString(this.pk_target_test));
-            while (resultSet.next()) {
-                long pk = resultSet.getLong("pk_test_instance");
-                long fk = resultSet.getLong("fk_described_template");
-                dtToTI.put(fk, pk);
-            }
-            this.log.debug("Core.loadGeneratorHashes() completes");
-        } catch (Exception e) {
-            this.log.error("<internal> Core.loadGeneratorHashes() could not read described_template, " + e.getMessage());
-        } finally {
-            safeClose(resultSet);
-            safeClose(statement);
-        }
-    }
 
     private void loadHashes() {
         if (this.connect == null) {
@@ -179,7 +139,6 @@ public class Core
                 dbTemplate.fk_template = resultSet.getLong("fk_template");
                 dbTemplate.key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")), new Hash(resultSet.getBytes("fk_module_set")));
                 dbTemplate.description = new Hash(resultSet.getBytes("description_hash"));
-//              pkToDT.put(dbTemplate.pk, dbTemplate);
 
                 if (keyToDT.containsKey(dbTemplate.key)) {
                     safeClose(resultSet);
@@ -330,14 +289,11 @@ public class Core
 
         this.openDatabase(); // instantiates this.connect
 
-        if (this.connect == null)
-        {
+        if (this.connect == null) {
             this.log.error("<internal> Core constructor fails without database connection");
-        } else
-        {
+        } else {
             /* Load the description and template hashes */
             loadHashes();
-//          loadTestInstances();
         }
     }
 
@@ -369,7 +325,6 @@ public class Core
 
         try
         {
-
             // Setup the connection with the DB
             read_only = false;
             String user = config.dbUser();
@@ -2453,7 +2408,6 @@ public class Core
             DBDescribedTemplate dbdt = new DBDescribedTemplate();
             dbdt.pk = pk;
             dbdt.key = dt.getKey();
-//          pkToDT.put(dbdt.pk, dbdt);
             keyToDT.put(dbdt.key, dbdt);
             return dbdt;
         } catch (Exception e) {
@@ -2545,9 +2499,8 @@ public class Core
 
             if (!keyToDT.containsKey(key)) {
                 // add the template
-                dbdt = add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                dbdt = this.add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;
-
             } else {
                 // check the stored template
                 dbdt = check(ti.getTemplate());
@@ -2555,10 +2508,29 @@ public class Core
             }
 
             if (dbdt != null) {
-                // We have the described template. There should be a Test Instance that relates the
-                // current test (pk_test) to the current described template.
-                if (!dtToTI.containsKey(dbdt.pk)) {
-                    // No test instance, add it.
+                // We have the DBDescribedTemplate for ti. In the database, there needs to be a test_instance entry,
+                // of pk_test_instance, that relates the current test (pk_test) to the current described template.
+                boolean dbNotHaveTI = true;
+                Statement statement = null;
+                ResultSet resSet = null;
+
+                try {
+                    statement = this.connect.createStatement();
+                    resSet = statement.executeQuery("SELECT pk_test_instance FROM test_instance WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
+                    if (resSet.next())
+                        dbNotHaveTI = false;
+                } catch (Exception e) {
+                    this.log.error("<internal> Core.syncDescribedTemplate() sees exception, msg: " + e);
+                    this.log.debug("stack trace: ", e);
+                } finally {
+                    safeClose(resSet);
+//                  resSet = null;
+                    safeClose(statement);
+//                  statement = null;
+                }
+
+                if (dbNotHaveTI) {
+                    // No test instance in the database, add it.
                     PreparedStatement statement2 = null;
                     try {
                         statement2 = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
@@ -2608,7 +2580,6 @@ public class Core
                     safeClose(statement2);
                     statement2 = null;
                     dbdt.pk = ti.pk;
-                    dtToTI.put(dbdt.pk, ti.pk);
                 }
 
                 // If the ti has a result recorded, then make sure it is reflected in the run table.
