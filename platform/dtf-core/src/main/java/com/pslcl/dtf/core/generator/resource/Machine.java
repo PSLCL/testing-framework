@@ -211,16 +211,16 @@ public class Machine extends Resource
 
     /**
      * Deploy a set of artifacts and their dependencies to a machine.
-     * @param actionDependencies A list of actions that should be completed before the deploy.
+     * @param actionDependencies A list of actions that should be completed before the deploy. May be null.
      * @param artifacts A list of artifacts to deploy. The dependencies of the artifacts are also
-     * deployed, recursively.
+     * deployed, recursively. Must not be null.
      * @return A list of deploy actions.
      * @throws Exception The deploy failed.
      */
     public List<TestInstance.Action> deploy(List<Action> actionDependencies, Artifact... artifacts) throws Exception
     {
-        if (actionDependencies==null || artifacts==null) {
-            String msg = ".deploy() called with null param(s); actionDependencies/artifacts: " + actionDependencies + "/" + artifacts;
+        if (artifacts==null) {
+            String msg = ".deploy() called with null artifacts parameter";
             this.log.error(msg);
             throw new IllegalArgumentException(msg);
         }
