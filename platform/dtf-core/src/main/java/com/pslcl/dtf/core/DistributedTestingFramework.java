@@ -416,9 +416,9 @@ public final class DistributedTestingFramework
         {
             String tname = Thread.currentThread().getName();
             Thread.currentThread().setName("GeneratorFuture");
-            LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " started.");
+            LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).info("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " started.");
             process();
-            LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " completed.");
+            LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).info("DistributedTestingFramework.GeneratorExecutor.run() Script: " + this.toString() + " completed.");
             Thread.currentThread().setName(tname);
         }
 
@@ -473,6 +473,7 @@ public final class DistributedTestingFramework
 //      {
 //          return Long.toString(id) + "/" + script;
 //      }
+
     }
 
     @SuppressWarnings("MagicNumber")

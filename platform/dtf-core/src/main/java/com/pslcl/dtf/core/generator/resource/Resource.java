@@ -56,8 +56,7 @@ public abstract class Resource
         }
 
         @Override
-        public String getCommand(Template t) throws Exception
-        {
+        public String getCommand(Template t) throws Exception {
             return String.format("%d bind %s %s", getSetID(), r.getCodename().toString(), a.toString());
         }
 
@@ -113,13 +112,19 @@ public abstract class Resource
 
     /**
      * Construct a resource definition.
-     * @param generator
-     * @param name
-     * @param codename
+     * @param generator Must not be null.
+     * @param name Must not be null.
+     * @param codename Must not be null.
      */
     Resource(Generator generator, String name, String codename)
     {
         this.log = LoggerFactory.getLogger(getClass());
+        if (generator==null || name==null || codename==null) {
+            String msg = "constructor called with null param(s); generator/name/codename: " + generator + "/" + name + "/" + codename;
+            this.log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         this.instance = UUID.randomUUID();
         this.generator = generator;
         this.name = name;

@@ -15,11 +15,6 @@
  */
 package com.pslcl.dtf.core.generator.template;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.artifact.Artifact;
@@ -27,6 +22,11 @@ import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.resource.Resource;
 import com.pslcl.dtf.core.generator.template.TestInstance.Action;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * This class represents the combination of a set of modules, a template, and documentation. It is the primary

@@ -236,7 +236,7 @@ public class Template implements Comparable<Template>
     public List<Content> artifacts = new ArrayList<Content>();
     //private List<Command> commands = new ArrayList<Command>();
     Hash hash = null;
-    private String std_string = null;
+    public String std_string = null;
     private long pk;
 
     /**
@@ -251,7 +251,7 @@ public class Template implements Comparable<Template>
         this.log = LoggerFactory.getLogger(getClass());
         this.core = core;
         this.actions = actions;
-        Collections.sort(actions, new TestInstance.Action.ActionSorter());
+        actions.sort(new Action.ActionSorter());
 
         if (dependencies == null)
             this.dependencies = new ArrayList<DescribedTemplate>();
@@ -265,7 +265,7 @@ public class Template implements Comparable<Template>
      * Build the string representation of the template. This format is canonical, and
      * must be strictly followed. The first section contains all dependencies, which are sorted
      * textually. Next come the actions, which are sorted textually, beginning with the set ID.
-     * @throws Exception 
+     * @throws Exception on error
      */
     private void buildStrings() throws Exception
     {
@@ -294,7 +294,7 @@ public class Template implements Comparable<Template>
                 //Sort again if we are about to move to next set. This allows resource references assigned in the current set to be used in the sort.
                 //This should only change the order of actions that we have not yet gotten to.
                 if(i < actions.size() - 1 && actions.get(i + 1).getSetID() > currentSetID){
-                    Collections.sort(actions, new TestInstance.Action.ActionSorter(this));
+                    actions.sort(new Action.ActionSorter(this));
                 }
             }
 

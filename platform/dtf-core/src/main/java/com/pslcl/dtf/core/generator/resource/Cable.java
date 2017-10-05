@@ -21,6 +21,7 @@ import java.util.UUID;
 import com.pslcl.dtf.core.generator.Generator;
 import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.generator.template.TestInstance;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class represents a cable, which is a connection between a machine and a network. A machine
@@ -65,6 +66,12 @@ public class Cable
 
     public Cable(Generator generator, Machine machine, Network network, TestInstance.Action connectAction)
     {
+        if (generator==null || machine==null || network==null || connectAction==null) {
+            String msg = "Cable constructor called with null param(s); generator/machine/network/connectAction: " + generator + "/" + machine + "/" + network + "/" + connectAction;
+            LoggerFactory.getLogger(getClass()).error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         this.connectAction = connectAction;
         generator.addParameterReference(ipReference, new IPReference(machine, network));
     }

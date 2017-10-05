@@ -15,11 +15,16 @@
  */
 package com.pslcl.dtf.core.generator.template;
 
+import com.pslcl.dtf.core.Core;
+import com.pslcl.dtf.core.artifact.Artifact;
+import com.pslcl.dtf.core.generator.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
@@ -28,25 +33,31 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import com.pslcl.dtf.core.Core;
-import com.pslcl.dtf.core.artifact.Artifact;
-import com.pslcl.dtf.core.generator.resource.Resource;
-import com.pslcl.dtf.core.generator.template.TestInstance.Action;
-
 /**
  * This class represents a single test instance, and relates to all of its
  * related information. Note that several of the fields in the database
  * are not represented here because during generation their values are not
  * relevant.
  */
-public class TestInstance
-{
-    public static class TemplateSorter implements Comparator<DescribedTemplate>
-    {
+public class TestInstance {
+    @SuppressWarnings("PublicInnerClass ") // consider moving this innner class to its own file?
+    public static class TemplateSorter implements Comparator<DescribedTemplate>, Serializable {
+        private static final long serialVersionUID = -7071280749192740611L;
+
         @Override
-        public int compare(DescribedTemplate o1, DescribedTemplate o2)
-        {
+        public int compare(DescribedTemplate o1, DescribedTemplate o2) {
             return o1.getTemplate().compareTo(o2.getTemplate());
+        }
+
+        // implementations to satisfy Serializable requirements
+        private void writeObject(final java.io.ObjectOutputStream out) throws IOException {
+            out.defaultWriteObject();
+        }
+        private void readObject(final java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+            in.defaultReadObject();
+        }
+        private void readObjectNoData() throws ObjectStreamException {
+            // ignore the warning "Redundant throws clause"
         }
 
     }
@@ -56,23 +67,30 @@ public class TestInstance
      * Implementers must be able to correctly modify a DescribedTemplate and attach necessary related
      * information that will be synchronized to the database.
      */
-    public static abstract class Action
-    {
-        static class ActionSorter implements Comparator<Action>
-        {
+    @SuppressWarnings("PublicInnerClass ") // consider moving this inner class to its own file?
+    public static abstract class Action {
+        @SuppressWarnings("PackageVisibleInnerClass ") // if Action is to be here, prefer ActionSorter to be less than public
+        static class ActionSorter implements Comparator<Action>, Serializable {
+            private static final long serialVersionUID = 6380814585488098634L;
             private Template template;
 
-            public ActionSorter(){
+            ActionSorter(){
                 this.template = null;
             }
 
-            public ActionSorter(Template template){
+            ActionSorter(Template template){
                 this.template = template;
             }
 
             @Override
-            public int compare(Action o1, Action o2)
-            {
+            public int compare(Action o1, Action o2) {
+                if (o1==null || o2==null) {
+                    String msg = "<internal> Action.ActionSorter.compare(o1,o2) called with " + (o1==null ? "o1 null":"") + (o2==null ? ", o2 null":"");
+                    String detail = this.template.std_string!=null ? this.template.std_string : "";
+                    LoggerFactory.getLogger(getClass()).error(msg + detail);
+                    throw new IllegalStateException(msg);
+                }
+
                 int o1SetID = o1.getSetID();
                 int o2SetID = o2.getSetID();
 
@@ -81,24 +99,40 @@ public class TestInstance
                 else if (o1SetID > o2SetID)
                     return 1;
 
-                String o1Command = null;
-                String o2Command = null;
                 int retVal;
                 try
                 {
-                    o1Command = o1.getCommand(template);
-                    o2Command = o2.getCommand(template);
+                    // these 2 commands are each a reconstituted template step, which is a String
+                    String o1Command = o1.getCommand(template); // our testInstance is associated with a specific template
+                    String o2Command = o2.getCommand(template);
+                    if (o1Command==null || o2Command==null) {
+                        String msg = "<internal> Action.ActionSorter.compare(o1,o2) finds null reconstituted step(s) " + (o1Command==null ? "o1Command null":"") + (o2Command==null ? ", o2Command null":"");
+                        String detail = template.std_string!=null ? template.std_string : "";
+                        LoggerFactory.getLogger(getClass()).error(msg + detail);
+                        throw new IllegalStateException(msg);
+                    }
                     retVal = o1Command.compareTo(o2Command);
                 } catch (Exception e) {
                     // Note: We cannot throw exception here because "the overridden method does not throw Exception."
                     LoggerFactory.getLogger(getClass()).warn("TestInstance.Action.ActionSorter.compare() catches Exception but must swallow it, msg: " + e);
 
                     // Illogical value 0: placed without justifiable rationale. Code things so we never get here.
-                    retVal = 0;
+                    retVal = 0; // 0 means o1==o2
                 }
                 return retVal;
-
             }
+
+            // implementations to satisfy Serializable requirements
+            private void writeObject(final java.io.ObjectOutputStream out) throws IOException {
+                out.defaultWriteObject();
+            }
+            private void readObject(final java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+                in.defaultReadObject();
+            }
+            private void readObjectNoData() throws ObjectStreamException {
+                // ignore the warning "Redundant throws clause"
+            }
+
         }
 
         public static class ArtifactUses
@@ -128,6 +162,7 @@ public class TestInstance
             {
                 return artifacts;
             }
+
         }
 
         private int setID = -1;
@@ -205,6 +240,7 @@ public class TestInstance
         public List<Action> getActionDependencies() throws Exception {
             return actionDependencies;
         }
+
     }
 
 //  @SuppressWarnings("unused")
@@ -424,13 +460,13 @@ public class TestInstance
         //      Note: Our template is created below, so at this moment:
         //            We have no Template param to pass to "new Action.ActionSorter(Template)"
         //            This is a problem, because the sorter uses template in its sort- a null pointer results.
-        Collections.sort(actions, new Action.ActionSorter());
+        actions.sort(new Action.ActionSorter());
 
         // Determine dependencies for each template (none for now)
         List<DescribedTemplate> dependencies = new ArrayList<DescribedTemplate>();
 
         // Sort the dependencies list.
-        Collections.sort(dependencies, new TestInstance.TemplateSorter());
+        dependencies.sort(new TemplateSorter());
 
         // Create a Template for each group (only one for now)..
         Template template = new Template(core, actions, dependencies);
@@ -440,10 +476,10 @@ public class TestInstance
 
     private void assignSetIDs() throws Exception{
         List<Action> unassignedActions = new ArrayList<Action>();
-        List<Action> assignedActions = new ArrayList<Action>();
         unassignedActions.addAll(actions);
 
         int setID = 0;
+        List<Action> assignedActions = new ArrayList<Action>();
         while(unassignedActions.size() > 0){
             List<Action> currentSet = new ArrayList<Action>();
             for(Action action: unassignedActions){
