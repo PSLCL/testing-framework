@@ -125,7 +125,42 @@ public class Core
     //    these are filled by .loadHashes() and (.add() or .syncDescribedTemplates())
     //    these are read back by .add() and .check()
     private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<>();
+
+
+    /**
+     * This map is used only by Generators, and is filled and maintanined only while generators run.
+     */
     private Map<Long, Long> dtToTI = new HashMap<>();
+
+    /**
+     * From the database, load local Java map of describedTemplate entry to testInstance.
+     *
+     * This is called before a generator runs. While a generator runs, .syncDescribedTemplates() is called to update both database and the local Java map.
+     */
+    public void loadGeneratorHashes() {
+        if (this.connect == null) {
+            this.log.warn("<internal> Core.loadGeneratorHashes() finds no database connection and exits");
+            return;
+        }
+
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+            statement = this.connect.createStatement();
+            resultSet = statement.executeQuery("SELECT pk_test_instance, fk_described_template FROM test_instance WHERE fk_test=" + Long.toString(this.pk_target_test));
+            while (resultSet.next()) {
+                long pk = resultSet.getLong("pk_test_instance");
+                long fk = resultSet.getLong("fk_described_template");
+                dtToTI.put(fk, pk);
+            }
+            this.log.debug("Core.loadGeneratorHashes() completes");
+        } catch (Exception e) {
+            this.log.error("<internal> Core.loadGeneratorHashes() could not read described_template, " + e.getMessage());
+        } finally {
+            safeClose(resultSet);
+            safeClose(statement);
+        }
+    }
 
     private void loadHashes() {
         if (this.connect == null) {
@@ -155,27 +190,11 @@ public class Core
                 }
                 keyToDT.put(dbTemplate.key, dbTemplate);
             }
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-
-
-            // 2nd db query
-            statement = this.connect.createStatement();
-            resultSet = statement.executeQuery("SELECT pk_test_instance, fk_described_template FROM test_instance WHERE fk_test=" + Long.toString(this.pk_target_test));
-            while (resultSet.next()) {
-                long pk = resultSet.getLong("pk_test_instance");
-                long fk = resultSet.getLong("fk_described_template");
-                dtToTI.put(fk, pk);
-            }
         } catch (Exception e) {
             this.log.error("<internal> Core.loadHashes() could not read described_template, " + e.getMessage());
         } finally {
             safeClose(resultSet);
-            resultSet = null;
             safeClose(statement);
-            statement = null;
         }
     }
 
@@ -2573,8 +2592,6 @@ public class Core
                             Artifact artifact = iter.next();
 
                             try {
-                                // TODO: When adding 529 test instances, is it ok that 1000 entries are added to this table?
-                                //       This table has a 1000 entry limit. Is this a bug?
                                 long pk_module = findModule(artifact.getModule());
                                 statement2 = this.connect.prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
                                 statement2.setLong(1, pk_module);

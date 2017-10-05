@@ -78,6 +78,7 @@ public class Generator
     public Generator(long pk_test)
     {
         core = new Core(pk_test);
+        core.loadGeneratorHashes();
         this.log = LoggerFactory.getLogger(getClass());
     }
 
