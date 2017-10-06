@@ -15,10 +15,6 @@
  */
 package com.pslcl.dtf.core.generator.resource;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Content;
 import com.pslcl.dtf.core.generator.Generator;
@@ -28,13 +24,17 @@ import com.pslcl.dtf.core.generator.template.Template.Parameter;
 import com.pslcl.dtf.core.generator.template.Template.StringParameter;
 import com.pslcl.dtf.core.generator.template.TestInstance;
 import com.pslcl.dtf.core.generator.template.TestInstance.Action;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * This class represents a person, which is a resource that can perform manual inspections.
  */
 public class Person extends Resource
 {
-    private static class InspectAction extends TestInstance.Action
+    private static final class InspectAction extends TestInstance.Action
     {
         private Resource inspector;
         private Content body;
@@ -62,14 +62,12 @@ public class Person extends Resource
         }
          */
         @Override
-        public String getCommand(Template t) throws Exception
-        {
+        public String getCommand(Template t) throws Exception {
             Template.Parameter[] params = new Template.Parameter[2 + 2*attachments.length];
             params[0] = new Template.ResourceParameter(inspector);
             params[1] = body;
             int i = 2;
-            for (Artifact a : attachments)
-            {
+            for (Artifact a : attachments) {
                 params[i++] = new StringParameter(a.getName()); // the artifact name, intended to be the artifact destination
                 params[i++] = a.getContent(); // the artifact hash
             }
@@ -80,8 +78,13 @@ public class Person extends Resource
             for (Parameter p : params)
             {
                 String v = p.getValue(t);
-                if (v.length() > 0)
-                {
+                if (v == null) {
+                    String msg = "<internal> Person.InspectAction.getCommand(Template) finds Template.Parameter with null retrieved value";
+                    String detail = t.std_string!=null ? t.std_string : "";
+                    LoggerFactory.getLogger(getClass()).error(msg + detail);
+                    throw new IllegalStateException(msg);
+                }
+                if (v.length() > 0) {
                     sb.append(" ");
                     sb.append(v);
                 }
@@ -164,13 +167,18 @@ public class Person extends Resource
      * @param attachments Artifacts that will be passed to the inspector.
      * @param actionDependencies A list of actions that should be completed before the inspect is performed.
      * @throws Exception If the inspection request is invalid.
-	 * @return The created inspect action that was added to the generator.
+     * @return The created inspect action that was added to the generator.
      */
     public TestInstance.Action inspect(Content body, Artifact[] attachments, List<Action> actionDependencies) throws Exception
     {
-        if(attachments == null){
-            attachments = new Artifact[0];
+        if (body == null) {
+            String msg = ".inspect() called with null body parameter";
+            LoggerFactory.getLogger(getClass()).error(msg);
+            throw new IllegalArgumentException(msg);
         }
+
+        if(attachments == null)
+            attachments = new Artifact[0];
         InspectAction inspectAction = new InspectAction(this, body, attachments, actionDependencies);
         generator.add(inspectAction);
         return inspectAction;
@@ -182,7 +190,7 @@ public class Person extends Resource
      * to the person performing the inspection.
      * @param attachments Artifacts that will be passed to the inspector.
      * @throws Exception If the inspection request is invalid.
-	 * @return The created inspect action that was added to the generator.
+     * @return The created inspect action that was added to the generator.
      */
     public TestInstance.Action inspect(Content body, Artifact[] attachments) throws Exception
     {
@@ -194,4 +202,5 @@ public class Person extends Resource
     {
         return "Person";
     }
+
 }

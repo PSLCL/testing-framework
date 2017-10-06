@@ -317,11 +317,10 @@ public class InstancedTemplate {
 
     /**
      *
-     * @return
+     * @return boolean
      */
     private boolean isTopLevelTemplate() {
-        boolean retBoolean = this.dbTemplate.isTopLevelTemplate();
-        return retBoolean;
+        return this.dbTemplate.isTopLevelTemplate();
     }
 
     /**
@@ -340,16 +339,16 @@ public class InstancedTemplate {
      *         - after include steps, the first setID is not 0 (0 was required in the doc, after all)
      *         - a change in setID is not 1 greater than before
      *
-     * @throws Exception
+     * @throws Exception on error
      */
     void runSteps() throws Exception {
         // resets internal StepsParser object and uses it to run steps
         this.stepsParser = new StepsParser(dbTemplate.steps); // tracks steps offset internally
-        int currentStepReference = 0;
 
         try {
             // first, instance nested templates
             List<String> includeSteps = this.stepsParser.getNextSteps("include "); // this call consumes all include steps
+            int currentStepReference = 0;
             if (!includeSteps.isEmpty()) {
                 // includeSteps is an ArrayList across which iteration retrieves in the same order as insertion (because we are done inserting)
                 IncludeHandler includeHandler = new IncludeHandler(this, includeSteps, this.runnerMachine);
@@ -367,7 +366,7 @@ public class InstancedTemplate {
             // any error terminates step handling
             log.debug(this.simpleName + ".runSteps() moves from includes to set step processing, for templateID " + this.getTemplateID());
             for (int setID=0; !this.isTestRunCanceled() && !this.isTestRunFailed(); setID++) {
-                String strSetID = Integer.toString(setID) + ' '; // trailing space required for a legal setID
+                String strSetID = Integer.toString(setID) + " "; // trailing space required for a legal setID
                 List<String> stepsOfSet = this.stepsParser.getNextSteps(strSetID); // this call consumed all steps in the set; i.e. having the same setID
                 if (stepsOfSet.isEmpty()) {
                     // Our choice: We could check that any additional steps exist. If they exist, their setID is out of sequence, the template is in error, and we can fail the test run.
@@ -389,7 +388,7 @@ public class InstancedTemplate {
                 // this while() loop: initiate all step commands for same setID
                 int setStepOffset = 0;
                 while (setStepOffset < stepsOfSet.size()) {
-                    if (this.isTestRunCanceled() == true || this.isTestRunFailed())
+                    if (this.isTestRunCanceled() || this.isTestRunFailed())
                         break;
 
                     if (previousSetStepOffset == setStepOffset) {
@@ -560,15 +559,15 @@ public class InstancedTemplate {
 
                 // this do/while loop: process all step commands for same setID
                 List<RunnableProgram> needsLogsCaptured = new ArrayList<>();
-                boolean allStepsCompleteForThisStepSet;
+                boolean stepsNeedCompletionForThisStepSet;
                 do {
-                    allStepsCompleteForThisStepSet = true;
+                    stepsNeedCompletionForThisStepSet = false;
 
                     // These individual .proceed() calls may potentially each block for a while, then return. At each return, they mark themselves as done, or not.
                     //     Eventually, by cycling through this loop multiple times, all steps of this step set will be found to have concluded their processing.
                     //     The loop exits at that time.
                     if (bindHandler!=null && !bindHandler.isDone() && !this.isTestRunCanceled() && !this.isTestRunFailed()) {
-                        allStepsCompleteForThisStepSet = false;
+                        stepsNeedCompletionForThisStepSet = true;
                         bindHandler.proceed();
                         if (bindHandler.isDone()) {
                             List<ResourceInstance> localRI = bindHandler.getResourceInstances();
@@ -577,31 +576,29 @@ public class InstancedTemplate {
                         }
                     }
                     if (configureHandler!=null && !configureHandler.isDone() && !this.isTestRunCanceled() && !this.isTestRunFailed()) {
-                        allStepsCompleteForThisStepSet = false;
+                        stepsNeedCompletionForThisStepSet = true;
 
                         List<ProgramState> localProgramStates = configureHandler.proceed();
                         if (configureHandler.isDone()) {
                             boolean fail = true;
                             if (localProgramStates.size() == configureHandler.getConsecutiveSameStepCount()) {
-                                boolean configureStepErroredOut= false;
+                                boolean configureStepNoError = true;
                                 for (ProgramState ps : localProgramStates) {
                                     RunnableProgram runnableProgram = ps.getRunnableProgram();
                                     if (runnableProgram == null) {
-                                        configureStepErroredOut = true;
-                                        log.debug(this.simpleName + "A configure program returned null RunnableProgram, " + RunnableProgram.ResultType.ResourceFailure);
-                                        //TODO: this should be a RunnableProgram.ResultType.ResourceFailure as it can only happen if the application is still running
+                                        configureStepNoError = false;
+                                        log.debug(this.simpleName + "A configure program returned null RunnableProgram");
                                         break;
                                     }
                                     needsLogsCaptured.add(runnableProgram);
-                                    RunnableProgram.RunResult programRunResult = runnableProgram.getRunResult();
-                                    if (programRunResult.runResult==null || programRunResult.runResult !=0) {
-                                        configureStepErroredOut = true;
-                                        log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all, " + RunnableProgram.ResultType.TestFailure);
-                                        //TODO: this should be a RunnableProgram.ResultType.TestFailure.
+                                    Integer programRunResult = runnableProgram.getRunResult();
+                                    if (programRunResult==null || programRunResult!=0) {
+                                        configureStepNoError = false;
+                                        log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
                                         break;
                                     }
                                 }
-                                if (!configureStepErroredOut)
+                                if (configureStepNoError)
                                     fail = false;
                             } else {
                                 log.debug(this.simpleName + "Configure program results are missing");
@@ -612,7 +609,7 @@ public class InstancedTemplate {
                         }
                     }
                     if (connectHandler!=null && !connectHandler.isDone() && !this.isTestRunCanceled() && !this.isTestRunFailed()) {
-                        allStepsCompleteForThisStepSet = false;
+                        stepsNeedCompletionForThisStepSet = true;
 
                         // we track and record CableInstance's of each connect, even though (probably) only needed for cleaning up the case where a parent template causes connects in a nested template
                         List<CableInstance> localCableInstances = connectHandler.proceed();
@@ -628,24 +625,31 @@ public class InstancedTemplate {
                         }
                     }
                     if (deployHandler!=null && !deployHandler.isDone() && !this.isTestRunCanceled() && !this.isTestRunFailed()) {
-                        allStepsCompleteForThisStepSet = false;
+                        stepsNeedCompletionForThisStepSet = true;
 
                         // we track and record MachineInstance's of each deploy, even though (probably) only needed for cleaning up the case where a parent template deploys to a nested template
-                        deployHandler.proceed();
+                        deployHandler.proceed(); // if exception is thrown, it is caught far below
                         if (deployHandler.isDone()) {
                             List<DeployInfo> localDeployInfos = deployHandler.getDeployInfos();
                             this.deployedInfos.addAll(localDeployInfos);
-                            if (DeployInfo.getAllDeployedSuccess() && localDeployInfos.size()==deployHandler.getDeployRequestCount()) {
-                                log.debug(simpleName + "deployHandler() completes " + deployHandler.getDeployRequestCount() + " deploys(s) for setID " + setID);
+                            int deployRequestCount = deployHandler.getDeployRequestCount();
+                            int localDeployInfosCount = localDeployInfos.size();
+                            boolean allDeployedSuccessful = DeployInfo.getAllDeployedSuccess();
+                            if (allDeployedSuccessful && localDeployInfosCount==deployRequestCount) {
+                                log.debug(simpleName + " runSteps() deploy handling completes " + deployRequestCount + " deploys(s) for setID " + setID);
                             } else {
-                                // one or more deploy steps errored out; this template is errored out
-                                throw new Exception("InstancedTemplate.runSteps() deploy handling has incomplete successful deployed list, for setID " + setID);
-                                // initiate cleanup/destroy of this template run; this.deployedInfos holds all information
+                                // one or more deploy steps errored out; this template must error out
+                                String msg = "InstancedTemplate.runSteps() deploy handling for setID " + setID + " not fully successful.";
+                                this.log.debug(msg +
+                                               " deployRequestCount/deployInfosCount: " + deployRequestCount + "/" + localDeployInfosCount +
+                                               "; allDeployedSuccessful boolean is " + allDeployedSuccessful);
+                                // exception initiates cleanup/destroy of this template run; this.deployedInfos holds all information
+                               throw new Exception(msg);
                             }
                         }
                     }
                     if (inspectHandler!=null && !inspectHandler.isDone() && !this.isTestRunCanceled() && !this.isTestRunFailed()) {
-                        allStepsCompleteForThisStepSet = false;
+                        stepsNeedCompletionForThisStepSet = true;
 
                         inspectHandler.proceed();
                         if (inspectHandler.isDone()) {
@@ -655,33 +659,33 @@ public class InstancedTemplate {
                         }
                     }
                     if (runHandler!=null && !runHandler.isDone() && !this.isTestRunCanceled() && !this.isTestRunFailed()) {
-                        allStepsCompleteForThisStepSet = false;
+                        stepsNeedCompletionForThisStepSet = true;
 
                         List<ProgramState> localProgramStates = runHandler.proceed();
                         if (runHandler.isDone()) {
                             boolean fail = true;
                             if (localProgramStates.size() == runHandler.getConsecutiveSameStepCount()) {
-                                boolean runStepErroredOut= false;
+                                boolean runStepNoError = true;
                                 for (ProgramState ps : localProgramStates) {
                                     RunnableProgram runnableProgram = ps.getRunnableProgram();
                                     if (runnableProgram == null) {
-                                        runStepErroredOut = true;
+                                        runStepNoError = false;
                                         log.debug(this.simpleName + "A run program returned null RunnableProgram");
                                         break;
                                     }
                                     needsLogsCaptured.add(runnableProgram);
                                     RunnableProgram.logProgramResults(runnableProgram, getRunID());
-                                    RunnableProgram.RunResult programRunResult = runnableProgram.getRunResult();
-                                    if (programRunResult.runResult==null) {
-                                        runStepErroredOut = true;
+                                    Integer programRunResult = runnableProgram.getRunResult();
+                                    if (programRunResult==null) {
+                                        runStepNoError = false;
                                         log.debug(this.simpleName + "A program run returned null result");
                                         break;
-                                    }else if (programRunResult.runResult != 0){
+                                    }else if (programRunResult != 0){
                                         result = false;
                                         break;
                                     }
                                 }
-                                if (!runStepErroredOut)
+                                if (runStepNoError)
                                     fail = false;
                             } else {
                                 log.debug(this.simpleName + "Run program results are missing");
@@ -693,29 +697,29 @@ public class InstancedTemplate {
                     }
 
                     if (startHandler!=null && !startHandler.isDone() && !this.isTestRunCanceled() && !this.isTestRunFailed()) {
-                        allStepsCompleteForThisStepSet = false;
+                        stepsNeedCompletionForThisStepSet = true;
 
                         List<ProgramState> localProgramStates = startHandler.proceed();
                         if (startHandler.isDone()) {
                             boolean fail = true;
                             if (localProgramStates.size() == startHandler.getConsecutiveSameStepCount()) {
-                                boolean startStepErroredOut= false;
+                                boolean startStepNoError = true;
                                 for (ProgramState ps : localProgramStates) {
                                     RunnableProgram runnableProgram = ps.getRunnableProgram();
                                     if (runnableProgram == null) {
-                                        startStepErroredOut = true;
+                                        startStepNoError = false;
                                         log.debug(this.simpleName + "A program start returned null RunnableProgram");
                                         break;
                                     }
                                     needsLogsCaptured.add(runnableProgram);
-                                    RunnableProgram.RunResult programStartResult = runnableProgram.getRunResult();
-                                    if (programStartResult.runResult != null && programStartResult.runResult!=0) {
-                                        startStepErroredOut = true;
+                                    Integer programStartResult = runnableProgram.getRunResult();
+                                    if (programStartResult != null && programStartResult!=0) {
+                                        startStepNoError = false;
                                         log.debug(this.simpleName + "A program start returned non-zero. Result: " + programStartResult);
                                         break;
                                     }
                                 }
-                                if (!startStepErroredOut)
+                                if (startStepNoError)
                                     fail = false;
                             } else {
                                 log.debug(this.simpleName + "Start program results are missing");
@@ -728,8 +732,8 @@ public class InstancedTemplate {
 
 //                  // temporarily: uncomment these 2 lines to forcibly stay in the loop until test run is canceled
 //                  if (!this.isTestRunCanceled())
-//                      allStepsCompleteForThisStepSet = false;
-                } while (!allStepsCompleteForThisStepSet && !this.isTestRunCanceled() && !this.isTestRunFailed()); // end do/while loop: process all step commands for same setID
+//                      stepsNeedCompletionForThisStepSet = true;
+                } while (stepsNeedCompletionForThisStepSet && !this.isTestRunCanceled() && !this.isTestRunFailed()); // end do/while loop: process all step commands for same setID
                 for(RunnableProgram rp : needsLogsCaptured)
                     rp.captureLogsToS3();
             } // end for(): process each step set, in sequence

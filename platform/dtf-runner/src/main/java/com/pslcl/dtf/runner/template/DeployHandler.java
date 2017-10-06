@@ -81,6 +81,7 @@ public class DeployHandler {
             if (retCount > 0)
                 return retCount;
         }
+        this.log.debug("DeployHandler unexpectedly finds no deploy requests");
         throw new Exception("DeployHandler unexpectedly finds no deploy requests");
     }
 
@@ -107,25 +108,24 @@ public class DeployHandler {
                                                                      // 7 deploy 0 lib%2Fslf4j-api-1.7.6.jar A4E1FBEBC0F8EF188E444F4C62A1265E1CCACAD5E0B826581A5F1E4FA5FE919C
                     log.debug(simpleName + "computeDeployRequests() finds deploy in stepSet " + parsedSetStep.getSetID() + ": " + deployStep);
 
-                    ResourceInstance resourceInstance = null;
-                    String strArtifactName = null;
-                    String strArtifactHash = null;
-
                     String strMachineReference = parsedSetStep.getParameter(0);
-                    resourceInstance = iT.getResourceInstance(strMachineReference);
+                    ResourceInstance resourceInstance = iT.getResourceInstance(strMachineReference);
                     if (resourceInstance != null) {
                         // Note: In bind handling (that came before), we haven't had an indication as to what this resourceInstance would be used for, and we haven't been able to know its type (Machine vs. Person vs. Network).
                         //       Now that we know it is used for deploy, check resourceInstance for required type: machine
                         // riRP: resourceInstanceResourceProvider, which has self-knowledge of resource-provider type
                         ResourceProvider riRP = resourceInstance.getResourceProvider();
                         String resourceType = ResourceProvider.getTypeName(riRP);
-                        if (resourceType==null || resourceType!=ResourceProvider.MachineName)
+                        if (resourceType==null || !resourceType.equals(ResourceProvider.MachineName)) {
+                            this.log.debug("DeployHandler processing asked to deploy to non 'machine' resource");
                             throw new Exception("DeployHandler processing asked to deploy to non 'machine' resource");
+                        }
 
-                        strArtifactName = parsedSetStep.getParameter(1);
-                        strArtifactHash = parsedSetStep.getParameter(2);
+                        String strArtifactName = parsedSetStep.getParameter(1);
+                        String strArtifactHash = parsedSetStep.getParameter(2);
                         this.deployInfos.add(new DeployInfo(resourceInstance, strArtifactName, strArtifactHash));
                     } else {
+                        this.log.debug("DeployHandler.computeDeployRequests() finds null bound ResourceInstance at reference " + strMachineReference);
                         throw new Exception("DeployHandler.computeDeployRequests() finds null bound ResourceInstance at reference " + strMachineReference);
                     }
                 } catch (IndexOutOfBoundsException e) {
@@ -141,25 +141,29 @@ public class DeployHandler {
     /**
      * Proceed to obtain inspect instructions and files to inspect, then issue inspect command(s), as far as possible, then return. Set done only when inspects complete or error out.
      *
-     * @throws Exception
+     * @throws Exception on error
      */
     void proceed() throws Exception {
         if (this.deployInfos==null || this.deployInfos.isEmpty()) {
+            this.log.debug("DeployHandler.proceed() called with no deployInfo");
             this.done = true;
-            throw new Exception("DeployHandler processing has no deployInfo");
+            throw new Exception("DeployHandler.proceed() called with no deployInfo");
         }
 
         try {
-            while (!done) {
+            while (!this.done) {
                 if (this.futuresOfDeploys.isEmpty()) {
                     // The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
-                    //     initiate multiple asynch deploys, this must add to this.futuresOfDeploys: it will because this.deployInfos is NOT empty
+                    //     Initiate multiple asynch deploys and add to this.futuresOfDeploys for each.
+                    //     This effort must add to this.futuresOfDeploys: it will because this.deployInfos is NOT empty.
                     for (DeployInfo deployInfo : this.deployInfos) {
                         ResourceInstance resourceInstance = deployInfo.getResourceInstance();
                         // We know resourceInstance is a MachineInstance, because a deploy step must never direct its work to anything except a MachineInstance.
-                        //     Still, check that condition to avoid problems that arise when template steps are improper.
-                        if (!MachineInstance.class.isAssignableFrom(resourceInstance.getClass()))
+                        //    Still, check that condition to avoid problems that arise when template steps are improper.
+                        if (!MachineInstance.class.isAssignableFrom(resourceInstance.getClass())) {
+                            this.log.debug("Specified deploy target is not a MachineInstance");
                             throw new Exception("Specified deploy target is not a MachineInstance"); // futuresOfDeploys may have entries filled; at this moment they are benign
+                        }
                         MachineInstance mi = MachineInstance.class.cast(resourceInstance);
                         URL artifactURL = this.iT.getQAPortalAccess().formArtifactHashSpecifiedURL(deployInfo.getArtifactHash());
                         Future<Void> future = mi.deploy(deployInfo.getFilename(), artifactURL.toString());
@@ -168,18 +172,19 @@ public class DeployHandler {
                     }
                     return;    // Fulfill the pattern that this first work, accomplished at the first .proceed() call, returns before performing any work that blocks.
                 } else {
-                    // For each list element of futuresOfDeploys, .getFuture():
+                    // For each list element of futuresOfDeploys, the response to calling .getFuture():
                     //     can be a null (deploy failed while in the act of creating a Future), or
                     //     can be a Future<Void>, for which future.get():
                     //        returns a Void on deploy success, or
                     //        throws an exception on deploy failure
 
-                    // complete work by blocking until all the futures complete
+                    // complete work by blocking until all the futures in this.futuresOfDeploys complete
                     this.waitComplete();
                     this.done = true;
                 }
             } // end while(!done)
         } catch (Exception e) {
+            this.log.debug("DeployHandler.proceed() sees exception, msg: " + e);
             this.done = true;
             throw e;
         }
@@ -194,7 +199,7 @@ public class DeployHandler {
      * @return The list of completed DeployInfo objects
      * @throws Exception on any error
      */
-    public List<DeployInfo> waitComplete() throws Exception {
+    private void waitComplete() throws Exception {
         try {
             // At this moment, this.futuresOfDeploys is filled. Each of its objects has a future member; each will give us a Void.
             //     Although this code receives Futures, it does not cancel them or test their characteristics (.isDone(), .isCanceled()).
@@ -209,14 +214,14 @@ public class DeployHandler {
                 if (future != null) {
                     try {
                         future.get(); // blocks until asynch answer comes, or exception, or timeout
-                    } catch (InterruptedException | ExecutionException ioreE) {
-                        Throwable t = ioreE.getCause();
-                        String msg = ioreE.getLocalizedMessage();
+                    } catch (InterruptedException | ExecutionException ieoree) {
+                        Throwable t = ieoree.getCause();
+                        String msg = ieoree.getLocalizedMessage();
                         if(t != null)
                             msg = t.getLocalizedMessage();
-                        log.debug(simpleName + "waitComplete(), deploy failed future.get() with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
+                        log.debug(simpleName + "waitComplete(), deploy failed future.get() with computed msg: " + msg + "; original msg: " + ieoree.getMessage());
                         deployInfo.markDeployFailed(); // marks allDeployedSuccess as false, also
-                        throw ioreE;
+                        throw ieoree;
                     } catch (Exception e) {
                         // can happen with things like null pointer exception
                         log.debug(simpleName + "waitComplete(), deploy failed future.get() with msg: " + e.getMessage());
@@ -230,9 +235,9 @@ public class DeployHandler {
                 }
             }
         } catch (Exception e) {
+            this.log.debug("DeployHandler.waitComplete() sees exception, msg: " + e);
             throw e;
         }
-        return this.futuresOfDeploys;
     }
 
 }

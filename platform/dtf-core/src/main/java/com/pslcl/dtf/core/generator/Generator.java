@@ -78,6 +78,7 @@ public class Generator
     public Generator(long pk_test)
     {
         core = new Core(pk_test);
+        core.loadGeneratorHashes();
         this.log = LoggerFactory.getLogger(getClass());
     }
 
@@ -319,7 +320,7 @@ public class Generator
     /**
      * Add an action to the current test. This method is usually wrapped by the different resource
      * implementations. Actions are added in the effective order they are taken in.
-     * @param action The action to take.
+     * @param action The action to take. Must not be null.
      * @throws Exception The action is invalid.
      */
     public void add(TestInstance.Action action) throws Exception
@@ -336,7 +337,7 @@ public class Generator
     /**
      * Declare that the test currently being defined is complete.
      * @throws Exception Any error completing the test.
-	 * @return count of added Described Templates.
+     * @return count of added Described Templates.
      */
     public int completeTest() throws Exception
     {
@@ -452,7 +453,7 @@ public class Generator
 
     /**
      * Close the generator, synchronizing its results with the database.
-	 * @return the count of added Described Templates.
+     * @return the count of added Described Templates.
      */
     public int close()
     {

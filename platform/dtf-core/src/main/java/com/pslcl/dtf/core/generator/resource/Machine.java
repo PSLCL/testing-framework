@@ -43,8 +43,8 @@ public class Machine extends Resource
 
     /**
      * Define a new machine associated with the specified generator and with the given name.
-     * @param generator The generator that can use the machine.
-     * @param name The name of the machine for logging and debugging.
+     * @param generator The generator that can use the machine. Must not be null.
+     * @param name The name of the machine for logging and debugging. Must not be null.
      */
     public Machine(Generator generator, String name)
     {
@@ -184,6 +184,7 @@ public class Machine extends Resource
         {
             return null;
         }
+
     }
 
     /**
@@ -195,6 +196,11 @@ public class Machine extends Resource
      */
     public List<TestInstance.Action> deploy(Artifact... artifacts) throws Exception
     {
+        if (artifacts == null) {
+            String msg = ".deploy() called with null artifacts parameter";
+            this.log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
         try {
             return deploy(null, artifacts);
         } catch (Exception e) {
@@ -205,14 +211,21 @@ public class Machine extends Resource
 
     /**
      * Deploy a set of artifacts and their dependencies to a machine.
-     * @param actionDependencies A list of actions that should be completed before the deploy.
+     * @param actionDependencies A list of actions that should be completed before the deploy. May be null.
      * @param artifacts A list of artifacts to deploy. The dependencies of the artifacts are also
-     * deployed, recursively.
+     * deployed, recursively. Must not be null.
      * @return A list of deploy actions.
      * @throws Exception The deploy failed.
      */
     public List<TestInstance.Action> deploy(List<Action> actionDependencies, Artifact... artifacts) throws Exception
     {
+        if (artifacts==null) {
+            String msg = ".deploy() called with null artifacts parameter";
+            this.log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+
         try {
             List<Action> deploys = new ArrayList<Action>();
             if(!isBound()){
@@ -246,17 +259,24 @@ public class Machine extends Resource
             this.log.error("<internal> Machine.deploy(List<Action>, Artifact...) exits after catching exception, msg: " + e);
             throw e;
         }
+
     }
 
     /**
      * Connect the machine to a {@link Network} Resource.
      *
-     * @param network The network to connect to.
+     * @param network The network to connect to. Must not be null.
      * @return A {@link Cable} which serves as a logical connection between the machine and the network.
      * @throws Exception on any error.
      */
     public Cable connect(Network network) throws Exception
     {
+        if (network == null) {
+            String msg = ".connect() called with null network param";
+            this.log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         try {
             return connect(network, null);
         } catch (Exception e) {
@@ -269,12 +289,18 @@ public class Machine extends Resource
      * Connect the machine to a {@link Network} Resource.
      *
      * @param network The network to connect to.
-     * @param actionDependencies A list of actions that should be completed before the connect.
+     * @param actionDependencies A list of actions that should be completed before the connect. Must not be null.
      * @return A {@link Cable} which serves as a logical connection between the machine and the network.
      * @throws Exception on any error.
      */
     public Cable connect(Network network, List<Action> actionDependencies) throws Exception
     {
+        if (network == null) {
+            String msg = ".connect() called with null network parameter";
+            this.log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         try {
             if (!isBound())
             {
@@ -299,13 +325,13 @@ public class Machine extends Resource
         }
     }
 
-    private static class ConnectAction extends TestInstance.Action{
+    private static final class ConnectAction extends TestInstance.Action {
 
         private Machine machine;
         private Network network;
-        Template.Parameter[] parameters;
+        private Template.Parameter[] parameters;
 
-        private ConnectAction(Machine machine, Network network, List<Action> actionDependencies){
+        private ConnectAction(Machine machine, Network network, List<Action> actionDependencies) {
             this.machine = machine;
             this.network = network;
 
@@ -313,18 +339,14 @@ public class Machine extends Resource
             parameters[0] = new Template.ResourceParameter(machine);
             parameters[1] = new Template.ResourceParameter(network);
 
-
-            if(actionDependencies != null){
+            if(actionDependencies != null)
                 this.actionDependencies.addAll(actionDependencies);
-            }
             Action machineBindAction = machine.getBindAction();
             Action networkBindAction = network.getBindAction();
-            if(!this.actionDependencies.contains(machineBindAction)){
+            if(!this.actionDependencies.contains(machineBindAction))
                 this.actionDependencies.add(machineBindAction);
-            }
-            if(!this.actionDependencies.contains(networkBindAction)){
+            if(!this.actionDependencies.contains(networkBindAction))
                 this.actionDependencies.add(networkBindAction);
-            }
         }
 
         @Override
@@ -334,11 +356,17 @@ public class Machine extends Resource
                 sb.append(getSetID() + " ");
                 sb.append("connect");
 
-                for (Template.Parameter P : parameters){
+                for (Template.Parameter P : parameters) {
+                    String value = P.getValue(t);
+                    if (value == null) {
+                        String msg = "<internal> Machine.ConnectAction.getCommand(Template) finds Template.Parameter with null retrieved value";
+                        String detail = t.std_string!=null ? t.std_string : "";
+                        LoggerFactory.getLogger(getClass()).error(msg + detail);
+                        throw new IllegalStateException(msg);
+                    }
                     sb.append(" ");
-                    sb.append(P.getValue(t));
+                    sb.append(value);
                 }
-
                 return sb.toString();
             } catch (Exception e) {
                 LoggerFactory.getLogger(getClass()).error("<internal> Machine.ConnectAction.getCommand(Template) exits after catching exception, msg: " + e);
@@ -379,16 +407,15 @@ public class Machine extends Resource
 
     }
 
-    private class ProgramAction extends TestInstance.Action
+    private static final class ProgramAction extends TestInstance.Action
     {
-        Machine machine;
-        String action;
-        String executable;
-        String[] params;
-        Template.Parameter[] parameters;
+        private Machine machine;
+        private String action;
+        private String executable;
+        private String[] params;
+        private Template.Parameter[] parameters;
 
-        public ProgramAction(Machine machine, String action, List<Action> actionDependencies, String executable, String... params)
-        {
+        private ProgramAction(Machine machine, String action, List<Action> actionDependencies, String executable, String... params) {
             this.machine = machine;
             this.action = action;
             this.executable = executable;
@@ -396,44 +423,43 @@ public class Machine extends Resource
             parameters = new Template.Parameter[params.length + 2];
             parameters[0] = new Template.ResourceParameter(machine);
             parameters[1] = new Template.StringParameter(executable);
-            for (int i = 0; i < params.length; i++)
-            {
+            for (int i = 0; i < params.length; i++) {
                 Template.Parameter referenceParameter = machine.generator.getReferencedParameter(params[i]);
-                if(referenceParameter != null){
+                if(referenceParameter != null) {
                     parameters[2 + i] = referenceParameter;
-                } else{
+                } else {
                     parameters[2 + i] = new Template.StringParameter(params[i]);
                 }
             }
 
-
-            if(actionDependencies != null){
+            if(actionDependencies != null)
                 this.actionDependencies.addAll(actionDependencies);
-            }
             Action machineBindAction = machine.getBindAction();
-            if(!this.actionDependencies.contains(machineBindAction)){
+            if(!this.actionDependencies.contains(machineBindAction))
                 this.actionDependencies.add(machineBindAction);
-            }
         }
 
         @Override
-        public String getCommand(Template t) throws Exception
-        {
+        public String getCommand(Template t) throws Exception {
             try {
                 StringBuilder sb = new StringBuilder();
                 sb.append(getSetID());
                 sb.append(" ");
                 sb.append(action);
 
-                for (Template.Parameter P : parameters){
+                for (Template.Parameter P : parameters) {
                     String value = P.getValue(t);
-                    if (value.length() > 0)
-                    {
+                    if (value == null) {
+                        String msg = "<internal> Machine.ProgramAction.getCommand(Template) finds Template.Parameter with null retrieved value";
+                        String detail = t.std_string!=null ? t.std_string : "";
+                        LoggerFactory.getLogger(getClass()).error(msg + detail);
+                        throw new IllegalStateException(msg);
+                    }
+                    if (value.length() > 0) {
                         sb.append(" ");
                         sb.append(value);
                     }
                 }
-
                 return sb.toString();
             } catch (Exception e) {
                 LoggerFactory.getLogger(getClass()).error("<internal> Machine.ProgramAction.getCommand(Template) exits after catching exception, msg: " + e);
@@ -491,6 +517,7 @@ public class Machine extends Resource
         {
             return null;
         }
+
     }
 
     private Program programAction(String action, List<Action> actionDependencies, String executable, String... params) throws Exception
@@ -518,6 +545,12 @@ public class Machine extends Resource
      */
     public Program configure(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
+        if (actionDependencies==null || executable==null || params==null) {
+            String msg = ".configure() called with null param(s); actionDependencies/executable/params: " + actionDependencies + "/" + executable + "/" + params;
+            this.log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         try {
             Program p = programAction("configure", actionDependencies, executable, params);
             return p;
@@ -532,7 +565,7 @@ public class Machine extends Resource
      * It cannot modify the Machine.
      *
      * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options.
-     * This machine's bind action is automatically added as a dependency.
+     * This machine's bind action is automatically added as a dependency. Must not be null.
      * @param executable A string containing the name of an executable program.
      * @param params Any string parameters that should be passed as arguments to the executable program.
      * @return A program.
@@ -540,6 +573,12 @@ public class Machine extends Resource
      */
     public Program start(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
+        if (actionDependencies==null || executable==null || params==null) {
+            String msg = ".start() called with null param(s); actionDependencies/executable/params: " + actionDependencies + "/" + executable + "/" + params;
+            this.log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         try {
             Program p = programAction("start", actionDependencies, executable, params);
             return p;
@@ -556,13 +595,19 @@ public class Machine extends Resource
      *
      * @param actionDependencies A list of actions that must be complete before the command may be executed. Most often deploy actions or other program options.
      * This machine's bind action is automatically added as a dependency.
-     * @param executable A string containing the name of an executable program.
-     * @param params Any string parameters that should be passed as arguments to the executable program.
+     * @param executable A string containing the name of an executable program. Must not be null.
+     * @param params Any string parameters that should be passed as arguments to the executable program. Must not be null.
      * @return A program.
      * @throws Exception Any error.
      */
     public Program run(List<Action> actionDependencies, String executable, String... params) throws Exception
     {
+        if (actionDependencies==null || executable==null || params==null) {
+            String msg = ".run() called with null param(s); actionDependencies/executable/params: " + actionDependencies + "/" + executable + "/" + params;
+            this.log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         try {
             return programAction("run", actionDependencies, executable, params);
         } catch (Exception e) {
@@ -594,4 +639,5 @@ public class Machine extends Resource
     {
         return "Machine";
     }
+
 }

@@ -80,9 +80,9 @@ public enum Action implements Actions {
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
             try {
                 // initiate a test run, then block until the test run completes, its result is gathered, and its result is stored
-                /*boolean result =*/ reCore.testRun(runnerService.runnerMachine);
-            } catch (Exception e) {
-                log.warn("Action.TESTRUN() sees testRun() exception: " + e);
+                reCore.testRun(runnerService.runnerMachine);
+            } catch (Throwable t) {
+                log.warn("Action.TESTRUN() sees testRun() throwable: " + t);
             }
             // exception or not, we remove reNum from active consideration- its test result is stored (unless the exception is from the database storage call)
             reState.setAction(REMOVE);

@@ -27,11 +27,10 @@ public class Network extends Resource
 
     /**
      * Create a new network, associated with a generator and a name.
-     * @param generator The generator that can use the network.
-     * @param name The name of the network, used for logging and debugging.
+     * @param generator The generator that can use the network. Must not be null.
+     * @param name The name of the network, used for logging and debugging. Must not be null.
      */
-    public Network(Generator generator, String name)
-    {
+    public Network(Generator generator, String name) {
         super(generator, name, codename);
     }
 
