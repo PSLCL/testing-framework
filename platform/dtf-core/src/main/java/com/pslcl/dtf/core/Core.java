@@ -101,7 +101,7 @@ public class Core
         private boolean enabled = false; // BOOLEAN in template
     }
 
-    private final Logger log;
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private String singleQuote = "'";
 
     /**
@@ -270,9 +270,19 @@ public class Core
         return config;
     }
 
+    /**
+     *
+     */
+    public Core() {
+        new Core(0L); // 0L is never used for pk_test
+    }
+
+    /**
+     *
+     * @param pk_test The test number from table test.
+     */
     public Core(long pk_test)
     {
-        this.log = LoggerFactory.getLogger(getClass());
         this.pk_target_test = pk_test;
 
         String dir = config.dirArtifacts();

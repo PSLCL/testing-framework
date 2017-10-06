@@ -566,8 +566,7 @@ public final class DistributedTestingFramework
         Core core = null;
         try {
             /* Instantiate the platform and artifact provider. */
-            core = new Core(0);
-
+            core = new Core();
             if (synchronize) {
                 Core.Config config = core.getConfig();
                 File generators = new File(config.dirGenerators());
@@ -873,7 +872,7 @@ public final class DistributedTestingFramework
         SQSTestPublisher sqs = null;
         if (!manualTestNumbers.iterator().hasNext()) {
             // we have n testInstanceNumbers, process them then exit
-            Core core = new Core(0);
+            Core core = new Core();
             sqs = sqsSetup(core);
             if (sqs != null)
                 storeTestRuns_db_queue(sqs, core, owner, manualTestInstanceNumbers, testRuns);
@@ -948,7 +947,7 @@ public final class DistributedTestingFramework
             // calls System.exit(1)
         }
 
-        Core core = new Core(0);
+        Core core = new Core();
         try{
             if(hash != null) {
                 core.reportResult(hash, result, null, null, null, null);
@@ -1377,7 +1376,7 @@ public final class DistributedTestingFramework
         if (start >= end)
             populateHelp();
 
-        Core core = new Core(0);
+        Core core = new Core();
         int total_artifacts = orgs * modules * versions * artifacts;
 
         // Populate the modules and artifacts.
