@@ -118,13 +118,13 @@ public class Core
     private long pk_target_test = 0;
 
     // this map coordinates table described_template with table test_instance, to minimize table-reading activity
-    //    this is filled by .loadHashes() and .add()
+    //    this is filled by .loadGeneratorHashes() and .add()
     //    this is read back by .add() and .check()
     private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<>();
 
-    private void loadHashes() {
+    public void loadGeneratorHashes() {
         if (this.connect == null) {
-            this.log.warn("<internal> Core.loadHashes() finds no database connection and exits");
+            this.log.warn("<internal> Core.loadGeneratorHashes() finds no database connection and exits");
             return;
         }
 
@@ -150,7 +150,7 @@ public class Core
                 keyToDT.put(dbTemplate.key, dbTemplate);
             }
         } catch (Exception e) {
-            this.log.error("<internal> Core.loadHashes() could not read described_template, " + e.getMessage());
+            this.log.error("<internal> Core.loadGeneratorHashes() could not read described_template, " + e.getMessage());
         } finally {
             safeClose(resultSet);
             safeClose(statement);
@@ -290,10 +290,7 @@ public class Core
         this.openDatabase(); // instantiates this.connect
 
         if (this.connect == null) {
-            this.log.error("<internal> Core constructor fails without database connection");
-        } else {
-            /* Load the description and template hashes */
-            loadHashes();
+            this.log.error("<internal> Core constructor fails to establish database connection for pk_test " + pk_test);
         }
     }
 
@@ -2346,14 +2343,13 @@ public class Core
         if (keyToDT.containsKey(proposed_key))
             return keyToDT.get(proposed_key);
 
-        // Recursive check for all dependencies
-        // TODO: Figure out if this logic is correct. Doesn't appear to be.
+        // Recursively process all dependent DescribedTemplate's (add them or check them). But .getDependencies() is empty.
+        // Original TODO: Figure out if this logic is correct. Doesn't appear to be. Has not been tested, since .getDependencies() is empty.
         for (DescribedTemplate child : dt.getDependencies()) {
-            if (!keyToDT.containsKey(child.getKey())) {
-                DBDescribedTemplate dbdt = add(child, null, null, null, null, null);
-            } else {
-                DBDescribedTemplate dbdt = check(child);
-            }
+            if (!keyToDT.containsKey(child.getKey()))
+                this.add(child, null, null, null, null, null);
+            else
+                this.check(child);
         }
 
         try {
@@ -2361,12 +2357,15 @@ public class Core
             this.connect.setAutoCommit(false);
 
             long pk_template = syncTemplate(dt.getTemplate());
-            if (result != null || owner != null)
+            if (result!=null || owner!=null) {
+                // call a stored procedure that updates table run
                 reportResult(dt.getTemplate().getHash().toString(), result, owner, start, ready, complete);
+            }
 
             PreparedStatement statement = null;
             long pk = 0;
             try {
+                // insert a new row into table described_template, including a newly generated pk_described_template
                 statement = this.connect.prepareStatement("INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
                 statement.setLong(2, pk_template);
@@ -2374,13 +2373,11 @@ public class Core
                 statement.setInt(4, 1); // Default is synchronized.
                 statement.executeUpdate();
 
+                // retrieve the new pk_described_template value
                 try (ResultSet keys = statement.getGeneratedKeys()) {
                     if (keys.next())
                         pk = keys.getLong(1);
                 }
-                safeClose(statement);
-                statement = null;
-
                 addActions(dt, pk);
             } catch (SQLException ignore) {
                 //TODO: Figure out that this is a duplicate key or not.
@@ -2393,13 +2390,9 @@ public class Core
                 ResultSet query = statement.executeQuery();
                 if (query.next())
                     pk = query.getLong(1);
-
-                safeClose(statement);
-                statement = null;
                 safeClose(query);
             } finally {
                 safeClose(statement);
-                statement = null;
             }
 
             this.connect.commit();
@@ -2419,21 +2412,20 @@ public class Core
             } catch (Exception e1) {
                 // TODO: This is really bad - failure to restore state.
             }
+            return null;
         }
-
-        return null;
     }
 
     /**
      * Check that an existing template is correct. If the template exists then the children
-     * must exist, but their documentation may be out of date.
+     * may also exist, but their documentation (of template steps) may be out of date, so update that.
      * @param dt The described template to check. Results are not currently checked.
      * @return DBDescribedTemplate
      */
     private DBDescribedTemplate check(DescribedTemplate dt) throws Exception {
-        // Recursive check for all dependencies
+        // Recursively check all dependent DescribedTemplate's. But .getDependencies() is empty.
         for (DescribedTemplate child : dt.getDependencies()) {
-            // TODO: Figure out if this is correct.
+            // Original TODO: Figure out if this is correct. Has not been tested, since .getDependencies() is empty.
             if (!keyToDT.containsKey(child.getKey()))
                 throw new Exception("Parent template exists, child does not.");
             DBDescribedTemplate dbdt = check(child);
@@ -2441,12 +2433,12 @@ public class Core
 
         DBDescribedTemplate me = keyToDT.get(dt.getKey());
         if (me == null)
-            throw new Exception("Request to check a non-existent template.");
+            throw new Exception("Request to check a non-existent described template.");
 
         if (dt.getDocumentationHash().equals(me.description))
             return me;
 
-        // Documentation needs to be recreated.
+        // Documentation (of template steps) needs to be recreated.
         PreparedStatement statement = null;
         try {
             statement = this.connect.prepareStatement("DELETE FROM dt_line WHERE fk_described_template = ?");
@@ -2457,6 +2449,7 @@ public class Core
             statement = null;
         }
 
+        // Updated documentation (of template steps) is written to db.
         try {
             this.connect.setAutoCommit(false);
 
@@ -2495,15 +2488,15 @@ public class Core
         int checkedNotAddedDescribedTemplatesCount = 0;
         for (TestInstance ti : testInstances) {
             DBDescribedTemplate dbdt;
-            DescribedTemplate.Key key = ti.getTemplate().getKey();
+            DescribedTemplate.Key key = ti.getDescribedTemplate().getKey();
 
             if (!keyToDT.containsKey(key)) {
-                // add the template
-                dbdt = this.add(ti.getTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                // add the described template to map keyToDT and to table described_template
+                dbdt = this.add(ti.getDescribedTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;
             } else {
                 // check the stored template
-                dbdt = check(ti.getTemplate());
+                dbdt = this.check(ti.getDescribedTemplate());
                 ++checkedNotAddedDescribedTemplatesCount;
             }
 
@@ -2613,7 +2606,7 @@ public class Core
                     // Check the run status, fix it if the status is known.
                     if (!Objects.equals(dbResult, ti.getResult()) ||
                         (dbOwner==null ? ti.getOwner()!=null : !Objects.equals(dbOwner, ti.getOwner()))) {
-                       reportResult(ti.getTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                       reportResult(ti.getDescribedTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                     }
                 }
             } else {
@@ -3021,8 +3014,9 @@ public class Core
 
         try
         {
+            // TODO: Is this next line broken? Table test_instance does not have column fk_template (does have fk_described_template).
             find_test_instance = this.connect.prepareStatement("SELECT pk_test_instance FROM test_instance WHERE fk_template=? AND fk_test=?");
-            find_test_instance.setLong(1, sync.getTemplate().getPK());
+            find_test_instance.setLong(1, sync.getDescribedTemplate().getPK());
             find_test_instance.setLong(2, pk_test);
             test_instances = find_test_instance.executeQuery();
             while (test_instances.next())
@@ -3097,7 +3091,7 @@ public class Core
         {
             this.log.error("<internal> Core.syncTestInstance(): database is read-only");
             this.log.error("<internal> Core.syncTestInstance(): ------------------------");
-            //            System.err.println( "Template: " + sync.getTemplate().getHash().toString() );
+            //            System.err.println( "Template: " + sync.getDescribedTemplate().getHash().toString() );
             this.log.error("<internal> Core.syncTestInstance(): Test Instance for Test \" + Long.toString(pk_test)");
             this.log.error("<internal> Core.syncTestInstance(): Versions:");
                 //            for ( Version v : sync.getVersions() )
@@ -3106,7 +3100,7 @@ public class Core
             return pk;
         }
 
-        //        sync.getTemplate().sync();
+        //        sync.getDescribedTemplate().sync();
         //        sync.getDescription().sync();
         //        for ( Version v : sync.getVersions() )
         //            v.sync();
@@ -3139,7 +3133,7 @@ public class Core
 
                 statement = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_template, fk_description, phase, synchronized) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setLong(1, pk_test);
-                //                statement.setLong(2, sync.getTemplate().getPK());
+                //                statement.setLong(2, sync.getDescribedTemplate().getPK());
                 //                statement.setLong(3, sync.getDescription().getPK());
                 //TODO: Determine the phase
                 statement.setLong(4, 0);
@@ -3197,7 +3191,7 @@ public class Core
         }
 
         //        if ( sync.getResult() != null )
-        //            reportResult( sync.getTemplate().getHash().toString(), sync.getResult() );
+        //            reportResult( sync.getDescribedTemplate().getHash().toString(), sync.getResult() );
 
         return pk;
     }

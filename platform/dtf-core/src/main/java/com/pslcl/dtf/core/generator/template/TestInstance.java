@@ -434,7 +434,7 @@ public class TestInstance {
 
     public void dump()
     {
-        this.log.error("TestInstance.dump(), Test Instance: " + "\n" + this.getTemplate());
+        this.log.error("TestInstance.dump(), Test Instance: " + "\n" + this.getDescribedTemplate());
     }
 
     /**
@@ -503,7 +503,7 @@ public class TestInstance {
         }
     }
 
-    public DescribedTemplate getTemplate()
+    public DescribedTemplate getDescribedTemplate()
     {
         return dtemplate;
     }

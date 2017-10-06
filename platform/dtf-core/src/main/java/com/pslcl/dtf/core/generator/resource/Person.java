@@ -57,7 +57,7 @@ public class Person extends Resource
 
         /*        @Override
         void apply(DescribedTemplate t) {
-            this.t = t.getTemplate();
+            this.t = t.getDescribedTemplate();
             t.add( this );
         }
          */
