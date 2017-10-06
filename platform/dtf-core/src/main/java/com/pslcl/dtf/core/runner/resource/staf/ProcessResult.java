@@ -93,7 +93,7 @@ public class ProcessResult
         return null;
     }
     
-    public Integer getServiceCcode()
+    public int getServiceCcode()
     {
         if(fileList == null || fileList.size() < 2)
             return result.rc;

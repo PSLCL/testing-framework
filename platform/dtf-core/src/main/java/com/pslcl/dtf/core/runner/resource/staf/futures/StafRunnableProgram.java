@@ -125,12 +125,12 @@ public class StafRunnableProgram implements RunnableProgram
     }
 
     @Override
-    public synchronized Integer getRunResult()
+    public synchronized RunResult getRunResult()
     {
         if(isRunning())
-            return null;
+            return new RunResult(ResultType.StillRunnning, null);
         //TODO: when runforever with kill for stop but get "start" ccode ... this is broken here
-        return result.getServiceCcode();
+        return new RunResult(ResultType.TestFailure, result.getServiceCcode());
     }
 
     @Override

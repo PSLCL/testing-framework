@@ -588,14 +588,16 @@ public class InstancedTemplate {
                                     RunnableProgram runnableProgram = ps.getRunnableProgram();
                                     if (runnableProgram == null) {
                                         configureStepErroredOut = true;
-                                        log.debug(this.simpleName + "A configure program returned null RunnableProgram");
+                                        log.debug(this.simpleName + "A configure program returned null RunnableProgram, " + RunnableProgram.ResultType.ResourceFailure);
+                                        //TODO: this should be a RunnableProgram.ResultType.ResourceFailure as it can only happen if the application is still running
                                         break;
                                     }
                                     needsLogsCaptured.add(runnableProgram);
-                                    Integer programRunResult = runnableProgram.getRunResult();
-                                    if (programRunResult==null || programRunResult!=0) {
+                                    RunnableProgram.RunResult programRunResult = runnableProgram.getRunResult();
+                                    if (programRunResult.runResult==null || programRunResult.runResult !=0) {
                                         configureStepErroredOut = true;
-                                        log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all");
+                                        log.debug(this.simpleName + "A configure program returned non-zero, or failed to run at all, " + RunnableProgram.ResultType.TestFailure);
+                                        //TODO: this should be a RunnableProgram.ResultType.TestFailure.
                                         break;
                                     }
                                 }
@@ -669,12 +671,12 @@ public class InstancedTemplate {
                                     }
                                     needsLogsCaptured.add(runnableProgram);
                                     RunnableProgram.logProgramResults(runnableProgram, getRunID());
-                                    Integer programRunResult = runnableProgram.getRunResult();
-                                    if (programRunResult==null) {
+                                    RunnableProgram.RunResult programRunResult = runnableProgram.getRunResult();
+                                    if (programRunResult.runResult==null) {
                                         runStepErroredOut = true;
                                         log.debug(this.simpleName + "A program run returned null result");
                                         break;
-                                    }else if (programRunResult != 0){
+                                    }else if (programRunResult.runResult != 0){
                                         result = false;
                                         break;
                                     }
@@ -706,8 +708,8 @@ public class InstancedTemplate {
                                         break;
                                     }
                                     needsLogsCaptured.add(runnableProgram);
-                                    Integer programStartResult = runnableProgram.getRunResult();
-                                    if (programStartResult != null && programStartResult!=0) {
+                                    RunnableProgram.RunResult programStartResult = runnableProgram.getRunResult();
+                                    if (programStartResult.runResult != null && programStartResult.runResult!=0) {
                                         startStepErroredOut = true;
                                         log.debug(this.simpleName + "A program start returned non-zero. Result: " + programStartResult);
                                         break;
