@@ -239,7 +239,13 @@ public class ProgramHandler {
                         String msg = ioreE.getLocalizedMessage();
                         if(t != null)
                             msg = t.getLocalizedMessage();
-                        log.debug(simpleName + "waitComplete(), " + this.runType + " program failed future.get() with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
+                        //@formatter:off
+                        log.debug(simpleName + "waitComplete(), " + this.runType +
+                                " program failed future.get() is a " + RunnableProgram.ResultType.ResourceFailure +
+                                " with computed msg: " + msg + "; original msg: " + ioreE.getMessage());
+                        //@formatter:off
+                        //TODO: see bug https://github.com/PSLCL/testing-framework/issues/169
+                        // These errors should be of type 'RunnableProgram.ResultType.ResourceFailure' and reported to a new db column on the failure.
                         throw ioreE;
                     } catch (Exception e) {
                         // can happen with things like null pointer exception

@@ -25,53 +25,72 @@ import java.util.concurrent.Future;
  */
 public interface RunnableProgram
 {
-    /**
-     * Stop the program command on a machine and return a Future with the {@link Future} result of the corresponding stop command, or the exit code of
-     * the stop script, being set once the stop script has completed.
-     * 
-     * @return a Future with the {@link Future} result of the corresponding stop command, or the exit code of
-     * the stop script, being set once the stop script has completed.
-     */
-    public Future<Integer> kill();
-
-    /**
-     * Determine the running state of the program.
-     * 
-     * @return {@code True} if the program is running. {@code False} otherwise.
-     */
-    public boolean isRunning();
-    
-    /**
-     * Return a program run result, if available.
-     * 
-     * <p>Null return indicates that the program run result was not available.
-     * <p>Zero return indicates that the program completed with a successful result. 
-     * <p>Non-zero return indicates that the program completed with a failed result.
-     * 
-     * @return The program run result, or null.
-     */
-    public Integer getRunResult();
-
-    /**
-     * Captures the instance logging to AWS S3.
-     * This method will block.
-     */
-    public void captureLogsToS3();
-
-    public static void logProgramResults(RunnableProgram runnableProgram, long runID){
+    public static void logProgramResults(RunnableProgram runnableProgram, long runID)
+    {
         String syserr = null;
         String sysout = null;
         String command = null;
-        Integer result = runnableProgram.getRunResult();
-        if(runnableProgram instanceof StafRunnableProgram){
+        RunResult result = runnableProgram.getRunResult();
+        if(runnableProgram instanceof StafRunnableProgram)
+        {
             ProcessResult processResult = ((StafRunnableProgram)runnableProgram).getResult();
-            if(processResult != null){
+            if(processResult != null)
+            {
                 syserr = processResult.getCompletionSysErr();
                 sysout = processResult.getCompletionSysOut();
             }
             command = ((StafRunnableProgram)runnableProgram).getCommandData().getCommand();
         }
-        LoggerFactory.getLogger(RunnableProgram.class).info("Executed run command for test run {}. Command: {}, result: {}, sysout: {}, syserr: {}", runID, command, result, sysout, syserr );
+        LoggerFactory.getLogger(RunnableProgram.class).info("Executed run command for test run {}. Command: {}, result: {}, sysout: {}, syserr: {}", runID, command, result, sysout, syserr);
     }
 
+    /**
+     * Return a program run result object.
+     *
+     * @return The program run result.
+     */
+    public RunResult getRunResult();
+
+    /**
+     * Stop the program command on a machine and return a Future with the {@link Future} result of the corresponding
+     * stop command, or the exit code of the stop script, being set once the stop script has completed.
+     *
+     * @return a Future with the {@link Future} result of the corresponding stop command, or the exit code of the stop
+     * script, being set once the stop script has completed.
+     */
+    public Future<Integer> kill();
+
+    /**
+     * Determine the running state of the program.
+     *
+     * @return {@code True} if the program is running. {@code False} otherwise.
+     */
+    public boolean isRunning();
+
+    /**
+     * Captures the instance logging to AWS S3. This method will block.
+     */
+    public void captureLogsToS3();
+
+    public enum ResultType
+    {
+        Passed, RunnerFailure, ResourceFailure, TestFailure, StillRunnning
+    }
+
+    public class RunResult
+    {
+        public final ResultType failureType;
+        public final Integer runResult;
+
+        public RunResult(ResultType failureType, Integer runResult)
+        {
+            this.failureType = failureType;
+            this.runResult = runResult;
+        }
+
+        public String toString()
+        {
+            return "failureType: " + failureType + " runResult: " + runResult;
+        }
+    }
 }

@@ -18,6 +18,7 @@ package com.pslcl.dtf.core.runner.resource.staf.futures;
 import java.util.concurrent.Callable;
 
 import com.pslcl.dtf.core.runner.resource.ResourceCoordinates;
+import com.pslcl.dtf.core.runner.resource.instance.RunnableProgram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,6 @@ public class DeployFuture implements Callable<Void>
     private final boolean windows;
     private final ResourceCoordinates coordinates;
     private final String s3Bucket;
-    private final String loggingSourceFolder;
     private final int retries;
 
     public DeployFuture(String host, String linuxSandbox, String winSandbox, String partialDestPath, String sourceUrl, boolean windows, ResourceCoordinates coordinates, String s3Bucket, String loggingSourceFolder, int retries)
@@ -51,7 +51,6 @@ public class DeployFuture implements Callable<Void>
         this.windows = windows;
         this.coordinates = coordinates;
         this.s3Bucket = s3Bucket;
-        this.loggingSourceFolder = loggingSourceFolder;
         this.retries = retries;
         log = LoggerFactory.getLogger(getClass());
         if (log.isDebugEnabled())
@@ -130,7 +129,8 @@ public class DeployFuture implements Callable<Void>
             runnableProgram = StafSupport.issueProcessPowershellRequest(cmdData);
         else
             runnableProgram = StafSupport.issueProcessShellRequest(cmdData);
-        if(runnableProgram.getRunResult() != 0)
+        RunnableProgram.RunResult runResult = runnableProgram.getRunResult();
+        if(runResult.runResult != null && runResult.runResult != 0)
         {
             if(failOnServiceError)
                 throw new Exception("Staf requested process failed: " + runnableProgram.result.getCompletionSysErr());
