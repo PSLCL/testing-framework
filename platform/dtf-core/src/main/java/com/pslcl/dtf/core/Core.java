@@ -2353,7 +2353,7 @@ public class Core
         for (DescribedTemplate child : dt.getDependencies()) {
 //          if (!keyToDT.containsKey(child.getKey()))
             DescribedTemplate.Key matchKey = child.getKey();
-            if (this.dbQuery.getDBDescribedTemplate_match_key(matchKey) == null)
+            if (this.dbQuery.getDBDescribedTemplate(matchKey) == null)
                 this.add(child, null, null, null, null, null);
             else
                 this.check(child);
@@ -2435,7 +2435,7 @@ public class Core
             // Original TODO: Figure out if this is correct. Has not been tested, since .getDependencies() is empty.
 //          if (!keyToDT.containsKey(child.getKey()))
             DescribedTemplate.Key matchKey = child.getKey();
-            if (this.dbQuery.getDBDescribedTemplate_match_key(matchKey) == null)
+            if (this.dbQuery.getDBDescribedTemplate(matchKey) == null)
                 throw new Exception("Parent template exists, child does not.");
             DBDescribedTemplate dbdt = check(child);
         }
@@ -2501,7 +2501,7 @@ public class Core
             DescribedTemplate.Key matchKey = ti.getDescribedTemplate().getKey();
 
 //          if (!keyToDT.containsKey(matchKey)) {
-            if (this.dbQuery.getDBDescribedTemplate_match_key(matchKey) == null) {
+            if (this.dbQuery.getDBDescribedTemplate(matchKey) == null) {
                 // add the described template to map keyToDT and to table described_template
                 dbdt = this.add(ti.getDescribedTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;
@@ -2521,7 +2521,7 @@ public class Core
                 // see if test_instance.fk_described_template exists to match dbdt.pk
                 boolean dbNotHaveTI = false;
                 try {
-                    dbNotHaveTI = this.dbQuery.match_ti_fk_described_template(dbdt.pk);
+                    dbNotHaveTI = this.dbQuery.testInstanceHasDescribedTemplateMatch(dbdt.pk);
                 } catch (Exception e) {
                     this.log.error("<internal> Core.syncDescribedTemplate() sees exception, msg: " + e);
                     this.log.debug("stack trace: ", e);
