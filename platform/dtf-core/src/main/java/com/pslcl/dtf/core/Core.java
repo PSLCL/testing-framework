@@ -159,8 +159,7 @@ public class Core
 
     // TODO: find out why this cannot be made private, since public .getConfig() is used by the caller
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class Config
-    {
+    static class Config {
         private String db_host = null;
         private Integer db_port = null;
         private String db_user = null;
@@ -174,10 +173,8 @@ public class Core
         private String sqs_access_key_id = null;
         private String sqs_secret_access_key = null;
 
-        Config()
-        {
-            try
-            {
+        Config() {
+            try {
                 ScriptEngineManager manager = new ScriptEngineManager();
                 ScriptEngine engine = manager.getEngineByName("JavaScript");
                 Bindings binding = engine.createBindings();
@@ -200,70 +197,63 @@ public class Core
                 this.sqs_queue_name = (String) engine.eval("config.sqs.queue_name;", binding);
                 this.sqs_access_key_id = (String) engine.eval("config.sqs.access_key_id;", binding);
                 this.sqs_secret_access_key = (String) engine.eval("config.sqs.secret_access_key;", binding);
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 LoggerFactory.getLogger(getClass()).warn("<internal> Core.Config constructor exception, msg: " + e);
             }
         }
 
-        private String dbHost()
-        {
+        private String dbHost() {
             return db_host;
         }
 
-        private Integer dbPort()
-        {
+        private Integer dbPort() {
             return db_port;
         }
 
-        private String dbUser()
-        {
+        private String dbUser() {
             return db_user;
         }
 
-        private String dbPassword()
-        {
+        private String dbPassword() {
             return db_password;
         }
 
-        private String dbSchema()
-        {
+        private String dbSchema() {
             return db_schema;
         }
 
-        private String dirArtifacts()
-        {
+        private String dirArtifacts() {
             return artifacts_dir;
         }
 
-        String dirGenerators()
-        {
+        String dirGenerators() {
             return generators_dir;
         }
 
-        String shell()
-        {
+        String shell() {
             return shell;
         }
 
-        String sqsEndpoint(){
+        String sqsEndpoint() {
             return sqs_endpoint;
         }
 
-        String sqsQueueName(){
+        String sqsQueueName() {
             return sqs_queue_name;
         }
 
-        String sqsAccessKeyID(){
+        String sqsAccessKeyID() {
             return sqs_access_key_id;
         }
 
-        String sqsSecretAccessKey(){
+        String sqsSecretAccessKey() {
             return sqs_secret_access_key;
         }
     }
 
     private Config config = new Config();
+
+    private DBQuery dbQuery = null;
 
     public Config getConfig()
     {
@@ -299,9 +289,9 @@ public class Core
 
         this.openDatabase(); // instantiates this.connect
 
-        if (this.connect == null) {
+        if (this.connect == null)
             this.log.error("<internal> Core constructor fails to establish database connection for pk_test " + pk_test);
-        }
+        this.dbQuery = new DBQuery(this.connect);
     }
 
     /**
@@ -2514,30 +2504,17 @@ public class Core
             if (dbdt != null) {
                 // For object ti (might not be in db), we have object dbdt (which is in db table described_template).
                 // In the database, is there a matching test_instance entry? It relates the current test (pk_test) to the current described template dbdt.
-                boolean dbNotHaveTI = true;
-                Statement statement = null;
-                ResultSet resSet = null;
 
+                // note that ti.pk may be unfilled right now- cannot use it for db lookup, as shown
+//              statement.executeQuery("SELECT pk_test_instance FROM test_instance WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
+
+                // see if test_instance.fk_described_template exists to match dbdt.pk
+                boolean dbNotHaveTI = false;
                 try {
-                    statement = this.connect.createStatement();
-                    // note that ti.pk may be unfilled right now- cannot use it for db lookup
-//                  resSet = statement.executeQuery("SELECT pk_test_instance FROM test_instance WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
-
-                    // see if test_instance.fk_described_template exists to match dbdt.pk
-                    resSet = statement.executeQuery("SELECT pk_test_instance FROM test_instance" +
-                                                    " JOIN described_template ON test_instance.fk_described_template=described_template.pk_described_template" +
-                                                    " WHERE described_template.pk_described_template=" + Long.toString(dbdt.pk));
-
-                    if (resSet.next())
-                        dbNotHaveTI = false;
+                    dbNotHaveTI = this.dbQuery.match_ti_fk_described_template(dbdt.pk);
                 } catch (Exception e) {
                     this.log.error("<internal> Core.syncDescribedTemplate() sees exception, msg: " + e);
                     this.log.debug("stack trace: ", e);
-                } finally {
-                    safeClose(resSet);
-//                  resSet = null;
-                    safeClose(statement);
-//                  statement = null;
                 }
 
                 if (dbNotHaveTI) {
