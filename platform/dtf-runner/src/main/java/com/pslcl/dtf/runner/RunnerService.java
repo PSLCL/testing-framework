@@ -135,8 +135,6 @@ public class RunnerService implements Runner, RunnerServiceMBean
             String daoClass = config.properties.getProperty(ResourceNames.MsgQueClassKey, ResourceNames.MsgQueClassDefault);
             daoClass = StrH.trim(daoClass);
             config.initsb.ttl(ResourceNames.MsgQueClassKey, " = ", daoClass);
-            this.mq = (MessageQueue) Class.forName(daoClass).newInstance();
-            this.mq.init(config);
 
             config.initsb.indentedOk();
             config.initsb.level.decrementAndGet();
@@ -152,6 +150,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             this.processTracker = new ProcessTracker(this);
             this.qaPortalAccess = new QAPortalAccess();
             this.qaPortalAccess.init(config);
+            this.mq = (MessageQueue) Class.forName(daoClass).newInstance();
         } catch (Exception e)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
@@ -178,6 +177,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
                 }
             }
             config.initsb.indentedOk();
+
+            this.mq.init(config);
         } catch (Exception e)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);

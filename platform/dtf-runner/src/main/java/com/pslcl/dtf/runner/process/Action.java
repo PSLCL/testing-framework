@@ -48,7 +48,7 @@ public enum Action implements Actions {
                     runnerService.runnerMachine.engageRunEntry(reNum, reState);
                     reState.setAction(ANALYZE);
                 } catch (Exception e) {
-                    log.warn("Action.INITIALIZE() sees exception message " + e);
+                    log.warn("Action.INITIALIZE() sees exception message " + e, e);
                     throw e;
                 }
             } else {
@@ -82,7 +82,7 @@ public enum Action implements Actions {
                 // initiate a test run, then block until the test run completes, its result is gathered, and its result is stored
                 reCore.testRun(runnerService.runnerMachine);
             } catch (Throwable t) {
-                log.warn("Action.TESTRUN() sees testRun() throwable: " + t);
+                log.warn("Action.TESTRUN() sees testRun() throwable: " + t, t);
             }
             // exception or not, we remove reNum from active consideration- its test result is stored (unless the exception is from the database storage call)
             reState.setAction(REMOVE);

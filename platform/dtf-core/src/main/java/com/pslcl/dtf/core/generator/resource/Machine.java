@@ -39,7 +39,7 @@ public class Machine extends Resource
 {
     private final Logger log;
     private static final String codename = "machine";
-    private Map<Artifact, Action> deployActions;
+    private Map<String, Action> deployActions;
 
     /**
      * Define a new machine associated with the specified generator and with the given name.
@@ -50,7 +50,7 @@ public class Machine extends Resource
     {
         super(generator, name, codename);
         this.log = LoggerFactory.getLogger(getClass());
-        deployActions = new HashMap<Artifact, Action>();
+        deployActions = new HashMap<String, Action>();
     }
 
     /**
@@ -111,7 +111,7 @@ public class Machine extends Resource
             }
 
             synchronized(m.deployActions){
-                m.deployActions.put(a, this);
+                m.deployActions.put(a.getName(), this);
             }
         }
 
@@ -202,7 +202,7 @@ public class Machine extends Resource
             throw new IllegalArgumentException(msg);
         }
         try {
-            return deploy(null, artifacts);
+            return deploy(new ArrayList<>(), artifacts);
         } catch (Exception e) {
             this.log.error("<internal> Machine.deploy(Artifact...) exits after catching exception, msg: " + e);
             throw e;
@@ -239,7 +239,7 @@ public class Machine extends Resource
                     continue;
                 }
                 synchronized(deployActions){
-                    if(deployActions.containsKey(a)){
+                    if(deployActions.containsKey(a.getName())){
                         continue; //duplicate
                     }
                 }
