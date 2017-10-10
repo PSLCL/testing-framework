@@ -202,7 +202,7 @@ public class Machine extends Resource
             throw new IllegalArgumentException(msg);
         }
         try {
-            return deploy(null, artifacts);
+            return deploy(new ArrayList<>(), artifacts);
         } catch (Exception e) {
             this.log.error("<internal> Machine.deploy(Artifact...) exits after catching exception, msg: " + e);
             throw e;
