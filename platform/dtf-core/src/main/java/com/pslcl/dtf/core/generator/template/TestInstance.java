@@ -309,12 +309,6 @@ public class TestInstance {
     private final Core core;
 
     /**
-     * The primary key of this test instance, or zero if unknown.
-     */
-    //TODO: needs thread safe
-    public long pk = 0;
-
-    /**
      * The related described template for this test instance, or null if it
      * does not exist. The primary key of the described template is held by
      * it locally.
@@ -532,14 +526,17 @@ public class TestInstance {
         return complete;
     }
 
-    public long getPK()
-    {
-        return pk;
-    }
+    public long pk = 0;
 
-    public void sync(long pk_test)
-    {
-        if (pk == 0)
-            pk = core.syncTestInstance(this, pk_test);
-    }
+//    // these two items are not used
+//    public long getPK()
+//    {
+//        return pk;
+//    }
+//    public void sync(long pk_test) // this is never called
+//    {
+//        if (pk == 0)
+//            pk = core.syncTestInstance(this, pk_test);
+//    }
+
 }

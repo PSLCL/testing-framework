@@ -2494,6 +2494,7 @@ public class Core
      * @return count of added Described Templates.
      */
     public int syncDescribedTemplates(Iterable<TestInstance> testInstances) throws Exception {
+        // parameter testInstances may be a small array or large, depending on Generator.maxInstanceAccumulationCount and the progress being made, as many generator scripts compete for execution time
         int addedDescribedTemplatesCount = 0;
         int checkedNotAddedDescribedTemplatesCount = 0;
         for (TestInstance ti : testInstances) {
@@ -2511,15 +2512,22 @@ public class Core
             }
 
             if (dbdt != null) {
-                // We have the DBDescribedTemplate for ti. In the database, there needs to be a test_instance entry,
-                // of pk_test_instance, that relates the current test (pk_test) to the current described template.
+                // For object ti (might not be in db), we have object dbdt (which is in db table described_template).
+                // In the database, is there a matching test_instance entry? It relates the current test (pk_test) to the current described template dbdt.
                 boolean dbNotHaveTI = true;
                 Statement statement = null;
                 ResultSet resSet = null;
 
                 try {
                     statement = this.connect.createStatement();
-                    resSet = statement.executeQuery("SELECT pk_test_instance FROM test_instance WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
+                    // note that ti.pk may be unfilled right now- cannot use it for db lookup
+//                  resSet = statement.executeQuery("SELECT pk_test_instance FROM test_instance WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
+
+                    // see if test_instance.fk_described_template exists to match dbdt.pk
+                    resSet = statement.executeQuery("SELECT pk_test_instance FROM test_instance" +
+                                                    " JOIN described_template ON test_instance.fk_described_template=described_template.pk_described_template" +
+                                                    " WHERE described_template.pk_described_template=" + Long.toString(dbdt.pk));
+
                     if (resSet.next())
                         dbNotHaveTI = false;
                 } catch (Exception e) {
@@ -2533,7 +2541,7 @@ public class Core
                 }
 
                 if (dbNotHaveTI) {
-                    // No test instance in the database, add it.
+                    // No matching test instance in the database, add it.
                     PreparedStatement statement2 = null;
                     try {
                         statement2 = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
