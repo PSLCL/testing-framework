@@ -67,13 +67,18 @@ import com.pslcl.dtf.core.generator.template.TestInstance.Action.ArtifactUses;
  */
 public class Core
 {
-    private static class DBDescribedTemplate
-    {
+    static class DBDescribedTemplate {
         private long pk = 0L;
-        @SuppressWarnings("unused")
-        private long fk_template = 0L; // Review: this is filled, but is it used thereafter?
         private DescribedTemplate.Key key = null;
-        private Hash description = null;
+        private Hash documentationHash = null;
+
+        DBDescribedTemplate() {} // TODO: remove
+
+        DBDescribedTemplate(long pk, DescribedTemplate.Key key, Hash documentationHash) {
+            this.pk = pk;
+            this.key = key;
+            this.documentationHash = documentationHash;
+        }
     }
 
     @SuppressWarnings("unused")
@@ -134,20 +139,20 @@ public class Core
             statement = this.connect.createStatement();
             resultSet = statement.executeQuery("SELECT pk_described_template, fk_module_set, fk_template, hash, description_hash FROM described_template JOIN template ON fk_template = pk_template");
             while (resultSet.next()) {
-                DBDescribedTemplate dbTemplate = new DBDescribedTemplate();
-                dbTemplate.pk = resultSet.getLong("pk_described_template");
-                dbTemplate.fk_template = resultSet.getLong("fk_template");
-                dbTemplate.key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")), new Hash(resultSet.getBytes("fk_module_set")));
-                dbTemplate.description = new Hash(resultSet.getBytes("description_hash"));
+                DBDescribedTemplate dbDescribedTemplate = new DBDescribedTemplate();
+                dbDescribedTemplate.pk = resultSet.getLong("pk_described_template");
+//              dbDescribedTemplate.fk_template = resultSet.getLong("fk_template");
+                dbDescribedTemplate.key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")), new Hash(resultSet.getBytes("fk_module_set")));
+                dbDescribedTemplate.documentationHash = new Hash(resultSet.getBytes("description_hash"));
 
-                if (keyToDT.containsKey(dbTemplate.key)) {
+                if (keyToDT.containsKey(dbDescribedTemplate.key)) {
                     safeClose(resultSet);
                     resultSet = null;
                     safeClose(statement);
                     statement = null;
-                    throw new Exception("Duplicate DescribedTemplate.Key " + dbTemplate.pk + " " + dbTemplate.key.getTemplateHash().toString() + ":" + dbTemplate.key.getModuleHash().toString());
+                    throw new Exception("Duplicate DescribedTemplate.Key " + dbDescribedTemplate.pk + " " + dbDescribedTemplate.key.getTemplateHash().toString() + ":" + dbDescribedTemplate.key.getModuleHash().toString());
                 }
-                keyToDT.put(dbTemplate.key, dbTemplate);
+                keyToDT.put(dbDescribedTemplate.key, dbDescribedTemplate);
             }
         } catch (Exception e) {
             this.log.error("<internal> Core.loadGeneratorHashes() could not read described_template, " + e.getMessage());
@@ -2346,7 +2351,9 @@ public class Core
         // Recursively process all dependent DescribedTemplate's (add them or check them). But .getDependencies() is empty.
         // Original TODO: Figure out if this logic is correct. Doesn't appear to be. Has not been tested, since .getDependencies() is empty.
         for (DescribedTemplate child : dt.getDependencies()) {
-            if (!keyToDT.containsKey(child.getKey()))
+//          if (!keyToDT.containsKey(child.getKey()))
+            DescribedTemplate.Key matchKey = child.getKey();
+            if (this.dbQuery.getDBDescribedTemplate_match_key(matchKey) == null)
                 this.add(child, null, null, null, null, null);
             else
                 this.check(child);
@@ -2426,7 +2433,9 @@ public class Core
         // Recursively check all dependent DescribedTemplate's. But .getDependencies() is empty.
         for (DescribedTemplate child : dt.getDependencies()) {
             // Original TODO: Figure out if this is correct. Has not been tested, since .getDependencies() is empty.
-            if (!keyToDT.containsKey(child.getKey()))
+//          if (!keyToDT.containsKey(child.getKey()))
+            DescribedTemplate.Key matchKey = child.getKey();
+            if (this.dbQuery.getDBDescribedTemplate_match_key(matchKey) == null)
                 throw new Exception("Parent template exists, child does not.");
             DBDescribedTemplate dbdt = check(child);
         }
@@ -2435,7 +2444,7 @@ public class Core
         if (me == null)
             throw new Exception("Request to check a non-existent described template.");
 
-        if (dt.getDocumentationHash().equals(me.description))
+        if (dt.getDocumentationHash().equals(me.documentationHash))
             return me;
 
         // Documentation (of template steps) needs to be recreated.
@@ -2489,14 +2498,15 @@ public class Core
         int checkedNotAddedDescribedTemplatesCount = 0;
         for (TestInstance ti : testInstances) {
             DBDescribedTemplate dbdt;
-            DescribedTemplate.Key key = ti.getDescribedTemplate().getKey();
+            DescribedTemplate.Key matchKey = ti.getDescribedTemplate().getKey();
 
-            if (!keyToDT.containsKey(key)) {
+//          if (!keyToDT.containsKey(matchKey)) {
+            if (this.dbQuery.getDBDescribedTemplate_match_key(matchKey) == null) {
                 // add the described template to map keyToDT and to table described_template
                 dbdt = this.add(ti.getDescribedTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;
             } else {
-                // check the stored template
+                // check the stored described template
                 dbdt = this.check(ti.getDescribedTemplate());
                 ++checkedNotAddedDescribedTemplatesCount;
             }
@@ -2518,7 +2528,7 @@ public class Core
                 }
 
                 if (dbNotHaveTI) {
-                    // No matching test instance in the database, add it.
+                    // add our test instance to database
                     PreparedStatement statement2 = null;
                     try {
                         statement2 = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
