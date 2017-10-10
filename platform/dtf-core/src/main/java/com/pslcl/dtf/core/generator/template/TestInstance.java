@@ -503,8 +503,7 @@ public class TestInstance {
         }
     }
 
-    public DescribedTemplate getDescribedTemplate()
-    {
+    public DescribedTemplate getDescribedTemplate() { // formerly getTemplate()
         return dtemplate;
     }
 

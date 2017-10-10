@@ -351,8 +351,8 @@ public class Generator
                 return addedDescribedTemplatesCount;
             }
 
-            activeTestInstance.close();
-            synchronized (testInstances) {
+            activeTestInstance.close(); // fills in TestIntance java object, including unstated reference to its described template
+            synchronized (testInstances) { // many generator java scripts can call us, at the same time
                 testInstances.add(activeTestInstance);
                 activeTestInstance = null;
                 parameterReferenceMap.clear();
@@ -360,15 +360,15 @@ public class Generator
 
                 if(testInstances.size() >= maxInstanceAccumulationCount){
                     try{
-                        addedDescribedTemplatesCount = sync();
+                        addedDescribedTemplatesCount = sync(); // adds new entries to table described_template
                     } catch (Exception e) {
                         this.log.error("<internal> Generator.completeTest(): Failure to sync test instances, " + e.getMessage());
                         this.log.debug("stack trace", e);
                         throw e;
                     }
-                    testInstances.clear();
+                    testInstances.clear(); // .clear() affects all testInstances, not just ours: because call to sync() operated on all entries
                 }
-            }
+            } // end synchronized()
         } catch (Exception e) {
             this.log.error("<internal> Generator.completeTest() exits after catching exception, msg: " + e);
             throw e;

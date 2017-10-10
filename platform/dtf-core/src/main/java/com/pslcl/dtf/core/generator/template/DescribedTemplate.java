@@ -101,14 +101,14 @@ public class DescribedTemplate
 
     private Hash buildDocumentation()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sbDocumentation = new StringBuilder();
 
-        List<String> modulesUsed = new ArrayList<String>();
+        List<String> modulesUsed = new ArrayList<String>(); // modulesUsed affects return Hash, sbDocumentation does not
         for (TestInstance.Action A : actions)
         {
             try
             {
-                sb.append(A.getDescription());
+                sbDocumentation.append(A.getDescription());
 
                 TestInstance.Action.ArtifactUses au = A.getArtifactUses();
                 if (au == null)
@@ -126,30 +126,31 @@ public class DescribedTemplate
                 }
             } catch (Exception e)
             {
-                sb.append("ERROR: " + e.getMessage());
+                sbDocumentation.append("ERROR: " + e.getMessage());
             }
 
-            sb.append('\n');
+            sbDocumentation.append('\n');
         }
 
+        this.documentation = sbDocumentation.toString();
+        this.documentationHash = Hash.fromContent(this.documentation);
+        // this concludes the process of generating this.documentation and this.documentationHash
+
+        // conclude by computing return module hash, and separately this.moduleDescription
         Collections.sort(modulesUsed);
-
-        documentation = sb.toString();
-        documentationHash = Hash.fromContent(documentation);
-
-        sb = new StringBuilder();
-        StringBuilder sbh = new StringBuilder();
+        StringBuilder sbModuleDescription = new StringBuilder();
+        StringBuilder sbModulesUsed = new StringBuilder();
         for (String v : modulesUsed)
         {
-            sb.append('\t');
-            sb.append(v);
-            sb.append('\n');
-            sbh.append(v);
-            sbh.append('\n');
+            sbModuleDescription.append('\t');
+            sbModuleDescription.append(v);
+            sbModuleDescription.append('\n');
+            sbModulesUsed.append(v);
+            sbModulesUsed.append('\n');
         }
 
-        moduleDescription = sb.toString();
-        return Hash.fromContent(sbh.toString());
+        this.moduleDescription = sbModuleDescription.toString();
+        return Hash.fromContent(sbModulesUsed.toString()); // this has nothing to do with "documentation/description"
     }
 
     /**
@@ -166,7 +167,7 @@ public class DescribedTemplate
         this.actions = actions;
         this.dependencies = dependencies;
 
-        Hash moduleHash = buildDocumentation();
+        Hash moduleHash = buildDocumentation(); // moduleHash: hash of module-name list, NOT documentation/description
         this.key = new Key(template.hash, moduleHash);
     }
 
@@ -203,7 +204,7 @@ public class DescribedTemplate
 
     public Hash getDocumentationHash()
     {
-        return documentationHash;
+        return this.documentationHash;
     }
 
     public void sync(Core core) throws Exception
@@ -224,7 +225,7 @@ public class DescribedTemplate
         sb.append('\n');
 
         sb.append("Documentation Hash: ");
-        sb.append(documentationHash.toString());
+        sb.append(this.documentationHash.toString());
         sb.append('\n');
 
         sb.append("Resource used:\n");
@@ -264,7 +265,7 @@ public class DescribedTemplate
         sb.append('\n');
         sb.append("<html><body><ol>\n");
 
-        sb.append(documentation);
+        sb.append(this.documentation);
 
         sb.append("</ol></body></html>\n");
 
