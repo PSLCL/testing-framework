@@ -1,10 +1,13 @@
 ## Panasonic Distributed Testing Framework - Portal
-Node.js application using [express.js](http://expressjs.com), MySQL, [bootstrap](http://getbootstrap.com), jade templates and stylus.
+Node.js application using [express.js](http://expressjs.com), MySQL, [bootstrap](http://getbootstrap.com), jade 
+templates and stylus.
 
 ## Requirements
-The following tools must be installed on production systems (or be accessible), and Node.js should be installed on development machines.
+The following tools must be installed on production systems (or be accessible), and Node.js should be installed on 
+development machines.
 
-1. [Node.js](http://nodejs.org) version 'v0.10.26' or newer. Note that on Windows, you need to disable path modifications because it corrupts your environment.
+1. [Node.js](http://nodejs.org) version 'v0.10.26' or newer. Note that on Windows, you need to disable path 
+modifications because it corrupts your environment.
 2. Git
 3. [MySQL](http://mysql.com) version 5.7 or newer.
 4. ports 80 and/or 443 should be accessible
@@ -38,7 +41,8 @@ sudo mv /usr/lib/python2.7/dist-packages/gyp /usr/lib/python2.7/dist-packages/gy
 
 ## Install Database Schema
 
-The MySQL database schema can be found at `testing-framework/database/qa_portal_create.sql`. Using the MySQL Workbench or MySQL client execute the SQL script in order to create the database.
+The MySQL database schema can be found at `testing-framework/database/qa_portal_create.sql`. Using the MySQL Workbench 
+or MySQL client execute the SQL script in order to create the database.
 
 ## Configuration 
 
@@ -65,27 +69,31 @@ These can be added to the command line call to run the server, or added to `~/.b
 
 ### Configure Ivy Artifact Provider
 
-The Ivy artifact provider is configured using an `ivysettings.xml` file in the `testing-framework/portal/config/` directory. On synchronize, the Ivy Artifact Provider will download artifacts provided by included resolvers.
+The Ivy artifact provider is configured using an `ivysettings.xml` file in the `testing-framework/portal/config/` 
+directory. On synchronize, the Ivy Artifact Provider will download artifacts provided by included resolvers.
 
-The database also needs to be configured with the class name of the Ivy Artifact Provider. From the MySQL console, run the following SQL command in the qa_portal database:
+The database also needs to be configured with the class name of the Ivy Artifact Provider. From the MySQL console, run 
+the following SQL command in the qa_portal database:
 
 `INSERT INTO artifact_provider (classname) VALUES ('com.pslcl.dtf.artifact.ivy.IvyArtifactProvider');`
 
 ### Configure Server Certificate
 
 You will need to generate a server certificate appropriate to your
-site/hostname and place it in `testing-framework/portal/config/server.pfx`. Additionally you will need to set the password for your certificate in the `testing-framework/portal/config/config.js`
-file.
+site/hostname and place it in `testing-framework/portal/config/server.pfx`. Additionally you will need to set the 
+password for your certificate in the `testing-framework/portal/config/config.js` file.
 
 ### Configure the Logo
 
-The logo that should be displayed by the portal should be copied to the `testing-framework/portal/skin/` directory and named `logo.png`.
+The logo that should be displayed by the portal should be copied to the `testing-framework/portal/skin/` directory and 
+named `logo.png`.
 
 ## Build the platform
 The dtfexec command line tool is included as part of the [testing-framework platform](../platform/README.md).
 
 ## Running the server
-Windows does not fully support npm scripts, and so the process to launch a development server differs on Windows and Linux. For both linux and Windows change directory to `testing-framework/portal` and run the following commands:
+Windows does not fully support npm scripts, and so the process to launch a development server differs on Windows and 
+Linux. For both linux and Windows change directory to `testing-framework/portal` and run the following commands:
 
 `$ npm run build`
 
@@ -133,10 +141,13 @@ Using the chrome plugin for livereload and connecting to the server will reload 
 	    - All files used to handle routing of pages within the application.
 	    Each page is named for the `objects` it contains routes for.
 	 - `./views`
-	    - There are only three [Jade](http://jade-lang.com/) HTML templates, a layout, index and error.  Layout contains the main Angular index page setup.	    
+	    - There are only three [Jade](http://jade-lang.com/) HTML templates, a layout, index and error.  Layout contains
+	     the main Angular index page setup.	    
  - `./config`
  	- `./config.js`
- 		- Contains configuration variables for MYSQL, LDAP, page load size etc. Associated by `development` or `production` for a production server which uses LDAP instead of local. This is set by using the NODE_ENV parameter example: `export NODE_ENV=production` otherwise it uses development as its environment.
+ 		- Contains configuration variables for MYSQL, LDAP, page load size etc. Associated by `development` or 
+ 		`production` for a production server which uses LDAP instead of local. This is set by using the NODE_ENV 
+ 		parameter example: `export NODE_ENV=production` otherwise it uses development as its environment.
 	- `./ivysettings.xml`
 		- Contains Ivy artifact provider settings.
 	- `./server.pfx`
@@ -151,7 +162,9 @@ Using the chrome plugin for livereload and connecting to the server will reload 
 
 ## Build Test Generators Using Ivy Repository
 
-The Portal provides an Ivy repository containing the platform .jar files required to build test generators. Include the Portal's Ivy repository by adding the following two lines, setting the correct hostname for the portal, to your ivysettings.xml file:
+The Portal provides an Ivy repository containing the platform .jar files required to build test generators. Include the 
+Portal's Ivy repository by adding the following two lines, setting the correct hostname for the portal, to your 
+ivysettings.xml file:
 
 `<property name="com.pslcl.dtf.url" override="false" value="<hostname>"/>`
 
@@ -167,14 +180,17 @@ Add the following dependency and configuration to your generator's `ivy.xml`:
       <dependency org="com.pslcl.dtf" name="dtf-core" rev="1.0" conf="dtf_test_generator->master"/>
 	</dependencies>
 
-Ensure that your ivy repository has been configured as a resolver in the portal Ivy Artifact Provider's settings file at `testing-framework/portal/config/ivysettings.xml`
+Ensure that your ivy repository has been configured as a resolver in the portal Ivy Artifact Provider's settings file at
+`testing-framework/portal/config/ivysettings.xml`
 
 Create a Test Plan and Test with the name of your generator's script artifact.
 
-After the generator has been built and published to your ivy repository, the next synchronize will execute the generator and create test instances.
+After the generator has been built and published to your ivy repository, the next synchronize will execute the generator 
+and create test instances.
 
 See `testing-framework/sample-test` for sample test generators. 
 
 ## Style guide
 
-Use the [Node.js Style Guide](https://github.com/felixge/node-style-guide/blob/master/Readme.md) as a starting point for the project.
+Use the [Node.js Style Guide](https://github.com/felixge/node-style-guide/blob/master/Readme.md) as a starting point for 
+the project.
