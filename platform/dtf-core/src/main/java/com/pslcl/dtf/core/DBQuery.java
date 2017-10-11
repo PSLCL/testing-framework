@@ -17,7 +17,7 @@ public class DBQuery {
      * See if test_instance.fk_described_template exists to match known primary key pk_described_template
      *
      * @param match_pk_described_template private key to match test_instance.fk_described_template
-     * @return boolean
+     * @return true on match
      * @throws Exception on error
      */
     @SuppressWarnings("CaughtExceptionImmediatelyRethrown") // rethrow to take advantage of try-with-resources
@@ -26,13 +26,13 @@ public class DBQuery {
                        " JOIN described_template ON fk_described_template=pk_described_template" +
                        " WHERE pk_described_template=?";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
-            // ResultSet cleans up when its PreparedStatement cleans up.
-            //      This allows us to keep these next 2 lines out of the above try-with-resources line.
-            //      This avoids a strange IntelliJ compiler message for the .setLong() call.
             preparedStatement.setLong(1, match_pk_described_template);
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            return !resultSet.next();
+            // this nested try-with-resource may be the only known way to quiet the IntelliJ inspection report
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                return !resultSet.next();
+            } catch (Exception e) {
+                throw e;
+            }
         } catch (Exception e) {
             throw e;
         }
@@ -41,7 +41,7 @@ public class DBQuery {
     /**
      * Get the matching DBDescribedTemplate that matches the given key.
      *
-     * @param matchKey The given key to match.
+     * @param matchKey The key to match.
      * @return The matching DBDescribedTemplate object, or null.
      * @throws Exception on error
      */
@@ -51,7 +51,7 @@ public class DBQuery {
         String query = "SELECT pk_described_template, fk_module_set, description_hash, hash" +
                        " FROM described_template JOIN template ON fk_template = pk_template";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
-             ResultSet resultSet = preparedStatement.executeQuery();)
+             ResultSet resultSet = preparedStatement.executeQuery())
         {
             // resultSet holds every described_template/template pair
             while (resultSet.next()) {
@@ -66,24 +66,5 @@ public class DBQuery {
             throw e;
         }
     }
-
-//    @SuppressWarnings("CaughtExceptionImmediatelyRethrown") // rethrow to take advantage of try-with-resources
-//    boolean match_described_template_key(DescribedTemplate.Key matchKey) throws Exception {
-//        try (Statement statement = this.connect.createStatement();
-//             ResultSet resultSet = statement.executeQuery("SELECT fk_module_set, hash FROM described_template" +
-//                                                          " JOIN template ON fk_template = pk_template");)
-//        {
-//            // resultSet holds every described_template/template pair
-//            while (resultSet.next()) {
-//                DescribedTemplate.Key key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")),
-//                                                                      new Hash(resultSet.getBytes("fk_module_set")));
-//                if (key.equals(matchKey))
-//                    return true;
-//            }
-//            return false;
-//        } catch (Exception e) {
-//            throw e;
-//        }
-//    }
 
 }
