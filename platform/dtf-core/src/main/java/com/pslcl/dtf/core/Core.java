@@ -997,7 +997,6 @@ public class Core
      * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from.
      * @return The primary key of the added artifact, as stored in the artifact table
      */
-    @SuppressWarnings("IfStatementWithNegatedCondition")
     long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module)
     {
         long pk = 0;
@@ -1007,10 +1006,11 @@ public class Core
         PreparedStatement statement = null;
         try
         {
-            if (merged_from_module != 0)
-                statement = this.connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            else
+            if (merged_from_module == 0) {
                 statement = this.connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            } else {
+                statement = this.connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            }
 
             statement.setLong(1, pk_module);
             statement.setBinaryStream(2, new ByteArrayInputStream(content.toBytes()));
