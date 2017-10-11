@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 //import javax.annotation.Nullable; // requires an external jar
@@ -2347,9 +2348,9 @@ public class Core
 //      if (keyToDT.containsKey(matchKey))
 //          return keyToDT.get(matchKey1;
         try {
-            DBDescribedTemplate dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
-            if (dbdtAsStored != null)
-                return dbdtAsStored;
+            Optional<DBDescribedTemplate> dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+            if (dbdtAsStored.isPresent())
+                return dbdtAsStored.get();
         } catch (SQLException sqe) {
             this.log.error("<internal> Core.add() sees exception from one of the dbQuery methods, msg: " + sqe);
             this.log.debug("stack trace: ", sqe);
@@ -2362,7 +2363,7 @@ public class Core
             matchKey = child.getKey();
 
 //          if (!keyToDT.containsKey(child.getKey()))
-            DBDescribedTemplate dbdtAsStored;
+            Optional<DBDescribedTemplate> dbdtAsStored;
             try {
                 dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
             } catch (SQLException sqe) {
@@ -2371,7 +2372,7 @@ public class Core
                 throw new Exception(".add() exits with exception ", sqe);
             }
 
-            if (dbdtAsStored == null)
+            if (!dbdtAsStored.isPresent())
                 this.add(child, null, null, null, null, null);
             else
                 this.check(child);
@@ -2449,7 +2450,7 @@ public class Core
         // Recursively check all dependent DescribedTemplate's. But .getDependencies() is empty.
         for (DescribedTemplate child : dt.getDependencies()) {
             // Original TODO: Figure out if this is correct. Has not been tested, since .getDependencies() is empty.
-            DBDescribedTemplate dbdtAsStored;
+            Optional<DBDescribedTemplate> dbdtAsStored;
             DescribedTemplate.Key matchKey = child.getKey();
 
 //          if (!keyToDT.containsKey(child.getKey()))
@@ -2461,26 +2462,27 @@ public class Core
                 throw new Exception(".check() exits with exception ", sqe);
             }
 
-            if (dbdtAsStored == null)
+            if (!dbdtAsStored.isPresent())
                 throw new Exception("Parent template exists, child does not.");
             /*DBDescribedTemplate dbdt =*/ this.check(child); // recursion
         }
 
-        DBDescribedTemplate me;
+        Optional<DBDescribedTemplate> wrappedMe;
         DescribedTemplate.Key matchKey = dt.getKey();
 
 //      DBDescribedTemplate me = keyToDT.get(dt.getKey());
         try {
-            me = this.dbQuery.getDBDescribedTemplate(matchKey);
+            wrappedMe = this.dbQuery.getDBDescribedTemplate(matchKey);
         } catch (SQLException sqe) {
             this.log.error("<internal> Core.check() sees exception from one of the dbQuery methods, msg: " + sqe);
             this.log.debug("stack trace: ", sqe);
             throw new Exception(".check() exits with exception ", sqe);
         }
 
-        if (me == null)
+        if (!wrappedMe.isPresent())
             throw new Exception("Request to check a non-existent described template.");
 
+        DBDescribedTemplate me = wrappedMe.get();
         if (dt.getDocumentationHash().equals(me.documentationHash))
             return me;
 
@@ -2534,7 +2536,7 @@ public class Core
         int addedDescribedTemplatesCount = 0;
         int checkedNotAddedDescribedTemplatesCount = 0;
         for (TestInstance ti : testInstances) {
-            DBDescribedTemplate dbdtAsStored;
+            Optional<DBDescribedTemplate> dbdtAsStored;
             DescribedTemplate.Key matchKey = ti.getDescribedTemplate().getKey();
 
 //          if (!keyToDT.containsKey(matchKey)) {
@@ -2547,7 +2549,7 @@ public class Core
             }
 
             DBDescribedTemplate dbdt;
-            if (dbdtAsStored == null) {
+            if (!dbdtAsStored.isPresent()) {
                 // add the described template to map keyToDT and to table described_template
                 dbdt = this.add(ti.getDescribedTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;

@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 
 public class DBQuery {
     private Connection connect;
@@ -27,7 +28,6 @@ public class DBQuery {
                        " WHERE pk_described_template=?";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
             preparedStatement.setLong(1, match_pk_described_template);
-            // this nested try-with-resource may be the only known way to quiet the IntelliJ inspection report
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 return !resultSet.next();
             }
@@ -38,12 +38,10 @@ public class DBQuery {
      * Get the matching DBDescribedTemplate that matches the given key.
      *
      * @param matchKey The key to match.
-     * @return The matching DBDescribedTemplate object, or null.
+     * @return The matching DBDescribedTemplate object, wrapped in Optional, which may be empty.
      * @throws SQLException on error
      */
-    // TODO: replace null return, consider Optional<DescribedTemplate>
-    // @SuppressWarnings("ReturnOfNull") // null is an api-specified legal return value
-    Core.DBDescribedTemplate getDBDescribedTemplate(DescribedTemplate.Key matchKey) throws SQLException {
+    Optional<Core.DBDescribedTemplate> getDBDescribedTemplate(DescribedTemplate.Key matchKey) throws SQLException {
         String query = "SELECT pk_described_template, fk_module_set, description_hash, hash" +
                        " FROM described_template JOIN template ON fk_template = pk_template";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
@@ -53,11 +51,12 @@ public class DBQuery {
             while (resultSet.next()) {
                 DescribedTemplate.Key key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")),
                                                                       new Hash(resultSet.getBytes("fk_module_set")));
-                if (key.equals(matchKey))
-                    return new Core.DBDescribedTemplate(resultSet.getLong("pk_described_template"), key,
-                                                        new Hash(resultSet.getBytes("description_hash")));
+                if (key.equals(matchKey)) {
+                    return Optional.of(new Core.DBDescribedTemplate(resultSet.getLong("pk_described_template"), key,
+                                                                    new Hash(resultSet.getBytes("description_hash"))));
+                }
             }
-            return null;
+            return Optional.empty();
         }
     }
 
