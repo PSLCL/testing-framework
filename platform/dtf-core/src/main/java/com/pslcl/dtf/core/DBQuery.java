@@ -43,20 +43,26 @@ public class DBQuery {
      */
     Optional<Core.DBDescribedTemplate> getDBDescribedTemplate(DescribedTemplate.Key matchKey) throws SQLException {
         String query = "SELECT pk_described_template, fk_module_set, description_hash, hash" +
-                       " FROM described_template JOIN template ON fk_template = pk_template";
-        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
-             ResultSet resultSet = preparedStatement.executeQuery())
-        {
-            // resultSet holds every described_template/template pair
-            while (resultSet.next()) {
-                DescribedTemplate.Key key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")),
-                                                                      new Hash(resultSet.getBytes("fk_module_set")));
-                if (key.equals(matchKey)) {
+                       " FROM described_template JOIN template ON fk_template = pk_template" +
+                       // to this point, we have every described_template/template pair
+                       " WHERE hash=? AND fk_module_set=?"; // qualify for the unique pair
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            preparedStatement.setBytes(1, matchKey.getTemplateHash().toBytes());
+            preparedStatement.setBytes(2, matchKey.getModuleHash().toBytes());
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                /* we expect exactly one entry in resultSet; to check, these line give count of 1
+                    resultSet.last();
+                    int count = resultSet.getRow();
+                    resultSet.beforeFirst(); // restore resultSet to original state
+                */
+                if (resultSet.next()) {
+                    DescribedTemplate.Key key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")),
+                                                                          new Hash(resultSet.getBytes("fk_module_set")));
                     return Optional.of(new Core.DBDescribedTemplate(resultSet.getLong("pk_described_template"), key,
                                                                     new Hash(resultSet.getBytes("description_hash"))));
                 }
+                return Optional.empty();
             }
-            return Optional.empty();
         }
     }
 
