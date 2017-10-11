@@ -67,12 +67,11 @@ import com.pslcl.dtf.core.generator.template.TestInstance.Action.ArtifactUses;
  */
 public class Core
 {
-    static class DBDescribedTemplate {
-        private long pk = 0L;
-        private DescribedTemplate.Key key = null;
-        private Hash documentationHash = null;
-
-        DBDescribedTemplate() {} // TODO: remove
+    // TODO: consider moving this to its own separate class, overcome warning "public inner class"
+    public static class DBDescribedTemplate {
+        private long pk;
+        private DescribedTemplate.Key key;
+        private Hash documentationHash;
 
         DBDescribedTemplate(long pk, DescribedTemplate.Key key, Hash documentationHash) {
             this.pk = pk;
@@ -81,30 +80,30 @@ public class Core
         }
     }
 
-    @SuppressWarnings("unused")
-    private static class DBTestInstance
-    {
-        private long fk_test = 0L; // INT(11) in test
-        private String name = null; // VARCHAR(100) from test
-        private String description = null; // LONGTEXT from test
-        private String script = null; // VARCHAR(200) from test
-        private long pk_test_instance = 0L;
-        private long fk_described_template = 0L;
-        private long fk_run = 0L;
-        private long pk_template = 0L; // added here to avoid a lookup in the executeTestInstance()
-    }
-
-    @SuppressWarnings("unused")
-    private static class DBTemplateInfo
-    {
-        private long pk_described_template = 0L; // INT(11) in described_template
-        private byte[] fk_module_set = null; // BINARY(32) in described_template
-        private long fk_template = 0L; // INT(11) in described_template
-        private byte[] description_hash = null; // BINARY(32) in described_template
-        private byte[] hash = null; // BINARY(32) in template
-        private String steps = null; // MEDIUMTEXT in template
-        private boolean enabled = false; // BOOLEAN in template
-    }
+//    @SuppressWarnings("unused")
+//    private static class DBTestInstance
+//    {
+//        private long fk_test = 0L; // INT(11) in test
+//        private String name = null; // VARCHAR(100) from test
+//        private String description = null; // LONGTEXT from test
+//        private String script = null; // VARCHAR(200) from test
+//        private long pk_test_instance = 0L;
+//        private long fk_described_template = 0L;
+//        private long fk_run = 0L;
+//        private long pk_template = 0L; // added here to avoid a lookup in the executeTestInstance()
+//    }
+//
+//    @SuppressWarnings("unused")
+//    private static class DBTemplateInfo
+//    {
+//        private long pk_described_template = 0L; // INT(11) in described_template
+//        private byte[] fk_module_set = null; // BINARY(32) in described_template
+//        private long fk_template = 0L; // INT(11) in described_template
+//        private byte[] description_hash = null; // BINARY(32) in described_template
+//        private byte[] hash = null; // BINARY(32) in template
+//        private String steps = null; // MEDIUMTEXT in template
+//        private boolean enabled = false; // BOOLEAN in template
+//    }
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     private String singleQuote = "'";
@@ -122,48 +121,48 @@ public class Core
      */
     private long pk_target_test = 0;
 
-    // this map coordinates table described_template with table test_instance, to minimize table-reading activity
-    //    this is filled by .loadGeneratorHashes() and .add()
-    //    this is read back by .add() and .check()
-    private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<>();
-
-    public void loadGeneratorHashes() {
-        if (this.connect == null) {
-            this.log.warn("<internal> Core.loadGeneratorHashes() finds no database connection and exits");
-            return;
-        }
-
-        Statement statement = null;
-        ResultSet resultSet = null;
-        try {
-            statement = this.connect.createStatement();
-            resultSet = statement.executeQuery("SELECT pk_described_template, fk_module_set, fk_template, hash, description_hash FROM described_template JOIN template ON fk_template = pk_template");
-            while (resultSet.next()) {
-                DBDescribedTemplate dbDescribedTemplate = new DBDescribedTemplate();
-                dbDescribedTemplate.pk = resultSet.getLong("pk_described_template");
-//              dbDescribedTemplate.fk_template = resultSet.getLong("fk_template");
-                dbDescribedTemplate.key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")), new Hash(resultSet.getBytes("fk_module_set")));
-                dbDescribedTemplate.documentationHash = new Hash(resultSet.getBytes("description_hash"));
-
-                if (keyToDT.containsKey(dbDescribedTemplate.key)) {
-                    safeClose(resultSet);
-                    resultSet = null;
-                    safeClose(statement);
-                    statement = null;
-                    throw new Exception("Duplicate DescribedTemplate.Key " + dbDescribedTemplate.pk + " " + dbDescribedTemplate.key.getTemplateHash().toString() + ":" + dbDescribedTemplate.key.getModuleHash().toString());
-                }
-                keyToDT.put(dbDescribedTemplate.key, dbDescribedTemplate);
-            }
-        } catch (Exception e) {
-            this.log.error("<internal> Core.loadGeneratorHashes() could not read described_template, " + e.getMessage());
-        } finally {
-            safeClose(resultSet);
-            safeClose(statement);
-        }
-    }
+//    // this map coordinates table described_template with table test_instance, to minimize table-reading activity
+//    //    this is filled by .loadGeneratorHashes() and .add()
+//    //    this is read back by .add() and .check()
+//    private Map<DescribedTemplate.Key, DBDescribedTemplate> keyToDT = new HashMap<>();
+//
+//    public void loadGeneratorHashes() {
+//        if (this.connect == null) {
+//            this.log.warn("<internal> Core.loadGeneratorHashes() finds no database connection and exits");
+//            return;
+//        }
+//
+//        Statement statement = null;
+//        ResultSet resultSet = null;
+//        try {
+//            statement = this.connect.createStatement();
+//            resultSet = statement.executeQuery("SELECT pk_described_template, fk_module_set, fk_template, hash, description_hash FROM described_template JOIN template ON fk_template = pk_template");
+//            while (resultSet.next()) {
+//                DBDescribedTemplate dbDescribedTemplate = new DBDescribedTemplate();
+//                dbDescribedTemplate.pk = resultSet.getLong("pk_described_template");
+////              dbDescribedTemplate.fk_template = resultSet.getLong("fk_template");
+//                dbDescribedTemplate.key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")), new Hash(resultSet.getBytes("fk_module_set")));
+//                dbDescribedTemplate.documentationHash = new Hash(resultSet.getBytes("description_hash"));
+//
+//                if (keyToDT.containsKey(dbDescribedTemplate.key)) {
+//                    safeClose(resultSet);
+//                    resultSet = null;
+//                    safeClose(statement);
+//                    statement = null;
+//                    throw new Exception("Duplicate DescribedTemplate.Key " + dbDescribedTemplate.pk + " " + dbDescribedTemplate.key.getTemplateHash().toString() + ":" + dbDescribedTemplate.key.getModuleHash().toString());
+//                }
+//                keyToDT.put(dbDescribedTemplate.key, dbDescribedTemplate);
+//            }
+//        } catch (Exception e) {
+//            this.log.error("<internal> Core.loadGeneratorHashes() could not read described_template, " + e.getMessage());
+//        } finally {
+//            safeClose(resultSet);
+//            safeClose(statement);
+//        }
+//    }
 
     // TODO: find out why this cannot be made private, since public .getConfig() is used by the caller
-    @SuppressWarnings("PackageVisibleInnerClass")
+    // @SuppressWarnings("PackageVisibleInnerClass")
     static class Config {
         private String db_host = null;
         private Integer db_port = null;
@@ -269,7 +268,7 @@ public class Core
      *
      */
     public Core() {
-        new Core(0L); // 0L is never used for pk_test
+        Core ignore = new Core(0L); // 0L is never used for pk_test
     }
 
     /**
@@ -307,10 +306,8 @@ public class Core
         closeDatabase();
     }
 
-    private static class NodeModule
-    {
-//      @SuppressWarnings("unused")
-//      public Object exports = null;
+    private static class NodeModule {
+        //
     }
 
     /**
@@ -1354,7 +1351,6 @@ public class Core
             return name;
         }
 
-//        @SuppressWarnings("unused")
 //        public String getEncodedName()
 //        {
 //            try
@@ -1474,8 +1470,9 @@ public class Core
         }
 
         @Override
+        // TODO: consider acceptable solution to replace null return
 //      @Nullable
-        @SuppressWarnings("ReturnOfNull")
+//      @SuppressWarnings("ReturnOfNull")
         public InputStream asStream()
         {
             File f = core.getContentFile(hash);
@@ -1663,7 +1660,7 @@ public class Core
                         String version = ver_fields[0];
                         String configuration = ver_fields.length > 1 ? ver_fields[1] : "";
 
-                        // TODO: how to @SuppressWarnings() here, or just do what it wants
+                        // TODO: how to fix warnings here for .replace()
                         organization = organization.replace("$", artifact.getModule().getOrganization());
                         module = module.replace("$", artifact.getModule().getName());
                         attributes = attributes.replace("$", artifact.getModule().getAttributes().toString());
@@ -1731,7 +1728,8 @@ public class Core
      * @param targetDirectory The target directory.
      * @return The name of the artifact in the target directory.
      */
-    @SuppressWarnings("MagicCharacter")
+    // TODO: overcome magic character
+//  @SuppressWarnings("MagicCharacter")
     private String getTargetName(String artifactName, String targetDirectory){
         if (artifactName.endsWith("/"))
             throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
@@ -2344,21 +2342,42 @@ public class Core
      * @return The key information for the added described template.
      */
     private DBDescribedTemplate add(DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete) throws Exception {
-        DescribedTemplate.Key proposed_key = dt.getKey();
-        if (keyToDT.containsKey(proposed_key))
-            return keyToDT.get(proposed_key);
+        DescribedTemplate.Key matchKey = dt.getKey();
+
+//      if (keyToDT.containsKey(matchKey))
+//          return keyToDT.get(matchKey1;
+        try {
+            DBDescribedTemplate dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+            if (dbdtAsStored != null)
+                return dbdtAsStored;
+        } catch (SQLException sqe) {
+            this.log.error("<internal> Core.add() sees exception from one of the dbQuery methods, msg: " + sqe);
+            this.log.debug("stack trace: ", sqe);
+            throw new Exception(".add() exits with exception ", sqe);
+        }
 
         // Recursively process all dependent DescribedTemplate's (add them or check them). But .getDependencies() is empty.
         // Original TODO: Figure out if this logic is correct. Doesn't appear to be. Has not been tested, since .getDependencies() is empty.
         for (DescribedTemplate child : dt.getDependencies()) {
+            matchKey = child.getKey();
+
 //          if (!keyToDT.containsKey(child.getKey()))
-            DescribedTemplate.Key matchKey = child.getKey();
-            if (this.dbQuery.getDBDescribedTemplate(matchKey) == null)
+            DBDescribedTemplate dbdtAsStored;
+            try {
+                dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+            } catch (SQLException sqe) {
+                this.log.error("<internal> Core.add() sees exception from one of the dbQuery methods, msg: " + sqe);
+                this.log.debug("stack trace: ", sqe);
+                throw new Exception(".add() exits with exception ", sqe);
+            }
+
+            if (dbdtAsStored == null)
                 this.add(child, null, null, null, null, null);
             else
                 this.check(child);
         }
 
+        // proceed with intended .add() behavior
         try {
             /* All described template additions are handled as transactions. */
             this.connect.setAutoCommit(false);
@@ -2405,11 +2424,8 @@ public class Core
             this.connect.commit();
             this.connect.setAutoCommit(true);
 
-            DBDescribedTemplate dbdt = new DBDescribedTemplate();
-            dbdt.pk = pk;
-            dbdt.key = dt.getKey();
-            keyToDT.put(dbdt.key, dbdt);
-            return dbdt;
+            return new DBDescribedTemplate(pk, dt.getKey(), null);
+//          keyToDT.put(dbdt.key, dbdt);
         } catch (Exception e) {
             this.log.error("<internal> Core.add(): Failed to add described template: " + e);
             this.log.debug("stack trace: ", e);
@@ -2433,14 +2449,35 @@ public class Core
         // Recursively check all dependent DescribedTemplate's. But .getDependencies() is empty.
         for (DescribedTemplate child : dt.getDependencies()) {
             // Original TODO: Figure out if this is correct. Has not been tested, since .getDependencies() is empty.
-//          if (!keyToDT.containsKey(child.getKey()))
+            DBDescribedTemplate dbdtAsStored;
             DescribedTemplate.Key matchKey = child.getKey();
-            if (this.dbQuery.getDBDescribedTemplate(matchKey) == null)
+
+//          if (!keyToDT.containsKey(child.getKey()))
+            try {
+                dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+            } catch (SQLException sqe) {
+                this.log.error("<internal> Core.check() sees exception from one of the dbQuery methods, msg: " + sqe);
+                this.log.debug("stack trace: ", sqe);
+                throw new Exception(".check() exits with exception ", sqe);
+            }
+
+            if (dbdtAsStored == null)
                 throw new Exception("Parent template exists, child does not.");
-            DBDescribedTemplate dbdt = check(child);
+            /*DBDescribedTemplate dbdt =*/ this.check(child); // recursion
         }
 
-        DBDescribedTemplate me = keyToDT.get(dt.getKey());
+        DBDescribedTemplate me;
+        DescribedTemplate.Key matchKey = dt.getKey();
+
+//      DBDescribedTemplate me = keyToDT.get(dt.getKey());
+        try {
+            me = this.dbQuery.getDBDescribedTemplate(matchKey);
+        } catch (SQLException sqe) {
+            this.log.error("<internal> Core.check() sees exception from one of the dbQuery methods, msg: " + sqe);
+            this.log.debug("stack trace: ", sqe);
+            throw new Exception(".check() exits with exception ", sqe);
+        }
+
         if (me == null)
             throw new Exception("Request to check a non-existent described template.");
 
@@ -2497,11 +2534,20 @@ public class Core
         int addedDescribedTemplatesCount = 0;
         int checkedNotAddedDescribedTemplatesCount = 0;
         for (TestInstance ti : testInstances) {
-            DBDescribedTemplate dbdt;
+            DBDescribedTemplate dbdtAsStored;
             DescribedTemplate.Key matchKey = ti.getDescribedTemplate().getKey();
 
 //          if (!keyToDT.containsKey(matchKey)) {
-            if (this.dbQuery.getDBDescribedTemplate(matchKey) == null) {
+            try {
+                dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+            } catch (SQLException sqe) {
+                this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqe);
+                this.log.debug("stack trace: ", sqe);
+                throw new Exception(".syncDescribedTemplates() exits with exception ", sqe);
+            }
+
+            DBDescribedTemplate dbdt;
+            if (dbdtAsStored == null) {
                 // add the described template to map keyToDT and to table described_template
                 dbdt = this.add(ti.getDescribedTemplate(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
                 ++addedDescribedTemplatesCount;
@@ -2522,9 +2568,9 @@ public class Core
                 boolean dbNotHaveTI = false;
                 try {
                     dbNotHaveTI = this.dbQuery.testInstanceHasDescribedTemplateMatch(dbdt.pk);
-                } catch (Exception e) {
-                    this.log.error("<internal> Core.syncDescribedTemplate() sees exception, msg: " + e);
-                    this.log.debug("stack trace: ", e);
+                } catch (SQLException sqe) {
+                    this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqe);
+                    this.log.debug("stack trace: ", sqe);
                 }
 
                 if (dbNotHaveTI) {
@@ -3202,7 +3248,8 @@ public class Core
     }
 
 //  @Nullable
-    @SuppressWarnings("ReturnOfNull")
+    // TODO: consider alternative to returning null
+//  @SuppressWarnings("ReturnOfNull")
     public Long getInstanceRun(long testInstanceNumber) throws Exception
     {
         Statement statement = null;
