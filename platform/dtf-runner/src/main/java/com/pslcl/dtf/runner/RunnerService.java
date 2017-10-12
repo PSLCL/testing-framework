@@ -164,6 +164,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
         try
         {
             config.initsb.ttl(getClass().getSimpleName() + " start");
+
+            this.mq.init(config);
             if(mq != null) // can be configured to disable the queue, see init
             {
                 if (mq.queueStoreExists())
@@ -177,8 +179,6 @@ public class RunnerService implements Runner, RunnerServiceMBean
                 }
             }
             config.initsb.indentedOk();
-
-            this.mq.init(config);
         } catch (Exception e)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
