@@ -356,7 +356,7 @@ proc_label: BEGIN
 		FROM test_instance
 		LEFT JOIN described_template ON described_template.pk_described_template = test_instance.fk_described_template
 		LEFT JOIN template ON described_template.fk_template = template.pk_template
-		WHERE fk_template=template AND fk_run IS NULL;
+		WHERE fk_template=template;
 
 	SELECT count(*) INTO needs_run FROM instances;
 	IF needs_run = 0 THEN

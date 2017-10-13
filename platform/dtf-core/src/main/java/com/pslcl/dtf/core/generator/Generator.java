@@ -79,9 +79,8 @@ public class Generator
     {
         this.log = LoggerFactory.getLogger(getClass());
         core = new Core(pk_test);
-        /* Load the described template and description hashes */
-        core.loadGeneratorHashes();
-
+//        /* Load the described template and description hashes */
+//        core.loadGeneratorHashes();
     }
 
     /**

@@ -62,6 +62,9 @@ import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 @SuppressWarnings("javadoc")
 public class MachineInstanceFuture implements Callable<MachineInstance>
 {
+    //FIXME: set me false before commit/push
+    private static final boolean DtfTesting = false;
+
     public static final String Ec2MidStr = "ec2";
     public static final String KeyPairMidStr = "key";
 
@@ -269,6 +272,8 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     
     private void waitForStaf(ProgressiveDelay pdelay) throws FatalResourceException
     {
+        if(DtfTesting)
+            return;
         ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false, null, null, null, false);
         StafRunnableProgram runnableProgram;
         try
@@ -278,7 +283,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         {
             throw new FatalResourceException(reservedResource.resource.getCoordinates(), "failed to obtain StafRunnableProgram", e1);
         }
-        String address = reservedResource.ec2Instance.getPublicIpAddress();
+        String address = reservedResource.ec2Instance.getPrivateIpAddress();
         if(address == null || address.length() < 1)
             throw new FatalClientException(reservedResource.resource.getCoordinates(), " No public IP Address on new EC2 instance, check default SG or configured SG rules.");
         cmdData.setHost(address);

@@ -164,6 +164,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
         try
         {
             config.initsb.ttl(getClass().getSimpleName() + " start");
+
+            this.mq.init(config);
             if(mq != null) // can be configured to disable the queue, see init
             {
                 if (mq.queueStoreExists())
@@ -177,8 +179,6 @@ public class RunnerService implements Runner, RunnerServiceMBean
                 }
             }
             config.initsb.indentedOk();
-
-            this.mq.init(config);
         } catch (Exception e)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
@@ -273,7 +273,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
                     LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + " has a non-null result already stored. Acking this reNum now.");
                     ackRunEntry(message);
                 } else if (processTracker.isRunning(reNum)) {
-                    LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
+                    LoggerFactory.getLogger(getClass()).trace(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
                 } else {
                     LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() submits reNum " + reNum + " for testRun processing. ");
                     // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.

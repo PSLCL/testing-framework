@@ -45,6 +45,8 @@ public class ProgressiveDelay
     private final AtomicLong totalTime;
     private final AtomicBoolean maxDelayHit;
     private final ProgressiveDelayData pdelayData;
+
+    private final long MIN_DELAY = 5000L;
     
     public ProgressiveDelay(ProgressiveDelayData pdelayData)
     {
@@ -76,7 +78,7 @@ public class ProgressiveDelay
         long delay = pdelayData.maxDelay;
         if(!maxDelayHit.get())
         {
-            delay = ((long) Math.pow(2, cnt) * 100L);
+            delay = ((long) Math.pow(2, cnt) * MIN_DELAY);
             if(delay > pdelayData.maxDelay)
             {
                 delay = pdelayData.maxDelay;
