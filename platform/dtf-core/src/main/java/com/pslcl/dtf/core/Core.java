@@ -74,12 +74,10 @@ public class Core
     // TODO: consider moving this to its own separate class, overcome warning "public inner class"
     public static class DBDescribedTemplate {
         private long pk;
-        private DescribedTemplate.Key key;
         private Hash documentationHash;
 
-        DBDescribedTemplate(long pk, DescribedTemplate.Key key, Hash documentationHash) {
+        DBDescribedTemplate(long pk, Hash documentationHash) {
             this.pk = pk;
-            this.key = key;
             this.documentationHash = documentationHash;
         }
     }
@@ -2125,7 +2123,7 @@ public class Core
             this.connect.commit();
             this.connect.setAutoCommit(true);
 
-            return new DBDescribedTemplate(pk, dt.getKey(), null);
+            return new DBDescribedTemplate(pk,null);
         } catch (Exception e) {
             this.log.error("<internal> Core.add(): Failed to add described template: " + e);
             this.log.debug("stack trace: ", e);
