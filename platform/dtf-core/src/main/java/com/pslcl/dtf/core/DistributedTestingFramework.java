@@ -568,7 +568,7 @@ public final class DistributedTestingFramework
             /* Instantiate the platform and artifact provider. */
             core = new Core();
             if (synchronize) {
-                Core.Config config = core.getConfig();
+                PortalConfig config = core.getConfig();
                 File generators = new File(config.dirGenerators());
                 if (generators.exists()) {
                     // TODO: check for false return
