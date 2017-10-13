@@ -41,7 +41,7 @@ public interface RunnableProgram
             }
             command = ((StafRunnableProgram)runnableProgram).getCommandData().getCommand();
         }
-        LoggerFactory.getLogger(RunnableProgram.class).info("Executed run command for test run {}. Command: {}, result: {}, sysout: {}, syserr: {}", runID, command, result, sysout, syserr);
+        LoggerFactory.getLogger(RunnableProgram.class).debug("Executed run command for test run {}. Command: {}, result: {}, sysout: {}, syserr: {}", runID, command, result, sysout, syserr);
     }
 
     /**
