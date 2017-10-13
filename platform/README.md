@@ -236,9 +236,15 @@ The default configuration file path is testing-framework/platform/config/dtf.pro
 
 **Test Runner Service**
 
-Create a security group that allows inbound TCP traffic on ports 6550 and 6500 and attach it to the aws instance running the test runner service.
+Create a security group that allows inbound TCP traffic on ports 6550 and 6500 from the Test Instance Security Group, 
+once created, and attach it to the aws instance running the test runner service.
 
 **Test Instances**
 
-Create a security group that allows inbound TCP traffic on ports 6550 and 6500 from the test runner service instance. Use this security group to configure the `pslcl.dtf.aws.ec2instance.sg.group-id` property in the dtf.properties file.
+Create a security group that allows inbound TCP traffic on ports 6550 and 6500 from the test runner service instance or 
+security group. Use this security group to configure the `pslcl.dtf.aws.ec2instance.sg.group-id` property in the 
+dtf.properties file.
+
+This security group should also be configured to allow traffic between members of the same security group on ports 
+needed for any tests utilizing networking.
 
