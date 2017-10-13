@@ -58,8 +58,7 @@ public class DBQuery {
                 if (resultSet.next()) {
                     DescribedTemplate.Key key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")),
                                                                           new Hash(resultSet.getBytes("fk_module_set")));
-                    return Optional.of(new Core.DBDescribedTemplate(resultSet.getLong("pk_described_template"), key,
-                                                                    new Hash(resultSet.getBytes("description_hash"))));
+                    return Optional.of(new Core.DBDescribedTemplate(resultSet.getLong("pk_described_template"), new Hash(resultSet.getBytes("description_hash"))));
                 }
                 return Optional.empty();
             }
