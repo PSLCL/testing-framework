@@ -112,7 +112,7 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         DeployFuture deployFuture = new DeployFuture(
-                        ec2Instance.getPublicIpAddress(), 
+                        ec2Instance.getPrivateIpAddress(),
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
                         partialDestPath, url, windows, reservedResource.resource.getCoordinates(),
                         mconfig.s3Bucket, mconfig.loggingSourceFolder,
@@ -138,7 +138,7 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         RunFuture df = new RunFuture(
-                        ec2Instance.getPublicIpAddress(), 
+                        ec2Instance.getPrivateIpAddress(),
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath,
                         command, rconfig.blockingExecutor, true, windows,
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
@@ -158,7 +158,7 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         ConfigureFuture cf = new ConfigureFuture(
-                        ec2Instance.getPublicIpAddress(), 
+                        ec2Instance.getPrivateIpAddress(),
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
                         rconfig.blockingExecutor, command, windows,
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
@@ -177,7 +177,7 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         RunFuture df = new RunFuture(
-                        ec2Instance.getPublicIpAddress(), 
+                        ec2Instance.getPrivateIpAddress(),
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
                         command, rconfig.blockingExecutor, false, windows,
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder,this);
@@ -195,7 +195,7 @@ public class AwsMachineInstance implements MachineInstance
             windows = true;
         //@formatter:off
         DeleteFuture df = new DeleteFuture(
-                        ec2Instance.getPublicIpAddress(), 
+                        ec2Instance.getPrivateIpAddress(),
                         mconfig.linuxSandboxPath, mconfig.winSandboxPath, 
                         partialDestPath, windows, reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder);
         //@formatter:on

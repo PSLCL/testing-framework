@@ -1,7 +1,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR/../..
 
-CP="platform/lib/*:"
+CP="platform/lib/*:platform/config"
 
 if [[ `uname` =~ ^CYGWIN.* ]]; then
     CP=`cygpath -w -p $CP`

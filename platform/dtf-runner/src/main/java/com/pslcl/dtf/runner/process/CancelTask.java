@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CancelTask implements Runnable {
-    private static final int SLEEPTIME = 1000 * 8; // 8 seconds
+    private static final int SLEEPTIME = 1000 * 30; // 8 seconds
     
     private final Logger log;
     private final String simpleName;
@@ -57,7 +57,7 @@ public class CancelTask implements Runnable {
                 }
             } // end synchronized()
         }
-        log.debug(this.simpleName + "TERMINATES run-cancel checking for reNum " + this.reCore.getRENum());
+        log.trace(this.simpleName + "TERMINATES run-cancel checking for reNum " + this.reCore.getRENum());
         Thread.currentThread().setName(tname); // overwrite "CancelTask"
     }
 

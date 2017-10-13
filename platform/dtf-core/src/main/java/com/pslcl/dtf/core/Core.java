@@ -199,11 +199,8 @@ public class Core
         return config;
     }
 
-    /**
-     *
-     */
     public Core() {
-        Core ignore = new Core(0L); // 0L is never used for pk_test
+        this(0L); // 0L is never used for pk_test
     }
 
     /**

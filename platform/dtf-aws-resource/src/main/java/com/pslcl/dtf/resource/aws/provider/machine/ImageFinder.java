@@ -229,6 +229,9 @@ public class ImageFinder
         TabToLevel format = new TabToLevel();
         format.ttl("\n", getClass().getSimpleName(), "findImage:");
         String imageId = checkTestscriptDeclared(resource, format);
+        if(imageId != null && !imageId.isEmpty()){
+            return imageId;
+        }
         try
         {
             // imageId from checkTestscriptDeclared takes priority over aws specific filters
