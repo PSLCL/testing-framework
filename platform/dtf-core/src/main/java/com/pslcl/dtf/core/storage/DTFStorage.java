@@ -22,12 +22,13 @@ public interface DTFStorage {
     boolean isReadOnly();
 
     /**
+     * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
-     * @param pkDescribedTemplate
-     * @return
-     * @throws Exception
+     * @param pkDescribedTemplate private key to match test_instance.fk_described_template
+     * @return true on match
+     * @throws SQLException on error
      */
-    boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws Exception;
+    boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException;
 
     /**
      * Get the matching DBDescribedTemplate that matches the given key.

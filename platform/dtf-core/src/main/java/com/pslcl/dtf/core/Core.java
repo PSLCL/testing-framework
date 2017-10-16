@@ -80,7 +80,6 @@ public class Core
     private final PortalConfig config;
     private File artifacts = null;
     private DTFStorage storage;
-    private DBQuery dbQuery;
 
     /**
      * The private key of the test that is being generated.
@@ -117,8 +116,6 @@ public class Core
             //noinspection ResultOfMethodCallIgnored
             this.artifacts.mkdirs();
         }
-
-        this.dbQuery = new DBQuery(this.storage.getConnect());
     }
 
     /**
@@ -2173,7 +2170,7 @@ public class Core
                 // see if test_instance.fk_described_template exists to match dbdt.pk
                 boolean dbNotHaveTI = false;
                 try {
-                    dbNotHaveTI = this.dbQuery.testInstanceHasDescribedTemplateMatch(dbdt.pk);
+                    dbNotHaveTI = this.storage.describedTemplateHasTestInstanceMatch(dbdt.pk);
                 } catch (SQLException sqe) {
                     this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqe);
                     this.log.debug("stack trace: ", sqe);
