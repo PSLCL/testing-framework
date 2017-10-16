@@ -5,11 +5,11 @@ import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.PortalConfig;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 import com.pslcl.dtf.core.storage.DTFStorage;
+import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -38,15 +38,13 @@ public class MySQLDtfStorage implements DTFStorage {
         this.openDatabase();
     }
 
+    @Override
     public boolean isReadOnly() {
         return this.read_only;
     }
 
     private void openDatabase(){
-        //TODO Create connection pool.
-
-        try
-        {
+        try {
             // Setup the connection with the DB
             this.read_only = false;
             String user = this.config.dbUser();
@@ -57,10 +55,22 @@ public class MySQLDtfStorage implements DTFStorage {
                 this.read_only = true;
             }
 
-            String connectstring = String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
-            // TODO: replace superseded javax.sql.DriverManager with javax.sql.DataSource
-            this.connect = DriverManager.getConnection(connectstring);
+            // connection pool of size 1 (for now)
+            String connectString = String.format("jdbc:mysql://%s:%d/%s", config.dbHost(), config.dbPort(), config.dbSchema());
 
+            BasicDataSource dataSource = new BasicDataSource(); // BasicDataSource implements DataSource interface
+            dataSource.setDriverClassName("org.mariadb.jdbc.Driver");
+            dataSource.setUsername(user);
+            dataSource.setPassword(password);
+            dataSource.setUrl(connectString);
+            dataSource.setMaxActive(1); // 1 for now
+            dataSource.setMaxIdle(1);
+            dataSource.setInitialSize(1);
+            dataSource.setValidationQuery("SELECT 1");
+            // The query that will be used to validate connections from this pool before returning them to the caller.
+            // If specified, this query <strong>MUST</strong> be an SQL SELECT statement that returns at least one row.
+
+            this.connect = dataSource.getConnection();
         } catch (Exception e) {
             this.log.error("<internal> MySQLDtfStorage.openDatabase() could not open database connection, " + e.getMessage());
             read_only = true;
@@ -72,9 +82,8 @@ public class MySQLDtfStorage implements DTFStorage {
      */
     private void closeDatabase() {
         try {
-            if (this.connect != null) {
+            if (this.connect != null)
                 this.connect.close();
-            }
         } catch (Exception e) {
             this.log.error("<internal> MySQLDtfStorage.closeDatabase() could not close database connection, " + e.getMessage());
         } finally {
