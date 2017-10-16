@@ -1,12 +1,9 @@
 package com.pslcl.dtf.core;
 
-import com.pslcl.dtf.core.generator.template.DescribedTemplate;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Optional;
 
 public class DBQuery {
     private Connection connect;
@@ -30,37 +27,6 @@ public class DBQuery {
             preparedStatement.setLong(1, match_pk_described_template);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 return !resultSet.next();
-            }
-        }
-    }
-
-    /**
-     * Get the matching DBDescribedTemplate that matches the given key.
-     *
-     * @param matchKey The key to match.
-     * @return The matching DBDescribedTemplate object, wrapped in Optional, which may be empty.
-     * @throws SQLException on error
-     */
-    Optional<Core.DBDescribedTemplate> getDBDescribedTemplate(DescribedTemplate.Key matchKey) throws SQLException {
-        String query = "SELECT pk_described_template, fk_module_set, description_hash, hash" +
-                       " FROM described_template JOIN template ON fk_template = pk_template" +
-                       // to this point, we have every described_template/template pair
-                       " WHERE hash=? AND fk_module_set=?"; // qualify for the unique pair
-        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
-            preparedStatement.setBytes(1, matchKey.getTemplateHash().toBytes());
-            preparedStatement.setBytes(2, matchKey.getModuleHash().toBytes());
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                /* we expect exactly one entry in resultSet; to check, these line give count of 1
-                    resultSet.last();
-                    int count = resultSet.getRow();
-                    resultSet.beforeFirst(); // restore resultSet to original state
-                */
-                if (resultSet.next()) {
-                    DescribedTemplate.Key key = new DescribedTemplate.Key(new Hash(resultSet.getBytes("hash")),
-                                                                          new Hash(resultSet.getBytes("fk_module_set")));
-                    return Optional.of(new Core.DBDescribedTemplate(resultSet.getLong("pk_described_template"), new Hash(resultSet.getBytes("description_hash"))));
-                }
-                return Optional.empty();
             }
         }
     }

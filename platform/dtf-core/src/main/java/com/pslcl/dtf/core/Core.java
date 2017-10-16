@@ -1961,7 +1961,7 @@ public class Core
     private DBDescribedTemplate add(DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete) throws Exception {
         try {
             DescribedTemplate.Key matchKey = dt.getKey();
-            Optional<DBDescribedTemplate> dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+            Optional<DBDescribedTemplate> dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
             if (dbdtAsStored.isPresent())
                 return dbdtAsStored.get();
         } catch (SQLException sqe) {
@@ -1976,7 +1976,7 @@ public class Core
             DescribedTemplate.Key matchKey = child.getKey();
             Optional<DBDescribedTemplate> dbdtAsStored;
             try {
-                dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+                dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
             } catch (SQLException sqe) {
                 this.log.error("<internal> Core.add() sees exception from one of the dbQuery methods, msg: " + sqe);
                 this.log.debug("stack trace: ", sqe);
@@ -2063,7 +2063,7 @@ public class Core
             Optional<DBDescribedTemplate> dbdtAsStored;
             DescribedTemplate.Key matchKey = child.getKey();
             try {
-                dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+                dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
             } catch (SQLException sqe) {
                 this.log.error("<internal> Core.check() sees exception from one of the dbQuery methods, msg: " + sqe);
                 this.log.debug("stack trace: ", sqe);
@@ -2078,7 +2078,7 @@ public class Core
         Optional<DBDescribedTemplate> wrappedMe;
         DescribedTemplate.Key matchKey = dt.getKey();
         try {
-            wrappedMe = this.dbQuery.getDBDescribedTemplate(matchKey);
+            wrappedMe = this.storage.getDBDescribedTemplate(matchKey);
         } catch (SQLException sqe) {
             this.log.error("<internal> Core.check() sees exception from one of the dbQuery methods, msg: " + sqe);
             this.log.debug("stack trace: ", sqe);
@@ -2145,7 +2145,7 @@ public class Core
             Optional<DBDescribedTemplate> dbdtAsStored;
             DescribedTemplate.Key matchKey = ti.getDescribedTemplate().getKey();
             try {
-                dbdtAsStored = this.dbQuery.getDBDescribedTemplate(matchKey);
+                dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
             } catch (SQLException sqe) {
                 this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqe);
                 this.log.debug("stack trace: ", sqe);
