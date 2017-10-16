@@ -31,6 +31,11 @@ public interface DTFStorage {
     List<String> getArtifactProviders() throws SQLException;
 
     /**
+     *
+     */
+    void prepareToLoadModules() throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

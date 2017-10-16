@@ -172,26 +172,26 @@ public class Core
 //        return retSet;
 //    }
 
-    void prepareToLoadModules()
-    {
-        if (this.storage.isReadOnly())
-            return;
-
-        // Update missing count.
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("UPDATE module SET missing_count=missing_count+1");
-            statement.executeUpdate();
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.prepareToLoadModules(): Could not update missing_count, " + e.getMessage());
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-    }
+//    void prepareToLoadModules()
+//    {
+//        if (this.storage.isReadOnly())
+//            return;
+//
+//        // Update missing count.
+//        PreparedStatement statement = null;
+//        try
+//        {
+//            statement = this.storage.getConnect().prepareStatement("UPDATE module SET missing_count=missing_count+1");
+//            statement.executeUpdate();
+//        } catch (Exception e)
+//        {
+//            this.log.error("<internal> Core.prepareToLoadModules(): Could not update missing_count, " + e.getMessage());
+//        } finally
+//        {
+//            safeClose(statement);
+//            statement = null;
+//        }
+//    }
 
     void finalizeLoadingModules(int deleteThreshold)
     {

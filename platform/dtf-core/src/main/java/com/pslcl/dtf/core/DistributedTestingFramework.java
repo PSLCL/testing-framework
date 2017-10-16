@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -579,17 +580,25 @@ public final class DistributedTestingFramework
 
                 // TODO: check for false return
                 generators.setWritable(true);
-
-                // Get the list of artifact providers from the database, prepare the modules table for updates.
-                List<String> providers = core.getStorage().getArtifactProviders();
-                core.prepareToLoadModules(); // adds 1 to missing_count of every pk_module row
-                boolean noModuleErrors = true;
+                List<String> providers = null;
+                try {
+                    try {
+                        // Get the list of artifact providers from the database, prepare the modules table for updates.
+                        providers = core.getStorage().getArtifactProviders();
+                    } catch (SQLException e) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> Core.getStorage().getArtifactProviders(): Could not read artifact providers, " + e.getMessage());
+                        return;
+                    }
+                    core.getStorage().prepareToLoadModules(); // adds 1 to missing_count of every pk_module row
+                } catch (SQLException e) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> Core.getStorage().prepareToLoadModules(): Could not update missing_count, " + e.getMessage());
+                    return;
+                }
 
                 HandleModule handler = new HandleModule(core);
                 List<ArtifactProvider> to_close = new ArrayList<ArtifactProvider>();
-
-                for (String providerName : providers)
-                {
+                boolean noModuleErrors = true;
+                for (String providerName : providers) {
                     try {
                         Class<?> P = Class.forName(providerName);
                         Constructor<?> cons = P.getConstructor();
@@ -610,7 +619,7 @@ public final class DistributedTestingFramework
                     p.close();
 
                 // Finalize module loading
-                if (noModuleErrors && prune > 0)
+                if (noModuleErrors && prune>0)
                     core.finalizeLoadingModules(prune); // can influence missing_count
 
                 // Extract all generators to new generator (configured) directory

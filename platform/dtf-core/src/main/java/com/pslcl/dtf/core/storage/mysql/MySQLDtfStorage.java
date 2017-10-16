@@ -118,6 +118,17 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
+    public void prepareToLoadModules() throws SQLException {
+        if (!this.read_only) {
+            // Update missing count.
+            String query = "UPDATE module SET missing_count=missing_count+1";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.executeUpdate();
+            }
+        }
+    }
+
+    @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
         String query = "SELECT pk_test_instance FROM test_instance" +
                        " JOIN described_template ON fk_described_template=pk_described_template" +
