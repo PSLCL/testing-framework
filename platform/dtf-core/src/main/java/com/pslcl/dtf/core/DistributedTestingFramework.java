@@ -586,13 +586,12 @@ public final class DistributedTestingFramework
                         // Get the list of artifact providers from the database, prepare the modules table for updates.
                         providers = core.getStorage().getArtifactProviders();
                     } catch (SQLException e) {
-                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> Core.getStorage().getArtifactProviders(): Could not read artifact providers, " + e.getMessage());
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> Core.getStorage().getArtifactProviders(): Halt because could not read artifact providers, " + e.getMessage());
                         return;
                     }
                     core.getStorage().prepareToLoadModules(); // adds 1 to missing_count of every pk_module row
                 } catch (SQLException e) {
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> Core.getStorage().prepareToLoadModules(): Could not update missing_count, " + e.getMessage());
-                    return;
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("<internal> Core.getStorage().prepareToLoadModules(): Continue even though could not update missing_count, " + e.getMessage());
                 }
 
                 HandleModule handler = new HandleModule(core);
@@ -619,8 +618,13 @@ public final class DistributedTestingFramework
                     p.close();
 
                 // Finalize module loading
-                if (noModuleErrors && prune>0)
-                    core.finalizeLoadingModules(prune); // can influence missing_count
+                if (noModuleErrors && prune>0) {
+                    try {
+                        core.getStorage().finalizeLoadingModules(prune); // can influence missing_count
+                    } catch (Exception e) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("<internal> Core.getStorage().finalizeLoadingModules(): Continue even though could not prune module, " + e.getMessage());
+                    }
+                }
 
                 // Extract all generators to new generator (configured) directory
                 Iterable<Module> find_generators = core.createModuleSet();
@@ -663,8 +667,7 @@ public final class DistributedTestingFramework
                 core.pruneTemplates();
             }
 
-            if (generate)
-            {
+            if (generate) {
                 /* Mark all content as not generated. */
                 core.clearGeneratedContent();
 
@@ -687,13 +690,10 @@ public final class DistributedTestingFramework
                 }
 
                 executor.shutdown();
-                while (!executor.isTerminated())
-                {
-                    try
-                    {
+                while (!executor.isTerminated()) {
+                    try {
                         Thread.sleep(500);
-                    } catch (InterruptedException ignored)
-                    {
+                    } catch (InterruptedException ignored) {
                     }
                 }
 

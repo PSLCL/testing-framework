@@ -36,6 +36,12 @@ public interface DTFStorage {
     void prepareToLoadModules() throws SQLException;
 
     /**
+     *
+     * @param deleteThreshold delete module when synchronize() passes exceed this number
+     */
+    void finalizeLoadingModules(int deleteThreshold) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

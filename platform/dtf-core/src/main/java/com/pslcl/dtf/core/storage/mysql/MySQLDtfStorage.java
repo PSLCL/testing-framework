@@ -129,6 +129,18 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
+    public void finalizeLoadingModules(int deleteThreshold) throws SQLException {
+        if (!this.read_only) {
+            // Remove modules that have been missing for too long.
+            String query = "DELETE FROM module WHERE missing_count > ?";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.setLong(1, deleteThreshold);
+                preparedStatement.executeUpdate();
+            }
+        }
+    }
+
+    @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
         String query = "SELECT pk_test_instance FROM test_instance" +
                        " JOIN described_template ON fk_described_template=pk_described_template" +
