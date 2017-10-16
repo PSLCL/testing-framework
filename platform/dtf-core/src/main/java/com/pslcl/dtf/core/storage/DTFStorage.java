@@ -5,6 +5,7 @@ import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -20,6 +21,14 @@ public interface DTFStorage {
      * @return boolean
      */
     boolean isReadOnly();
+
+
+    /**
+     * Get a list of artifact providers.
+     * @return The list of provider class names. Will not be null, may be empty
+     * @throws SQLException on error
+     */
+    List<String> getArtifactProviders() throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

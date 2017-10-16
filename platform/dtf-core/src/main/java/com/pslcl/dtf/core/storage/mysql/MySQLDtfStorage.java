@@ -13,6 +13,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class MySQLDtfStorage implements DTFStorage {
@@ -36,11 +38,6 @@ public class MySQLDtfStorage implements DTFStorage {
         this.read_only = false;
         this.connect = null;
         this.openDatabase();
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return this.read_only;
     }
 
     private void openDatabase(){
@@ -99,6 +96,25 @@ public class MySQLDtfStorage implements DTFStorage {
     @Override
     public Connection getConnect() {
         return this.connect;
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return this.read_only;
+    }
+
+    @Override
+    public List<String> getArtifactProviders() throws SQLException {
+        String query = "SELECT * FROM artifact_provider";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            List<String> result = new ArrayList<String>();
+            while (resultSet.next()) {
+                String name = resultSet.getString("classname");
+                result.add(name);
+            }
+            return result;
+        }
     }
 
     @Override

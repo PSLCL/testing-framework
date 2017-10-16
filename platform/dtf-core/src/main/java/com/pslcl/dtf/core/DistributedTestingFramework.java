@@ -581,7 +581,7 @@ public final class DistributedTestingFramework
                 generators.setWritable(true);
 
                 // Get the list of artifact providers from the database, prepare the modules table for updates.
-                List<String> providers = core.readArtifactProviders();
+                List<String> providers = core.getStorage().getArtifactProviders();
                 core.prepareToLoadModules(); // adds 1 to missing_count of every pk_module row
                 boolean noModuleErrors = true;
 

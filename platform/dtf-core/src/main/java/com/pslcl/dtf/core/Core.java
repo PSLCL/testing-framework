@@ -118,13 +118,6 @@ public class Core
         }
     }
 
-    /**
-     * Close the core object, releasing any resources.
-     */
-    public void close() {
-        this.storage.close();
-    }
-
     private void safeClose(ResultSet r) {
         try {
             if (r != null)
@@ -143,8 +136,19 @@ public class Core
         }
     }
 
+    /**
+     * Close the core object, releasing any resources.
+     */
+    public void close() {
+        this.storage.close();
+    }
+
     public boolean isReadOnly() {
         return this.storage.isReadOnly();
+    }
+
+    public DTFStorage getStorage() {
+        return this.storage;
     }
 
 //    /**
@@ -167,39 +171,6 @@ public class Core
 //        }
 //        return retSet;
 //    }
-
-    /**
-     * Return a list of artifact providers.
-     * @return The list of provider class names.
-     */
-    List<String> readArtifactProviders()
-    {
-        List<String> result = new ArrayList<String>();
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            statement = this.storage.getConnect().createStatement();
-            resultSet = statement.executeQuery("SELECT * FROM artifact_provider");
-            while (resultSet.next())
-            {
-                String name = resultSet.getString("classname");
-                result.add(name);
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.readArtifactProviders(): Could not read artifact providers, " + e.getMessage());
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return result;
-    }
 
     void prepareToLoadModules()
     {
