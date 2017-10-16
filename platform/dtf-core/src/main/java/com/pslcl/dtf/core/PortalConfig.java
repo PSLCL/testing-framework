@@ -52,23 +52,23 @@ public class PortalConfig {
         }
     }
 
-    String dbHost() {
+    public String dbHost() {
         return db_host;
     }
 
-    Integer dbPort() {
+    public Integer dbPort() {
         return db_port;
     }
 
-    String dbUser() {
+    public String dbUser() {
         return db_user;
     }
 
-    String dbPassword() {
+    public String dbPassword() {
         return db_password;
     }
 
-    String dbSchema() {
+    public String dbSchema() {
         return db_schema;
     }
 

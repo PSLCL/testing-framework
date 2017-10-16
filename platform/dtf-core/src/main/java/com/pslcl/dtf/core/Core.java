@@ -15,6 +15,21 @@
  */
 package com.pslcl.dtf.core;
 
+import com.pslcl.dtf.core.artifact.Artifact;
+import com.pslcl.dtf.core.artifact.Content;
+import com.pslcl.dtf.core.artifact.Module;
+import com.pslcl.dtf.core.generator.resource.Attributes;
+import com.pslcl.dtf.core.generator.template.DescribedTemplate;
+import com.pslcl.dtf.core.generator.template.Template;
+import com.pslcl.dtf.core.generator.template.TestInstance;
+import com.pslcl.dtf.core.generator.template.TestInstance.Action.ArtifactUses;
+import com.pslcl.dtf.core.storage.DTFStorage;
+import com.pslcl.dtf.core.storage.mysql.MySQLDtfStorage;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,9 +37,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -44,26 +56,6 @@ import java.util.Optional;
 import java.util.Set;
 
 //import javax.annotation.Nullable; // requires an external jar
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.sql.DataSource;
-
-import com.pslcl.dtf.core.storage.DTFStorage;
-import com.pslcl.dtf.core.storage.mysql.MySQLDtfStorage;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.pslcl.dtf.core.artifact.Artifact;
-import com.pslcl.dtf.core.artifact.Content;
-import com.pslcl.dtf.core.artifact.Module;
-import com.pslcl.dtf.core.generator.resource.Attributes;
-import com.pslcl.dtf.core.generator.template.DescribedTemplate;
-import com.pslcl.dtf.core.generator.template.Template;
-import com.pslcl.dtf.core.generator.template.TestInstance;
-import com.pslcl.dtf.core.generator.template.TestInstance.Action.ArtifactUses;
 
 /**
  * This class represents the relationship between the program and external resources like
@@ -76,35 +68,27 @@ public class Core
         private long pk;
         private Hash documentationHash;
 
-        DBDescribedTemplate(long pk, Hash documentationHash) {
+        public DBDescribedTemplate(long pk, Hash documentationHash) {
             this.pk = pk;
             this.documentationHash = documentationHash;
         }
     }
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-    private String singleQuote = "'";
+    private final Logger log;
+    private static final String singleQuote = "'";
+
+    private final PortalConfig config;
     private File artifacts = null;
-    private boolean read_only = false;
+    private DTFStorage storage;
+    private DBQuery dbQuery;
 
     /**
      * The private key of the test that is being generated.
      */
     private long pk_target_test = 0;
 
-    /**
-     * The connection to the database.
-     */
-    private Connection connect = null;
-
-    private PortalConfig config = new PortalConfig();
-
-    private DBQuery dbQuery = null;
-    private DTFStorage storage = null;
-
-    PortalConfig getConfig()
-    {
-        return config;
+    PortalConfig getConfig() {
+        return this.config;
     }
 
     public Core() {
@@ -115,122 +99,55 @@ public class Core
      *
      * @param pk_test The test number from table test.
      */
-    public Core(long pk_test)
-    {
-        this.storage = new MySQLDtfStorage(this.config);
-
+    public Core(long pk_test) {
+        this.log = LoggerFactory.getLogger(getClass());
+        this.config = new PortalConfig();
+        this.storage = new MySQLDtfStorage(this.config); // opens database
         this.pk_target_test = pk_test;
 
         String dir = config.dirArtifacts();
-        if (dir != null)
+        if (dir != null) {
             this.artifacts = new File(dir);
-        else {
+        } else {
             this.log.error("<internal> Core constructor: null artifact directory, return with no further action");
             return;
         }
 
-        if (!this.artifacts.isDirectory())
-           //noinspection ResultOfMethodCallIgnored
+        if (!this.artifacts.isDirectory()) {
+            //noinspection ResultOfMethodCallIgnored
             this.artifacts.mkdirs();
+        }
 
-        this.openDatabase(); // instantiates this.connect
-
-        if (this.connect == null)
-            this.log.error("<internal> Core constructor fails to establish database connection for pk_test " + pk_test);
-        this.dbQuery = new DBQuery(this.connect);
+        this.dbQuery = new DBQuery(this.storage.getConnect());
     }
 
     /**
      * Close the core object, releasing any resources.
      */
-    public void close()
-    {
-        closeDatabase();
+    public void close() {
+        this.storage.close();
     }
 
-    /**
-     * Open the database connection if it is not already open. Environment variables are used
-     * to determine the DB host, user, and password. The DTF_DB_HOST variable is required.
-     * DTF_DB_USER and DTF_DB_PASSWORD are optional, and if not specified then a guest
-     * account with no password is used. This sets the 'read_only' flag, which disables all
-     * database modifications.
-     */
-    private void openDatabase()
-    {
-        if (this.connect != null)
-            return;
-
-        try
-        {
-            // Setup the connection with the DB
-            read_only = false;
-            String user = config.dbUser();
-            String password = config.dbPassword();
-            if (user == null || password == null)
-            {
-                user = "guest";
-                password = "";
-                read_only = true;
-            }
-
-            String connectstring = String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s", config.dbHost(), config.dbPort(), config.dbSchema(), user, password);
-            // TODO: replace superseded javax.sql.DriverManager with javax.sql.DataSource
-            this.connect = DriverManager.getConnection(connectstring);
-
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.openDatabase() could not open database connection, " + e.getMessage());
-            read_only = true;
-        }
-    }
-
-    /**
-     * Close the database connection if it is open.
-     */
-    private void closeDatabase()
-    {
-        try
-        {
-            if (this.connect != null)
-            {
-                this.connect.close();
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.closeDatabase() could not close database connection, " + e.getMessage());
-        } finally
-        {
-            this.connect = null;
-        }
-    }
-
-    private void safeClose(ResultSet r)
-    {
-        try
-        {
+    private void safeClose(ResultSet r) {
+        try {
             if (r != null)
                 r.close();
-        } catch (Exception ignore)
-        {
+        } catch (Exception ignore) {
             // Ignore
         }
     }
 
-    private void safeClose(Statement s)
-    {
-        try
-        {
+    private void safeClose(Statement s) {
+        try {
             if (s != null)
                 s.close();
-        } catch (Exception ignore)
-        {
+        } catch (Exception ignore) {
             // Ignore
         }
     }
 
-    public boolean isReadOnly()
-    {
-        return read_only;
+    public boolean isReadOnly() {
+        return this.storage.isReadOnly();
     }
 
 //    /**
@@ -266,7 +183,7 @@ public class Core
 
         try
         {
-            statement = this.connect.createStatement();
+            statement = this.storage.getConnect().createStatement();
             resultSet = statement.executeQuery("SELECT * FROM artifact_provider");
             while (resultSet.next())
             {
@@ -289,14 +206,14 @@ public class Core
 
     void prepareToLoadModules()
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         // Update missing count.
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("UPDATE module SET missing_count=missing_count+1");
+            statement = this.storage.getConnect().prepareStatement("UPDATE module SET missing_count=missing_count+1");
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -310,14 +227,14 @@ public class Core
 
     void finalizeLoadingModules(int deleteThreshold)
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         // Remove modules that have been missing for too long.
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("DELETE FROM module WHERE missing_count > ?");
+            statement = this.storage.getConnect().prepareStatement("DELETE FROM module WHERE missing_count > ?");
             statement.setLong(1, deleteThreshold);
             statement.executeUpdate();
         } catch (Exception e)
@@ -342,13 +259,13 @@ public class Core
         long pk = findTestPlan(name, description);
 
         // This will work in read-only mode to return an existing module.
-        if (pk != 0 || read_only)
+        if (pk != 0 || this.storage.isReadOnly())
             return pk;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("INSERT INTO test_plan (name, description) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
+            statement = this.storage.getConnect().prepareStatement("INSERT INTO test_plan (name, description) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, name);
             statement.setString(2, description);
             statement.executeUpdate();
@@ -383,13 +300,13 @@ public class Core
         long pk = findTest(pk_test_plan, name, description, script);
 
         // This will work in read-only mode to return an existing module.
-        if (pk != 0 || read_only)
+        if (pk != 0 || this.storage.isReadOnly())
             return pk;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            statement = this.storage.getConnect().prepareStatement("INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setLong(1, pk_test_plan);
             statement.setString(2, name);
             statement.setString(3, description);
@@ -423,7 +340,7 @@ public class Core
         long pk = findModule(module);
 
         // This will work in read-only mode to return an existing module.
-        if (pk != 0 || read_only)
+        if (pk != 0 || this.storage.isReadOnly())
             return pk;
 
         PreparedStatement statement = null;
@@ -431,7 +348,7 @@ public class Core
         //TODO: Release date, actual release date, order all need to be added.
         try
         {
-            statement = this.connect.prepareStatement("INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            statement = this.storage.getConnect().prepareStatement("INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, module.getOrganization());
             statement.setString(2, module.getName());
             statement.setString(3, attributes);
@@ -462,19 +379,19 @@ public class Core
      */
     private void deleteModule(long pk_module)
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("DELETE FROM module WHERE pk_module=?");
+            statement = this.storage.getConnect().prepareStatement("DELETE FROM module WHERE pk_module=?");
             statement.setLong(1, pk_module);
             statement.executeUpdate();
             safeClose(statement);
             statement = null;
 
-            statement = this.connect.prepareStatement("DELETE FROM artifact WHERE merged_from_module=?");
+            statement = this.storage.getConnect().prepareStatement("DELETE FROM artifact WHERE merged_from_module=?");
             statement.setLong(1, pk_module);
             statement.executeUpdate();
         } catch (Exception e)
@@ -512,7 +429,7 @@ public class Core
         ResultSet resultSet = null;
 
         try {
-            statement = this.connect.prepareStatement("SELECT pk_content FROM content WHERE pk_content = ?");
+            statement = this.storage.getConnect().prepareStatement("SELECT pk_content FROM content WHERE pk_content = ?");
             statement.setBytes(1, h.toBytes());
             resultSet = statement.executeQuery();
             return resultSet.next();
@@ -611,7 +528,7 @@ public class Core
         String strHash = h.toString();
         File target = new File(this.artifacts, strHash);
         boolean dbKnowsOfFileHash = dbKnowsOfFileHash(h);
-        if (!read_only) {
+        if (!this.storage.isReadOnly()) {
             try {
                 // Move the file to the cache, then update db based on success/fail, then if fail, cleanup.
                 FileUtils.deleteQuietly(target); // in case target file exists
@@ -622,7 +539,7 @@ public class Core
                 } else {
                     PreparedStatement statement = null;
                     try {
-                        statement = this.connect.prepareStatement("INSERT INTO content (pk_content, is_generated) VALUES (?,1)");
+                        statement = this.storage.getConnect().prepareStatement("INSERT INTO content (pk_content, is_generated) VALUES (?,1)");
                         statement.setBinaryStream(1, new ByteArrayInputStream(h.toBytes()));
                         statement.executeUpdate();
                         return h;
@@ -701,16 +618,16 @@ public class Core
     long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module)
     {
         long pk = 0;
-        if (read_only)
+        if (this.storage.isReadOnly())
             return pk;
 
         PreparedStatement statement = null;
         try
         {
             if (merged_from_module == 0) {
-                statement = this.connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             } else {
-                statement = this.connect.prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             }
 
             statement.setLong(1, pk_module);
@@ -731,8 +648,7 @@ public class Core
         } catch (Exception e)
         {
             this.log.error("<internal> Core.addArtifact(): Could not add artifact to module, " + e.getMessage());
-        } finally
-        {
+        } finally {
             safeClose(statement);
             statement = null;
         }
@@ -746,14 +662,14 @@ public class Core
      */
     void clearGeneratedContent()
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         // Mark test instances for later cleanup.
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("UPDATE content SET is_generated=0");
+            statement = this.storage.getConnect().prepareStatement("UPDATE content SET is_generated=0");
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -770,13 +686,13 @@ public class Core
      */
     void pruneContent()
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("DELETE content FROM content LEFT JOIN artifact ON content.pk_content = artifact.fk_content WHERE artifact.fk_content IS NULL AND content.is_generated=0");
+            statement = this.storage.getConnect().prepareStatement("DELETE content FROM content LEFT JOIN artifact ON content.pk_content = artifact.fk_content WHERE artifact.fk_content IS NULL AND content.is_generated=0");
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -790,7 +706,7 @@ public class Core
 
     void pruneTemplates()
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         // Find all top-level templates.
@@ -798,14 +714,12 @@ public class Core
         PreparedStatement deleteTemplate = null;
 
         // Determine the set of all referenced templates.
-        try
-        {
+        try {
             // TODO: see that fk_template is not a column of table test_instance
-            PreparedStatement findTemplates = this.connect.prepareStatement("select distinct fk_template from test_instance");
+            PreparedStatement findTemplates = this.storage.getConnect().prepareStatement("select distinct fk_template from test_instance");
             foundTemplates = findTemplates.executeQuery();
             Set<Long> used = new HashSet<Long>();
-            while (foundTemplates.next())
-            {
+            while (foundTemplates.next()) {
                 long pk = foundTemplates.getLong("fk_template");
                 getRequiredTemplates(pk, used);
             }
@@ -815,8 +729,8 @@ public class Core
             safeClose(foundTemplates);
             foundTemplates = null;
 
-            deleteTemplate = this.connect.prepareStatement("DELETE FROM template WHERE pk_template=?");
-            findTemplates = this.connect.prepareStatement("select pk_template from template");
+            deleteTemplate = this.storage.getConnect().prepareStatement("DELETE FROM template WHERE pk_template=?");
+            findTemplates = this.storage.getConnect().prepareStatement("select pk_template from template");
             foundTemplates = findTemplates.executeQuery();
             while (foundTemplates.next())
             {
@@ -828,8 +742,7 @@ public class Core
                     deleteTemplate.executeUpdate();
                 }
             }
-        } catch (Exception ignore)
-        {
+        } catch (Exception ignore) {
             safeClose(foundTemplates);
             foundTemplates = null;
             safeClose(deleteTemplate);
@@ -1219,7 +1132,7 @@ public class Core
 
         try
         {
-            statement = this.connect.createStatement();
+            statement = this.storage.getConnect().createStatement();
             resultSet = statement.executeQuery("SELECT pk_module, organization, name, attributes, version, status, sequence FROM module");
             while (resultSet.next())
             {
@@ -1255,7 +1168,7 @@ public class Core
 
         try
         {
-            statement = this.connect.createStatement();
+            statement = this.storage.getConnect().createStatement();
             resultSet = statement.executeQuery(new String("SELECT pk_module, organization, name, attributes, version, status, sequence" + " FROM module" + " WHERE organization = " + organization + " AND name = '" + name + "'"));
             while (resultSet.next())
             {
@@ -1310,7 +1223,7 @@ public class Core
         try
         {
             // We are willing to find any artifact from any merged module
-            statement = this.connect.createStatement();
+            statement = this.storage.getConnect().createStatement();
             String query = String.format("SELECT artifact.fk_content" + " FROM artifact" + " WHERE artifact.fk_module = %d AND artifact.name = '%s.dep'", pk, artifact.getName());
             resultSet = statement.executeQuery(query);
             if (resultSet.next())
@@ -1332,7 +1245,7 @@ public class Core
                     String[] fields = line.split(",");
                     if (fields.length == 1 || fields.length == 2)
                     {
-                        statement = this.connect.createStatement();
+                        statement = this.storage.getConnect().createStatement();
                         query = String.format("SELECT artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " WHERE artifact.fk_module = %d AND artifact.name REGEXP '%s" + "'", pk, fields[0]);
                         resultSet = statement.executeQuery(query);
                         while (resultSet.next())
@@ -1353,7 +1266,7 @@ public class Core
 
                     } else if (fields.length == 3 || fields.length == 4)
                     {
-                        statement = this.connect.createStatement();
+                        statement = this.storage.getConnect().createStatement();
 
                         String[] mod_fields = fields[0].split("#");
                         String[] ver_fields = fields[1].split("/");
@@ -1472,7 +1385,7 @@ public class Core
             String artifact_name = name[name_index];
             try
             {
-                statement = this.connect.createStatement();
+                statement = this.storage.getConnect().createStatement();
                 String configuration_match = "";
                 if (configuration != null)
                     configuration_match = " AND artifact.configuration='" + configuration + this.singleQuote;
@@ -1567,7 +1480,7 @@ public class Core
 
         try
         {
-            statement = this.connect.createStatement();
+            statement = this.storage.getConnect().createStatement();
             resultSet = statement.executeQuery("SELECT test.pk_test, test.script" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " WHERE test.script != ''");
             while (resultSet.next())
             {
@@ -1598,13 +1511,13 @@ public class Core
     {
         // Mark a module as found.
 
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("UPDATE test SET last_run=?, last_stdout=?, last_stderr=? WHERE pk_test=?");
+            statement = this.storage.getConnect().prepareStatement("UPDATE test SET last_run=?, last_stdout=?, last_stderr=? WHERE pk_test=?");
             statement.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
             statement.setString(2, stdout);
             statement.setString(3, stderr);
@@ -1654,7 +1567,7 @@ public class Core
         HashSet<Artifact> set = new HashSet<Artifact>();
         try
         {
-            statement = this.connect.createStatement();
+            statement = this.storage.getConnect().createStatement();
             resultSet = statement.executeQuery("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content, artifact.merged_from_module" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE module.pk_module = " + pk_module + intro + name_match + separator + configuration_match
                             + " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC");
             Map<Long, DBModule> modules = new HashMap<Long, DBModule>();
@@ -1716,7 +1629,7 @@ public class Core
         ResultSet resultSet = null;
         try
         {
-            statement = this.connect.prepareStatement("SELECT test.pk_test" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test = ? AND module_to_test_plan.fk_module = ?");
+            statement = this.storage.getConnect().prepareStatement("SELECT test.pk_test" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test = ? AND module_to_test_plan.fk_module = ?");
             statement.setLong(1, this.pk_target_test);
             statement.setLong(2, pk);
             resultSet = statement.executeQuery();
@@ -1745,7 +1658,7 @@ public class Core
 
         try
         {
-            statement = this.connect.prepareStatement("SELECT test_plan.pk_test_plan" + " FROM test_plan" +
+            statement = this.storage.getConnect().prepareStatement("SELECT test_plan.pk_test_plan" + " FROM test_plan" +
                                                       " WHERE test_plan.name = '" + name + this.singleQuote + " AND test_plan.description = '" + description + this.singleQuote);
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
@@ -1774,7 +1687,7 @@ public class Core
 
         try
         {
-            statement = this.connect.prepareStatement("SELECT test.pk_test" + " FROM test" + " WHERE test.fk_test_plan = ?" + " AND test.name = ?" + " AND test.description = ? " + " AND test.script = ?");
+            statement = this.storage.getConnect().prepareStatement("SELECT test.pk_test" + " FROM test" + " WHERE test.fk_test_plan = ?" + " AND test.name = ?" + " AND test.description = ? " + " AND test.script = ?");
             statement.setLong(1, pk_test_plan);
             statement.setString(2, name);
             statement.setString(3, description);
@@ -1817,7 +1730,7 @@ public class Core
         String attributes = new Attributes(module.getAttributes()).toString();
         try
         {
-            statement = this.connect.prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'" + " AND module.sequence = '" + module.getSequence() + "'");
+            statement = this.storage.getConnect().prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'" + " AND module.sequence = '" + module.getSequence() + "'");
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
             {
@@ -1841,13 +1754,13 @@ public class Core
     void updateModule(long pk_module)
     {
         // Mark a module as found.
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement(String.format("UPDATE module SET missing_count=0 WHERE pk_module=%d", pk_module));
+            statement = this.storage.getConnect().prepareStatement(String.format("UPDATE module SET missing_count=0 WHERE pk_module=%d", pk_module));
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -1879,7 +1792,7 @@ public class Core
         String attributes = new Attributes(module.getAttributes()).toString();
         try
         {
-            statement = this.connect.prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'");
+            statement = this.storage.getConnect().prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'");
             resultSet = statement.executeQuery();
             if (resultSet.isBeforeFirst())
             {
@@ -1977,7 +1890,7 @@ public class Core
         {
             TestInstance.Action A = dt.getAction(i);
 
-            statement = this.connect.prepareStatement("INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            statement = this.storage.getConnect().prepareStatement("INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setLong(1, pk);
             statement.setInt(2, i);
 
@@ -2000,7 +1913,7 @@ public class Core
             statement = null;
 
             //TODO: This doesn't handle dependencies, which need to roll up.
-            statement = this.connect.prepareStatement("INSERT INTO dt_to_dt (fk_parent,fk_child) VALUES (?,?)");
+            statement = this.storage.getConnect().prepareStatement("INSERT INTO dt_to_dt (fk_parent,fk_child) VALUES (?,?)");
             statement.setLong(1, pk);
             statement.setLong(2, linepk);
             statement.executeUpdate();
@@ -2018,7 +1931,7 @@ public class Core
 
                     try
                     {
-                        statement = this.connect.prepareStatement("INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)");
+                        statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)");
                         statement.setLong(1, artifact.getPK());
                         statement.setLong(2, linepk);
                         statement.setInt(3, au.getPrimary() ? 1 : 0);
@@ -2079,7 +1992,7 @@ public class Core
         // proceed with intended .add() behavior
         try {
             /* All described template additions are handled as transactions. */
-            this.connect.setAutoCommit(false);
+            this.storage.getConnect().setAutoCommit(false);
 
             long pk_template = syncTemplate(dt.getTemplate());
             if (result!=null || owner!=null) {
@@ -2091,7 +2004,7 @@ public class Core
             long pk = 0;
             try {
                 // insert a new row into table described_template, including a newly generated pk_described_template
-                statement = this.connect.prepareStatement("INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.storage.getConnect().prepareStatement("INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
                 statement.setLong(2, pk_template);
                 statement.setBinaryStream(3, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
@@ -2109,7 +2022,7 @@ public class Core
                 safeClose(statement);
                 statement = null;
 
-                statement = this.connect.prepareStatement("SELECT pk_described_template FROM described_template WHERE fk_module_set=? AND fk_template=?");
+                statement = this.storage.getConnect().prepareStatement("SELECT pk_described_template FROM described_template WHERE fk_module_set=? AND fk_template=?");
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
                 statement.setLong(2, pk_template);
                 ResultSet query = statement.executeQuery();
@@ -2120,16 +2033,16 @@ public class Core
                 safeClose(statement);
             }
 
-            this.connect.commit();
-            this.connect.setAutoCommit(true);
+            this.storage.getConnect().commit();
+            this.storage.getConnect().setAutoCommit(true);
 
             return new DBDescribedTemplate(pk,null);
         } catch (Exception e) {
             this.log.error("<internal> Core.add(): Failed to add described template: " + e);
             this.log.debug("stack trace: ", e);
             try {
-                this.connect.rollback();
-                this.connect.setAutoCommit(true);
+                this.storage.getConnect().rollback();
+                this.storage.getConnect().setAutoCommit(true);
             } catch (Exception e1) {
                 // TODO: This is really bad - failure to restore state.
             }
@@ -2182,7 +2095,7 @@ public class Core
         // Documentation (of template steps) needs to be recreated.
         PreparedStatement statement = null;
         try {
-            statement = this.connect.prepareStatement("DELETE FROM dt_line WHERE fk_described_template = ?");
+            statement = this.storage.getConnect().prepareStatement("DELETE FROM dt_line WHERE fk_described_template = ?");
             statement.setLong(1, me.pk);
             statement.executeUpdate();
         } finally {
@@ -2192,10 +2105,10 @@ public class Core
 
         // Updated documentation (of template steps) is written to db.
         try {
-            this.connect.setAutoCommit(false);
+            this.storage.getConnect().setAutoCommit(false);
 
             try {
-                statement = this.connect.prepareStatement("UPDATE described_template SET description_hash=? WHERE pk_described_template=?");
+                statement = this.storage.getConnect().prepareStatement("UPDATE described_template SET description_hash=? WHERE pk_described_template=?");
                 statement.setBinaryStream(1, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
                 statement.setLong(2, me.pk);
                 statement.executeUpdate();
@@ -2206,11 +2119,11 @@ public class Core
 
             addActions(dt, me.pk);
 
-            this.connect.commit();
-            this.connect.setAutoCommit(true);
+            this.storage.getConnect().commit();
+            this.storage.getConnect().setAutoCommit(true);
         } catch (Exception ignore) {
-            this.connect.rollback();
-            this.connect.setAutoCommit(true);
+            this.storage.getConnect().rollback();
+            this.storage.getConnect().setAutoCommit(true);
         }
 
         return me;
@@ -2270,7 +2183,7 @@ public class Core
                     // add our test instance to database
                     PreparedStatement statement2 = null;
                     try {
-                        statement2 = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                        statement2 = this.storage.getConnect().prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                         statement2.setLong(1, this.pk_target_test);
                         statement2.setLong(2, dbdt.pk);
                         //TODO: Determine the phase
@@ -2302,7 +2215,7 @@ public class Core
 
                             try {
                                 long pk_module = findModule(artifact.getModule());
-                                statement2 = this.connect.prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
+                                statement2 = this.storage.getConnect().prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
                                 statement2.setLong(1, pk_module);
                                 statement2.setLong(2, ti.pk);
                                 statement2.execute();
@@ -2326,7 +2239,7 @@ public class Core
                     Boolean dbResult = null;
                     String dbOwner = null;
                     try {
-                        statement2 = this.connect.createStatement();
+                        statement2 = this.storage.getConnect().createStatement();
                         resultSet = statement2.executeQuery("SELECT result, owner FROM run JOIN test_instance ON test_instance.fk_run = run.pk_run WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
 
                         if (resultSet.next()) {
@@ -2368,7 +2281,7 @@ public class Core
     {
         long pk = 0;
 
-        if (read_only)
+        if (this.storage.isReadOnly())
         {
             this.log.error("<internal> Core.syncTemplate(): database is read-only");
             this.log.error("<internal> Core.syncTemplate(): ------------------------");
@@ -2382,7 +2295,7 @@ public class Core
         ResultSet resultSet = null;
         try
         {
-            statement = this.connect.prepareStatement("SELECT pk_template FROM template WHERE hash=?");
+            statement = this.storage.getConnect().prepareStatement("SELECT pk_template FROM template WHERE hash=?");
             statement.setBinaryStream(1, new ByteArrayInputStream(sync.getHash().toBytes()));
 
             resultSet = statement.executeQuery();
@@ -2393,7 +2306,7 @@ public class Core
                 safeClose(statement);
                 statement = null;
 
-                statement = this.connect.prepareStatement("INSERT INTO template (hash, steps, enabled) VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.storage.getConnect().prepareStatement("INSERT INTO template (hash, steps, enabled) VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setBinaryStream(1, new ByteArrayInputStream(sync.getHash().toBytes()));
                 statement.setString(2, sync.toStandardString());
                 statement.setInt(3, 1); // Default is enabled.
@@ -2438,7 +2351,7 @@ public class Core
         // Read all the related artifacts
         try
         {
-            findArtifacts = this.connect.prepareStatement(String.format("select fk_content from template_to_all_content where fk_template='%d'", pk));
+            findArtifacts = this.storage.getConnect().prepareStatement(String.format("select fk_content from template_to_all_content where fk_template='%d'", pk));
             foundArtifacts = findArtifacts.executeQuery();
             while (foundArtifacts.next())
             {
@@ -2468,7 +2381,7 @@ public class Core
         // Read all the related artifacts
         try
         {
-            findArtifacts = this.connect.prepareStatement(String.format("select fk_content from template_to_content where fk_template='%d'", pk));
+            findArtifacts = this.storage.getConnect().prepareStatement(String.format("select fk_content from template_to_content where fk_template='%d'", pk));
             foundArtifacts = findArtifacts.executeQuery();
             while (foundArtifacts.next())
             {
@@ -2476,7 +2389,7 @@ public class Core
                 combined.add(hash);
             }
 
-            PreparedStatement findChildren = this.connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
+            PreparedStatement findChildren = this.storage.getConnect().prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
             foundChildren = findChildren.executeQuery();
             while (foundChildren.next())
             {
@@ -2509,7 +2422,7 @@ public class Core
         ResultSet foundChildren = null;
         try
         {
-            findChildren = this.connect.prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
+            findChildren = this.storage.getConnect().prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
             foundChildren = findChildren.executeQuery();
             while (foundChildren.next())
             {
@@ -2536,7 +2449,7 @@ public class Core
     void syncTopTemplateRelationships()
     {
         // Find all top-level templates.
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         /* Templates always have the same "contents" and "relationships" or their hash would change. This
@@ -2547,7 +2460,7 @@ public class Core
         PreparedStatement insertArtifact = null;
         try
         {
-            PreparedStatement findTemplates = this.connect.prepareStatement("select distinct fk_template from test_instance");
+            PreparedStatement findTemplates = this.storage.getConnect().prepareStatement("select distinct fk_template from test_instance");
             foundTemplates = findTemplates.executeQuery();
             while (foundTemplates.next())
             {
@@ -2561,7 +2474,7 @@ public class Core
                 for (Hash h : required)
                 {
                     // Need to add the relationship.
-                    insertArtifact = this.connect.prepareStatement("INSERT INTO template_to_all_content (fk_template, fk_content) VALUES (?,?)");
+                    insertArtifact = this.storage.getConnect().prepareStatement("INSERT INTO template_to_all_content (fk_template, fk_content) VALUES (?,?)");
                     insertArtifact.setLong(1, pk);
                     insertArtifact.setBinaryStream(2, new ByteArrayInputStream(h.toBytes()));
                     insertArtifact.executeUpdate();
@@ -2581,7 +2494,7 @@ public class Core
 
     public void syncTemplateRelationships(Template sync)
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         PreparedStatement statement = null;
@@ -2590,7 +2503,7 @@ public class Core
         {
             for (Template t : sync.allTemplates)
             {
-                statement = this.connect.prepareStatement(String.format("select fk_parent, fk_child from template_to_template where fk_parent='%d' and fk_child='%d'", sync.getPK(), t.getPK()));
+                statement = this.storage.getConnect().prepareStatement(String.format("select fk_parent, fk_child from template_to_template where fk_parent='%d' and fk_child='%d'", sync.getPK(), t.getPK()));
                 resultSet = statement.executeQuery();
                 if (!resultSet.isBeforeFirst())
                 {
@@ -2600,7 +2513,7 @@ public class Core
                     safeClose(statement);
                     statement = null;
 
-                    statement = this.connect.prepareStatement("INSERT INTO template_to_template (fk_parent, fk_child) VALUES (?,?)");
+                    statement = this.storage.getConnect().prepareStatement("INSERT INTO template_to_template (fk_parent, fk_child) VALUES (?,?)");
                     statement.setLong(1, sync.getPK());
                     statement.setLong(2, t.getPK());
                     statement.executeUpdate();
@@ -2616,7 +2529,7 @@ public class Core
 
             for (Content a : sync.artifacts)
             {
-                statement = this.connect.prepareStatement("select fk_template, fk_content from template_to_content where fk_template=? and fk_content=?");
+                statement = this.storage.getConnect().prepareStatement("select fk_template, fk_content from template_to_content where fk_template=? and fk_content=?");
                 statement.setLong(1, sync.getPK());
                 statement.setBinaryStream(2, new ByteArrayInputStream(a.getHash().toBytes()));
                 resultSet = statement.executeQuery();
@@ -2628,7 +2541,7 @@ public class Core
                     safeClose(statement);
                     statement = null;
 
-                    statement = this.connect.prepareStatement("INSERT INTO template_to_content (fk_template, fk_content) VALUES (?,?)");
+                    statement = this.storage.getConnect().prepareStatement("INSERT INTO template_to_content (fk_template, fk_content) VALUES (?,?)");
                     statement.setLong(1, sync.getPK());
                     statement.setBinaryStream(2, new ByteArrayInputStream(a.getHash().toBytes()));
                     statement.executeUpdate();
@@ -2656,13 +2569,13 @@ public class Core
     public void startSyncTestInstance(long pk_test)
     {
         // Mark test instances for later cleanup.
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement(String.format("UPDATE test_instance SET synchronized=0 WHERE fk_test=%d", pk_test));
+            statement = this.storage.getConnect().prepareStatement(String.format("UPDATE test_instance SET synchronized=0 WHERE fk_test=%d", pk_test));
             statement.executeUpdate();
         } catch (Exception ignore)
         {
@@ -2676,13 +2589,13 @@ public class Core
 
     public void stopSyncTestInstance(long pk_test)
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement(String.format("DELETE FROM test_instance WHERE synchronized=0 AND fk_test=%d", pk_test));
+            statement = this.storage.getConnect().prepareStatement(String.format("DELETE FROM test_instance WHERE synchronized=0 AND fk_test=%d", pk_test));
             statement.executeUpdate();
         } catch (Exception e)
         {
@@ -2705,7 +2618,7 @@ public class Core
         List<Long> testInstanceList = new ArrayList<Long>();
 
         try {
-            find_test_instance = this.connect.createStatement();
+            find_test_instance = this.storage.getConnect().createStatement();
             try (ResultSet test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test)) {
                 while (test_instances.next())
                     testInstanceList.add(test_instances.getLong("pk_test_instance"));
@@ -2731,7 +2644,7 @@ public class Core
         List<Long> testInstanceList = new ArrayList<Long>();
 
         try {
-            find_test_instance = this.connect.createStatement();
+            find_test_instance = this.storage.getConnect().createStatement();
             try (ResultSet test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance" +
                                                                             " INNER JOIN module_to_test_instance" +
                                                                             "  ON pk_test_instance = fk_test_instance " +
@@ -2759,7 +2672,7 @@ public class Core
         try
         {
             // TODO: Is this next line broken? Table test_instance does not have column fk_template (does have fk_described_template).
-            find_test_instance = this.connect.prepareStatement("SELECT pk_test_instance FROM test_instance WHERE fk_template=? AND fk_test=?");
+            find_test_instance = this.storage.getConnect().prepareStatement("SELECT pk_test_instance FROM test_instance WHERE fk_template=? AND fk_test=?");
             find_test_instance.setLong(1, sync.getDescribedTemplate().getPK());
             find_test_instance.setLong(2, pk_test);
             test_instances = find_test_instance.executeQuery();
@@ -2768,7 +2681,7 @@ public class Core
                 long pk = test_instances.getLong("pk_test_instance");
 
                 // We found a candidate, but need to verify that its version references exactly match.
-                find_versions = this.connect.prepareStatement("SELECT fk_version FROM test_instance_to_version WHERE fk_test_instance=?");
+                find_versions = this.storage.getConnect().prepareStatement("SELECT fk_version FROM test_instance_to_version WHERE fk_test_instance=?");
                 find_versions.setLong(1, pk);
                 his_versions = find_versions.executeQuery();
                 boolean extras = false;
@@ -2831,7 +2744,7 @@ public class Core
         long pk = 0;
 
         //TODO: Clean up
-        if (read_only)
+        if (this.storage.isReadOnly())
         {
             this.log.error("<internal> Core.syncTestInstance(): database is read-only");
             this.log.error("<internal> Core.syncTestInstance(): ------------------------");
@@ -2860,7 +2773,7 @@ public class Core
                 // There were no matches. Time to insert. Need to determine if the content exists.
 
                 // Get the component list associated with the test
-                statement = this.connect.prepareStatement(String.format("SELECT distinct pk_component" + " FROM component" + " JOIN component_to_test_plan ON component_to_test_plan.fk_component = component.pk_component" + " JOIN test_plan ON test_plan.pk_test_plan = component_to_test_plan.fk_test_plan" + " JOIN test ON test.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test='%d'", pk_test));
+                statement = this.storage.getConnect().prepareStatement(String.format("SELECT distinct pk_component" + " FROM component" + " JOIN component_to_test_plan ON component_to_test_plan.fk_component = component.pk_component" + " JOIN test_plan ON test_plan.pk_test_plan = component_to_test_plan.fk_test_plan" + " JOIN test ON test.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test='%d'", pk_test));
                 resultSet = statement.executeQuery();
 
                 // TODO: See why components here is never read. Is impl incomplete?
@@ -2875,7 +2788,7 @@ public class Core
                 safeClose(statement);
                 statement = null;
 
-                statement = this.connect.prepareStatement("INSERT INTO test_instance (fk_test, fk_template, fk_description, phase, synchronized) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                statement = this.storage.getConnect().prepareStatement("INSERT INTO test_instance (fk_test, fk_template, fk_description, phase, synchronized) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setLong(1, pk_test);
                 //                statement.setLong(2, sync.getDescribedTemplate().getPK());
                 //                statement.setLong(3, sync.getDescription().getPK());
@@ -2917,7 +2830,7 @@ public class Core
             } else
             {
                 // TODO: Validate the due date and phase
-                statement = this.connect.prepareStatement("UPDATE test_instance SET synchronized=1, fk_description=? WHERE pk_test_instance=?");
+                statement = this.storage.getConnect().prepareStatement("UPDATE test_instance SET synchronized=1, fk_description=? WHERE pk_test_instance=?");
                 //                statement.setLong( 1, sync.getDescription().getPK() );
                 statement.setLong(2, pk);
                 statement.executeUpdate();
@@ -2948,7 +2861,7 @@ public class Core
         Statement statement = null;
         try
         {
-            statement = this.connect.createStatement();
+            statement = this.storage.getConnect().createStatement();
             ResultSet resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
             if(resultSet.next()){
 
@@ -2974,13 +2887,13 @@ public class Core
      * @throws Exception on failure
      */
     void addResultToRun(long runID, boolean result) throws Exception {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         Statement statement = null;
         try
         {
-            statement = this.connect.createStatement();
+            statement = this.storage.getConnect().createStatement();
             int rowsUpdated = statement.executeUpdate("Update run SET result = " + result + ", end_time = NOW() WHERE pk_run = " + runID);
             if(rowsUpdated == 0){
                 throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
@@ -3000,7 +2913,7 @@ public class Core
 //  @SuppressWarnings("ReturnOfNull")
     Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             throw new Exception("Database connection is read only.");
 
         String hash;
@@ -3008,7 +2921,7 @@ public class Core
         Statement templateStatement = null;
         try
         {
-            templateStatement = this.connect.createStatement();
+            templateStatement = this.storage.getConnect().createStatement();
             resultSet = templateStatement.executeQuery("SELECT hash FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance = " + testInstanceNumber);
             if(resultSet.next()){
                 hash = new Hash(resultSet.getBytes("hash")).toString();
@@ -3029,7 +2942,7 @@ public class Core
         PreparedStatement runStatement = null;
         try
         {
-            runStatement = this.connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
+            runStatement = this.storage.getConnect().prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
             runStatement.setString(1, hash);
             runStatement.setNull(2, Types.BOOLEAN);
 
@@ -3066,13 +2979,13 @@ public class Core
 
     void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)
     {
-        if (read_only)
+        if (this.storage.isReadOnly())
             return;
 
         PreparedStatement statement = null;
         try
         {
-            statement = this.connect.prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
+            statement = this.storage.getConnect().prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
             statement.setString(1, hash);
 
             if (result != null)

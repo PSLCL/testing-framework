@@ -2,18 +2,40 @@ package com.pslcl.dtf.core.storage;
 
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
-import com.pslcl.dtf.core.generator.template.TestInstance;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * The storage interface for the Distributed Testing Framework.
  */
 public interface DTFStorage {
 
+    void close();
+    Connection getConnect();
+
+    /**
+     *
+     * @return boolean
+     */
+    boolean isReadOnly();
+
+    /**
+     *
+     * @param pkDescribedTemplate
+     * @return
+     * @throws Exception
+     */
     boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws Exception;
 
-    Optional<Core.DBDescribedTemplate> getDBDescribedTemplate(DescribedTemplate.Key matchKey) throws Exception;
+    /**
+     * Get the matching DBDescribedTemplate that matches the given key.
+     *
+     * @param matchKey The key to match.
+     * @return The matching DBDescribedTemplate object, wrapped in Optional, which may be empty.
+     * @throws SQLException on error
+     */
+    Optional<Core.DBDescribedTemplate> getDBDescribedTemplate(DescribedTemplate.Key matchKey) throws SQLException;
 
 }

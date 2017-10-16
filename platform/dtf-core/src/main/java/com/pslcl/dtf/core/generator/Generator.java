@@ -15,15 +15,6 @@
  */
 package com.pslcl.dtf.core.generator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.artifact.Artifact;
@@ -32,6 +23,14 @@ import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.Template.Parameter;
 import com.pslcl.dtf.core.generator.template.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Generator
 {
