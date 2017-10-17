@@ -3,6 +3,8 @@ package com.pslcl.dtf.core.storage.mysql;
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.PortalConfig;
+import com.pslcl.dtf.core.artifact.Module;
+import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 import com.pslcl.dtf.core.storage.DTFStorage;
 import org.apache.commons.dbcp.BasicDataSource;
@@ -173,7 +175,7 @@ public class MySQLDtfStorage implements DTFStorage {
      *
      * @param name The name of the test plan.
      * @param description The description of the test plan.
-     * @return primary key of found test plan
+     * @return primary key of found test plan or zero for none
      * @throws SQLException on error
      */
     private long findTestPlan(String name, String description) throws SQLException {
@@ -249,6 +251,68 @@ public class MySQLDtfStorage implements DTFStorage {
             }
         }
     }
+
+    @Override
+    public long addModule(Module module) throws SQLException {
+        long pk;
+        try {
+            pk = findModule(module);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> MySQLDtfStorage.addModule(): Continues even though couldn't lookup existing module, msg: " + sqle);
+            return 0;
+        }
+
+        // let read-only mode return an existing module
+        if (pk==0 && !this.read_only) {
+            // add our new module
+            String attributes = new Attributes(module.getAttributes()).toString();
+            String query = "INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)" + Statement.RETURN_GENERATED_KEYS;
+            // TODO: Release date, actual release date, order all need to be added.
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.setString(1, module.getOrganization());
+                preparedStatement.setString(2, module.getName());
+                preparedStatement.setString(3, attributes);
+                preparedStatement.setString(4, module.getVersion());
+                preparedStatement.setString(5, module.getStatus());
+                preparedStatement.setString(6, module.getSequence());
+                try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
+                    if (keys.next())
+                        pk = keys.getLong(1);
+                }
+            }
+        }
+        return pk;
+    }
+
+    @Override
+    public long findModule(Module module) throws SQLException {
+        // Short-cut the lookup if it is one of our modules.
+        if (module instanceof Core.DBModule) {
+            Core.DBModule dbmod = (Core.DBModule) module;
+            if (dbmod.pk != 0)
+                return dbmod.pk;
+        }
+
+//      this.log.error("<internal> Core.findModule(): Couldn't find module, msg: " + sqle);
+
+        String attributes = new Attributes(module.getAttributes()).toString();
+        String query = "SELECT module.pk_module" + " FROM module" +
+                       " WHERE module.organization = '" + module.getOrganization() + "'" +
+                       "   AND module.name = '" + module.getName() + "'" +
+                       "   AND module.attributes = '" + attributes + "'" +
+                       "   AND module.version = '" + module.getVersion() + "'" +
+                       "   AND module.sequence = '" + module.getSequence() + "'";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            if (resultSet.isBeforeFirst()) { // true for resultSet has row(s); false for no rows exist
+                resultSet.next();
+                return resultSet.getLong("module.pk_module");
+            } else {
+                return 0;
+            }
+        }
+    }
+
 
     @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {

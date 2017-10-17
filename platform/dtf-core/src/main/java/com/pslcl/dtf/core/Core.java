@@ -151,49 +151,49 @@ public class Core
         return this.storage;
     }
 
-    /**
-     * Add a module to the database.
-     * @param module The module to add.
-     * @return The primary key of the new module, or zero if there is an error or in read-only mode. If the module already exists then
-     * the existing primary key is returned;
-     */
-    long addModule(Module module)
-    {
-        long pk = findModule(module);
-
-        // This will work in read-only mode to return an existing module.
-        if (pk != 0 || this.storage.isReadOnly())
-            return pk;
-
-        PreparedStatement statement = null;
-        String attributes = new Attributes(module.getAttributes()).toString();
-        //TODO: Release date, actual release date, order all need to be added.
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            statement.setString(1, module.getOrganization());
-            statement.setString(2, module.getName());
-            statement.setString(3, attributes);
-            statement.setString(4, module.getVersion());
-            statement.setString(5, module.getStatus());
-            statement.setString(6, module.getSequence());
-            statement.executeUpdate();
-
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next())
-                    pk = keys.getLong(1);
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.addModule(): Could not add module, " + e.getMessage());
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-
-        return pk;
-    }
+//    /**
+//     * Add a module to the database.
+//     * @param module The module to add.
+//     * @return The primary key of the new module, or zero if there is an error or in read-only mode. If the module already exists then
+//     * the existing primary key is returned;
+//     */
+//    long addModule(Module module) throws SQLException
+//    {
+//        long pk = findModule(module);
+//
+//        // This will work in read-only mode to return an existing module.
+//        if (pk != 0 || this.storage.isReadOnly())
+//            return pk;
+//
+//        PreparedStatement statement = null;
+//        String attributes = new Attributes(module.getAttributes()).toString();
+//        //TODO: Release date, actual release date, order all need to be added.
+//        try
+//        {
+//            statement = this.storage.getConnect().prepareStatement("INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+//            statement.setString(1, module.getOrganization());
+//            statement.setString(2, module.getName());
+//            statement.setString(3, attributes);
+//            statement.setString(4, module.getVersion());
+//            statement.setString(5, module.getStatus());
+//            statement.setString(6, module.getSequence());
+//            statement.executeUpdate();
+//
+//            try (ResultSet keys = statement.getGeneratedKeys()) {
+//                if (keys.next())
+//                    pk = keys.getLong(1);
+//            }
+//        } catch (Exception e)
+//        {
+//            this.log.error("<internal> Core.addModule(): Could not add module, " + e.getMessage());
+//        } finally
+//        {
+//            safeClose(statement);
+//            statement = null;
+//        }
+//
+//        return pk;
+//    }
 
     /**
      * Delete a module.
@@ -576,10 +576,10 @@ public class Core
      * This class represents a module that is backed by the core database. Operations on the module will refer
      * to database content.
      */
-    private static class DBModule implements Module
+    public static class DBModule implements Module
     {
         private Core core;
-        private long pk;
+        public long pk;
         private String organization;
         private String name;
         private Attributes attributes;
@@ -1473,8 +1473,7 @@ public class Core
         return false;
     }
 
-    long findModule(Module module)
-    {
+    long findModule(Module module) {
         // Short-cut the lookup if it is one of our modules.
         if (module instanceof DBModule)
         {

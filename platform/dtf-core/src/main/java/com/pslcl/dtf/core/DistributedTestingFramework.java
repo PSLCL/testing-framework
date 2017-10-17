@@ -284,7 +284,13 @@ public final class DistributedTestingFramework
                 if (contains_generator || (merge!=null && merge.length()>0))
                     core.deletePriorBuildSequenceNumbers(module);
 
-                long pkModule = core.addModule(module);
+                long pkModule = 0;
+                try {
+                    pkModule = core.getStorage().addModule(module);
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> module(): Continues even though could not add module, " + sqle);
+                }
+
                 for (Artifact artifact : artifacts)
                 {
                     Content content = artifact.getContent();

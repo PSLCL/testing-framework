@@ -1,6 +1,7 @@
 package com.pslcl.dtf.core.storage;
 
 import com.pslcl.dtf.core.Core;
+import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 
 import java.sql.Connection;
@@ -56,10 +57,25 @@ public interface DTFStorage {
      * @param name The name of the test.
      * @param description The description of the test.
      * @param script The script of the test.
-     * @return The primary key of the new test, or zero if there is an error or in read-only mode. If the test already exists then
-     * the existing primary key is returned;
+     * @return The primary key of the new test, or zero if there is an error or in read-only mode.
+     * If the test already exists then the existing primary key is returned;
      */
     long addTest(long pk_test_plan, String name, String description, String script) throws SQLException;
+
+    /**
+     * Add a module to the database.
+     * @param module The module to add.
+     * @return The primary key of the new module, or zero if there is an error or in read-only mode.
+     * If the module already exists then the existing primary key is returned.
+     */
+    long addModule(Module module) throws SQLException;
+
+    /**
+     * Find a module in the database.
+     * @param module The module to find.
+     * @return The primary key of the found module or zero for none
+     */
+    long findModule(Module module) throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
