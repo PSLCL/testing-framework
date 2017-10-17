@@ -64,6 +64,9 @@ var all = {
     // JVM args for synchronize process.
     jvm_args: "-Xms1024m -Xmx1024m",
 
+    // Whether or not to run generators on synchronize.
+    generators: true,
+
     // The number of generator processes that may run in parallel during synchronize.
     generator_process_count: 5,
 

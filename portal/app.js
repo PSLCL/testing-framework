@@ -39,6 +39,9 @@ if ( env == 'production' && config.synchronize.enabled ) {
             parameters.push( '--generator-process-count' );
             parameters.push( '' + config.synchronize.generator_process_count );
         };
+        if ( !config.synchronize.generators ) {
+            parameters.push( '--no-generators' );
+        };
 
         var child = spawn('java',
                 parameters,
