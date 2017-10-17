@@ -4,6 +4,8 @@ import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -33,13 +35,22 @@ public interface DTFStorage {
     /**
      *
      */
-    void prepareToLoadModules() throws SQLException;
+    void updateModulesMissingCount() throws SQLException;
 
     /**
      *
      * @param deleteThreshold delete module when synchronize() passes exceed this number
      */
-    void finalizeLoadingModules(int deleteThreshold) throws SQLException;
+    void pruneModules(int deleteThreshold) throws SQLException;
+
+    /**
+     * Add a test plan to the database.
+     * @param name The name of the test plan.
+     * @param description The description of the test plan.
+     * @return The primary key of the new test plan, or zero if there is an error or in read-only mode.
+     * If the test plan already exists then the existing primary key is returned.
+     */
+    long addTestPlan(String name, String description) throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

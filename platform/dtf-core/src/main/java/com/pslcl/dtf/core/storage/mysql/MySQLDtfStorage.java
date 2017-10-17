@@ -13,12 +13,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class MySQLDtfStorage implements DTFStorage {
     private final Logger log;
+    private static final String singleQuote = "'";
     private final PortalConfig config;
     private boolean read_only;
 
@@ -118,7 +120,7 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public void prepareToLoadModules() throws SQLException {
+    public void updateModulesMissingCount() throws SQLException {
         if (!this.read_only) {
             // Update missing count.
             String query = "UPDATE module SET missing_count=missing_count+1";
@@ -129,13 +131,62 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public void finalizeLoadingModules(int deleteThreshold) throws SQLException {
+    public void pruneModules(int deleteThreshold) throws SQLException {
         if (!this.read_only) {
             // Remove modules that have been missing for too long.
             String query = "DELETE FROM module WHERE missing_count > ?";
             try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
                 preparedStatement.setLong(1, deleteThreshold);
                 preparedStatement.executeUpdate();
+            }
+        }
+    }
+
+    @Override
+    public long addTestPlan(String name, String description) throws SQLException {
+        long pk = 0;
+        try {
+            pk = this.findTestPlan(name, description);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> Core.addTestPlan(): Couldn't lookup existing test plan, msg: " + sqle);
+            throw sqle;
+        }
+
+        // let read-only mode return an existing module
+        if (pk==0 && !this.read_only) {
+            // add our new test plan
+            String query = "INSERT INTO test_plan (name, description) VALUES (?,?)" + Statement.RETURN_GENERATED_KEYS;
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.setString(1, name);
+                preparedStatement.setString(2, description);
+                preparedStatement.executeUpdate();
+                try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
+                    if (keys.next())
+                        pk = keys.getLong(1);
+                }
+            }
+        }
+        return pk;
+    }
+
+    /**
+     *
+     * @param name The name of the test plan.
+     * @param description The description of the test plan.
+     * @return primary key of found test plan
+     * @throws SQLException on error
+     */
+    private long findTestPlan(String name, String description) throws SQLException {
+        String query = "SELECT test_plan.pk_test_plan" + " FROM test_plan" +
+                       " WHERE test_plan.name = '" + name + singleQuote +
+                       "   AND test_plan.description = '" + description + singleQuote;
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            if (resultSet.isBeforeFirst()) { // true for resultSet has row(s); false for no rows exist
+                resultSet.next();
+                return resultSet.getLong("test_plan.pk_test_plan");
+            } else {
+                return 0;
             }
         }
     }

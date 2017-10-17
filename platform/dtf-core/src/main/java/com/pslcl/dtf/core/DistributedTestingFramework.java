@@ -234,15 +234,12 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        public void module(ArtifactProvider source, Module module, String merge)
-        {
-            try
-            {
+        public void module(ArtifactProvider source, Module module, String merge) {
+            try {
                 // Check to see if the module exists. If it does then return.
                 // If it does not exist then add the module and iterate the artifacts.
                 long pk_module = core.findModule(module);
-                if (pk_module != 0)
-                {
+                if (pk_module != 0) {
                     core.updateModule(pk_module); // clear module.missing_count
                     return;
                 }
@@ -478,47 +475,26 @@ public final class DistributedTestingFramework
     }
 
     @SuppressWarnings("MagicNumber")
-    private static Set<PosixFilePermission> toPosixPermissions(int mode)
-    {
+    private static Set<PosixFilePermission> toPosixPermissions(int mode) {
         Set<PosixFilePermission> permissions = EnumSet.noneOf(PosixFilePermission.class);
         if ((mode & 0b001_000) == 0b001_000)
-        {
             permissions.add(PosixFilePermission.GROUP_EXECUTE);
-        }
         if ((mode & 0b100_000) == 0b100_000)
-        {
             permissions.add(PosixFilePermission.GROUP_READ);
-        }
         if ((mode & 0b010_000) == 0b010_000)
-        {
             permissions.add(PosixFilePermission.GROUP_WRITE);
-        }
-
         if ((mode & 0b001) == 0b001)
-        {
             permissions.add(PosixFilePermission.OTHERS_EXECUTE);
-        }
         if ((mode & 0b100) == 0b100)
-        {
             permissions.add(PosixFilePermission.OTHERS_READ);
-        }
         if ((mode & 0b010) == 0b010)
-        {
             permissions.add(PosixFilePermission.OTHERS_WRITE);
-        }
-
         if ((mode & 0b001_000_000) == 0b001_000_000)
-        {
             permissions.add(PosixFilePermission.OWNER_EXECUTE);
-        }
         if ((mode & 0b100_000_000) == 0b100_000_000)
-        {
             permissions.add(PosixFilePermission.OWNER_READ);
-        }
         if ((mode & 0b010_000_000) == 0b010_000_000)
-        {
             permissions.add(PosixFilePermission.OWNER_WRITE);
-        }
 
         return permissions;
     }
@@ -589,9 +565,9 @@ public final class DistributedTestingFramework
                         LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> Core.getStorage().getArtifactProviders(): Halt because could not read artifact providers, " + e.getMessage());
                         return;
                     }
-                    core.getStorage().prepareToLoadModules(); // adds 1 to missing_count of every pk_module row
+                    core.getStorage().updateModulesMissingCount(); // adds 1 to missing_count of every pk_module row
                 } catch (SQLException e) {
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("<internal> Core.getStorage().prepareToLoadModules(): Continue even though could not update missing_count, " + e.getMessage());
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("<internal> Core.getStorage().updateModulesMissingCount(): Continue even though could not update missing_count, " + e.getMessage());
                 }
 
                 HandleModule handler = new HandleModule(core);
@@ -620,9 +596,9 @@ public final class DistributedTestingFramework
                 // Finalize module loading
                 if (noModuleErrors && prune>0) {
                     try {
-                        core.getStorage().finalizeLoadingModules(prune); // can influence missing_count
+                        core.getStorage().pruneModules(prune); // can influence missing_count
                     } catch (Exception e) {
-                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("<internal> Core.getStorage().finalizeLoadingModules(): Continue even though could not prune module, " + e.getMessage());
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("<internal> Core.getStorage().pruneModules(): Continue even though could not prune module, " + e.getMessage());
                     }
                 }
 
@@ -991,20 +967,17 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        public Module getModule()
-        {
+        public Module getModule() {
             return module;
         }
 
         @Override
-        public String getConfiguration()
-        {
+        public String getConfiguration() {
             return "default";
         }
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
@@ -1049,27 +1022,23 @@ public final class DistributedTestingFramework
             }
 
             @Override
-            public String getValue(Template template) throws Exception
-            {
+            public String getValue(Template template) throws Exception {
                 return "";
             }
 
             @Override
-            public Hash getHash()
-            {
+            public Hash getHash() {
                 return hash;
             }
 
             @Override
-            public InputStream asStream()
-            {
+            public InputStream asStream() {
                 return new ByteArrayInputStream(content);
             }
 
             @Override
             @SuppressWarnings("ReturnOfCollectionOrArrayField")
-            public byte[] asBytes()
-            {
+            public byte[] asBytes() {
                 return content;
             }
         }
@@ -1077,8 +1046,7 @@ public final class DistributedTestingFramework
         private TarContent content = null;
 
         @Override
-        public Content getContent()
-        {
+        public Content getContent() {
             if (content != null)
                 return content;
 
@@ -1088,8 +1056,7 @@ public final class DistributedTestingFramework
 
         @Override
         @SuppressWarnings("MagicNumber")
-        public int getPosixMode()
-        {
+        public int getPosixMode() {
             return 0b100_100_100;
         }
 
@@ -1126,58 +1093,49 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        public String getOrganization()
-        {
+        public String getOrganization() {
             return organization;
         }
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @Override
-        public String getVersion()
-        {
+        public String getVersion() {
             return version;
         }
 
         @Override
-        public String getStatus()
-        {
+        public String getStatus() {
             return status;
         }
 
         @Override
-        public String getSequence()
-        {
+        public String getSequence() {
             return String.format("%05d", sequence);
         }
 
         @Override
-        public Map<String, String> getAttributes()
-        {
+        public Map<String, String> getAttributes() {
             return new HashMap<String, String>();
         }
 
         @Override
-        public List<Artifact> getArtifacts()
-        {
+        public List<Artifact> getArtifacts() {
             List<Artifact> result = new ArrayList<Artifact>();
             result.add(new PopulateArtifact(this, organization + "-" + name + "-" + version + ".tar.gz", artifacts, start));
             return result;
         }
 
         @Override
-        public List<Artifact> getArtifacts(String namePattern)
-        {
+        public List<Artifact> getArtifacts(String namePattern) {
             return new ArrayList<Artifact>();
         }
 
         @Override
-        public List<Artifact> getArtifacts(String namePattern, String configuration)
-        {
+        public List<Artifact> getArtifacts(String namePattern, String configuration) {
             return new ArrayList<Artifact>();
         }
     }
@@ -1243,8 +1201,7 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        public boolean merge(String merge, Module module, Module target)
-        {
+        public boolean merge(String merge, Module module, Module target) {
             return false;
         }
 
@@ -1406,17 +1363,22 @@ public final class DistributedTestingFramework
         // We will generate a test instance for each result
         //   A test for each 10 test instances
         //   A test case for each 10 tests.
-        // However, all this command does is populate the test plans and tests.
-        // The rest of the work is done as a generator.
+        // However, all this first command call does is to populate the test plans and tests.
+        // The rest of the work is done by generators, to follow.
         int test_sequence = 0;
         int total_runs = plans * tests * instances;
 
-        for (int test_plan = 0; test_plan < plans; test_plan++)
-        {
-            String test_plan_str = Integer.toString(test_plan + 1);
-            long pk_test_plan = core.addTestPlan("Test Plan " + test_plan_str, "Description for test plan " + test_plan_str);
-            for (int test = 0; test < tests; test++)
-            {
+        for (int test_plan = 0; test_plan < plans; test_plan++) {
+            String test_plan_str = null;
+            long pk_test_plan = 0;
+            try {
+                test_plan_str = Integer.toString(test_plan + 1);
+                pk_test_plan = core.getStorage().addTestPlan("Test Plan " + test_plan_str, "Description for test plan " + test_plan_str);
+            } catch (SQLException e) {
+                LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> .populate(): Continues, even though could not add test plan, msg: " + e);
+            }
+
+            for (int test = 0; test < tests; test++) {
                 String test_str = test_plan_str + "/" + Integer.toString(test + 1);
                 long pk_test = core.addTest(pk_test_plan, "Test " + test_str, "Description for test " + test_str, "");
 

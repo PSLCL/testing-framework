@@ -152,45 +152,6 @@ public class Core
     }
 
     /**
-     * Add a test plan to the database.
-     * @param name The name of the test plan.
-     * @param description The description of the test plan.
-     * @return The primary key of the new test plan, or zero if there is an error or in read-only mode. If the test plan already exists then
-     * the existing primary key is returned;
-     */
-    long addTestPlan(String name, String description)
-    {
-        long pk = findTestPlan(name, description);
-
-        // This will work in read-only mode to return an existing module.
-        if (pk != 0 || this.storage.isReadOnly())
-            return pk;
-
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("INSERT INTO test_plan (name, description) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
-            statement.setString(1, name);
-            statement.setString(2, description);
-            statement.executeUpdate();
-
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next())
-                    pk = keys.getLong(1);
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.addTestPlan(): Could not add test plan, " + e.getMessage());
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-
-        return pk;
-    }
-
-    /**
      * Add a test  to the database.
      * @param pk_test_plan The primary key of the test plan.
      * @param name The name of the test.
@@ -1555,37 +1516,7 @@ public class Core
         return false;
     }
 
-    private long findTestPlan(String name, String description)
-    {
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("SELECT test_plan.pk_test_plan" + " FROM test_plan" +
-                                                      " WHERE test_plan.name = '" + name + this.singleQuote + " AND test_plan.description = '" + description + this.singleQuote);
-            resultSet = statement.executeQuery();
-            if (resultSet.isBeforeFirst())
-            {
-                resultSet.next();
-                return resultSet.getLong("test_plan.pk_test_plan");
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.findTestPlan(): Couldn't find test plan, " + e.getMessage());
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return 0;
-    }
-
-    private long findTest(long pk_test_plan, String name, String description, String script)
-    {
+    private long findTest(long pk_test_plan, String name, String description, String script) {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
 
