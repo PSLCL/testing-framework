@@ -152,49 +152,6 @@ public class Core
     }
 
     /**
-     * Add a test  to the database.
-     * @param pk_test_plan The primary key of the test plan.
-     * @param name The name of the test.
-     * @param description The description of the test.
-     * @param script The script of the test.
-     * @return The primary key of the new test, or zero if there is an error or in read-only mode. If the test already exists then
-     * the existing primary key is returned;
-     */
-    long addTest(long pk_test_plan, String name, String description, String script)
-    {
-        long pk = findTest(pk_test_plan, name, description, script);
-
-        // This will work in read-only mode to return an existing module.
-        if (pk != 0 || this.storage.isReadOnly())
-            return pk;
-
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            statement.setLong(1, pk_test_plan);
-            statement.setString(2, name);
-            statement.setString(3, description);
-            statement.setString(4, script);
-            statement.executeUpdate();
-
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next())
-                    pk = keys.getLong(1);
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.addTest(): Could not add test, " + e.getMessage());
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-
-        return pk;
-    }
-
-    /**
      * Add a module to the database.
      * @param module The module to add.
      * @return The primary key of the new module, or zero if there is an error or in read-only mode. If the module already exists then
@@ -1514,38 +1471,6 @@ public class Core
         }
 
         return false;
-    }
-
-    private long findTest(long pk_test_plan, String name, String description, String script) {
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("SELECT test.pk_test" + " FROM test" + " WHERE test.fk_test_plan = ?" + " AND test.name = ?" + " AND test.description = ? " + " AND test.script = ?");
-            statement.setLong(1, pk_test_plan);
-            statement.setString(2, name);
-            statement.setString(3, description);
-            statement.setString(4, script);
-
-            resultSet = statement.executeQuery();
-            if (resultSet.isBeforeFirst())
-            {
-                resultSet.next();
-                return resultSet.getLong("test.pk_test");
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.findTest(): Couldn't find test, " + e.getMessage());
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return 0;
     }
 
     long findModule(Module module)

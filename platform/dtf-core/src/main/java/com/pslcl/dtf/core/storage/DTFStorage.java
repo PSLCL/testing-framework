@@ -4,8 +4,6 @@ import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +49,17 @@ public interface DTFStorage {
      * If the test plan already exists then the existing primary key is returned.
      */
     long addTestPlan(String name, String description) throws SQLException;
+
+    /**
+     * Add a test  to the database.
+     * @param pk_test_plan The primary key of the test plan.
+     * @param name The name of the test.
+     * @param description The description of the test.
+     * @param script The script of the test.
+     * @return The primary key of the new test, or zero if there is an error or in read-only mode. If the test already exists then
+     * the existing primary key is returned;
+     */
+    long addTest(long pk_test_plan, String name, String description, String script) throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

@@ -144,12 +144,12 @@ public class MySQLDtfStorage implements DTFStorage {
 
     @Override
     public long addTestPlan(String name, String description) throws SQLException {
-        long pk = 0;
+        long pk;
         try {
             pk = this.findTestPlan(name, description);
         } catch (SQLException sqle) {
-            this.log.error("<internal> Core.addTestPlan(): Couldn't lookup existing test plan, msg: " + sqle);
-            throw sqle;
+            this.log.error("<internal> MySQLDtfStorage.addTestPlan(): Continues even though couldn't lookup existing test plan, msg: " + sqle);
+            return 0;
         }
 
         // let read-only mode return an existing module
@@ -187,6 +187,65 @@ public class MySQLDtfStorage implements DTFStorage {
                 return resultSet.getLong("test_plan.pk_test_plan");
             } else {
                 return 0;
+            }
+        }
+    }
+
+    @Override
+    public long addTest(long pk_test_plan, String name, String description, String script) throws SQLException {
+        long pk;
+        try {
+            pk = this.findTest(pk_test_plan, name, description, script);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> MySQLDtfStorage.addTest(): Continues even though couldn't lookup existing test, msg: " + sqle);
+            return 0;
+        }
+
+        // let read-only mode return an existing test
+        if (pk==0 && !this.read_only) {
+            // add our new test
+            String query = "INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)" + Statement.RETURN_GENERATED_KEYS;
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.setLong(1, pk_test_plan);
+                preparedStatement.setString(2, name);
+                preparedStatement.setString(3, description);
+                preparedStatement.setString(4, script);
+                try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
+                    if (keys.next())
+                        pk = keys.getLong(1);
+                }
+            }
+        }
+        return pk;
+    }
+
+    /**
+     *
+     * @param pk_test_plan The primary key of the test plan.
+     * @param name The name of the test.
+     * @param description The description of the test.
+     * @param script The script of the test.
+     * @return The primary key of the new test, or zero if there is an error or in read-only mode.
+     * If the test already exists then the existing primary key is returned.
+     */
+    private long findTest(long pk_test_plan, String name, String description, String script) throws SQLException {
+        String query = "SELECT test.pk_test" + " FROM test" +
+                       " WHERE test.fk_test_plan = ?" +
+                       "   AND test.name = ?" +
+                       "   AND test.description = ? " +
+                       "   AND test.script = ?";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            preparedStatement.setLong(1, pk_test_plan);
+            preparedStatement.setString(2, name);
+            preparedStatement.setString(3, description);
+            preparedStatement.setString(4, script);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.isBeforeFirst()) {
+                    resultSet.next();
+                    return resultSet.getLong("test.pk_test");
+                } else {
+                    return 0;
+                }
             }
         }
     }

@@ -1379,8 +1379,13 @@ public final class DistributedTestingFramework
             }
 
             for (int test = 0; test < tests; test++) {
-                String test_str = test_plan_str + "/" + Integer.toString(test + 1);
-                long pk_test = core.addTest(pk_test_plan, "Test " + test_str, "Description for test " + test_str, "");
+                long pk_test = 0;
+                try {
+                    String test_str = test_plan_str + "/" + Integer.toString(test + 1);
+                    pk_test = core.getStorage().addTest(pk_test_plan, "Test " + test_str, "Description for test " + test_str, "");
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> .populate(): Continues, even though could not add test, msg: " + e);
+                }
 
                 // Create instances by acting as a generator.
                 Generator generator = new Generator(pk_test);
