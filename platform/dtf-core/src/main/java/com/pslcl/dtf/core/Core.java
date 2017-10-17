@@ -891,7 +891,9 @@ public class Core
         // Determine the set of all referenced templates.
         try
         {
-            // TODO: see that fk_template is not a column of table test_instance
+            // TODO: see that fk_template is not a column of table test_instance.
+            // TODO: Fails silently.
+            // TODO: This algorithm is also slow. Consider a solution than can be implemented with fewer requests to the db.
             PreparedStatement findTemplates = this.connect.prepareStatement("select distinct fk_template from test_instance");
             foundTemplates = findTemplates.executeQuery();
             Set<Long> used = new HashSet<Long>();
