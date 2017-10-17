@@ -54,7 +54,7 @@ var all = {
 
     // Default schedule is to synchronize every 15 minutes, and to prune
     // missing modules after 40 successful synchronizes without finding the module.
-    synchronize_schedule: '*/15 * * * *',
+    schedule: '*/15 * * * *',
 
     // The time zone to use when setting the synchronize schedule.
     // If set to null, the default time zone will be used, Greenwich Mean Time.
