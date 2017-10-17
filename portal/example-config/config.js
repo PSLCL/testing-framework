@@ -30,9 +30,9 @@ var all = {
   // AWS SQS configuration
   sqs: {
     endpoint: env.DTF_SQS_ENDPONT || 'https://sqs.us-east-1.amazonaws.com',
-	queue_name: env.DTF_SQS_QUEUE_NAME || '',
-	access_key_id: env.AWS_ACCESS_KEY_ID || '',
-	secret_access_key: env.AWS_SECRET_ACCESS_KEY || ''
+    queue_name: env.DTF_SQS_QUEUE_NAME || '',
+    access_key_id: env.AWS_ACCESS_KEY_ID || '',
+    secret_access_key: env.AWS_SECRET_ACCESS_KEY || ''
   },
 
   home_dir: home_dir,
@@ -91,7 +91,7 @@ var configs = {
   development: {
     enable_livereload: true,
     mysql: all.mysql,
-	sqs: all.sqs,
+    sqs: all.sqs,
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
     synchronize: all.synchronize,
@@ -108,7 +108,7 @@ var configs = {
   production: {
     enable_livereload: false,
     mysql: all.mysql,
-	sqs: all.sqs,
+    sqs: all.sqs,
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
     synchronize: all.synchronize,
