@@ -46,24 +46,31 @@ var all = {
   // This should be randomly generated for your site.
   cookiesecret: 'randomly-generate-me',
 
-  // Default schedule is to synchronize every 15 minutes, and to prune
-  // missing modules after 40 successful synchronizes without finding the module.
-  synchronize_schedule: '*/15 * * * *',
+  // Auto Synchronize configuration
+  synchronize: {
 
-  // The time zone to use when setting the synchronize schedule.
-  // If set to null, the default time zone will be used, Greenwich Mean Time.
-  // Time zone format example: 'America/Los_Angeles'. For more information see http://momentjs.com/timezone/
-  synchronize_schedule_time_zone: null,
-  
-  // JVM args for synchronize process.
-  synchronize_jvm_args: "-Xms1024m -Xmx1024m",
-  
-  // The number of generator processes that may run in parallel during synchronize.
-  generator_process_count: 5,
+    // Whether or not the portal should automatically schedule a synchronize process.
+    enabled: true,
 
-  // The number of synchronize runs without finding the module at which to prune, or null
-  // to disable pruning.
-  prune: 40
+    // Default schedule is to synchronize every 15 minutes, and to prune
+    // missing modules after 40 successful synchronizes without finding the module.
+    synchronize_schedule: '*/15 * * * *',
+
+    // The time zone to use when setting the synchronize schedule.
+    // If set to null, the default time zone will be used, Greenwich Mean Time.
+    // Time zone format example: 'America/Los_Angeles'. For more information see http://momentjs.com/timezone/
+    schedule_time_zone: null,
+
+    // JVM args for synchronize process.
+    jvm_args: "-Xms1024m -Xmx1024m",
+
+    // The number of generator processes that may run in parallel during synchronize.
+    generator_process_count: 5,
+
+    // The number of synchronize runs without finding the module at which to prune, or null
+    // to disable pruning.
+    prune: 40
+  }
 };
 
 var oauth = {
@@ -84,10 +91,7 @@ var configs = {
 	sqs: all.sqs,
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
-    'synchronize_schedule': all.synchronize_schedule,
-	'synchronize_schedule_time_zone': all.synchronize_schedule_time_zone,
-	synchronize_jvm_args: all.synchronize_jvm_args,
-    generator_process_count: all.generator_process_count,
+    synchronize: all.synchronize,
     'certificate_passphrase': certificate_passphrase,
     listen_ip: '0.0.0.0',
     http_port: 80,
@@ -96,7 +100,6 @@ var configs = {
     artifacts_dir: all.artifacts_dir,
     generators_dir: all.generators_dir,
     shell: all.shell,
-    prune: all.prune,
     home_dir: all.home_dir
   },
   production: {
@@ -105,10 +108,7 @@ var configs = {
 	sqs: all.sqs,
     page_limit: all.page_limit,
     cookiesecret: all.cookiesecret,
-    'synchronize_schedule': all.synchronize_schedule,
-	'synchronize_schedule_time_zone': all.synchronize_schedule_time_zone,
-    synchronize_jvm_args: all.synchronize_jvm_args,
-    generator_process_count: all.generator_process_count,
+    synchronize: all.synchronize,
     'certificate_passphrase': certificate_passphrase,
     listen_ip: '0.0.0.0',
     http_port: 80,
@@ -117,7 +117,6 @@ var configs = {
     artifacts_dir: all.artifacts_dir,
     generators_dir: all.generators_dir,
     shell: all.shell,
-    prune: all.prune,
     home_dir: all.home_dir
   }
 };
