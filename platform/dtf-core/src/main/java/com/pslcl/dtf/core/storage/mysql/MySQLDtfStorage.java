@@ -293,8 +293,6 @@ public class MySQLDtfStorage implements DTFStorage {
                 return dbmod.pk;
         }
 
-//      this.log.error("<internal> Core.findModule(): Couldn't find module, msg: " + sqle);
-
         String attributes = new Attributes(module.getAttributes()).toString();
         String query = "SELECT module.pk_module" + " FROM module" +
                        " WHERE module.organization = '" + module.getOrganization() + "'" +
@@ -312,7 +310,6 @@ public class MySQLDtfStorage implements DTFStorage {
             }
         }
     }
-
 
     @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {

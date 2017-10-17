@@ -1032,10 +1032,15 @@ public class Core
      */
     public Iterable<Artifact> findDependencies(Artifact artifact)
     {
-        Collection<Artifact> set = new ArrayList<Artifact>();
-
         // Artifact searches are always done from the perspective of merged modules.
-        long pk = findModule(artifact.getModule());
+        long pk = 0;
+        try {
+            pk = this.storage.findModule(artifact.getModule());
+        } catch (Exception sqle) {
+            this.log.error("<internal> Core.findDependencies(): Continues even though couldn't find module, msg: " + sqle);
+        }
+
+        Collection<Artifact> set = new ArrayList<Artifact>();
         if (pk == 0)
             return set; // This should not happen
 
@@ -1443,7 +1448,12 @@ public class Core
      */
     boolean isAssociatedWithTest(Module module)
     {
-        long pk = findModule(module);
+        long pk = 0;
+        try {
+            pk = this.storage.findModule(module);
+        } catch (Exception sqle) {
+            this.log.error("<internal> Core.isAssociatedWithTest(): Continues even though couldn't find module, msg: " + sqle);
+        }
         if (pk == 0)
             return false;
 
@@ -1471,43 +1481,6 @@ public class Core
         }
 
         return false;
-    }
-
-    long findModule(Module module) {
-        // Short-cut the lookup if it is one of our modules.
-        if (module instanceof DBModule)
-        {
-            @SuppressWarnings("CastToConcreteClass")
-            DBModule dbmod = (DBModule) module;
-            if (dbmod.pk != 0)
-                return dbmod.pk;
-        }
-
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
-        String attributes = new Attributes(module.getAttributes()).toString();
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'" + " AND module.sequence = '" + module.getSequence() + "'");
-            resultSet = statement.executeQuery();
-            if (resultSet.isBeforeFirst())
-            {
-                resultSet.next();
-                return resultSet.getLong("module.pk_module");
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.findModule(): Couldn't find module, " + e.getMessage());
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return 0;
     }
 
     void updateModule(long pk_module)
@@ -1973,7 +1946,13 @@ public class Core
                             Artifact artifact = iter.next();
 
                             try {
-                                long pk_module = findModule(artifact.getModule());
+                                long pk_module = 0;
+                                try {
+                                    pk_module = this.storage.findModule(artifact.getModule());
+                                } catch (Exception sqle) {
+                                    this.log.error("<internal> Core.syncDescribedTemplates(): Continues even though couldn't find module, msg: " + sqle);
+                                }
+
                                 statement2 = this.storage.getConnect().prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
                                 statement2.setLong(1, pk_module);
                                 statement2.setLong(2, ti.pk);

@@ -238,7 +238,13 @@ public final class DistributedTestingFramework
             try {
                 // Check to see if the module exists. If it does then return.
                 // If it does not exist then add the module and iterate the artifacts.
-                long pk_module = core.findModule(module);
+                long pk_module = 0;
+                try {
+                    pk_module = core.getStorage().findModule(module);
+                } catch (Exception sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .module(): Continues even though couldn't find module, msg: " + sqle);
+                }
+
                 if (pk_module != 0) {
                     core.updateModule(pk_module); // clear module.missing_count
                     return;
@@ -324,16 +330,19 @@ public final class DistributedTestingFramework
             markMergeFromModule();
         }
 
-        private void markMergeFromModule()
-        {
+        private void markMergeFromModule() {
             Iterable<Module> modules = core.createModuleSet();
             for (DelayedModuleMergeAction d : delayedModuleMergeAction)
             {
                 Module dmod = d.module;
-                long pk_source_module = core.findModule(dmod);
+                long pk_source_module = 0;
+                try {
+                    pk_source_module = core.getStorage().findModule(dmod);
+                } catch (Exception sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .markMergeFromModule(): Continues even though couldn't find module, msg: " + sqle);
+                }
 
-                for (Module m : modules)
-                {
+                for (Module m : modules) {
                     // Since the actual types may differ, we compare fields to determine if they are the same.
                     boolean same = true;
                     if (!m.getOrganization().equals(dmod.getOrganization()))
@@ -348,9 +357,13 @@ public final class DistributedTestingFramework
                     if (same)
                         continue;
 
-                    if (d.source.merge(d.merge, dmod, m))
-                    {
-                        long pk_module = core.findModule(m);
+                    if (d.source.merge(d.merge, dmod, m)) {
+                        long pk_module = 0;
+                        try {
+                            pk_module = core.getStorage().findModule(m);
+                        } catch (Exception sqle) {
+                            LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .markMergeFromModule(): Continues even though couldn't find module, msg: " + sqle);
+                        }
 
                         List<Artifact> artifacts = dmod.getArtifacts();
                         for (Artifact artifact : artifacts)
@@ -360,8 +373,7 @@ public final class DistributedTestingFramework
                             {
                                 Hash h = core.addContent(is, -1); // -1: consume is stream until exhausted
                                 long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
-                                if (artifact.getName().endsWith(".tar.gz"))
-                                {
+                                if (artifact.getName().endsWith(".tar.gz")) {
                                     decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module);
                                 }
                             }
