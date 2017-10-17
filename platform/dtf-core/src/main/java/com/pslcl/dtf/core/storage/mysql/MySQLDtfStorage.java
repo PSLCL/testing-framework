@@ -11,6 +11,7 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.NotFoundException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -284,13 +285,27 @@ public class MySQLDtfStorage implements DTFStorage {
         return pk;
     }
 
-    @Override
-    public long findModule(Module module) throws SQLException {
-        // Short-cut the lookup if it is one of our modules.
+    /**
+     * A Module can be a DBModule, i.e. it is stored in the database.
+     */
+    private long isDBModule(Module module) throws NotFoundException {
         if (module instanceof Core.DBModule) {
             Core.DBModule dbmod = (Core.DBModule) module;
             if (dbmod.pk != 0)
                 return dbmod.pk;
+        }
+        throw new NotFoundException("not a DBModule");
+    }
+
+    @Override
+    public long findModule(Module module) throws SQLException {
+        // Short-cut the lookup if it is one of our modules (i.e. is already in the database).
+        try {
+            long pk = isDBModule(module);
+            if (pk != 0)
+                return pk;
+        } catch (NotFoundException ignore) {
+            // fall through to find module by db lookup
         }
 
         String attributes = new Attributes(module.getAttributes()).toString();
@@ -331,6 +346,36 @@ public class MySQLDtfStorage implements DTFStorage {
 //          return false;
 
             }
+        }
+    }
+
+    @Override
+    public long findModuleWithoutPriorSequence(Module module) throws SQLException  {
+        // Short-cut the lookup if it is one of our modules (i.e. is already in the database).
+        try {
+            long pk = isDBModule(module);
+            if (pk != 0)
+                return pk;
+        } catch (NotFoundException ignore) {
+            // fall through to find module without prior sequence by db lookup
+        }
+
+        // here for submitted module not in database (similar module entries may exist in db, even of same version)
+        String attributes = new Attributes(module.getAttributes()).toString();
+        String query = "SELECT module.pk_module" + " FROM module" +
+                       " WHERE module.organization = '" + module.getOrganization() + "'" +
+                       "   AND module.name = '" + module.getName() + "'" +
+                       "   AND module.attributes = '" + attributes + "'" +
+                       "   AND module.version = '" + module.getVersion() + "'";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            if (resultSet.isBeforeFirst()) {
+                // resultSet.next() gives the actual first row of the overall resultSet
+                // REVIEW: do we have assurance that the returned ordering is by submittal order?
+                resultSet.next();
+                return resultSet.getLong("module.pk_module");
+            }
+            return 0;
         }
     }
 

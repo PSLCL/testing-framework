@@ -190,9 +190,15 @@ public class Core
     void deletePriorBuildSequenceNumbers(Module module)
     {
         while (true) {
-            long pk = findModuleWithoutPriorSequence(module);
+            long pk = 0;
+            try {
+                pk = this.storage.findModuleWithoutPriorSequence(module);
+            } catch (SQLException sqle) {
+                this.log.error("<internal> Core.deletePriorBuildSequenceNumbers(): Continue even though couldn't read modules, " + sqle);
+            }
             if (pk == 0)
                 break;
+
             deleteModule(pk);
         }
     }
@@ -1431,47 +1437,6 @@ public class Core
             safeClose(statement);
             statement = null;
         }
-    }
-
-    private long findModuleWithoutPriorSequence(Module module)
-    {
-        // Short-cut the lookup if it is one of our modules (i.e. is already in the database).
-        if (module instanceof DBModule)
-        {
-            @SuppressWarnings("CastToConcreteClass")
-            DBModule dbmod = (DBModule) module;
-            if (dbmod.pk != 0)
-                return dbmod.pk;
-        }
-
-        // here for submitted module not in database (similar module entries may exist in db, even of same version)
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
-        String attributes = new Attributes(module.getAttributes()).toString();
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("SELECT module.pk_module" + " FROM module" + " WHERE module.organization = '" + module.getOrganization() + "'" + " AND module.name = '" + module.getName() + "'" + " AND module.attributes = '" + attributes + "'" + " AND module.version = '" + module.getVersion() + "'");
-            resultSet = statement.executeQuery();
-            if (resultSet.isBeforeFirst())
-            {
-                // resultSet.next() gives the actual first row of the overall resultSet
-                // REVIEW: do we have assurance that the returned ordering is by submittal order?
-                resultSet.next();
-                return resultSet.getLong("module.pk_module");
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.findModuleWithoutPriorSequence(): Couldn't find module, " + e.getMessage());
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return 0;
     }
 
     /*    public void syncGeneratedContent( Content sync ) {

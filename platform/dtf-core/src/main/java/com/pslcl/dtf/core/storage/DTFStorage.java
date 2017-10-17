@@ -49,6 +49,7 @@ public interface DTFStorage {
      * @param description The description of the test plan.
      * @return The primary key of the new test plan, or zero if there is an error or in read-only mode.
      * If the test plan already exists then the existing primary key is returned.
+     * @throws SQLException on error
      */
     long addTestPlan(String name, String description) throws SQLException;
 
@@ -60,6 +61,7 @@ public interface DTFStorage {
      * @param script The script of the test.
      * @return The primary key of the new test, or zero if there is an error or in read-only mode.
      * If the test already exists then the existing primary key is returned;
+     * @throws SQLException on error
      */
     long addTest(long pk_test_plan, String name, String description, String script) throws SQLException;
 
@@ -68,6 +70,7 @@ public interface DTFStorage {
      * @param module The module to add.
      * @return The primary key of the new module, or zero if there is an error or in read-only mode.
      * If the module already exists then the existing primary key is returned.
+     * @throws SQLException on error
      */
     long addModule(Module module) throws SQLException;
 
@@ -75,6 +78,7 @@ public interface DTFStorage {
      * Find a module in the database.
      * @param module The module to find.
      * @return The primary key of the found module or zero for none
+     * @throws SQLException on error
      */
     long findModule(Module module) throws SQLException;
 
@@ -82,8 +86,17 @@ public interface DTFStorage {
      *
      * @param h The hash to find in database
      * @return true/false
+     * @throws SQLException on error
      */
     boolean artifactFileHashStoredInDB(Hash h) throws SQLException;
+
+    /**
+     *
+     * @param module The module to find.
+     * @return The primary key of the found module or zero for none
+     * @throws SQLException on error
+     */
+    long findModuleWithoutPriorSequence(Module module) throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
