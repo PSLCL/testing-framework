@@ -151,50 +151,6 @@ public class Core
         return this.storage;
     }
 
-//    /**
-//     * Add a module to the database.
-//     * @param module The module to add.
-//     * @return The primary key of the new module, or zero if there is an error or in read-only mode. If the module already exists then
-//     * the existing primary key is returned;
-//     */
-//    long addModule(Module module) throws SQLException
-//    {
-//        long pk = findModule(module);
-//
-//        // This will work in read-only mode to return an existing module.
-//        if (pk != 0 || this.storage.isReadOnly())
-//            return pk;
-//
-//        PreparedStatement statement = null;
-//        String attributes = new Attributes(module.getAttributes()).toString();
-//        //TODO: Release date, actual release date, order all need to be added.
-//        try
-//        {
-//            statement = this.storage.getConnect().prepareStatement("INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-//            statement.setString(1, module.getOrganization());
-//            statement.setString(2, module.getName());
-//            statement.setString(3, attributes);
-//            statement.setString(4, module.getVersion());
-//            statement.setString(5, module.getStatus());
-//            statement.setString(6, module.getSequence());
-//            statement.executeUpdate();
-//
-//            try (ResultSet keys = statement.getGeneratedKeys()) {
-//                if (keys.next())
-//                    pk = keys.getLong(1);
-//            }
-//        } catch (Exception e)
-//        {
-//            this.log.error("<internal> Core.addModule(): Could not add module, " + e.getMessage());
-//        } finally
-//        {
-//            safeClose(statement);
-//            statement = null;
-//        }
-//
-//        return pk;
-//    }
-
     /**
      * Delete a module.
      * @param pk_module The primary key of the module to delete.
@@ -238,42 +194,6 @@ public class Core
             if (pk == 0)
                 break;
             deleteModule(pk);
-        }
-    }
-
-    /**
-     *
-     * @param h The hash to find in database
-     * @return true/false
-     */
-    private boolean dbKnowsOfFileHash(Hash h) {
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
-        try {
-            statement = this.storage.getConnect().prepareStatement("SELECT pk_content FROM content WHERE pk_content = ?");
-            statement.setBytes(1, h.toBytes());
-            resultSet = statement.executeQuery();
-            return resultSet.next();
-
-//          // this alternate exit is a double check
-//          while (resultSet.next()) {
-//              byte [] bytes = resultSet.getBytes("pk_content");
-//              String strDbContent = Hash.bytesToHex(bytes);
-//              String strParamContent = h.toString();
-//              if (strDbContent.equals(strParamContent))
-//                  return true;
-//              return true;
-//          }
-//          return false;
-        } catch (Exception e) {
-            this.log.error("<internal> Core.dbKnowsOfFileHash(): exception msg: " + e);
-            return false;
-        } finally {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
         }
     }
 
@@ -349,7 +269,14 @@ public class Core
 
         String strHash = h.toString();
         File target = new File(this.artifacts, strHash);
-        boolean dbKnowsOfFileHash = dbKnowsOfFileHash(h);
+
+        boolean dbKnowsOfFileHash = false;
+        try {
+            dbKnowsOfFileHash = this.storage.artifactFileHashStoredInDB(h);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> Core.addContent() Continues in spite of NOT obtaining db read of artifact hash, msg: " + sqle);
+        }
+
         if (!this.storage.isReadOnly()) {
             try {
                 // Move the file to the cache, then update db based on success/fail, then if fail, cleanup.

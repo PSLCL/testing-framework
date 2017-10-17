@@ -1,6 +1,7 @@
 package com.pslcl.dtf.core.storage;
 
 import com.pslcl.dtf.core.Core;
+import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 
@@ -76,6 +77,13 @@ public interface DTFStorage {
      * @return The primary key of the found module or zero for none
      */
     long findModule(Module module) throws SQLException;
+
+    /**
+     *
+     * @param h The hash to find in database
+     * @return true/false
+     */
+    boolean artifactFileHashStoredInDB(Hash h) throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

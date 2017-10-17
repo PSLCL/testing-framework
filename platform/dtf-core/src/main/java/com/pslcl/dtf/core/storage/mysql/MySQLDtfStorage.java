@@ -312,6 +312,29 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
+    public boolean artifactFileHashStoredInDB(Hash h) throws SQLException {
+        String query = "SELECT pk_content FROM content WHERE pk_content = ?";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            preparedStatement.setBytes(1, h.toBytes());
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                return resultSet.next();
+
+//          // this alternate exit is a double check
+//          while (resultSet.next()) {
+//              byte [] bytes = resultSet.getBytes("pk_content");
+//              String strDbContent = Hash.bytesToHex(bytes);
+//              String strParamContent = h.toString();
+//              if (strDbContent.equals(strParamContent))
+//                  return true;
+//              return true;
+//          }
+//          return false;
+
+            }
+        }
+    }
+
+    @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
         String query = "SELECT pk_test_instance FROM test_instance" +
                        " JOIN described_template ON fk_described_template=pk_described_template" +
@@ -334,7 +357,7 @@ public class MySQLDtfStorage implements DTFStorage {
             preparedStatement.setBytes(1, matchKey.getTemplateHash().toBytes());
             preparedStatement.setBytes(2, matchKey.getModuleHash().toBytes());
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                /* we expect exactly one entry in resultSet; to check, these line give count of 1
+                /* we expect exactly one entry in resultSet; to check, these lines give count of 1
                     resultSet.last();
                     int count = resultSet.getRow();
                     resultSet.beforeFirst(); // restore resultSet to original state
