@@ -97,33 +97,40 @@ public class DisconnectFuture implements Callable<Void>
         {
             for (GroupIdentifier gid : currentList)
             {
-                if(!gid.getGroupId().equals(networkInstance.groupIdentifier.getGroupId()))
-                    sgroups.add(gid.getGroupId());
+                // NOTE: it was decided to not have unique network security groups, this will always be null
+                if(networkInstance.groupIdentifier != null)
+                {
+                    if(!gid.getGroupId().equals(networkInstance.groupIdentifier.getGroupId()))
+                        sgroups.add(gid.getGroupId());
+                }
             }
         }
-        //@formatter:off
-        ModifyInstanceAttributeRequest miar = new ModifyInstanceAttributeRequest()
-            .withInstanceId(machineInstance.ec2Instance.getInstanceId())
-            .withGroups(sgroups);
-        //@formatter:on
-
-        pdelay.reset();
-        msg = pdelayData.getHumanName(EniMidStr, "modifyInstanceAttribute");
-        do
+        if(sgroups.size() > 0)
         {
-            try
+            //@formatter:off
+            ModifyInstanceAttributeRequest miar = new ModifyInstanceAttributeRequest()
+                .withInstanceId(machineInstance.ec2Instance.getInstanceId())
+                .withGroups(sgroups);
+            //@formatter:on
+
+            pdelay.reset();
+            msg = pdelayData.getHumanName(EniMidStr, "modifyInstanceAttribute");
+            do
             {
-                pdelayData.provider.manager.awsThrottle();
-                ec2Client.modifyInstanceAttribute(miar);
-                break;
-            } catch (Exception e)
-            {
-                Thread.currentThread().setName(tname);
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if (fre instanceof FatalException)
-                    throw fre;
-            }
-        } while (true);
+                try
+                {
+                    pdelayData.provider.manager.awsThrottle();
+                    ec2Client.modifyInstanceAttribute(miar);
+                    break;
+                }catch(Exception e)
+                {
+                    Thread.currentThread().setName(tname);
+                    FatalResourceException fre = pdelay.handleException(msg, e);
+                    if(fre instanceof FatalException)
+                        throw fre;
+                }
+            }while(true);
+        }
         Thread.currentThread().setName(tname);
         return null;
     }
