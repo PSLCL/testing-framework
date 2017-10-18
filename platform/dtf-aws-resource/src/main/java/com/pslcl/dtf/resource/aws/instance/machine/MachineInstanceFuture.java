@@ -63,7 +63,7 @@ import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 public class MachineInstanceFuture implements Callable<MachineInstance>
 {
     //FIXME: set me false before commit/push
-    private static final boolean DtfTesting = true;  // do not staf ping if true
+    private static final boolean DtfTesting = false;  // do not staf ping if true
 
     public static final String Ec2MidStr = "ec2";
     public static final String KeyPairMidStr = "key";
