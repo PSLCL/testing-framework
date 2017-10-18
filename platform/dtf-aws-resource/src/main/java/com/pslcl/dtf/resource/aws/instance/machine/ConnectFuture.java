@@ -57,36 +57,40 @@ public class ConnectFuture implements Callable<CableInstance>
     @Override
     public CableInstance call() throws FatalResourceException
     {
-        List<String> sgroups = new ArrayList<String>();
-        sgroups.add(networkInstance.groupIdentifier.getGroupId());
-        List<GroupIdentifier> existingGroups = machineInstance.ec2Instance.getSecurityGroups();
-        for (GroupIdentifier gid : existingGroups)
-            sgroups.add(gid.getGroupId());
-        
-        //@formatter:off
-        ModifyInstanceAttributeRequest miar = new ModifyInstanceAttributeRequest()
-            .withInstanceId(machineInstance.ec2Instance.getInstanceId())
-            .withGroups(sgroups);
-        //@formatter:on
-        
-        pdelayData.maxDelay = networkInstance.reservedResource.subnetConfig.sgMaxDelay;
-        pdelayData.maxRetries = networkInstance.reservedResource.subnetConfig.sgMaxRetries;
-        ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
-        String msg = pdelayData.getHumanName(EniMidStr, "modifyInstanceAttribute");
-        do
+        //NOTE: it was decided that individual security groups would not be added per network and the following will be null
+        if(networkInstance.groupIdentifier != null)
         {
-            try
+            List<String> sgroups = new ArrayList<String>();
+            sgroups.add(networkInstance.groupIdentifier.getGroupId());
+            List<GroupIdentifier> existingGroups = machineInstance.ec2Instance.getSecurityGroups();
+            for(GroupIdentifier gid : existingGroups)
+                sgroups.add(gid.getGroupId());
+
+            //@formatter:off
+            ModifyInstanceAttributeRequest miar = new ModifyInstanceAttributeRequest()
+                .withInstanceId(machineInstance.ec2Instance.getInstanceId())
+                .withGroups(sgroups);
+            //@formatter:on
+
+            pdelayData.maxDelay = networkInstance.reservedResource.subnetConfig.sgMaxDelay;
+            pdelayData.maxRetries = networkInstance.reservedResource.subnetConfig.sgMaxRetries;
+            ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
+            String msg = pdelayData.getHumanName(EniMidStr, "modifyInstanceAttribute");
+            do
             {
-                pdelayData.provider.manager.awsThrottle();
-                ec2Client.modifyInstanceAttribute(miar);
-                break;
-            } catch (Exception e)
-            {
-                FatalResourceException fre = pdelay.handleException(msg, e);
-                if(fre instanceof FatalException)
-                    throw fre;
-            }
-        }while(true);
+                try
+                {
+                    pdelayData.provider.manager.awsThrottle();
+                    ec2Client.modifyInstanceAttribute(miar);
+                    break;
+                }catch(Exception e)
+                {
+                    FatalResourceException fre = pdelay.handleException(msg, e);
+                    if(fre instanceof FatalException)
+                        throw fre;
+                }
+            }while(true);
+        }
         return new AwsCableInstance(machineInstance, networkInstance);
     }
 }

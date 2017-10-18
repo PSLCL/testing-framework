@@ -63,7 +63,7 @@ import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
 public class MachineInstanceFuture implements Callable<MachineInstance>
 {
     //FIXME: set me false before commit/push
-    private static final boolean DtfTesting = false;
+    private static final boolean DtfTesting = true;  // do not staf ping if true
 
     public static final String Ec2MidStr = "ec2";
     public static final String KeyPairMidStr = "key";
@@ -100,11 +100,13 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                 reservedResource.subnet = pdelayData.provider.manager.subnetManager.getSubnet(pdelayData, config.subnetConfigData);
                 checkFutureCanceled();
                 String sgDefaultVpcOverrideId = config.subnetConfigData.sgDefaultVpcOverrideId;
-                if(sgDefaultVpcOverrideId != null)
-                {
-                    pdelayData.provider.manager.subnetManager.getSecureGroup(pdelayData, sgDefaultVpcOverrideId);
-                    checkFutureCanceled();
-                }
+// NOTE: this is now checked one time in AWSNetworkProvider the first time a network is connected
+// I also assume the create instance will fail fatally if this is not valid
+//                if(sgDefaultVpcOverrideId != null)
+//                {
+//                    pdelayData.provider.manager.subnetManager.getSecureGroup(pdelayData, sgDefaultVpcOverrideId);
+//                    checkFutureCanceled();
+//                }
                 createInstance(reservedResource.subnet.getSubnetId(), sgDefaultVpcOverrideId);
                 machineInstance = new AwsMachineInstance(reservedResource, config, pdelayData.provider.config);
                 pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));

@@ -237,6 +237,10 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                 if(first)
                 {
                     manager.subnetManager.getVpc(pdelayData, subnetConfig);
+                    String sgDefaultVpcOverrideId = subnetConfig.sgDefaultVpcOverrideId;
+                    // this check used to be done on every create instance, see MachineInstanceFuture
+                    if(sgDefaultVpcOverrideId != null)
+                        pdelayData.provider.manager.subnetManager.getSecureGroup(pdelayData, sgDefaultVpcOverrideId);
                     first = false;
                 }
                 if (ResourceProvider.NetworkName.equals(resource.getName()) && manager.subnetManager.availableSgs.get() > 0)
@@ -247,7 +251,9 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                     pdelayData.maxDelay = subnetConfig.sgMaxDelay;
                     pdelayData.maxRetries = subnetConfig.sgMaxRetries;
                     pdelayData.preFixMostName = subnetConfig.resoucePrefixName;
-                    GroupIdentifier groupId = manager.subnetManager.getSecurityGroup(pdelayData, subnetConfig);
+// NOTE: it was decided that we will not create individual security groups for each network
+//                    GroupIdentifier groupId = manager.subnetManager.getSecurityGroup(pdelayData, subnetConfig);
+                    GroupIdentifier groupId = null;
                     NetworkReservedResource rresource = new NetworkReservedResource(pdelayData, resource, groupId);
                     ScheduledFuture<?> future = config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
                     rresource.setTimerFuture(future);
