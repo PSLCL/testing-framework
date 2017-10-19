@@ -656,8 +656,12 @@ public final class DistributedTestingFramework
                     }
                 }
 
-                // Remove all unreferenced templates and descriptions
-                core.pruneTemplates();
+                try {
+                    // Remove all unreferenced templates and descriptions
+                    core.getStorage().pruneTemplates();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("\"DistributedTestingFramework.synchronize(): Continue even though couldn't prune templates, " + sqle);
+                }
             }
 
             if (generate) {
@@ -694,8 +698,12 @@ public final class DistributedTestingFramework
                     }
                 }
 
-                /* Remove all content that is not referenced or generated. */
-                core.pruneContent();
+                try {
+                    // Remove all content that is not referenced or generated.
+                    core.getStorage().pruneContent();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("\"DistributedTestingFramework.synchronize(): Continue even though couldn't prune content, " + sqle);
+                }
             }
         } catch (Exception e) {
             LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize() exception msg: " + e);

@@ -18,8 +18,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class MySQLDtfStorage implements DTFStorage {
     private final Logger log;
@@ -438,6 +440,78 @@ public class MySQLDtfStorage implements DTFStorage {
             String query = "UPDATE content SET is_generated=0";
             try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
                 preparedStatement.executeUpdate();
+            }
+        }
+    }
+
+    @Override
+    public void pruneContent() throws SQLException {
+        if (!this.read_only) {
+            String query = "DELETE content FROM content" +
+                           " LEFT JOIN artifact ON content.pk_content = artifact.fk_content" +
+                           " WHERE artifact.fk_content IS NULL" +
+                           "   AND content.is_generated=0";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     *
+     * @param pk_described_template primary key of a row of table described_template
+     * @param combined accumulating set of primary keys in table described_template
+     * @throws SQLException on error.
+     */
+    private void getRequiredTemplates(long pk_described_template, Set<Long> combined) throws SQLException {
+        // If a template is already added then its children must also already be added.
+        if (!combined.contains(pk_described_template)) {
+            // Add me
+            combined.add(pk_described_template);
+
+            // Find and add all my children.
+            String queryFindChildren = String.format("SELECT fk_child FROM dt_to_dt" +
+                                                     " WHERE fk_parent='%d'", pk_described_template);
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(queryFindChildren);
+                 ResultSet rsFoundChildren = preparedStatement.executeQuery()) {
+                while (rsFoundChildren.next()) {
+                    long fkChild = rsFoundChildren.getLong("fk_child");
+                    this.getRequiredTemplates(fkChild, combined);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void pruneTemplates() throws SQLException {
+        if (!this.read_only) {
+            // TODO: This has been broken since described_template was added; this code has had mismatched references ever since
+
+            // Find all top-level table described_template rows referenced in table test_instance.
+            String queryFindTemplates = "select distinct fk_described_template from test_instance";
+            try (PreparedStatement psFindTemplates = this.connect.prepareStatement(queryFindTemplates);
+                 ResultSet rsFoundTemplates = psFindTemplates.executeQuery()) {
+                Set<Long> usedDescribedTemplates = new HashSet<Long>();
+                while (rsFoundTemplates.next()) {
+                    long pk_described_template = rsFoundTemplates.getLong("fk_described_template");
+                    this.getRequiredTemplates(pk_described_template, usedDescribedTemplates);
+                }
+
+                String query1 = "SELECT pk_template FROM template";
+                try (PreparedStatement preparedStatement1 = this.connect.prepareStatement(query1)) {
+                    ResultSet foundTemplates1 = preparedStatement1.executeQuery();
+                    while (foundTemplates1.next()) {
+                        long pk = foundTemplates1.getLong("pk_template");
+                        if (!usedDescribedTemplates.contains(pk)) {
+                            String query2 = "DELETE FROM template WHERE pk_template=?";
+                            try (PreparedStatement preparedStatement2 = this.connect.prepareStatement(query1)) {
+                                // Delete the template. This will delete all the related tables.
+                                preparedStatement2.setLong(1, pk);
+                                preparedStatement2.executeUpdate();
+                            }
+                        }
+                    }
+                }
             }
         }
     }

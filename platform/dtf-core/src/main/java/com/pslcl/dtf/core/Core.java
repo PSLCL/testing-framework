@@ -321,75 +321,6 @@ public class Core
     }
 
     /**
-     * Remove all non-generated content that is not referenced by any artifact.
-     */
-    void pruneContent()
-    {
-        if (this.storage.isReadOnly())
-            return;
-
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("DELETE content FROM content LEFT JOIN artifact ON content.pk_content = artifact.fk_content WHERE artifact.fk_content IS NULL AND content.is_generated=0");
-            statement.executeUpdate();
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.pruneContent(): Couldn't prune content, " + e.getMessage());
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-    }
-
-    void pruneTemplates()
-    {
-        if (this.storage.isReadOnly())
-            return;
-
-        // Find all top-level templates.
-        ResultSet foundTemplates = null;
-        PreparedStatement deleteTemplate = null;
-
-        // Determine the set of all referenced templates.
-        try {
-            // TODO: see that fk_template is not a column of table test_instance
-            PreparedStatement findTemplates = this.storage.getConnect().prepareStatement("select distinct fk_template from test_instance");
-            foundTemplates = findTemplates.executeQuery();
-            Set<Long> used = new HashSet<Long>();
-            while (foundTemplates.next()) {
-                long pk = foundTemplates.getLong("fk_template");
-                getRequiredTemplates(pk, used);
-            }
-
-            safeClose(findTemplates);
-            findTemplates = null;
-            safeClose(foundTemplates);
-            foundTemplates = null;
-
-            deleteTemplate = this.storage.getConnect().prepareStatement("DELETE FROM template WHERE pk_template=?");
-            findTemplates = this.storage.getConnect().prepareStatement("select pk_template from template");
-            foundTemplates = findTemplates.executeQuery();
-            while (foundTemplates.next())
-            {
-                long pk = foundTemplates.getLong("pk_template");
-                if (!used.contains(pk))
-                {
-                    // Delete the template. This will delete all the related tables.
-                    deleteTemplate.setLong(1, pk);
-                    deleteTemplate.executeUpdate();
-                }
-            }
-        } catch (Exception ignore) {
-            safeClose(foundTemplates);
-            foundTemplates = null;
-            safeClose(deleteTemplate);
-            deleteTemplate = null;
-        }
-    }
-
-    /**
      * This class represents a module that is backed by the core database. Operations on the module will refer
      * to database content.
      */
@@ -1919,39 +1850,6 @@ public class Core
             foundArtifacts = null;
             safeClose(foundChildren);
             findArtifacts = null;
-        }
-    }
-
-    private void getRequiredTemplates(long pk, Set<Long> combined)
-    {
-        // If a template is already added then its children must also already be added.
-        if (combined.contains(pk))
-            return;
-
-        // Add me
-        combined.add(pk);
-
-        // Find and add all my children.
-        PreparedStatement findChildren = null;
-        ResultSet foundChildren = null;
-        try
-        {
-            findChildren = this.storage.getConnect().prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
-            foundChildren = findChildren.executeQuery();
-            while (foundChildren.next())
-            {
-                long fk = foundChildren.getLong("fk_child");
-                getRequiredTemplates(fk, combined);
-            }
-        } catch (Exception ignore)
-        {
-            // Ignore.
-        } finally
-        {
-            safeClose(foundChildren);
-            foundChildren = null;
-            safeClose(findChildren);
-            findChildren = null;
         }
     }
 

@@ -132,6 +132,16 @@ public interface DTFStorage {
     void clearGeneratedContent() throws SQLException;
 
     /**
+     * In database, remove all non-generated content that is not referenced by any artifact.
+     */
+    void pruneContent() throws SQLException;
+
+    /**
+     * In database, remove all templates that are not referenced by any test instance.
+     */
+    void pruneTemplates() throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template
