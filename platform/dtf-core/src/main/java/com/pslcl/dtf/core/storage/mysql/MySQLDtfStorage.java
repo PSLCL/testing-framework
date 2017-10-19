@@ -487,24 +487,31 @@ public class MySQLDtfStorage implements DTFStorage {
         if (!this.read_only) {
             // TODO: This has been broken since described_template was added; this code has had mismatched references ever since
 
-            // Find all top-level table described_template rows referenced in table test_instance.
-            String queryFindTemplates = "select distinct fk_described_template from test_instance";
-            try (PreparedStatement psFindTemplates = this.connect.prepareStatement(queryFindTemplates);
-                 ResultSet rsFoundTemplates = psFindTemplates.executeQuery()) {
+            // Find all top-level described_template rows referenced in table test_instance.
+            String queryFindDescribedTemplates = "SELECT DISTINCT fk_described_template FROM test_instance";
+            try (PreparedStatement psFindDescribedTemplates = this.connect.prepareStatement(queryFindDescribedTemplates);
+                 ResultSet rsFoundDescribedTemplates = psFindDescribedTemplates.executeQuery()) {
                 Set<Long> usedDescribedTemplates = new HashSet<Long>();
-                while (rsFoundTemplates.next()) {
-                    long pk_described_template = rsFoundTemplates.getLong("fk_described_template");
+                // Add all child described_template rows.
+                while (rsFoundDescribedTemplates.next()) {
+                    long pk_described_template = rsFoundDescribedTemplates.getLong("fk_described_template");
                     this.getRequiredTemplates(pk_described_template, usedDescribedTemplates);
                 }
 
-                String query1 = "SELECT pk_template FROM template";
-                try (PreparedStatement preparedStatement1 = this.connect.prepareStatement(query1)) {
-                    ResultSet foundTemplates1 = preparedStatement1.executeQuery();
-                    while (foundTemplates1.next()) {
-                        long pk = foundTemplates1.getLong("pk_template");
+                // TODO: the above filled usedDescribedTemplates with pk of described templates;
+                //       the below uses it again, but mixes in pk of templates.
+                //       Resolve: The two are not the same.
+                //                Is it true that we have no interest in pruning described_templates?
+                //                How best to prune unused templates only?
+
+                String queryFindTemplates = "SELECT pk_template FROM template";
+                try (PreparedStatement psFindTemplates = this.connect.prepareStatement(queryFindTemplates);
+                     ResultSet rsFoundTemplates1 = psFindTemplates.executeQuery()) {
+                    while (rsFoundTemplates1.next()) {
+                        long pk = rsFoundTemplates1.getLong("pk_template");
                         if (!usedDescribedTemplates.contains(pk)) {
-                            String query2 = "DELETE FROM template WHERE pk_template=?";
-                            try (PreparedStatement preparedStatement2 = this.connect.prepareStatement(query1)) {
+                            String queryDeleteTemplate = "DELETE FROM template WHERE pk_template=?";
+                            try (PreparedStatement preparedStatement2 = this.connect.prepareStatement(queryDeleteTemplate)) {
                                 // Delete the template. This will delete all the related tables.
                                 preparedStatement2.setLong(1, pk);
                                 preparedStatement2.executeUpdate();
