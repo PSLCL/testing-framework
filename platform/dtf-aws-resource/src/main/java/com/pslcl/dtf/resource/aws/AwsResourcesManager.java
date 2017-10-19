@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.AmazonEC2Client;
@@ -49,7 +50,7 @@ import com.pslcl.dtf.resource.aws.provider.person.AwsPersonProvider;
 public class AwsResourcesManager implements ResourcesManager
 {
     public static final String StatusPrefixStr = "resource-";
-    
+    private final Logger log;
     private final List<ResourceProvider> resourceProviders;
     public final AwsMachineProvider machineProvider;
     public final AwsNetworkProvider networkProvider;
@@ -64,6 +65,7 @@ public class AwsResourcesManager implements ResourcesManager
 
     public AwsResourcesManager()
     {
+        log = LoggerFactory.getLogger(getClass());
         resourceProviders = new ArrayList<ResourceProvider>();
         machineProvider = new AwsMachineProvider(this);
         networkProvider = new AwsNetworkProvider(this);
@@ -316,6 +318,8 @@ public class AwsResourcesManager implements ResourcesManager
     @Override
     public void release(long templateInstanceId, boolean isReusable)
     {
+        if(log.isDebugEnabled())
+            log.debug(getClass().getSimpleName() + ".release templateInstanceId: " + templateInstanceId + " isReusable: " + isReusable);
         config.blockingExecutor.submit(new ReleaseFuture(templateInstanceId, isReusable));
     }
 
@@ -339,6 +343,8 @@ public class AwsResourcesManager implements ResourcesManager
         @Override
         public Void call() throws Exception
         {
+            if(log.isDebugEnabled())
+                log.debug(getClass().getSimpleName() + ".call templateInstanceId " + templateInstanceId + " isReusable: " + isReusable);
             String tname = Thread.currentThread().getName();
             Thread.currentThread().setName("AwsReleaseFuture");
             try
@@ -346,21 +352,21 @@ public class AwsResourcesManager implements ResourcesManager
                 personProvider.release(templateInstanceId, isReusable);
             }catch(Exception e)
             {
-                LoggerFactory.getLogger(getClass()).warn("personProvider.release failed", e);
+                log.warn("personProvider.release failed", e);
             }
             try
             {
                 networkProvider.release(templateInstanceId, isReusable);
             }catch(Exception e)
             {
-                LoggerFactory.getLogger(getClass()).warn("networkProvider.release failed", e);
+                log.warn("networkProvider.release failed", e);
             }
             try
             {
                 machineProvider.release(templateInstanceId, isReusable);
             }catch(Exception e)
             {
-                LoggerFactory.getLogger(getClass()).warn("machineProvider.release failed", e);
+                log.warn("machineProvider.release failed", e);
             }
             Thread.currentThread().setName(tname);
             return null;

@@ -119,6 +119,8 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
                     NetworkReservedResource reservedResource = reservedNetworks.remove(key);
                     ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
                     futures.add(config.blockingExecutor.submit(new ReleaseNetworkFuture(this, instance.getCoordinates(), reservedResource.vpc.getVpcId(), reservedResource.subnet.getSubnetId(), pdelayData)));
+                    if(log.isDebugEnabled())
+                        log.debug(getClass().getSimpleName() + ".release queued ReleasePersonFuture: " + coordinates.toString());
                 }
             }
         }

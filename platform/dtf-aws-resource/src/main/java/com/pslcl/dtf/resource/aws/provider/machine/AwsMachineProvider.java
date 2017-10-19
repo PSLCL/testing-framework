@@ -275,6 +275,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
          * 6. A repeating check stalled release task will check for timed out stalls and destroy them. 
          *********************************************************************/
 
+        if(log.isDebugEnabled())
+            log.debug(getClass().getSimpleName() + ".release templateInstanceId: " + templateInstanceId + " isReusable: "  + isReusable);
         TabToLevel format = new TabToLevel();
         format.ttl("\n", getClass().getName() + ".release");
         format.level.incrementAndGet();
@@ -311,8 +313,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         }
         if (instancesInTemplate.size() == 0)
         {
-            format.ttl("no machine instances in the given template");
-            log.debug(format.toString());
+            if(log.isDebugEnabled())
+            {
+                format.ttl("no machine instances in the given template");
+                log.debug(format.toString());
+            }
             return;
         }
 
@@ -374,6 +379,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             ((AwsMachineProvider) instance.getResourceProvider()).instanceFinder.releaseInstance(instance.reservedResource.instanceType);
             synchronized (deleteInstanceFutures)
             {
+                if(log.isDebugEnabled())
+                    log.debug(getClass().getSimpleName() + ".deleteInstances queuing ReleaseMachineFuture: " + instance.getCoordinates().toString());
                 deleteInstanceFutures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, null, pdelayData)));
             }
             instance.toString(format, true);
@@ -680,6 +687,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         InstanceType instanceType = instanceFinder.findInstance(resource);
         if (!instanceFinder.checkLimits(instanceType))
             return false;
+        instanceFinder.reserveInstance(instanceType);
         result.setInstanceType(instanceType);
         result.setImageId(imageFinder.findImage(manager.ec2Client, resource));
         return true;
