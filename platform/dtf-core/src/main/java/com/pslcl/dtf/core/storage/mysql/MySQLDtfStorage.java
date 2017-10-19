@@ -405,6 +405,33 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
+    public long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module) throws SQLException {
+        if (this.read_only)
+            return 0;
+
+        long pk = 0;
+        String query = merged_from_module != 0 ? "INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)" :
+                                                 "INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+            preparedStatement.setLong(1, pk_module);
+            preparedStatement.setBinaryStream(2, new ByteArrayInputStream(content.toBytes()));
+            preparedStatement.setString(3, configuration);
+            preparedStatement.setString(4, name);
+            preparedStatement.setInt(5, mode);
+            preparedStatement.setBoolean(6, merge_source);
+            preparedStatement.setLong(7, derived_from_artifact);
+            if (merged_from_module != 0)
+                preparedStatement.setLong(8, merged_from_module);
+            preparedStatement.executeUpdate();
+            try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
+                if (keys.next())
+                    pk = keys.getLong(1);
+            }
+        }
+        return pk;
+    }
+
+    @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
         String query = "SELECT pk_test_instance FROM test_instance" +
                        " JOIN described_template ON fk_described_template=pk_described_template" +

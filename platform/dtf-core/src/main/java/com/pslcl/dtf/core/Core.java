@@ -320,55 +320,55 @@ public class Core
         return null;
     }
 
-    /**
-     * Add an artifact to a particular module and configuration, given a name and hash of the content.
-     * @param pk_module The module the artifact relates to. Should not be 0 (not a legal primary key for module table)
-     * @param configuration The configuration the artifact is part of.
-     * @param name The name of the artifact.
-     * @param mode The POSIX mode of the artifact.
-     * @param content The hash of the file content, which must already exist in the system.
-     * @param merge_source True if the artifact is associated with a merged module.
-     * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
-     * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from.
-     * @return The primary key of the added artifact, as stored in the artifact table; 0 means not stored (like if db is read-only)
-     */
-    long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module) {
-        if (this.storage.isReadOnly())
-            return 0;
-
-        PreparedStatement statement = null;
-        long pk = 0;
-        try {
-            if (merged_from_module == 0) {
-                statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            } else {
-                statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            }
-
-            statement.setLong(1, pk_module);
-            statement.setBinaryStream(2, new ByteArrayInputStream(content.toBytes()));
-            statement.setString(3, configuration);
-            statement.setString(4, name);
-            statement.setInt(5, mode);
-            statement.setBoolean(6, merge_source);
-            statement.setLong(7, derived_from_artifact);
-            if (merged_from_module != 0)
-                statement.setLong(8, merged_from_module);
-            statement.executeUpdate();
-
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next())
-                    pk = keys.getLong(1);
-            }
-        } catch (Exception e) {
-            this.log.error("<internal> Core.addArtifact(): Could not add artifact to module, " + e.getMessage());
-        } finally {
-            safeClose(statement);
-            statement = null;
-        }
-
-        return pk;
-    }
+//    /**
+//     * Add an artifact to a particular module and configuration, given a name and hash of the content.
+//     * @param pk_module The module the artifact relates to. Should not be 0 (not a legal primary key for module table)
+//     * @param configuration The configuration the artifact is part of.
+//     * @param name The name of the artifact.
+//     * @param mode The POSIX mode of the artifact.
+//     * @param content The hash of the file content, which must already exist in the system.
+//     * @param merge_source True if the artifact is associated with a merged module.
+//     * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
+//     * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from.
+//     * @return The primary key of the added artifact, as stored in the artifact table; 0 means not stored (like if db is read-only)
+//     */
+//    long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module) {
+//        if (this.storage.isReadOnly())
+//            return 0;
+//
+//        PreparedStatement statement = null;
+//        long pk = 0;
+//        try {
+//            if (merged_from_module == 0) {
+//                statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+//            } else {
+//                statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact, merged_from_module) VALUES (?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+//            }
+//
+//            statement.setLong(1, pk_module);
+//            statement.setBinaryStream(2, new ByteArrayInputStream(content.toBytes()));
+//            statement.setString(3, configuration);
+//            statement.setString(4, name);
+//            statement.setInt(5, mode);
+//            statement.setBoolean(6, merge_source);
+//            statement.setLong(7, derived_from_artifact);
+//            if (merged_from_module != 0)
+//                statement.setLong(8, merged_from_module);
+//            statement.executeUpdate();
+//
+//            try (ResultSet keys = statement.getGeneratedKeys()) {
+//                if (keys.next())
+//                    pk = keys.getLong(1);
+//            }
+//        } catch (Exception e) {
+//            this.log.error("<internal> Core.addArtifact(): Could not add artifact to module, " + e.getMessage());
+//        } finally {
+//            safeClose(statement);
+//            statement = null;
+//        }
+//
+//        return pk;
+//    }
 
     /**
      * Clear the is_generated flag on all content. If not set before pruneContent() is called, then the content

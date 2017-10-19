@@ -168,8 +168,7 @@ public final class DistributedTestingFramework
 
     private static class HandleModule implements ArtifactProvider.ModuleNotifier
     {
-        private static class DelayedModuleMergeAction
-        {
+        private static class DelayedModuleMergeAction {
             private ArtifactProvider source = null;
             private String merge = null;
             private Module module = null;
@@ -178,16 +177,13 @@ public final class DistributedTestingFramework
         private Core core;
         private List<DelayedModuleMergeAction> delayedModuleMergeAction = new ArrayList<DelayedModuleMergeAction>();
 
-        HandleModule(Core core)
-        {
+        HandleModule(Core core) {
             this.core = core;
         }
 
-        private void decompress(Hash hash, long pk_version, long pk_parent, String configuration, boolean merge_source, long pk_source_module)
-        {
+        private void decompress(Hash hash, long pk_version, long pk_parent, String configuration, boolean merge_source, long pk_source_module) {
             TarArchiveInputStream ti = null;
-            try
-            {
+            try  {
                 File f = core.getContentFile(hash);
                 if (f == null) {
                     String msg = ".getContentFile() returned null";
@@ -199,8 +195,7 @@ public final class DistributedTestingFramework
                 /* Uncompress and unarchive the file, creating entries for each artifact found inside. */
                 InputStream is = new GzipCompressorInputStream(archive);
                 ti = new TarArchiveInputStream(is);
-                while (true)
-                {
+                while (true) {
                     TarArchiveEntry entry = ti.getNextTarEntry();
                     if (entry == null)
                         break;
@@ -215,19 +210,20 @@ public final class DistributedTestingFramework
 
                     int mode = entry.getMode();
                     Hash h = core.addContent(ti, entry.getSize());
-                    core.addArtifact(pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module);
+                    try {
+                        core.getStorage().addArtifact(pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module);
+                    } catch (SQLException sqle) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
+                        // fall through to go to the top of the while() loop
+                    }
                 }
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.decompress(): Failure extracting file, " + e.getMessage());
-            } finally
-            {
+            } finally {
                 if (ti != null)
-                    try
-                    {
+                    try {
                         ti.close();
-                    } catch (IOException ignored)
-                    {
+                    } catch (IOException ignored) {
                         // Ignore
                     }
             }
@@ -253,18 +249,15 @@ public final class DistributedTestingFramework
                 // Determine if the module contains a test generator - this triggers deletion of prior stored modules of same version number.
                 List<Artifact> artifacts = module.getArtifacts();
                 boolean contains_generator = false;
-                for (Artifact artifact : artifacts)
-                {
-                    if (artifact.getConfiguration().equals("dtf_test_generator"))
-                    {
+                for (Artifact artifact : artifacts) {
+                    if (artifact.getConfiguration().equals("dtf_test_generator")) {
                         contains_generator = true;
                         break;
                     }
                 }
 
                 boolean merge_source = false;
-                if (merge != null && merge.length() > 0)
-                {
+                if (merge != null && merge.length() > 0) {
                     // this ALSO triggers deletion of prior stored modules of same version number
                     merge_source = true;
                     DelayedModuleMergeAction D = new DelayedModuleMergeAction();
@@ -297,18 +290,21 @@ public final class DistributedTestingFramework
                     LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> module(): Continues even though could not add module, " + sqle);
                 }
 
-                for (Artifact artifact : artifacts)
-                {
+                for (Artifact artifact : artifacts) {
                     Content content = artifact.getContent();
-                    if (content != null)
-                    {
+                    if (content != null) {
                         InputStream is = content.asStream();
-                        if (is != null)
-                        {
+                        if (is != null) {
                             Hash h = core.addContent(is, -1); // -1: consume stream is until exhausted
-                            long pk_artifact = core.addArtifact(pkModule, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
-                            if (artifact.getName().endsWith(".tar.gz"))
-                            {
+                            long pk_artifact = 0;
+                            try {
+                                pk_artifact = core.getStorage().addArtifact(pkModule, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
+                            } catch (SQLException sqle) {
+                                LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
+                                continue;
+                            }
+
+                            if (artifact.getName().endsWith(".tar.gz")) {
                                 decompress(h, pkModule, pk_artifact, artifact.getConfiguration(), merge_source, 0);
                             }
                         } else {
@@ -318,22 +314,19 @@ public final class DistributedTestingFramework
                         LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content");
                     }
                 }
-            } catch (Exception ignored)
-            {
+            } catch (Exception ignored) {
                 // TODO
             }
         }
 
         @Override
-        protected void finalize() // this overrides java's Object.finalize()
-        {
+        protected void finalize() { // this overrides java's Object.finalize()
             markMergeFromModule();
         }
 
         private void markMergeFromModule() {
             Iterable<Module> modules = core.createModuleSet();
-            for (DelayedModuleMergeAction d : delayedModuleMergeAction)
-            {
+            for (DelayedModuleMergeAction d : delayedModuleMergeAction) {
                 Module dmod = d.module;
                 long pk_source_module = 0;
                 try {
@@ -366,13 +359,19 @@ public final class DistributedTestingFramework
                         }
 
                         List<Artifact> artifacts = dmod.getArtifacts();
-                        for (Artifact artifact : artifacts)
-                        {
+                        for (Artifact artifact : artifacts) {
                             InputStream is = artifact.getContent().asStream();
-                            if (is != null)
-                            {
+                            if (is != null) {
                                 Hash h = core.addContent(is, -1); // -1: consume is stream until exhausted
-                                long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
+
+                                long pk_artifact = 0;
+                                try {
+                                    pk_artifact = core.getStorage().addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
+                                } catch (SQLException sqle) {
+                                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
+                                    continue;
+                                }
+
                                 if (artifact.getName().endsWith(".tar.gz")) {
                                     decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module);
                                 }

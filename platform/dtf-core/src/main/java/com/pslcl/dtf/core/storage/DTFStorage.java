@@ -112,6 +112,20 @@ public interface DTFStorage {
     void addContent(Hash content) throws SQLException;
 
     /**
+     * Add an artifact to a particular module and configuration, given a name and hash of the content.
+     * @param pk_module The module the artifact relates to. Should not be 0 (not a legal primary key for module table)
+     * @param configuration The configuration the artifact is part of.
+     * @param name The name of the artifact.
+     * @param mode The POSIX mode of the artifact.
+     * @param content The hash of the file content, which must already exist in the system.
+     * @param merge_source True if the artifact is associated with a merged module.
+     * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
+     * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from.
+     * @return The primary key of the added artifact, as stored in the artifact table; 0 means not stored (like if db is read-only)
+     */
+    long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template
