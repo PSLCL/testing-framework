@@ -152,37 +152,6 @@ public class Core
     }
 
     /**
-     * Delete a module.
-     * @param pk_module The primary key of the module to delete.
-     */
-    private void deleteModule(long pk_module)
-    {
-        if (this.storage.isReadOnly())
-            return;
-
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("DELETE FROM module WHERE pk_module=?");
-            statement.setLong(1, pk_module);
-            statement.executeUpdate();
-            safeClose(statement);
-            statement = null;
-
-            statement = this.storage.getConnect().prepareStatement("DELETE FROM artifact WHERE merged_from_module=?");
-            statement.setLong(1, pk_module);
-            statement.executeUpdate();
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.deleteModule: Could not delete module, " + e.getMessage());
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-    }
-
-    /**
      * Delete all previous sequence build numbers of the same version as this module.
      * @param module The module that previous builds of should be deleted. It is required
      * that this module not be already added to the database.
@@ -199,7 +168,11 @@ public class Core
             if (pk == 0)
                 break;
 
-            deleteModule(pk);
+            try {
+                this.storage.deleteModule(pk);
+            } catch (SQLException sqle) {
+                this.log.error("<internal> Core.deletePriorBuildSequenceNumbers(): Couldn't delete module, " + sqle);
+            }
         }
     }
 
@@ -360,7 +333,7 @@ public class Core
 
     /**
      * Add an artifact to a particular module and configuration, given a name and hash of the content.
-     * @param pk_module The module the artifact relates to.
+     * @param pk_module The module the artifact relates to. Should not be 0 (not a legal primary key for module table)
      * @param configuration The configuration the artifact is part of.
      * @param name The name of the artifact.
      * @param mode The POSIX mode of the artifact.
@@ -368,17 +341,15 @@ public class Core
      * @param merge_source True if the artifact is associated with a merged module.
      * @param derived_from_artifact If non-zero, the primary key of the artifact that this artifact is derived from (for example, an archive file).
      * @param merged_from_module If non-zero, the primary key of the module that this artifact is merged from.
-     * @return The primary key of the added artifact, as stored in the artifact table
+     * @return The primary key of the added artifact, as stored in the artifact table; 0 means not stored (like if db is read-only)
      */
-    long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module)
-    {
-        long pk = 0;
+    long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module) {
         if (this.storage.isReadOnly())
-            return pk;
+            return 0;
 
         PreparedStatement statement = null;
-        try
-        {
+        long pk = 0;
+        try {
             if (merged_from_module == 0) {
                 statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact (fk_module, fk_content, configuration, name, mode, merge_source, derived_from_artifact) VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             } else {
@@ -400,8 +371,7 @@ public class Core
                 if (keys.next())
                     pk = keys.getLong(1);
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             this.log.error("<internal> Core.addArtifact(): Could not add artifact to module, " + e.getMessage());
         } finally {
             safeClose(statement);

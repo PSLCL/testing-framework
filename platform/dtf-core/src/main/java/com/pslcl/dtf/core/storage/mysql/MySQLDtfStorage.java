@@ -11,7 +11,6 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.NotFoundException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -158,8 +157,8 @@ public class MySQLDtfStorage implements DTFStorage {
         // let read-only mode return an existing module
         if (pk==0 && !this.read_only) {
             // add our new test plan
-            String query = "INSERT INTO test_plan (name, description) VALUES (?,?)" + Statement.RETURN_GENERATED_KEYS;
-            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            String query = "INSERT INTO test_plan (name, description) VALUES (?,?)";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
                 preparedStatement.setString(1, name);
                 preparedStatement.setString(2, description);
                 preparedStatement.executeUpdate();
@@ -207,12 +206,13 @@ public class MySQLDtfStorage implements DTFStorage {
         // let read-only mode return an existing test
         if (pk==0 && !this.read_only) {
             // add our new test
-            String query = "INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)" + Statement.RETURN_GENERATED_KEYS;
-            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            String query = "INSERT INTO test (fk_test_plan, name, description, script) VALUES (?,?,?,?)";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
                 preparedStatement.setLong(1, pk_test_plan);
                 preparedStatement.setString(2, name);
                 preparedStatement.setString(3, description);
                 preparedStatement.setString(4, script);
+                preparedStatement.executeUpdate();
                 try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
                     if (keys.next())
                         pk = keys.getLong(1);
@@ -267,15 +267,16 @@ public class MySQLDtfStorage implements DTFStorage {
         if (pk==0 && !this.read_only) {
             // add our new module
             String attributes = new Attributes(module.getAttributes()).toString();
-            String query = "INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)" + Statement.RETURN_GENERATED_KEYS;
+            String query = "INSERT INTO module (organization, name, attributes, version, status, sequence) VALUES (?,?,?,?,?,?)";
             // TODO: Release date, actual release date, order all need to be added.
-            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
                 preparedStatement.setString(1, module.getOrganization());
                 preparedStatement.setString(2, module.getName());
                 preparedStatement.setString(3, attributes);
                 preparedStatement.setString(4, module.getVersion());
                 preparedStatement.setString(5, module.getStatus());
                 preparedStatement.setString(6, module.getSequence());
+                preparedStatement.executeUpdate();
                 try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
                     if (keys.next())
                         pk = keys.getLong(1);
@@ -286,27 +287,28 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     /**
-     * A Module can be a DBModule, i.e. it is stored in the database.
+     * A Module can be a DBModule, i.e. it is stored in the database, in table module.
+     * @param module The module to determine presence in the module table.
+     * @return private key pk_module of module's entry in table module, where 0 means no such entry
      */
-    private long isDBModule(Module module) throws NotFoundException {
+    private long isDBModule(Module module) {
+        long retPk_module = 0;
         if (module instanceof Core.DBModule) {
             Core.DBModule dbmod = (Core.DBModule) module;
-            if (dbmod.pk != 0)
-                return dbmod.pk;
+            if (dbmod.pk == 0) {
+                int x = 30; // does this happen?
+            }
+            retPk_module = dbmod.pk; // 0 means not really in table module
         }
-        throw new NotFoundException("not a DBModule");
+        return retPk_module;
     }
 
     @Override
     public long findModule(Module module) throws SQLException {
         // Short-cut the lookup if it is one of our modules (i.e. is already in the database).
-        try {
-            long pk = isDBModule(module);
-            if (pk != 0)
-                return pk;
-        } catch (NotFoundException ignore) {
-            // fall through to find module by db lookup
-        }
+        long pk = this.isDBModule(module);
+        if (pk != 0)
+             return pk;
 
         String attributes = new Attributes(module.getAttributes()).toString();
         String query = "SELECT module.pk_module" + " FROM module" +
@@ -352,13 +354,9 @@ public class MySQLDtfStorage implements DTFStorage {
     @Override
     public long findModuleWithoutPriorSequence(Module module) throws SQLException  {
         // Short-cut the lookup if it is one of our modules (i.e. is already in the database).
-        try {
-            long pk = isDBModule(module);
-            if (pk != 0)
-                return pk;
-        } catch (NotFoundException ignore) {
-            // fall through to find module without prior sequence by db lookup
-        }
+        long pk = isDBModule(module);
+        if (pk != 0)
+            return pk;
 
         // here for submitted module not in database (similar module entries may exist in db, even of same version)
         String attributes = new Attributes(module.getAttributes()).toString();
@@ -376,6 +374,23 @@ public class MySQLDtfStorage implements DTFStorage {
                 return resultSet.getLong("module.pk_module");
             }
             return 0;
+        }
+    }
+
+    @Override
+    public void deleteModule(long pk_module) throws SQLException {
+        if (!this.read_only) {
+            String query = "DELETE FROM module WHERE pk_module=?";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.setLong(1, pk_module);
+                preparedStatement.executeUpdate();
+
+                String query1 = "DELETE FROM artifact WHERE merged_from_module=?";
+                try (PreparedStatement preparedStatement1 = this.connect.prepareStatement(query1)) {
+                    preparedStatement1.setLong(1, pk_module);
+                    preparedStatement.executeUpdate();
+                }
+            }
         }
     }
 
