@@ -11,6 +11,7 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -391,6 +392,15 @@ public class MySQLDtfStorage implements DTFStorage {
                     preparedStatement.executeUpdate();
                 }
             }
+        }
+    }
+
+    @Override
+    public void addContent(Hash content) throws SQLException {
+        String query = "INSERT INTO content (pk_content, is_generated) VALUES (?,1)";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            preparedStatement.setBinaryStream(1, new ByteArrayInputStream(content.toBytes()));
+            preparedStatement.executeUpdate();
         }
     }
 

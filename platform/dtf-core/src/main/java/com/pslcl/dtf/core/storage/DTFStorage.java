@@ -105,6 +105,13 @@ public interface DTFStorage {
     void deleteModule(long pk_module) throws SQLException;
 
     /**
+     * Add content to the database.
+     * @param content The content to add.
+     * @throws SQLException on error
+     */
+    void addContent(Hash content) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

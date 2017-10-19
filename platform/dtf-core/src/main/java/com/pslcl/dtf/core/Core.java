@@ -253,7 +253,7 @@ public class Core
         try {
             dbKnowsOfFileHash = this.storage.artifactFileHashStoredInDB(h);
         } catch (SQLException sqle) {
-            this.log.error("<internal> Core.addContent() Continues in spite of NOT obtaining db read of artifact hash, msg: " + sqle);
+            this.log.error("<internal> Core.addContent() Continues even though NOT obtaining db read of artifact hash, msg: " + sqle);
         }
 
         if (!this.storage.isReadOnly()) {
@@ -265,28 +265,16 @@ public class Core
                 if (dbKnowsOfFileHash) {
                     return h;
                 } else {
-                    PreparedStatement statement = null;
-                    try {
-                        statement = this.storage.getConnect().prepareStatement("INSERT INTO content (pk_content, is_generated) VALUES (?,1)");
-                        statement.setBinaryStream(1, new ByteArrayInputStream(h.toBytes()));
-                        statement.executeUpdate();
-                        return h;
-                    } catch (Exception e) {
-                        this.log.error("<internal> Core.addContent(): Could not add content " + strHash + " to db, " + e.getMessage());
-                        FileUtils.deleteQuietly(target);
-                        return null;
-                    } finally {
-                        safeClose(statement);
-                        statement = null;
-                    }
+                    this.storage.addContent(h);
+                    // fall through to return null
                 }
-            } catch (IOException ioe) {
+            } catch (SQLException | IOException e) {
                 FileUtils.deleteQuietly(tmp); // cleanup
-                this.log.error("<internal> Core.addContent(): Could not store content file of hash " + strHash + " , exception message" + ioe);
+                this.log.error("<internal> Core.addContent(): Continues even though could not add, to db, content file of hash " + strHash + " , exception message" + e);
                 // TODO: cleanup this unlikely case that our entry is stored in db
 //              if (dbKnowsOfFileHash) {
 //              }
-                return null;
+                // fall through to return null
             }
         } else {
             // readonly db
@@ -309,9 +297,10 @@ public class Core
                     this.log.error("<internal> Core.addContent(), db readonly case: Could not delete content file, of hash " + h.toString());
                     return h;
                 }
-                return null;
+                // fall through to return null
             }
         }
+        return null;
     }
 
     /**
