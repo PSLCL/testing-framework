@@ -126,6 +126,12 @@ public interface DTFStorage {
     long addArtifact(long pk_module, String configuration, String name, int mode, Hash content, boolean merge_source, long derived_from_artifact, long merged_from_module) throws SQLException;
 
     /**
+     * Clear the is_generated flag on all content. If not set before pruneContent() is called, then the content
+     * will be deleted by pruneContent() unless associated with an artifact.
+     */
+    void clearGeneratedContent() throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

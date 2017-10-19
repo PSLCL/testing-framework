@@ -661,8 +661,12 @@ public final class DistributedTestingFramework
             }
 
             if (generate) {
+                try {
                 /* Mark all content as not generated. */
-                core.clearGeneratedContent();
+                    core.getStorage().clearGeneratedContent();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize(): Continue even though could not update 'generated' flags, " + sqle);
+                }
 
                 /* Instantiate the platform and artifact provider. */
                 Map<Long, String> scripts = core.getGenerators();

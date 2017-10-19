@@ -432,6 +432,17 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
+    public void clearGeneratedContent() throws SQLException {
+        if (!this.read_only) {
+            // Mark test instances for later cleanup.
+            String query = "UPDATE content SET is_generated=0";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.executeUpdate();
+            }
+        }
+    }
+
+    @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
         String query = "SELECT pk_test_instance FROM test_instance" +
                        " JOIN described_template ON fk_described_template=pk_described_template" +
