@@ -266,7 +266,7 @@ public class Core
                     return h;
                 } else {
                     this.storage.addContent(h);
-                    // fall through to return null
+                    return h;
                 }
             } catch (SQLException | IOException e) {
                 FileUtils.deleteQuietly(tmp); // cleanup
