@@ -17,6 +17,7 @@ package com.pslcl.dtf.resource.aws.provider.machine;
 
 import java.util.concurrent.Callable;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.DeleteSubnetRequest;
@@ -37,6 +38,7 @@ import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 @SuppressWarnings("javadoc")
 public class ReleaseMachineFuture implements Callable<Void>
 {
+    private final Logger log;
     private final AwsMachineProvider provider;
     private final ResourceCoordinates coordinates;
     private final Instance instance;
@@ -52,11 +54,14 @@ public class ReleaseMachineFuture implements Callable<Void>
         this.provider = provider;
         coordinates = coord;
         this.pdelayData = pdelayData;
+        log = LoggerFactory.getLogger(getClass());
     }
 
     @Override
     public Void call() throws Exception
     {
+        if(log.isDebugEnabled())
+            log.debug(getClass().getSimpleName() + ".call coordinates: " + coordinates.toString());
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("ReleaseMachineFuture");
         LoggerFactory.getLogger(getClass()).debug("Releasing resource start: " + coordinates.toString());

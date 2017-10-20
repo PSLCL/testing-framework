@@ -42,10 +42,13 @@ import com.pslcl.dtf.resource.aws.instance.person.AwsPersonInstance;
 import com.pslcl.dtf.resource.aws.instance.person.PersonConfigData;
 import com.pslcl.dtf.resource.aws.instance.person.PersonInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("javadoc")
 public class AwsPersonProvider extends AwsResourceProvider implements PersonProvider
 {
+    private final Logger log;
     private final HashMap<Long, AwsPersonInstance> boundPeople; // key is templateId
     private final HashMap<Long, PersonReservedResource> reservedPeople; // key is resourceId
     public volatile PersonConfigData defaultPersonConfigData;
@@ -55,6 +58,7 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
     public AwsPersonProvider(AwsResourcesManager manager)
     {
         super(manager);
+        log = LoggerFactory.getLogger(getClass());
         reservedPeople = new HashMap<Long, PersonReservedResource>();
         boundPeople = new HashMap<Long, AwsPersonInstance>();
         roundRobinIndex = new AtomicInteger(-1);
@@ -129,6 +133,8 @@ public class AwsPersonProvider extends AwsResourceProvider implements PersonProv
                     reservedPeople.remove(key);
                     ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, instance.getCoordinates());
                     futures.add(config.blockingExecutor.submit(new ReleasePersonFuture(this, coordinates, pdelayData)));
+                    if(log.isDebugEnabled())
+                        log.debug(getClass().getSimpleName() + ".release queued ReleasePersonFuture: " + coordinates.toString());
                 }
             }
         }
