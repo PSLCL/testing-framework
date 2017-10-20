@@ -3,15 +3,20 @@ package com.pslcl.dtf.core.storage.mysql;
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.PortalConfig;
+import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 import com.pslcl.dtf.core.storage.DTFStorage;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.commons.io.LineIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -261,7 +266,7 @@ public class MySQLDtfStorage implements DTFStorage {
     public long addModule(Module module) throws SQLException {
         long pk;
         try {
-            pk = findModule(module);
+            pk = this.findModule(module);
         } catch (SQLException sqle) {
             this.log.error("<internal> MySQLDtfStorage.addModule(): Continues even though couldn't lookup existing module, msg: " + sqle);
             return 0;
@@ -567,6 +572,148 @@ public class MySQLDtfStorage implements DTFStorage {
         return set;
     }
 
+    static final char forwardSlash = '/';
+
+    /**
+     * Remove default directory from artifact name and replace it with the target directory instead.
+     *
+     * @param artifactName The name of the artifact
+     * @param targetDirectory The target directory.
+     * @return The name of the artifact in the target directory.
+     */
+    private String getTargetName(String artifactName, String targetDirectory){
+        if (artifactName.endsWith("/"))
+            throw new IllegalArgumentException("Artifact name must not end with '/': " + artifactName);
+
+        int nameStartIndex = 0;
+        if(artifactName.contains("/"))
+            nameStartIndex = artifactName.lastIndexOf(forwardSlash) + 1; // '/'
+        String targetName = artifactName.substring(nameStartIndex);
+        if(!targetDirectory.endsWith("/"))
+            targetDirectory += "/";
+
+        return targetDirectory + targetName;
+    }
+
+    @Override
+    public Iterable<Artifact> findDependencies(Core core, Artifact artifact) throws SQLException, IllegalArgumentException {
+        // Artifact searches are always done from the perspective of merged modules.
+        long pk_module = 0;
+        try {
+            pk_module = this.findModule(artifact.getModule());
+        } catch (Exception sqle) {
+            this.log.warn("<internal> Core.findDependencies(): Continues even though couldn't find associated module, msg: " + sqle);
+        }
+
+        Collection<Artifact> set = new ArrayList<Artifact>();
+        if (pk_module == 0)
+            return set; // For no exception caught above, this should not happen. An artifact that not associated with any module can be pruned.
+
+        String queryContentMatch = String.format("SELECT artifact.fk_content" + " FROM artifact" +
+                                                 " WHERE artifact.fk_module = %d" +
+                                                 "   AND artifact.name = '%s.dep'", pk_module, artifact.getName());
+        try (PreparedStatement psContentMatch = this.connect.prepareStatement(queryContentMatch);
+             ResultSet rsContentMatch = psContentMatch.executeQuery()) {
+            if (rsContentMatch.next()) {
+                // Look only at first resultSet (we only care about the first match that we find).
+                Hash hash = new Hash(rsContentMatch.getBytes(1));
+                File f = new File(core.getArtifactsDirectory(), hash.toString()); // f: actual file from file system
+                try {
+                    LineIterator iterator = new LineIterator(new FileReader(f));
+
+                    // Each line is a dependency. The first field is a name regex, the second (optional) is a version.
+                    while (iterator.hasNext()) {
+                        String line = iterator.next();
+                        String[] fields = line.split(",");
+                        if (fields.length==1 || fields.length==2) {
+                            String queryArtifactInfo = String.format("SELECT artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" +
+                                                                     " WHERE artifact.fk_module = %d" +
+                                                                     "   AND artifact.name REGEXP '%s" + "'", pk_module, fields[0]);
+                            try (PreparedStatement psArtifactInfo = this.connect.prepareStatement(queryArtifactInfo);
+                                 ResultSet rsArtifactInfo = psArtifactInfo.executeQuery()) {
+                                while (rsArtifactInfo.next()) {
+                                    String name = rsArtifactInfo.getString(3);
+                                    String targetName = name;
+                                    if (fields.length == 2) {
+                                        targetName = this.getTargetName(name, fields[1]);
+                                    }
+                                    Module mod = artifact.getModule();
+                                    Artifact A = new Core.DBArtifact(core, rsArtifactInfo.getLong(1), mod,
+                                                                           rsArtifactInfo.getString(2), name,
+                                                                           rsArtifactInfo.getInt(4), new Hash(rsArtifactInfo.getBytes(5)), targetName);
+                                    set.add(A);
+                                }
+                            }
+                        } else if (fields.length == 3 || fields.length == 4) {
+                            String[] mod_fields = fields[0].split("#");
+                            String[] ver_fields = fields[1].split("/");
+
+                            String organization = mod_fields[0];
+                            String module = mod_fields.length > 1 ? mod_fields[1] : "";
+                            String attributes = mod_fields.length > 2 ? mod_fields[2] : "";
+                            String version = ver_fields[0];
+                            String configuration = ver_fields.length > 1 ? ver_fields[1] : "";
+
+                            // TODO: how to fix warnings here for .replace()
+                            organization = organization.replace("$", artifact.getModule().getOrganization());
+                            module = module.replace("$", artifact.getModule().getName());
+                            attributes = attributes.replace("$", artifact.getModule().getAttributes().toString());
+                            attributes = new Attributes(attributes).toString();
+                            version = version.replace("$", artifact.getModule().getVersion());
+                            configuration = configuration.replace("$", artifact.getConfiguration());
+
+                            String organization_where = organization.length() > 0 ? " AND module.organization='" + organization + this.singleQuote : "";
+                            String module_where = module.length() > 0 ? " AND module.name='" + module + this.singleQuote : "";
+                            String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + this.singleQuote : "";
+                            String version_where = version.length() > 0 ? " AND module.version='" + version + this.singleQuote : "";
+                            String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + this.singleQuote : "";
+
+                            String queryModuleInfo = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" +
+                                                                   " JOIN module ON module.pk_module = artifact.fk_module" +
+                                                                   " WHERE artifact.merge_source=0" +
+                                                                   "   AND artifact.name REGEXP '%s'%s%s%s%s%s" +
+                                                                   " ORDER BY module.organization, module.name, module.attributes, module.version, artifact.configuration, module.sequence DESC",
+                                                                   fields[2], organization_where, module_where, attributes_where, version_where, configuration_where);
+                            try (PreparedStatement psModuleInfo = this.connect.prepareStatement(queryModuleInfo);
+                                 ResultSet rsModuleInfo = psModuleInfo.executeQuery()) {
+                                Collection<String> found = new HashSet<String>();
+                                while (rsModuleInfo.next()) {
+                                    String artifact_name = rsModuleInfo.getString(10);
+                                    if (found.contains(artifact_name))
+                                        continue;
+
+                                    String targetName = artifact_name;
+                                    if(fields.length == 4)
+                                        targetName = getTargetName(artifact_name, fields[3]);
+
+                                    @SuppressWarnings("MagicNumber")
+                                    Core.DBModule dbmod = new Core.DBModule(core, rsModuleInfo.getLong(1),
+                                                                                  rsModuleInfo.getString(2),
+                                                                                  rsModuleInfo.getString(3),
+                                                                                  rsModuleInfo.getString(4),
+                                                                                  rsModuleInfo.getString(5),
+                                                                                  rsModuleInfo.getString(6),
+                                                                                  rsModuleInfo.getString(7));
+                                    @SuppressWarnings("MagicNumber")
+                                    Artifact A = new Core.DBArtifact(core, rsModuleInfo.getLong(8), dbmod,
+                                                                           rsModuleInfo.getString(9), artifact_name,
+                                                                           rsModuleInfo.getInt(11),
+                                                                           new Hash(rsModuleInfo.getBytes(12)), targetName);
+                                    set.add(A);
+                                    found.add(artifact_name);
+                                }
+                            }
+                        } else {
+                            throw new IllegalArgumentException("ERROR: Illegal line (" + line + ") in " + artifact.getName() + ".dep");
+                        }
+                    }
+                } catch (FileNotFoundException fnfe) {
+                    this.log.debug("DTFStorage.findDependencies(artifact) exits; does not find specified artifact file, msg: " + fnfe);
+                }
+            }
+        }
+        return set;
+    }
 
     @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {

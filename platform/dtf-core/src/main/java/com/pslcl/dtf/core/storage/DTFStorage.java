@@ -2,6 +2,7 @@ package com.pslcl.dtf.core.storage;
 
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.Hash;
+import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 
@@ -156,6 +157,26 @@ public interface DTFStorage {
      * @return A set of modules.
      */
     public Iterable<Module> createModuleSet(Core core, String organization, String name) throws SQLException;
+
+    /**
+     * Return a set of all artifacts that the specified artifact depends on. Dependencies are stored in a
+     * corresponding artifact with '.dep' added. These are typically merged artifacts so they are not typically
+     * distributed.
+     * The '.dep' file contains artifact references, one per line, with the following formats:
+     * First, a line with a single field. This field is a name regex (defined my MySQL) for other artifacts in the same module.
+     * Second, a line with three fields separated by a comma. The first field is a module reference and the second is a version.
+     * The module reference is specified as 'org#module#attributes' and the version as 'version/configuration'. In all fields
+     * a dollar sign can be used to substitute the value from the artifact that dependencies are being found from. This
+     * means that '$#$#$,$/,$.dep' is used to search for the '.dep' file. If any of the fields is empty then it will not be used
+     * in the search. If attributes are specified then they must match exactly (and be formatted correctly including URL-encoding).
+     * If the dollar sign is used in attributes and additional attributes are specified then they will be reformatted correctly.
+     * Each artifact name is only accepted once, with the first match taking priority. Artifacts are ordered by sorting
+     * organization, module, attributes, version (all increasing order) and sequence (decreasing order).
+     * @param artifact The artifact to search dependencies for. The corresponding '.dep' file must be in the
+     * same module as the artifact (likely by being merged).
+     * @return A set of dependent artifacts.
+     */
+    public Iterable<Artifact> findDependencies(Core core, Artifact artifact) throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

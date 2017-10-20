@@ -223,9 +223,16 @@ public class Generator
      * @param artifact The artifact to find the dependencies of.
      * @return An iterator over the set of dependent artifacts.
      */
-    public Iterable<Artifact> findDependencies(Artifact artifact)
-    {
-        return core.findDependencies(artifact);
+    public Iterable<Artifact> findDependencies(Artifact artifact) {
+        Iterable<Artifact> ret = new ArrayList<Artifact>();
+        try {
+            ret = this.core.getStorage().findDependencies(this.core, artifact);
+        } catch (SQLException sqle) {
+            this.log.error("Generator.findDependencies(): Call to DTFStorage.findDependencies() returns sql exception, msg: " + sqle);
+        } catch (IllegalArgumentException iae) {
+            this.log.error("Generator.findDependencies(): Call to DTFStorage.findDependencies() returns exception, msg: " + iae);
+        }
+        return ret;
     }
 
     /**
@@ -245,8 +252,7 @@ public class Generator
      * @return An iterator over the set of artifacts. Each entry contains an array of artifacts in the same order
      * as the input parameters.
      */
-    public Iterable<Artifact[]> createArtifactSet(Attributes attributes, String configuration, String... name)
-    {
+    public Iterable<Artifact[]> createArtifactSet(Attributes attributes, String configuration, String... name) {
         return core.createArtifactSet(attributes, configuration, name);
     }
 
