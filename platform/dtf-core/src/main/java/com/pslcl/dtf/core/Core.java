@@ -37,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -324,8 +325,7 @@ public class Core
      * This class represents a module that is backed by the core database. Operations on the module will refer
      * to database content.
      */
-    public static class DBModule implements Module
-    {
+    public static class DBModule implements Module {
         private Core core;
         public long pk;
         private String organization;
@@ -335,8 +335,7 @@ public class Core
         private String status;
         private String sequence;
 
-        DBModule(Core core, long pk, String organization, String name, String attribute_string, String version, String status, String sequence)
-        {
+        public DBModule(Core core, long pk, String organization, String name, String attribute_string, String version, String status, String sequence) {
             this.core = core;
             this.pk = pk;
             this.organization = organization;
@@ -348,56 +347,47 @@ public class Core
         }
 
         @Override
-        public String getOrganization()
-        {
+        public String getOrganization() {
             return organization;
         }
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @Override
-        public String getVersion()
-        {
+        public String getVersion() {
             return version;
         }
 
         @Override
-        public String getStatus()
-        {
+        public String getStatus() {
             return status;
         }
 
         @Override
-        public Map<String, String> getAttributes()
-        {
+        public Map<String, String> getAttributes() {
             return attributes.getAttributes();
         }
 
         @Override
-        public String getSequence()
-        {
+        public String getSequence() {
             return sequence;
         }
 
         @Override
-        public List<Artifact> getArtifacts()
-        {
+        public List<Artifact> getArtifacts() {
             return core.getArtifacts(pk, null, null);
         }
 
         @Override
-        public List<Artifact> getArtifacts(String namePattern)
-        {
+        public List<Artifact> getArtifacts(String namePattern) {
             return core.getArtifacts(pk, namePattern, null);
         }
 
         @Override
-        public List<Artifact> getArtifacts(String namePattern, String configuration)
-        {
+        public List<Artifact> getArtifacts(String namePattern, String configuration) {
             return core.getArtifacts(pk, namePattern, configuration);
         }
 
@@ -681,47 +671,13 @@ public class Core
             File f = core.getContentFile(hash);
             if (f != null) {
                 try {
-                    return FileUtils.readFileToString(f).getBytes();
+                    return FileUtils.readFileToString(f, Charset.defaultCharset()).getBytes();
                 } catch (Exception ignore) {
                     // Ignore
                 }
             }
             return new byte[0]; // this is better than returning null, which poses a null pointer threat to the caller
         }
-    }
-
-    /**
-     * Return a set of all modules known to the database.
-     * @return The set of modules
-     */
-    public Iterable<Module> createModuleSet()
-    {
-        Collection<Module> set = new ArrayList<Module>();
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            statement = this.storage.getConnect().createStatement();
-            resultSet = statement.executeQuery("SELECT pk_module, organization, name, attributes, version, status, sequence FROM module");
-            while (resultSet.next())
-            {
-                DBModule M = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
-                set.add(M);
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.createModuleSet(): createModuleSet() exception " + e.getMessage());
-            this.log.debug("stack trace: ", e);
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return set;
     }
 
     /**

@@ -142,6 +142,13 @@ public interface DTFStorage {
     void pruneTemplates() throws SQLException;
 
     /**
+     * Return a set of all modules known to the database.
+     * @param core The core instance.
+     * @return The set of modules
+     */
+    Iterable<Module> createModuleSet(Core core) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

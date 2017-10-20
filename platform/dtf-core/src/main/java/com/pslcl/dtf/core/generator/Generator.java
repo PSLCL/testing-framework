@@ -26,6 +26,7 @@ import com.pslcl.dtf.core.generator.template.TestInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -189,9 +190,15 @@ public class Generator
      * Create an iterable set of all modules known to the generator.
      * @return An iterable set of all modules.
      */
-    public Iterable<Module> createModuleSet()
-    {
-        return core.createModuleSet();
+    public Iterable<Module> createModuleSet() {
+        Iterable<Module> ret = null;
+        try {
+            ret = core.getStorage().createModuleSet(core);
+        } catch (SQLException sqle) {
+            this.log.error("Generator.createModuleSet(): Call to DTFStorage.createModuleSet() returns exception, msg: \" + sqle ");
+            this.log.debug("stack trace: ", sqle);
+        }
+        return ret;
     }
 
     /**
@@ -200,8 +207,7 @@ public class Generator
      * @param module The module name.
      * @return An iterable set of modules.
      */
-    public Iterable<Module> createModuleSet(String organization, String module)
-    {
+    public Iterable<Module> createModuleSet(String organization, String module) {
         return core.createModuleSet(organization, module);
     }
 

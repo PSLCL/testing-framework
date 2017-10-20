@@ -325,7 +325,14 @@ public final class DistributedTestingFramework
         }
 
         private void markMergeFromModule() {
-            Iterable<Module> modules = core.createModuleSet();
+            Iterable<Module> modules = null;
+            try {
+                modules = core.getStorage().createModuleSet(core);
+            } catch (SQLException sqle) {
+                LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.markMergeFromModules(): Continue even though call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
+                LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("stack trace: ", sqle);
+            }
+
             for (DelayedModuleMergeAction d : delayedModuleMergeAction) {
                 Module dmod = d.module;
                 long pk_source_module = 0;
@@ -620,7 +627,14 @@ public final class DistributedTestingFramework
                 }
 
                 // Extract all generators to new generator (configured) directory
-                Iterable<Module> find_generators = core.createModuleSet();
+                Iterable<Module> find_generators = null;
+                try {
+                    find_generators = core.getStorage().createModuleSet(core);
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize(): Continue even though call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", sqle);
+                }
+
                 for (Module M : find_generators) {
                     List<Artifact> artifacts = M.getArtifacts(null, "dtf_test_generator");
                     for (Artifact A : artifacts) {
