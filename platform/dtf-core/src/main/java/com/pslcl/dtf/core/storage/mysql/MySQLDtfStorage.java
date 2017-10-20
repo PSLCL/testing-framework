@@ -30,8 +30,10 @@ import java.util.Set;
 import java.util.Collection;
 
 public class MySQLDtfStorage implements DTFStorage {
-    private final Logger log;
+    private static final char forwardSlash = '/';
     private static final String singleQuote = "'";
+
+    private final Logger log;
     private final PortalConfig config;
     private boolean read_only;
 
@@ -572,8 +574,6 @@ public class MySQLDtfStorage implements DTFStorage {
         return set;
     }
 
-    static final char forwardSlash = '/';
-
     /**
      * Remove default directory from artifact name and replace it with the target directory instead.
      *
@@ -654,19 +654,21 @@ public class MySQLDtfStorage implements DTFStorage {
                             String version = ver_fields[0];
                             String configuration = ver_fields.length > 1 ? ver_fields[1] : "";
 
-                            // TODO: how to fix warnings here for .replace()
-                            organization = organization.replace("$", artifact.getModule().getOrganization());
-                            module = module.replace("$", artifact.getModule().getName());
-                            attributes = attributes.replace("$", artifact.getModule().getAttributes().toString());
-                            attributes = new Attributes(attributes).toString();
-                            version = version.replace("$", artifact.getModule().getVersion());
-                            configuration = configuration.replace("$", artifact.getConfiguration());
+                            // avoid IntelliJ warning "Dynamic regular expression could be replaced by compiled Pattern"
+                            CharSequence dollarSign = "$"; // this is the precomputation of "$" that IntelliJ asks for
 
-                            String organization_where = organization.length() > 0 ? " AND module.organization='" + organization + this.singleQuote : "";
-                            String module_where = module.length() > 0 ? " AND module.name='" + module + this.singleQuote : "";
-                            String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + this.singleQuote : "";
-                            String version_where = version.length() > 0 ? " AND module.version='" + version + this.singleQuote : "";
-                            String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + this.singleQuote : "";
+                            organization = organization.replace(dollarSign, artifact.getModule().getOrganization());
+                            module = module.replace(dollarSign, artifact.getModule().getName());
+                            attributes = attributes.replace(dollarSign, artifact.getModule().getAttributes().toString());
+                            attributes = new Attributes(attributes).toString();
+                            version = version.replace(dollarSign, artifact.getModule().getVersion());
+                            configuration = configuration.replace(dollarSign, artifact.getConfiguration());
+
+                            String organization_where = organization.length() > 0 ? " AND module.organization='" + organization + singleQuote : "";
+                            String module_where = module.length() > 0 ? " AND module.name='" + module + singleQuote : "";
+                            String attributes_where = attributes.length() > 0 ? " AND module.attributes='" + attributes + singleQuote : "";
+                            String version_where = version.length() > 0 ? " AND module.version='" + version + singleQuote : "";
+                            String configuration_where = configuration.length() > 0 ? " AND artifact.configuration='" + configuration + singleQuote : "";
 
                             String queryModuleInfo = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" +
                                                                    " JOIN module ON module.pk_module = artifact.fk_module" +

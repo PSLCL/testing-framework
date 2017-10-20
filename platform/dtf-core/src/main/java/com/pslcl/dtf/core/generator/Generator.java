@@ -75,12 +75,9 @@ public class Generator
      * Create a generator, which in turn can be used to generate test instances.
      * @param pk_test The primary key of the test that any generated test instances are related to.
      */
-    public Generator(long pk_test)
-    {
+    public Generator(long pk_test) {
         this.log = LoggerFactory.getLogger(getClass());
         core = new Core(pk_test);
-//        /* Load the described template and description hashes */
-//        core.loadGeneratorHashes();
     }
 
     /**

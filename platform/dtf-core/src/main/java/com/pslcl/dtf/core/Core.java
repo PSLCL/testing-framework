@@ -691,38 +691,38 @@ public class Core
      * @param name Artifact names, including MySQL REGEXP patterns.
      * @return The set of artifacts
      */
-    public Iterable<Artifact[]> createArtifactSet(Attributes required, String configuration, String... name)
-    {
+    public Iterable<Artifact[]> createArtifactSet(Attributes required, String configuration, String... name) {
         Statement statement = null;
         ResultSet resultSet = null;
         Map<Long, DBModule> moduleMap = new HashMap<Long, DBModule>();
         Map<Long, Artifact[]> artifactMap = new HashMap<Long, Artifact[]>();
 
-        for (int name_index = 0; name_index < name.length; name_index++)
-        {
+        for (int name_index = 0; name_index < name.length; name_index++) {
             String artifact_name = name[name_index];
-            try
-            {
+            try {
                 statement = this.storage.getConnect().createStatement();
                 String configuration_match = "";
                 if (configuration != null)
-                    configuration_match = " AND artifact.configuration='" + configuration + this.singleQuote;
+                    configuration_match = " AND artifact.configuration='" + configuration + singleQuote;
 
-                String queryStr = String.format("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE artifact.merge_source=0 AND artifact.name REGEXP '%s'%s"
-                                + " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC", artifact_name, configuration_match);
+                String queryStr = String.format(
+                  "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version," +
+                        " module.status, module.sequence, artifact.pk_artifact, artifact.configuration," +
+                        " artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" +
+                  " JOIN module ON module.pk_module = artifact.fk_module" +
+                  " WHERE artifact.merge_source=0" +
+                  "   AND artifact.name REGEXP '%s'%s" +
+                  " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC",
+                  artifact_name, configuration_match);
                 resultSet = statement.executeQuery(queryStr);
-                while (resultSet.next())
-                {
+                while (resultSet.next()) {
                     // Verify that if requested, the module/version has all required attributes.
                     Attributes possesses = new Attributes(resultSet.getString(4));
-                    if (required != null)
-                    {
+                    if (required != null) {
                         boolean mismatch = false;
-                        for (Map.Entry<String, String> entry : required.getAttributes().entrySet())
-                        {
+                        for (Map.Entry<String, String> entry : required.getAttributes().entrySet()) {
                             if (!possesses.get(entry.getKey())
-                                          .equals(entry.getValue()))
-                            {
+                                          .equals(entry.getValue())) {
                                 mismatch = true;
                                 break;
                             }
@@ -734,35 +734,30 @@ public class Core
 
                     long pk_found = resultSet.getLong(1);
                     Artifact[] locArtifacts;
-                    if (artifactMap.containsKey(pk_found))
+                    if (artifactMap.containsKey(pk_found)) {
                         locArtifacts = artifactMap.get(pk_found);
-                    else
-                    {
+                    } else {
                         locArtifacts = new Artifact[name.length];
                         artifactMap.put(pk_found, locArtifacts);
                     }
 
                     DBModule module = null;
-                    if (moduleMap.containsKey(pk_found))
+                    if (moduleMap.containsKey(pk_found)) {
                         module = moduleMap.get(pk_found);
-                    else
-                    {
+                    } else {
                         module = new DBModule(this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
                         moduleMap.put(pk_found, module);
                     }
 
-                    if (locArtifacts[name_index] == null)
-                    {
+                    if (locArtifacts[name_index] == null) {
                         Artifact A = new DBArtifact(this, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
                         locArtifacts[name_index] = A;
                     }
                 }
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 this.log.error("<internal> Core.createArtifactSet() exception msg: " + e.getMessage());
                 this.log.debug("stack trace: ", e);
-            } finally
-            {
+            } finally {
                 safeClose(resultSet);
                 resultSet = null;
                 safeClose(statement);
@@ -771,8 +766,7 @@ public class Core
         }
 
         Collection<Artifact[]> set = new ArrayList<Artifact[]>();
-        for (Map.Entry<Long, Artifact[]> longEntry : artifactMap.entrySet())
-        {
+        for (Map.Entry<Long, Artifact[]> longEntry : artifactMap.entrySet()) {
             Artifact[] list = longEntry.getValue();
             int found = 0;
             for (Artifact artifactElement : list)
@@ -864,11 +858,11 @@ public class Core
         String name_match = "";
 
         if (name != null)
-            name_match = "artifact.name REGEXP '" + name + this.singleQuote;
+            name_match = "artifact.name REGEXP '" + name + singleQuote;
 
         String configuration_match = "";
         if (configuration != null)
-            configuration_match = "artifact.configuration = '" + configuration + this.singleQuote;
+            configuration_match = "artifact.configuration = '" + configuration + singleQuote;
 
         String separator = "";
         if (name != null && configuration != null)
