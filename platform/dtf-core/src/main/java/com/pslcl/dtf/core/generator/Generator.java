@@ -37,6 +37,8 @@ public class Generator
 {
     private final Logger log;
 
+    private long pk_target_test = 0;
+
     public static boolean trace = false;
 
     /**
@@ -78,9 +80,8 @@ public class Generator
     public Generator(long pk_test)
     {
         this.log = LoggerFactory.getLogger(getClass());
+        this.pk_target_test = pk_test;
         core = new Core(pk_test);
-//        /* Load the described template and description hashes */
-//        core.loadGeneratorHashes();
     }
 
     /**
@@ -260,7 +261,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            this.log.error("<internal> Generator.fail(): There is no test being generated.");
+            this.log.error("<internal> Generator.fail(): There is no test being generated for test " + this.pk_target_test);
             return;
         }
 
@@ -276,7 +277,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            this.log.error("<internal> Generator.assign(): There is no test being generated.");
+            this.log.error("<internal> Generator.assign(): There is no test being generated for test " + this.pk_target_test);
             return;
         }
 
@@ -295,7 +296,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            this.log.error("<internal> Generator.setRunTimes(): There is no test being generated.");
+            this.log.error("<internal> Generator.setRunTimes(): There is no test being generated for test " + this.pk_target_test);
             return;
         }
 
@@ -328,7 +329,7 @@ public class Generator
     {
         if (activeTestInstance == null)
         {
-            this.log.error("<internal> Generator.add(): There is no test being generated.");
+            this.log.error("<internal> Generator.add(): There is no test instance being generated for test " + this.pk_target_test);
             return;
         }
 
@@ -346,7 +347,7 @@ public class Generator
         try {
             if (activeTestInstance == null)
             {
-                this.log.error("<internal> Generator.completeTest(): There is no active test to complete.");
+                this.log.error("<internal> Generator.completeTest(): There is no active test to complete for test " + this.pk_target_test);
                 return addedDescribedTemplatesCount;
             }
 
@@ -361,7 +362,7 @@ public class Generator
                     try{
                         addedDescribedTemplatesCount = sync(); // adds new entries to table described_template
                     } catch (Exception e) {
-                        this.log.error("<internal> Generator.completeTest(): Failure to sync test instances, " + e.getMessage());
+                        this.log.error("<internal> Generator.completeTest(): Failure to sync test instances for test " + this.pk_target_test + " - " + e.getMessage());
                         this.log.debug("stack trace", e);
                         throw e;
                     }
@@ -448,7 +449,7 @@ public class Generator
          */
 
         if (addedDescribedTemplatesCount > 0)
-            this.log.debug("<internal> Generator.sync() added " + addedDescribedTemplatesCount + " describedTemplates to database");
+            this.log.debug("<internal> Generator.sync() added " + addedDescribedTemplatesCount + " describedTemplates to database for test " + this.pk_target_test);
         return addedDescribedTemplatesCount;
     }
 
@@ -462,8 +463,7 @@ public class Generator
         try{
             addedDescribedTemplatesCount = sync();
         } catch (Exception e) {
-            this.log.error("<internal> Generator.close(): Failure to close generator, " + e.getMessage());
-            e.printStackTrace();
+            this.log.error("<internal> Generator.close(): Failure to close generator for test " + this.pk_target_test + " - " + e.getMessage(), e);
         }
         finally{
             core.close();
