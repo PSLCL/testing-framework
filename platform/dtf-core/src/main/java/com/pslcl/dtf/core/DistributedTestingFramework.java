@@ -468,12 +468,11 @@ public final class DistributedTestingFramework
             }
         }
 
-//      @Override
-//      public String toString()
-//      {
-//          return Long.toString(id) + "/" + script;
-//      }
-
+      @Override
+      public String toString()
+      {
+          return Long.toString(id) + "/" + script;
+      }
     }
 
     @SuppressWarnings("MagicNumber")
