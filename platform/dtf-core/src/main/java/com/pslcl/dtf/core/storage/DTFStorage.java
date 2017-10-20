@@ -149,6 +149,15 @@ public interface DTFStorage {
     Iterable<Module> createModuleSet(Core core) throws SQLException;
 
     /**
+     * Create a set of all modules that match the specified organization and module name.
+     * @param core The core instance.
+     * @param organization The organizations to filter on.
+     * @param name The module name to filter on.
+     * @return A set of modules.
+     */
+    public Iterable<Module> createModuleSet(Core core, String organization, String name) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

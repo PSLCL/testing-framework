@@ -188,14 +188,14 @@ public class Generator
 
     /**
      * Create an iterable set of all modules known to the generator.
-     * @return An iterable set of all modules.
+     * @return An iterable set of all modules, may be empty.
      */
     public Iterable<Module> createModuleSet() {
-        Iterable<Module> ret = null;
+        Iterable<Module> ret = new ArrayList<Module>();
         try {
             ret = core.getStorage().createModuleSet(core);
         } catch (SQLException sqle) {
-            this.log.error("Generator.createModuleSet(): Call to DTFStorage.createModuleSet() returns exception, msg: \" + sqle ");
+            this.log.error("Generator.createModuleSet(): Call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
             this.log.debug("stack trace: ", sqle);
         }
         return ret;
@@ -205,10 +205,17 @@ public class Generator
      * Create an iterable set of all modules known to the generator for a specific organization and module name.
      * @param organization The organization of the module.
      * @param module The module name.
-     * @return An iterable set of modules.
+     * @return An iterable set of all modules, may be empty.
      */
     public Iterable<Module> createModuleSet(String organization, String module) {
-        return core.createModuleSet(organization, module);
+        Iterable<Module> ret = new ArrayList<Module>();
+        try {
+            ret = core.getStorage().createModuleSet(core, organization, module);
+        } catch (SQLException sqle) {
+            this.log.error("Generator.createModuleSet(organization, module): Call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
+            this.log.debug("stack trace: ", sqle);
+        }
+        return ret;
     }
 
     /**

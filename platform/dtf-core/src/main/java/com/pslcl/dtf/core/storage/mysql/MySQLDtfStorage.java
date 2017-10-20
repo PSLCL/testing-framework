@@ -545,6 +545,28 @@ public class MySQLDtfStorage implements DTFStorage {
         return set;
     }
 
+    @Override
+    public Iterable<Module> createModuleSet(Core core, String organization, String name) throws SQLException {
+        Collection<Module> set = new ArrayList<Module>();
+        String query = "SELECT pk_module, organization, name, attributes, version, status, sequence" + " FROM module" +
+                       " WHERE organization = " + organization +
+                       "   AND name = '" + name + "'";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            while (resultSet.next()) {
+                Core.DBModule M = new Core.DBModule(core, resultSet.getLong(1),
+                                                          resultSet.getString(2),
+                                                          resultSet.getString(3),
+                                                          resultSet.getString(4),
+                                                          resultSet.getString(5),
+                                                          resultSet.getString(6),
+                                                          resultSet.getString(7));
+                set.add(M);
+            }
+        }
+        return set;
+    }
+
 
     @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {

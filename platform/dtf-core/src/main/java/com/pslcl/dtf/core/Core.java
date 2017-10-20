@@ -681,42 +681,6 @@ public class Core
     }
 
     /**
-     * Create a set of all modules that match the specified organization and module name.
-     * @param organization The organizations to filter on.
-     * @param name The module name to filter on.
-     * @return A set of modules.
-     */
-    public Iterable<Module> createModuleSet(String organization, String name)
-    {
-        Collection<Module> set = new ArrayList<Module>();
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            statement = this.storage.getConnect().createStatement();
-            resultSet = statement.executeQuery(new String("SELECT pk_module, organization, name, attributes, version, status, sequence" + " FROM module" + " WHERE organization = " + organization + " AND name = '" + name + "'"));
-            while (resultSet.next())
-            {
-                DBModule M = new DBModule(this, resultSet.getLong(1), resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
-                set.add(M);
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.createModuleSet(): createModuleSet() exception " + e.getMessage());
-            this.log.debug("stack trace: ", e);
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return set;
-    }
-
-    /**
      * Return a set of all artifacts that the specified artifact depends on. Dependencies are stored in a
      * corresponding artifact with '.dep' added. These are typically merged artifacts so they are not typically
      * distributed.
