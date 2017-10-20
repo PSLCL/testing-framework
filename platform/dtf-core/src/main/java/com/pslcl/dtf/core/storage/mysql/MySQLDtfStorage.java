@@ -485,8 +485,9 @@ public class MySQLDtfStorage implements DTFStorage {
 
     @Override
     public void pruneTemplates() throws SQLException {
-        if (!this.read_only) {
-            // TODO: This has been broken since described_template was added; this code has had mismatched references ever since
+        if (!this.read_only
+            && this.read_only) { // TODO: remove this line- it prevents execution of the following code that needs work
+            // TODO: This has been broken since described_template was added as intermediary to table template; this code has had mismatched references ever since
 
             // Find all top-level described_template rows referenced in table test_instance.
             String queryFindDescribedTemplates = "SELECT DISTINCT fk_described_template FROM test_instance";
@@ -501,7 +502,7 @@ public class MySQLDtfStorage implements DTFStorage {
 
                 // TODO: the above filled usedDescribedTemplates with pk of described templates;
                 //       the below uses it again, but mixes in pk of templates.
-                //       Resolve: The two are not the same.
+                //       Resolve: The two are not the same. A template may be referenced by multiple described_template's.
                 //                Is it true that we have no interest in pruning described_templates?
                 //                How best to prune unused templates only?
 
