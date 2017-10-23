@@ -1455,7 +1455,7 @@ public class Core
         } // end for()
 
         if (checkedNotAddedDescribedTemplatesCount > 0)
-            this.log.debug("<internal> Core.syncDescribedTemplates() checked (without adding) " + checkedNotAddedDescribedTemplatesCount + " described templates in database");
+            this.log.debug("<internal> Core.syncDescribedTemplates() checked (without adding) " + checkedNotAddedDescribedTemplatesCount + " described templates in database for test " + this.pk_target_test);
         return addedDescribedTemplatesCount;
     }
 

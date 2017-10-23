@@ -444,58 +444,44 @@ public final class DistributedTestingFramework
             Thread.currentThread().setName(tname);
         }
 
-        private void process()
-        {
-            // Annoyance: there is no way to mask the warning "used without try-with-resource statement."
-            //   It is desirable to use "try-without-resource" for both "new ByteArayOutputStream()" code lines, as requested by code analyzer tool
-            //   But that cannot be used because they are referenced in catch and finally blocks, which- though possible in "try-without-resource," give no visibility to the indicated variables
-            //   Code rewrite, however, could allow all that is intended, and yet use "try-with-resource"
-            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-            ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        private void process() {
+            String augmented_params = shell + " " + script; // every choice is at warning level, so use this one
+            String[] params = augmented_params.split(" ");
+            params[1] = generators.getAbsolutePath() + "/bin/" + params[1];
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            processBuilder.command(params);
+            processBuilder.environment().put("CLASSPATH", generators.getAbsolutePath() + "/lib/*" + File.pathSeparator + base + "/platform/lib/*" + File.pathSeparator + base + "/platform/*");
+            processBuilder.environment().put("DTF_TEST_ID", Long.toString(id));
 
-            try {
-                String augmented_params = shell + " " + script; // every choice is at warning level, so use this one
-                String[] params = augmented_params.split(" ");
-                params[1] = generators.getAbsolutePath() + "/bin/" + params[1];
-                ProcessBuilder processBuilder = new ProcessBuilder();
-                processBuilder.command(params);
-                processBuilder.environment().put("CLASSPATH", generators.getAbsolutePath() + "/lib/*" + File.pathSeparator + base + "/platform/lib/*" + File.pathSeparator + base + "/platform/*");
-                processBuilder.environment().put("DTF_TEST_ID", Long.toString(id));
+            try (ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+                 ByteArrayOutputStream stderr = new ByteArrayOutputStream()){
+                try {
 
-                Process run = processBuilder.start();
-                inheritIO(run.getInputStream(), System.out, new PrintStream(stdout));
-                inheritIO(run.getErrorStream(), System.err, new PrintStream(stderr));
+                    Process run = processBuilder.start();
+                    inheritIO(run.getInputStream(), System.out, new PrintStream(stdout));
+                    inheritIO(run.getErrorStream(), System.err, new PrintStream(stderr));
 
-                boolean running = true;
-                while (running)
-                {
-                    try {
-                        run.exitValue();
-                        running = false;
-                    } catch (IllegalThreadStateException ignored) {
-                        try {
-                            Thread.sleep(250);
-                        } catch (Exception ignored1) {
-                        }
-                    }
+                    run.waitFor();
+
+                    core.updateTest(id, stdout.toString(), stderr.toString());
+                } catch (Exception e) {
+                    String msg = "ERROR: Could not run script '" + script + "', " + e;
+                    LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() Script: " + msg);
+                    new PrintStream(stderr).println(msg);
+                } finally {
+                    core.updateTest(id, stdout.toString(), stderr.toString());
                 }
-
-                core.updateTest(id, stdout.toString(), stderr.toString());
-            } catch (Exception e) {
-                String msg = "ERROR: Could not run script '" + script + "', " + e;
-                LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() Script: " + msg);
-                new PrintStream(stderr).println(msg);
-            } finally {
-                core.updateTest(id, stdout.toString(), stderr.toString());
+            }  catch(IOException e){
+                String msg = "ERROR: Could not close output stream for script '" + script + "', " + e;
+                LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() " + msg);
             }
         }
 
-//      @Override
-//      public String toString()
-//      {
-//          return Long.toString(id) + "/" + script;
-//      }
-
+      @Override
+      public String toString()
+      {
+          return Long.toString(id) + "/" + script;
+      }
     }
 
     @SuppressWarnings("MagicNumber")
