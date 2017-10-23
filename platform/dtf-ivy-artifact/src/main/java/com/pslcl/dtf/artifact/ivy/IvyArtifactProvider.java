@@ -206,6 +206,7 @@ public class IvyArtifactProvider implements ArtifactProvider
             this.content = new IvyContent(rmv, artifact);
 
             this.name = artifact.getName() + "." + artifact.getExt();
+            this.targetFilePath = this.name;
         }
 
         @Override

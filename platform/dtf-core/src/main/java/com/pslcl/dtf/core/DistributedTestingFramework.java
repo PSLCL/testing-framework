@@ -965,6 +965,7 @@ public final class DistributedTestingFramework
             this.name = name;
             this.artifacts = artifacts;
             this.start = start;
+            this.targetFilePath = name;
         }
 
         @Override

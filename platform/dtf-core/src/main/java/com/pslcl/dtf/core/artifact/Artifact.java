@@ -32,13 +32,13 @@ public interface Artifact
     int getPosixMode();
     
     /**
-     * Target file path, if different than name.
-     * @return Target file path, or null to use name.
+     * Target file path, defaults to name if not explicitly set
+     * @return Target file path.
      */
     String getTargetFilePath();
     
     /**
-     * Set the filepath to which the artifact should be deployed, if different than name.
+     * Set the filepath to which the artifact should be deployed.
      * @param targetFilePath The filepath to which the artifact should be deployed.
      */
     void setTargetFilePath(String targetFilePath);
