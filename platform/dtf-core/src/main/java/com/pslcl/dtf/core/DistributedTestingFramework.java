@@ -15,6 +15,24 @@
  */
 package com.pslcl.dtf.core;
 
+import com.pslcl.dtf.core.artifact.Artifact;
+import com.pslcl.dtf.core.artifact.ArtifactProvider;
+import com.pslcl.dtf.core.artifact.ArtifactProvider.ModuleNotifier;
+import com.pslcl.dtf.core.artifact.Content;
+import com.pslcl.dtf.core.artifact.Module;
+import com.pslcl.dtf.core.generator.Generator;
+import com.pslcl.dtf.core.generator.resource.Attributes;
+import com.pslcl.dtf.core.generator.resource.Machine;
+import com.pslcl.dtf.core.generator.template.Template;
+import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -42,25 +60,6 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.slf4j.LoggerFactory;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.commons.io.FileUtils;
-
-import com.pslcl.dtf.core.artifact.Artifact;
-import com.pslcl.dtf.core.artifact.ArtifactProvider;
-import com.pslcl.dtf.core.artifact.ArtifactProvider.ModuleNotifier;
-import com.pslcl.dtf.core.artifact.Content;
-import com.pslcl.dtf.core.artifact.Module;
-import com.pslcl.dtf.core.generator.Generator;
-import com.pslcl.dtf.core.generator.resource.Attributes;
-import com.pslcl.dtf.core.generator.resource.Machine;
-import com.pslcl.dtf.core.generator.template.Template;
-import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
 
 // this "final" class cannot be extended
 public final class DistributedTestingFramework
