@@ -472,16 +472,15 @@ public final class DistributedTestingFramework
                     core.updateTest(id, stdout.toString(), stderr.toString());
                 }
             }  catch(IOException e){
-                String msg = "ERROR: Could not close output stream for script '" + script + "', " + e;
-                LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() " + msg);
+                String msg = "Could not close output stream for script '" + script + "', " + e;
+                LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() sees exception, full msg: " + msg);
             }
         }
 
-      @Override
-      public String toString()
-      {
-          return Long.toString(id) + "/" + script;
-      }
+        @Override
+        public String toString() {
+            return Long.toString(id) + "/" + script;
+        }
     }
 
     @SuppressWarnings("MagicNumber")
@@ -621,28 +620,34 @@ public final class DistributedTestingFramework
                     LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", sqle);
                 }
 
+                // generators directory exists and is empty, from above code
                 for (Module M : find_generators) {
                     List<Artifact> artifacts = M.getArtifacts(null, "dtf_test_generator");
                     for (Artifact A : artifacts) {
-                        File f = core.getContentFile(A.getContent().getHash());
-                        File P = new File(generators, A.getName());
-                        FileUtils.copyFile(f, P);
+                        File f = core.getContentFile(A.getContent().getHash()); // f should be creatable
+                        File dest = new File(generators, A.getName());          // dest should be creatable
+                        if (f==null || dest==null) {
+                            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize(): Continue even though source generator file f cannot be created for copying to destination dest. f/dest: " + f + "/" + dest);
+                            continue;
+                        }
+
+                        FileUtils.copyFile(f, dest);
                         try {
-                            Files.setPosixFilePermissions(P.toPath(), toPosixPermissions(A.getPosixMode()));
+                            Files.setPosixFilePermissions(dest.toPath(), toPosixPermissions(A.getPosixMode()));
                         } catch (UnsupportedOperationException ignored) {
                             // Windows does not support setPosixFilePermissions. Fall back.
                             Set<PosixFilePermission> perms = toPosixPermissions(A.getPosixMode());
 
                             // TODO: check for false return
-                            P.setExecutable(perms.contains(PosixFilePermission.GROUP_EXECUTE) || perms.contains(PosixFilePermission.OTHERS_EXECUTE), false);
-                            P.setExecutable(perms.contains(PosixFilePermission.OWNER_EXECUTE), true);
+                            dest.setExecutable(perms.contains(PosixFilePermission.GROUP_EXECUTE) || perms.contains(PosixFilePermission.OTHERS_EXECUTE), false);
+                            dest.setExecutable(perms.contains(PosixFilePermission.OWNER_EXECUTE), true);
                             // TODO: check for false return
-                            P.setReadable(perms.contains(PosixFilePermission.GROUP_READ) || perms.contains(PosixFilePermission.OTHERS_READ), false);
-                            P.setReadable(perms.contains(PosixFilePermission.OWNER_READ), true);
+                            dest.setReadable(perms.contains(PosixFilePermission.GROUP_READ) || perms.contains(PosixFilePermission.OTHERS_READ), false);
+                            dest.setReadable(perms.contains(PosixFilePermission.OWNER_READ), true);
 
                             try {
                                 // TODO: check for false return
-                                P.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
+                                dest.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
                             } catch (Exception e) { // TODO: This is where issue #159 is caught, before the workaround was placed (in IvyArtifactsProvider.javas).
                                 //       A workaround gives gen.noarch.tar.gz files 666 permissions instead of 444.
                                 //       This intercept catch code here can potentially allow 444 permissions to
@@ -651,7 +656,7 @@ public final class DistributedTestingFramework
                                 throw e;
                             }
                             // TODO: check for false return
-                            P.setWritable(perms.contains(PosixFilePermission.OWNER_WRITE), true);
+                            dest.setWritable(perms.contains(PosixFilePermission.OWNER_WRITE), true);
                         }
                     }
                 }
