@@ -1,0 +1,1108 @@
+swagger: '2.0'
+info:
+  title: Distributed Test Framework Service Web API
+  description: TODO
+  license:
+    name: TODO
+    url: https://github.com/PSLCL/testing-framework
+  version: '1.0'
+host: ec2-34-232-157-150.compute-1.amazonaws.com
+schemes:
+- https
+consumes:
+- application/json
+produces:
+- application/json
+paths:
+  /api/v1/stats:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the statistics of the service.
+      operationId: getStats
+      responses:
+        200:
+          description: The statistics object.
+          schema:
+            $ref: '#/definitions/Statistics'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/runrates:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the run rates.
+      operationId: getRunRates
+      responses:
+        200:
+          description: The statistics object.
+          schema:
+            $ref: '#/definitions/RunRates'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/user_tests:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the run rates.
+      operationId: getUserTests
+      responses:
+        200:
+          description: The user tests object.
+          schema:
+            $ref: '#/definitions/UserTests'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/modules:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the modules.
+      operationId: getModules
+      responses:
+        200:
+          description: The modules object.
+          schema:
+            $ref: '#/definitions/Modules'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/modules/{id}/:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the module.
+      operationId: getModule
+      parameters:
+      - name: id
+        in: path
+        description: The module id.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The module object.
+          schema:
+            $ref: '#/definitions/Module'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested module is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/modules/{id}/artifacts:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the module.
+      operationId: getModuleArtifacts
+      parameters:
+      - name: id
+        in: path
+        description: The module id.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The module artifacts object.
+          schema:
+            $ref: '#/definitions/Artifacts'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested module id is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/modules/{id}/report:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the module.
+      operationId: getModuleReport
+      parameters:
+      - name: id
+        in: path
+        description: The module id.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The module report.
+          schema:
+            $ref: '#/definitions/Report'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested module id is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/modules/{id}/report_print:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the module.
+      operationId: getModuleReportPrint
+      parameters:
+      - name: id
+        in: path
+        description: The module id.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The module report print.
+          schema:
+            $ref: '#/definitions/ReportPrint'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested module id is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/test_plans:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the modules.
+      operationId: getTestPlans
+      responses:
+        200:
+          description: The test plans object.
+          schema:
+            $ref: '#/definitions/TestPlans'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/test_plans/{plan}/:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the modules.
+      operationId: getTestPlan
+      parameters:
+      - name: plan
+        in: path
+        description: The plan primary key.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The test plan object.
+          schema:
+            $ref: '#/definitions/TestPlan'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested plan is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/test_plans/{plan}/tests:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the modules.
+      operationId: getPlanTests
+      parameters:
+      - name: plan
+        in: path
+        description: The plan primary key.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The test plan's tests object.
+          schema:
+            $ref: '#/definitions/Tests'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested plan is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/test_plans/{plan}/tests/{id}/:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the modules.
+      operationId: getPlanTest
+      parameters:
+      - name: plan
+        in: path
+        description: The plan primary key.
+        required: true
+        type: string
+      - name: id
+        in: path
+        description: The test id.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The test object.
+          schema:
+            $ref: '#/definitions/Test'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested plan or test id is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/versions:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the versions.
+      operationId: getVersions
+      responses:
+        200:
+          description: The versions object.
+          schema:
+            $ref: '#/definitions/Versions'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/report_versions:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the report versions.
+      operationId: getReportVersions
+      responses:
+        200:
+          description: The report versions object.
+          schema:
+            $ref: '#/definitions/ReportVersions'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/report_descriptions:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the report versions.
+      operationId: getReportDescriptions
+      responses:
+        200:
+          description: The report descriptions object.
+          schema:
+            $ref: '#/definitions/ReportDescriptions'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/report_test_plans:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the report test plans.
+      operationId: getReportTestPlans
+      responses:
+        200:
+          description: The version 1 report test plans object.
+          schema:
+            $ref: '#/definitions/ReportTestPlans'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v2/report_test_plans:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the report test plans.
+      operationId: getReportTestPlans2
+      responses:
+        200:
+          description: The version 2 report test plans object.
+          schema:
+            $ref: '#/definitions/ReportTestPlans2'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/instances:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the instances.
+      operationId: getInstances
+      responses:
+        200:
+          description: The instances object.
+          schema:
+            $ref: '#/definitions/Instances'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/instance/{id}/:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the instance.
+      operationId: getInstance
+      parameters:
+      - name: id
+        in: path
+        description: The instance id.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The instance object.
+          schema:
+            $ref: '#/definitions/Instance'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested instance id is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/template/{id}/:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the instance.
+      operationId: getTemplate
+      parameters:
+      - name: id
+        in: path
+        description: The instance id.
+        required: true
+        type: string
+      responses:
+        200:
+          description: The template object.
+          schema:
+            $ref: '#/definitions/Template'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        409:
+          description: The requested template id is unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+  /api/v1/artifacts/untested:
+    get:
+      tags:
+      - DTF
+      summary: >
+        Get the instance.
+      operationId: getUntestedArtifacts
+      responses:
+        200:
+          description: The untested artifacts object.
+          schema:
+            $ref: '#/definitions/UntestedArtifacts'
+        401:
+          description: Bad or expired token
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        403:
+          description: Access denied
+          schema:
+            $ref: '#/definitions/OAuth2Error'
+        500:
+          description: An unexpected service error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      security:
+      - AccessToken:
+        - dtf_read
+
+securityDefinitions:
+  AccessToken:
+    type: oauth2
+    authorizationUrl: https://cstkit.com/oauth2/authorize
+    flow: implicit
+    scopes:
+      dtf_read: >
+        FIXME /metadata GET, /metadata/{keyspace} GET and /metadata/{keyspace}/{metadataID} GET.  Also required with all metadata_write required endpoints.
+      dtf_write: >
+        FIXME /metadata/{keyspace} POST, /metadata/{keyspace}/{metadataID} PUT and /metadata/{keyspace}/{metadataID} DELETE.
+definitions:
+  Error:
+    type: object
+    properties:
+      errorCode:
+        type: string
+      errorDescription:
+        type: string
+  OAuth2Error:
+    type: object
+    properties:
+      error:
+        type: string
+      error_description:
+        type: string
+      error_uri:
+        type: string
+
+  Statistics:
+    type: object
+    properties:
+      module_count:
+        type: integer
+        description: The number of modules
+        format: int32
+      test_plan_count:
+        type: integer
+        description: The number of test plans
+      test_count:
+        type: integer
+        description: The number of tests
+        format: int32
+      artifact_count:
+        type: integer
+        description: The number of artifacts
+        format: int32
+      ti_count:
+        type: integer
+        description: The number of test instances
+        format: int32
+      ti_pending:
+        type: integer
+        description: The number of pending test instances
+        format: int32
+      ti_running:
+        type: integer
+        description: The number of running test instances
+      untested_module_count:
+        type: integer
+        description: The number of untested modules
+        format: int32
+  RunRates:
+    type: object
+    properties:
+      from:
+        type: integer
+        format: int64
+        description: starting date/time
+      to:
+        type: integer
+        format: int64
+        description: ending date/time
+      bucket:
+        type: integer
+        format: int32
+        description: FIXME
+      labels:
+        type: array
+        items:
+          type: string
+      starting:
+        $ref: '#/definitions/RunRatesStructure'
+      running:
+        $ref: '#/definitions/RunRatesStructure'
+      complete:
+        $ref: '#/definitions/RunRatesStructure'
+
+  RunRatesStructure:
+    type: object
+    properties:
+      options:
+        type: object
+        description: FIXME The starting->options structure.
+        properties:
+          fixme:
+            type: string
+            description: FIXME the example options was null, parameters unknown.
+      data:
+        type: object
+        description: The starting->data structure.
+        properties:
+          labels:
+            type: array
+            items:
+              type: string
+          datasets:
+            type: array
+            items:
+              type: object
+              description: The starting->data->datasets structure array
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: integer
+                    format: int32
+  UserTests:
+    type: object
+    properties:
+      fixme:
+        type: string
+        description: FIXME the user tests example was null
+  Modules:
+    type: array
+    items:
+      $ref: '#/definitions/ModuleListStructure'
+  ModuleListStructure:
+    type: object
+    properties:
+      pk_module:
+        type: integer
+        format: int64
+      organization:
+        type: string
+      name:
+        type: string
+      attributes:
+        type: string
+      version:
+        type: string
+      sequence:
+        type: integer
+        format: int64
+      tests:
+        type: integer
+        format: int32
+      plans:
+        type: integer
+        format: int32
+  Module:
+    type: object
+    properties:
+        module:
+          type: object
+          properties:
+            pk_module:
+              type: integer
+              format: int64
+            organization:
+              type: string
+            name:
+              type: string
+            version:
+              type: string
+            attributes:
+              type: string
+            scheduled_release:
+              type: integer
+              format: int64
+            actual_release:
+              type: integer
+              format: int64
+  Artifacts:
+    type: array
+    items:
+        $ref: '#/definitions/Artifact'
+  Artifact:
+    type: object
+    properties:
+      pk_artifact:
+        type: integer
+        format: int64
+      name:
+        type: string
+      configuration:
+        type: string
+      derived_from_artifact:
+        type: integer
+        format: int64
+      merged_from_module:
+        type: string
+      tests:
+        type: integer
+        format: int32
+      plans:
+        type: integer
+        format: int64
+
+  Report:
+    type: object
+    properties:
+      plans:
+        type: array
+        items:
+          $ref: '#/definitions/ReportTestPlan'
+      tests:
+        type: array
+        items:
+          $ref: '#/definitions/ReportTest'
+      modules:
+        type: array
+        items:
+          $ref: '#/definitions/ReportModule'
+      totals:
+          $ref: '#/definitions/ReportTotals'
+
+  ReportTestPlan:
+    type: object
+    properties:
+      pk_test_plan:
+        type: integer
+        format: int64
+      pk_test:
+        type: integer
+        format: int32
+      pk_test_instance:
+        type: integer
+        format: int64
+      name:
+        type: string
+      description:
+        type: string
+      modules:
+        type: string
+      result:
+        type: string
+      end_time:
+        type: integer
+        format: int64
+  ReportTest:
+    type: object
+    properties:
+      pk_test:
+        type: integer
+        format: int64
+      name:
+        type: string
+      description:
+        type: string
+  ReportModule:
+    type: object
+    properties:
+      pk_module:
+        type: integer
+        format: int64
+      offest:
+        type: integer
+        format: int32
+      organization:
+        type: string
+      name:
+        type: string
+      version:
+        type: string
+      sequence:
+        type: string
+      attributes:
+        type: string
+  ReportTotals:
+    type: object
+    properties:
+      fieldCount:
+        type: integer
+        format: int32
+      affectedRows:
+        type: integer
+        format: int32
+      insertId:
+        type: integer
+        format: int64
+      serverStatus:
+        type: integer
+        format: int32
+      warningCount:
+        type: integer
+        format: int32
+      message:
+        type: string
+      protocol41:
+        type: boolean
+      changedRows:
+        type: integer
+        format: int32
+
+  ReportPrint:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The report print
+  TestPlans:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The test plans
+  TestPlan:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The test plan
+  Tests:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The tests
+  Test:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The test
+  Versions:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The versions
+  ReportVersions:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The report versions
+  ReportDescriptions:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The report descriptions
+  ReportTestPlans:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The report test plans
+  ReportTestPlans2:
+    type: object
+    properties:
+      version:
+        type: string
+        description: Version 2 of the report test plans
+  Instances:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The instances
+  Instance:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The instance
+  Template:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The template
+  UntestedArtifacts:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The untested artifacts
+
+
+
+
+  Metadata:
+    type: object
+    description: >
+          A metadata object. Contains a fixed 'metadataID' property identifying the object and a keyspace.
+          Key/value pairs may be included in the values object as needed. Values must be strings.
+    properties:
+      metadataID:
+        type: string
+        description: Required. The metadataID.  The maximum size is 128 characters.
+      keyspace:
+        type: string
+        description: Required. The keyspace.  The maximum size is 128 characters.
+      values:
+        type: object
+        additionalProperties:
+          type: string
+          description: This is a key/value map. The maximum size of the key 128 characters.  The maximum size of the value is 65,535 characters.
+  MetadataPage:
+    type: object
+    properties:
+      metadata:
+        type: array
+        items:
+          $ref: '#/definitions/Metadata'
+      nextToken:
+        type: string
+        description: If non-null the next page token.  If null this was the last page.
+  KeyspacePage:
+    type: object
+    properties:
+      keyspaces:
+        type: array
+        items:
+          type: string
+      nextToken:
+        type: string
+        description: If non-null the next page token.  If null this was the last page.
+  Version:
+    type: object
+    properties:
+      version:
+        type: string
+        description: The full version of the service. E.g. 1.2.1
+      apiVersion:
+        type: string
+        description: If version of the API E.g. 1.2
+
