@@ -464,7 +464,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     machineInstance.sanitizing.set(false);
                 } catch (Exception e)
                 {
-                    format.ttl("cleanup of running application threw exception, manual cleanup may be required");
+                    format.ttl("cleanup of running application threw exception, manual cleanup may be required - " + e);
                     // nothing further we can really do if this fails, instead of warning for manual cleanup, nuke the whole template's worth
                     for (AwsMachineInstance instance : instancesInTemplate)
                     {
@@ -474,7 +474,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     }
 
                     deleteInstances(templateInstanceId, instancesInTemplate, null);
-                    log.debug(format.toString());
+                    log.debug(format.toString(), e);
                     return;
                 }
             }
@@ -494,7 +494,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 mconfig = MachineConfigData.init(pdelayData, instance.reservedResource.resource, format, defaultMachineConfigData);
             } catch (Exception e)
             {
-                log.warn("MachineConfigData.init failed", e);
+                log.warn("MachineConfigData.init failed - " + e, e);
                 format.ttl("MachineConfigData.init failed, continuing anyway");
             }
             
@@ -506,7 +506,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 manager.createIdleNameTag(pdelayData, pdelayData.getIdleName(MachineInstanceFuture.Ec2MidStr), instance.ec2Instance.getInstanceId());
             } catch (FatalResourceException e)
             {
-                log.warn("createIdleNameTag failed", e);
+                log.warn("createIdleNameTag failed - " + e, e);
                 format.ttl("createIdleNameTag failed, continuing anyway");
             }
 //                stalledRelease.put(instance.getCoordinates().resourceId, instance);
@@ -528,7 +528,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 // nothing further we can really do if these fail, futures should have logged error details
                 // could email someone to double check manual clean may be needed.
-                log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required - " + e, e);
             }
         }
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(AwsMachineProvider.this, coordinates);
@@ -611,7 +611,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                                 future.get();
                             } catch (Exception e)
                             {
-                                log.info("release machine code caught a somewhat unexpected exception during cancel cleanup", e);
+                                log.info("release machine code caught a somewhat unexpected exception during cancel cleanup - " + e, e);
                             }
                         }
                     } // if there is an instance future
@@ -801,7 +801,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     {
                         // nothing further we can really do if these fail, futures should have logged error details
                         // could email someone to double check manual clean may be needed.
-                        log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                        log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required - " + e, e);
                     }
                 }
                 for (Future<Void> future : completeList)
