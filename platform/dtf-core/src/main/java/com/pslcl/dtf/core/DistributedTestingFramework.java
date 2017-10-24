@@ -357,6 +357,7 @@ public final class DistributedTestingFramework
                         continue;
 
                     if (d.source.merge(d.merge, dmod, m)) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("<internal> .markMergeFromModule(): merges organization/name/version: " + m.getOrganization() + "/" + m.getName() + "/" + m.getVersion());
                         long pk_module = 0;
                         try {
                             pk_module = core.getStorage().findModule(m);
@@ -372,6 +373,7 @@ public final class DistributedTestingFramework
 
                                 long pk_artifact = 0;
                                 try {
+                                    // This line stores artifact with 0 merge_source. Other .addArtifact() callers can submit merge_source as 1. Only 0 merge_source is recognized by a generator to take action.
                                     pk_artifact = core.getStorage().addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
                                 } catch (SQLException sqle) {
                                     LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
@@ -383,6 +385,8 @@ public final class DistributedTestingFramework
                                 }
                             }
                         }
+                    } else {
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("<internal> .markMergeFromModule(): NOT merge organization/name/version: " + m.getOrganization() + "/" + m.getName() + "/" + m.getVersion());
                     }
                 }
             }
