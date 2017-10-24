@@ -6,7 +6,7 @@ info:
     name: TODO
     url: https://github.com/PSLCL/testing-framework
   version: '1.0'
-host: TODO
+host: ec2-34-232-157-150.compute-1.amazonaws.com
 schemes:
 - https
 consumes:
@@ -708,45 +708,269 @@ definitions:
   Statistics:
     type: object
     properties:
-      version:
-        type: string
-        description: The service statistics
+      module_count:
+        type: integer
+        description: The number of modules
+        format: int32
+      test_plan_count:
+        type: integer
+        description: The number of test plans
+      test_count:
+        type: integer
+        description: The number of tests
+        format: int32
+      artifact_count:
+        type: integer
+        description: The number of artifacts
+        format: int32
+      ti_count:
+        type: integer
+        description: The number of test instances
+        format: int32
+      ti_pending:
+        type: integer
+        description: The number of pending test instances
+        format: int32
+      ti_running:
+        type: integer
+        description: The number of running test instances
+      untested_module_count:
+        type: integer
+        description: The number of untested modules
+        format: int32
   RunRates:
     type: object
     properties:
-      version:
-        type: string
-        description: The run rates
+      from:
+        type: integer
+        format: int64
+        description: starting date/time
+      to:
+        type: integer
+        format: int64
+        description: ending date/time
+      bucket:
+        type: integer
+        format: int32
+        description: FIXME
+      labels:
+        type: array
+        items:
+          type: string
+      starting:
+        $ref: '#/definitions/RunRatesStructure'
+      running:
+        $ref: '#/definitions/RunRatesStructure'
+      complete:
+        $ref: '#/definitions/RunRatesStructure'
+
+  RunRatesStructure:
+    type: object
+    properties:
+      options:
+        type: object
+        description: FIXME The starting->options structure.
+        properties:
+          fixme:
+            type: string
+            description: FIXME the example options was null, parameters unknown.
+      data:
+        type: object
+        description: The starting->data structure.
+        properties:
+          labels:
+            type: array
+            items:
+              type: string
+          datasets:
+            type: array
+            items:
+              type: object
+              description: The starting->data->datasets structure array
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: integer
+                    format: int32
   UserTests:
     type: object
     properties:
-      version:
+      fixme:
         type: string
-        description: The user tests
+        description: FIXME the user tests example was null
   Modules:
+    type: array
+    items:
+      $ref: '#/definitions/ModuleListStructure'
+  ModuleListStructure:
     type: object
     properties:
+      pk_module:
+        type: integer
+        format: int64
+      organization:
+        type: string
+      name:
+        type: string
+      attributes:
+        type: string
       version:
         type: string
-        description: The modules
+      sequence:
+        type: integer
+        format: int64
+      tests:
+        type: integer
+        format: int32
+      plans:
+        type: integer
+        format: int32
   Module:
     type: object
     properties:
-      version:
-        type: string
-        description: The module
+        module:
+          type: object
+          properties:
+            pk_module:
+              type: integer
+              format: int64
+            organization:
+              type: string
+            name:
+              type: string
+            version:
+              type: string
+            attributes:
+              type: string
+            scheduled_release:
+              type: integer
+              format: int64
+            actual_release:
+              type: integer
+              format: int64
   Artifacts:
+    type: array
+    items:
+        $ref: '#/definitions/Artifact'
+  Artifact:
     type: object
     properties:
-      version:
+      pk_artifact:
+        type: integer
+        format: int64
+      name:
         type: string
-        description: The artifacts
+      configuration:
+        type: string
+      derived_from_artifact:
+        type: integer
+        format: int64
+      merged_from_module:
+        type: string
+      tests:
+        type: integer
+        format: int32
+      plans:
+        type: integer
+        format: int64
+
   Report:
     type: object
     properties:
+      plans:
+        type: array
+        items:
+          $ref: '#/definitions/ReportTestPlan'
+      tests:
+        type: array
+        items:
+          $ref: '#/definitions/ReportTest'
+      modules:
+        type: array
+        items:
+          $ref: '#/definitions/ReportModule'
+      totals:
+          $ref: '#/definitions/ReportTotals'
+
+  ReportTestPlan:
+    type: object
+    properties:
+      pk_test_plan:
+        type: integer
+        format: int64
+      pk_test:
+        type: integer
+        format: int32
+      pk_test_instance:
+        type: integer
+        format: int64
+      name:
+        type: string
+      description:
+        type: string
+      modules:
+        type: string
+      result:
+        type: string
+      end_time:
+        type: integer
+        format: int64
+  ReportTest:
+    type: object
+    properties:
+      pk_test:
+        type: integer
+        format: int64
+      name:
+        type: string
+      description:
+        type: string
+  ReportModule:
+    type: object
+    properties:
+      pk_module:
+        type: integer
+        format: int64
+      offest:
+        type: integer
+        format: int32
+      organization:
+        type: string
+      name:
+        type: string
       version:
         type: string
-        description: The report
+      sequence:
+        type: string
+      attributes:
+        type: string
+  ReportTotals:
+    type: object
+    properties:
+      fieldCount:
+        type: integer
+        format: int32
+      affectedRows:
+        type: integer
+        format: int32
+      insertId:
+        type: integer
+        format: int64
+      serverStatus:
+        type: integer
+        format: int32
+      warningCount:
+        type: integer
+        format: int32
+      message:
+        type: string
+      protocol41:
+        type: boolean
+      changedRows:
+        type: integer
+        format: int32
+
   ReportPrint:
     type: object
     properties:
