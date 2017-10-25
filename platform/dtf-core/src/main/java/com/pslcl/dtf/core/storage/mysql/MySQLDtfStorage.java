@@ -925,6 +925,32 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
+    public boolean isAssociatedWithTest(Module module) throws SQLException {
+        long pk = 0;
+        try {
+            pk = this.findModule(module);
+        } catch (Exception sqle) {
+            this.log.error("<internal> DTFStorage.isAssociatedWithTest(): Continues even though .findModule() throws exception, msg: " + sqle);
+        }
+        if (pk == 0)
+            return false;
+
+        String query = "SELECT test.pk_test" + " FROM test" +
+                " JOIN test_plan ON test_plan.pk_test_plan=test.fk_test_plan" +
+                " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan=test_plan.pk_test_plan" +
+                " WHERE test.pk_test=? AND module_to_test_plan.fk_module=?";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            preparedStatement.setLong(1, this.core.pk_target_test);
+            preparedStatement.setLong(2, pk);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.isBeforeFirst())
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public Optional<Core.DBDescribedTemplate> getDBDescribedTemplate(DescribedTemplate.Key matchKey) throws SQLException {
         String query = "SELECT pk_described_template, fk_module_set, description_hash, hash" +
                        " FROM described_template JOIN template ON fk_template = pk_template" +

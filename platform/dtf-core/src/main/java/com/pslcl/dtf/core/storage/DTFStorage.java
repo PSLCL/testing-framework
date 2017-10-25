@@ -215,6 +215,14 @@ public interface DTFStorage {
     List<Artifact> getArtifacts(long pk_module, String name, String configuration) throws SQLException;
 
     /**
+     * Return whether the specified module is associated with the current core target test. This is true
+     * if there is a relationship from the test through the test plan to the component and version.
+     * @param module The module.
+     * @return boolean
+     */
+    boolean isAssociatedWithTest(Module module) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

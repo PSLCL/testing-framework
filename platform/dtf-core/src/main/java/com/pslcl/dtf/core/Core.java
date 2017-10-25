@@ -82,7 +82,7 @@ public class Core
     /**
      * The private key of the test that is being generated.
      */
-    private long pk_target_test = 0;
+    public long pk_target_test = 0;
 
     public File getArtifactsDirectory() {
         return this.artifacts;
@@ -690,49 +690,6 @@ public class Core
             }
             return new byte[0]; // this is better than returning null, which poses a null pointer threat to the caller
         }
-    }
-
-    /**
-     * Return whether the specified module is associated with the current core target test. This is true
-     * if there is a relationship from the test through the test plan to the component and version.
-     * @param module The module.
-     * @return boolean
-     */
-    boolean isAssociatedWithTest(Module module)
-    {
-        long pk = 0;
-        try {
-            pk = this.storage.findModule(module);
-        } catch (Exception sqle) {
-            this.log.error("<internal> Core.isAssociatedWithTest(): Continues even though couldn't find module, msg: " + sqle);
-        }
-        if (pk == 0)
-            return false;
-
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("SELECT test.pk_test" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test = ? AND module_to_test_plan.fk_module = ?");
-            statement.setLong(1, this.pk_target_test);
-            statement.setLong(2, pk);
-            resultSet = statement.executeQuery();
-            if (resultSet.isBeforeFirst())
-            {
-                return true;
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.isAssociatedWithTest: Failure determining test association, " + e.getMessage());
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return false;
     }
 
     void updateModule(long pk_module)
