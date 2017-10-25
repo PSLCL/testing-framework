@@ -447,10 +447,10 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     StafRunnableProgram srp = (StafRunnableProgram) rp.get();
                     AwsMachineInstance machineInstance = (AwsMachineInstance) srp.getCommandData().getContext();
                     ResourceCoordinates coord = machineInstance.getCoordinates();
+                    srp.toString(format);
                     if (srp.isRunning())
                     {
-                        srp.toString(format);
-                        format.ttl(" ");
+                        format.ttl("is running");
                         Integer ccode = null;
                         try {
                             ccode = srp.kill().get();
@@ -468,8 +468,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                             deletedList.add(machineInstance);
                             deleteInstances(templateInstanceId, instancesInTemplate, coord);
                         }
-                    }
-                    log.debug(format.toString());
+                    }else
+                        format.ttl("is not running");
                     machineInstance.sanitizing.set(false);
                 } catch (Exception e)
                 {
@@ -486,6 +486,10 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     return;
                 }
             }
+            log.debug(format.toString());
+        }else
+        {
+            format.ttl("no runnable programs for templateInstanceId: " + templateInstanceId);
             log.debug(format.toString());
         }
         for (AwsMachineInstance instance : instancesInTemplate)
