@@ -40,12 +40,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -380,17 +378,24 @@ public class Core
 
         @Override
         public List<Artifact> getArtifacts() {
-            return core.getArtifacts(pk, null, null);
+            return this.getArtifacts(null, null);
         }
 
         @Override
         public List<Artifact> getArtifacts(String namePattern) {
-            return core.getArtifacts(pk, namePattern, null);
+            return this.getArtifacts(namePattern, null);
         }
 
         @Override
         public List<Artifact> getArtifacts(String namePattern, String configuration) {
-            return core.getArtifacts(pk, namePattern, configuration);
+            List<Artifact> ret = new ArrayList<>();
+            try {
+                ret = this.core.getStorage().getArtifacts(this.core, this.pk, namePattern, configuration);
+            } catch (SQLException sqle) {
+                this.core.log.error(".getArtifacts() Continues after DTFStorage.getArtifacts() throws exception, msg: " + sqle);
+                this.core.log.debug("stack trace", sqle);
+            }
+            return ret;
         }
 
         @Override
@@ -678,85 +683,6 @@ public class Core
             }
             return new byte[0]; // this is better than returning null, which poses a null pointer threat to the caller
         }
-    }
-
-    /**
-     * Return artifacts associated with a particular module (including version). Both name and configuration optional.
-     * @param pk_module The primary key of the module to return artifacts for.
-     * @param name The name, which can include MySQL REGEXP patterns and is also optional.
-     * @param configuration The configuration, or null to include all.
-     * @return The list of matching artifacts.
-     */
-    public List<Artifact> getArtifacts(long pk_module, String name, String configuration)
-    {
-        String name_match = "";
-
-        if (name != null)
-            name_match = "artifact.name REGEXP '" + name + singleQuote;
-
-        String configuration_match = "";
-        if (configuration != null)
-            configuration_match = "artifact.configuration = '" + configuration + singleQuote;
-
-        String separator = "";
-        if (name != null && configuration != null)
-            separator = " AND ";
-
-        String intro = "";
-        if (name != null || configuration != null)
-            intro = " AND ";
-
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        // Choose Set over List because Set automatically rejects duplicate entries
-        HashSet<Artifact> set = new HashSet<Artifact>();
-        try
-        {
-            statement = this.storage.getConnect().createStatement();
-            resultSet = statement.executeQuery("SELECT module.pk_module, module.organization, module.name, module.attributes, module.version, module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name, artifact.mode, artifact.fk_content, artifact.merged_from_module" + " FROM artifact" + " JOIN module ON module.pk_module = artifact.fk_module" + " WHERE module.pk_module = " + pk_module + intro + name_match + separator + configuration_match
-                            + " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC");
-            Map<Long, DBModule> modules = new HashMap<Long, DBModule>();
-            while (resultSet.next())
-            {
-                // Ignore dtf_test_generator artifacts that are merged from other modules
-                int merged_from_module = resultSet.getInt(13);
-                if (merged_from_module > 0 && "dtf_test_generator".equals(configuration))
-                    continue;
-
-                DBModule module = null;
-                long pk_found = resultSet.getLong(1);
-
-                if (modules.containsKey(pk_found))
-                    module = modules.get(pk_found);
-                else
-                {
-                    module = new DBModule(this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
-                    modules.put(pk_found, module);
-                }
-
-//                // set is now changed to HashSet<Artifact>, which cannot contain duplicate elements.
-//                // When set was List<Artifact>, it was hard to detect matching entry: this next line of code could not return true: set is not List<String>
-//                if (set.contains(resultSet.getString(8)))
-//                    continue;
-
-                Artifact A = new DBArtifact(this, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
-                set.add(A); // ignored return value is true for "added," false for already in place
-            }
-
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.getArtifacts(): getArtifacts() exception " + e.getMessage());
-            this.log.error("stack trace", e);
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return new ArrayList<Artifact>(set);
     }
 
     /**

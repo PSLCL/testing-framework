@@ -208,6 +208,15 @@ public interface DTFStorage {
     void updateTest(long pk_test, String stdout, String stderr) throws SQLException;
 
     /**
+     * Return artifacts associated with a particular module (including version). Both name and configuration optional.
+     * @param pk_module The primary key of the module to return artifacts for.
+     * @param name The name, which can include MySQL REGEXP patterns and is also optional.
+     * @param configuration The configuration, or null to include all.
+     * @return The list of matching artifacts.
+     */
+    List<Artifact> getArtifacts(Core core, long pk_module, String name, String configuration) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

@@ -643,7 +643,8 @@ public class MySQLDtfStorage implements DTFStorage {
                                     Module mod = artifact.getModule();
                                     Artifact A = new Core.DBArtifact(core, rsArtifactInfo.getLong(1), mod,
                                                                            rsArtifactInfo.getString(2), name,
-                                                                           rsArtifactInfo.getInt(4), new Hash(rsArtifactInfo.getBytes(5)), targetName);
+                                                                           rsArtifactInfo.getInt(4),
+                                                                     new Hash(rsArtifactInfo.getBytes(5)), targetName);
                                     set.add(A);
                                 }
                             }
@@ -700,10 +701,10 @@ public class MySQLDtfStorage implements DTFStorage {
                                                                                   rsModuleInfo.getString(6),
                                                                                   rsModuleInfo.getString(7));
                                     @SuppressWarnings("MagicNumber")
-                                    Artifact A = new Core.DBArtifact(core, rsModuleInfo.getLong(8), dbmod,
-                                                                           rsModuleInfo.getString(9), artifact_name,
-                                                                           rsModuleInfo.getInt(11),
-                                                                           new Hash(rsModuleInfo.getBytes(12)), targetName);
+                                    Artifact A = new Core.DBArtifact(core,          rsModuleInfo.getLong(8),
+                                                                     dbmod,         rsModuleInfo.getString(9),
+                                                                     artifact_name, rsModuleInfo.getInt(11),
+                                                                     new Hash(rsModuleInfo.getBytes(12)), targetName);
                                     set.add(A);
                                     found.add(artifact_name);
                                 }
@@ -772,12 +773,22 @@ public class MySQLDtfStorage implements DTFStorage {
                         if (moduleMap.containsKey(pk_found)) {
                             module = moduleMap.get(pk_found);
                         } else {
-                            module = new Core.DBModule(core, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
+                            module = new Core.DBModule(core, pk_found, resultSet.getString(2),
+                                                                       resultSet.getString(3),
+                                                                       resultSet.getString(4),
+                                                                       resultSet.getString(5),
+                                                                       resultSet.getString(6),
+                                                                       resultSet.getString(7));
                             moduleMap.put(pk_found, module);
                         }
 
                         if (locArtifacts[name_index] == null) {
-                            Artifact A = new Core.DBArtifact(core, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
+                            @SuppressWarnings("MagicNumber")
+                            Artifact A = new Core.DBArtifact(core,   resultSet.getLong(8),
+                                                             module, resultSet.getString(9),
+                                                                     resultSet.getString(10),
+                                                                     resultSet.getInt(11),
+                                                             new Hash(resultSet.getBytes(12)));
                             locArtifacts[name_index] = A;
                         }
                     }
@@ -811,7 +822,8 @@ public class MySQLDtfStorage implements DTFStorage {
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
              ResultSet resultSet = preparedStatement.executeQuery()) {
             while (resultSet.next()) {
-                result.put(resultSet.getLong(1), resultSet.getString(2));
+                result.put(resultSet.getLong(1),
+                           resultSet.getString(2));
             }
         }
         return result;
@@ -832,6 +844,70 @@ public class MySQLDtfStorage implements DTFStorage {
                 preparedStatement.executeUpdate();
             }
         }
+    }
+
+    @Override
+    public List<Artifact> getArtifacts(Core core, long pk_module, String name, String configuration) throws SQLException {
+        String name_match = "";
+        if (name != null)
+            name_match = "artifact.name REGEXP '" + name + singleQuote;
+        String configuration_match = "";
+        if (configuration != null)
+            configuration_match = "artifact.configuration = '" + configuration + singleQuote;
+        String separator = "";
+        if (name != null && configuration != null)
+            separator = " AND ";
+        String intro = "";
+        if (name != null || configuration != null)
+            intro = " AND ";
+
+        // Choose Set over List because Set automatically rejects duplicate entries
+        HashSet<Artifact> set = new HashSet<Artifact>();
+        String query = "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version," +
+                "  module.status, module.sequence, artifact.pk_artifact, artifact.configuration, artifact.name," +
+                "  artifact.mode, artifact.fk_content, artifact.merged_from_module FROM artifact" +
+                " JOIN module ON module.pk_module=artifact.fk_module" +
+                " WHERE module.pk_module=" + (pk_module + intro+name_match + separator + configuration_match) +
+                " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            Map<Long, Core.DBModule> modules = new HashMap<Long, Core.DBModule>();
+            while (resultSet.next()) {
+                // Ignore dtf_test_generator artifacts that are merged from other modules
+                int merged_from_module = resultSet.getInt(13);
+                if (merged_from_module>0 && "dtf_test_generator".equals(configuration))
+                    continue;
+
+                Core.DBModule module = null;
+                long pk_found = resultSet.getLong(1);
+                if (modules.containsKey(pk_found)) {
+                    module = modules.get(pk_found);
+                } else {
+                    module = new Core.DBModule(core, pk_found,
+                                               resultSet.getString(2),
+                                               resultSet.getString(3),
+                                               resultSet.getString(4),
+                                               resultSet.getString(5),
+                                               resultSet.getString(6),
+                                               resultSet.getString(7));
+                    modules.put(pk_found, module);
+                }
+
+//              // set is now changed to HashSet<Artifact>, which cannot contain duplicate elements.
+//              // When set was List<Artifact>, it was hard to detect matching entry: this next line of code could not return true: set is not List<String>
+//              if (set.contains(resultSet.getString(8)))
+//                  continue;
+
+                @SuppressWarnings("MagicNumber")
+                Artifact A = new Core.DBArtifact(core,   resultSet.getLong(8),
+                                                 module, resultSet.getString(9),
+                                                         resultSet.getString(10),
+                                                         resultSet.getInt(11),
+                                                 new Hash(resultSet.getBytes(12)));
+                set.add(A); // ignored return value is true for "added," false for already in place
+            }
+        }
+        return new ArrayList<Artifact>(set);
     }
 
     @Override
