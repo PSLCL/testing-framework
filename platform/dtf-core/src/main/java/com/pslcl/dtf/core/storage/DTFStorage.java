@@ -4,6 +4,7 @@ import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Module;
+import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 
 import java.sql.Connection;
@@ -156,7 +157,7 @@ public interface DTFStorage {
      * @param name The module name to filter on.
      * @return A set of modules.
      */
-    public Iterable<Module> createModuleSet(Core core, String organization, String name) throws SQLException;
+    Iterable<Module> createModuleSet(Core core, String organization, String name) throws SQLException;
 
     /**
      * Return a set of all artifacts that the specified artifact depends on. Dependencies are stored in a
@@ -176,7 +177,20 @@ public interface DTFStorage {
      * same module as the artifact (likely by being merged).
      * @return A set of dependent artifacts.
      */
-    public Iterable<Artifact> findDependencies(Core core, Artifact artifact) throws SQLException;
+    Iterable<Artifact> findDependencies(Core core, Artifact artifact) throws SQLException;
+
+    /**
+     * Return a set of artifacts given the specified requirements. First, only attributes from modules with at least the specified
+     * attributes are included. Second, if specified, the artifacts must come from the given configuration. The names specified are patterns
+     * acceptable to MySQL regex search.
+     * The result set includes a list of sets of matching artifacts. For each element in the list the array of results contains the
+     * artifact that matches the parameter in the same position, all of which will come from the same module.
+     * @param required A parameter set or null. Any module wed for artifacts must contain at least these attributes.
+     * @param configuration the configuration to check, or null.
+     * @param name Artifact names, including MySQL REGEXP patterns.
+     * @return The set of artifacts
+     */
+    Iterable<Artifact[]> createArtifactSet(Core core, Attributes required, String configuration, String... name) throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

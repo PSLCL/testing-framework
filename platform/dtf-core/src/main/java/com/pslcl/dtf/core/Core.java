@@ -501,7 +501,7 @@ public class Core
          * @param mode The POSIX mode of the artifact.
          * @param hash The hash of the artifact contents.
          */
-        DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash) {
+        public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash) {
             this(core, pk, module, configuration, name, mode, hash, null);
         }
 
@@ -678,106 +678,6 @@ public class Core
             }
             return new byte[0]; // this is better than returning null, which poses a null pointer threat to the caller
         }
-    }
-
-    /**
-     * Return a set of artifacts given the specified requirements. First, only attributes from modules with at least the specified
-     * attributes are included. Second, if specified, the artifacts must come from the given configuration. The names specified are patterns
-     * acceptable to MySQL regex search.
-     * The result set includes a list of sets of matching artifacts. For each element in the list the array of results contains the
-     * artifact that matches the parameter in the same position, all of which will come from the same module.
-     * @param required A parameter set or null. Any module wed for artifacts must contain at least these attributes.
-     * @param configuration the configuration to check, or null.
-     * @param name Artifact names, including MySQL REGEXP patterns.
-     * @return The set of artifacts
-     */
-    public Iterable<Artifact[]> createArtifactSet(Attributes required, String configuration, String... name) {
-        Statement statement = null;
-        ResultSet resultSet = null;
-        Map<Long, DBModule> moduleMap = new HashMap<Long, DBModule>();
-        Map<Long, Artifact[]> artifactMap = new HashMap<Long, Artifact[]>();
-
-        for (int name_index = 0; name_index < name.length; name_index++) {
-            String artifact_name = name[name_index];
-            try {
-                statement = this.storage.getConnect().createStatement();
-                String configuration_match = "";
-                if (configuration != null)
-                    configuration_match = " AND artifact.configuration='" + configuration + singleQuote;
-
-                String queryStr = String.format(
-                  "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version," +
-                        " module.status, module.sequence, artifact.pk_artifact, artifact.configuration," +
-                        " artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" +
-                  " JOIN module ON module.pk_module = artifact.fk_module" +
-                  " WHERE artifact.merge_source=0" +
-                  "   AND artifact.name REGEXP '%s'%s" +
-                  " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC",
-                  artifact_name, configuration_match);
-                resultSet = statement.executeQuery(queryStr);
-                while (resultSet.next()) {
-                    // Verify that if requested, the module/version has all required attributes.
-                    Attributes possesses = new Attributes(resultSet.getString(4));
-                    if (required != null) {
-                        boolean mismatch = false;
-                        for (Map.Entry<String, String> entry : required.getAttributes().entrySet()) {
-                            if (!possesses.get(entry.getKey())
-                                          .equals(entry.getValue())) {
-                                mismatch = true;
-                                break;
-                            }
-                        }
-
-                        if (mismatch)
-                            continue; // Move to the next result
-                    }
-
-                    long pk_found = resultSet.getLong(1);
-                    Artifact[] locArtifacts;
-                    if (artifactMap.containsKey(pk_found)) {
-                        locArtifacts = artifactMap.get(pk_found);
-                    } else {
-                        locArtifacts = new Artifact[name.length];
-                        artifactMap.put(pk_found, locArtifacts);
-                    }
-
-                    DBModule module = null;
-                    if (moduleMap.containsKey(pk_found)) {
-                        module = moduleMap.get(pk_found);
-                    } else {
-                        module = new DBModule(this, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
-                        moduleMap.put(pk_found, module);
-                    }
-
-                    if (locArtifacts[name_index] == null) {
-                        Artifact A = new DBArtifact(this, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
-                        locArtifacts[name_index] = A;
-                    }
-                }
-            } catch (Exception e) {
-                this.log.error("<internal> Core.createArtifactSet() exception msg: " + e.getMessage());
-                this.log.debug("stack trace: ", e);
-            } finally {
-                safeClose(resultSet);
-                resultSet = null;
-                safeClose(statement);
-                statement = null;
-            }
-        }
-
-        Collection<Artifact[]> set = new ArrayList<Artifact[]>();
-        for (Map.Entry<Long, Artifact[]> longEntry : artifactMap.entrySet()) {
-            Artifact[] list = longEntry.getValue();
-            int found = 0;
-            for (Artifact artifactElement : list)
-                if (artifactElement != null)
-                    found += 1;
-
-            if (found == name.length)
-                set.add(list);
-        }
-
-        return set;
     }
 
     /**

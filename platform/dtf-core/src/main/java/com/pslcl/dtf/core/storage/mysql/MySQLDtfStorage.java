@@ -23,11 +23,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Collection;
 
 public class MySQLDtfStorage implements DTFStorage {
     private static final char forwardSlash = '/';
@@ -716,6 +718,89 @@ public class MySQLDtfStorage implements DTFStorage {
         }
         return set;
     }
+
+    @Override
+    public Iterable<Artifact[]> createArtifactSet(Core core, Attributes required, String configuration, String... name) throws SQLException {
+        Map<Long, Artifact[]> artifactMap = new HashMap<Long, Artifact[]>();
+
+        Map<Long, Core.DBModule> moduleMap = new HashMap<Long, Core.DBModule>(); // must endure for() and inner while() loops
+        for (int name_index = 0; name_index < name.length; name_index++) {
+            try {
+                String artifact_name = name[name_index];
+                String configuration_match = "";
+                if (configuration != null)
+                    configuration_match = " AND artifact.configuration='" + configuration + singleQuote;
+                String query = String.format(
+                  "SELECT module.pk_module, module.organization, module.name, module.attributes, module.version," +
+                        " module.status, module.sequence, artifact.pk_artifact, artifact.configuration," +
+                        " artifact.name, artifact.mode, artifact.fk_content" + " FROM artifact" +
+                  " JOIN module ON module.pk_module = artifact.fk_module" +
+                  " WHERE artifact.merge_source=0" +
+                  "   AND artifact.name REGEXP '%s'%s" + // note: .name ending with $ means REGEXP matches to end of %s
+                  " ORDER BY module.organization, module.name, module.attributes, module.version, module.sequence DESC",
+                  artifact_name, configuration_match);
+
+                try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+                     ResultSet resultSet = preparedStatement.executeQuery()) {
+                    while (resultSet.next()) {
+                        // Verify that if requested, the module/version has all required attributes.
+                        Attributes possesses = new Attributes(resultSet.getString(4));
+                        if (required != null) {
+                            boolean mismatch = false;
+                            for (Map.Entry<String, String> entry : required.getAttributes().entrySet()) {
+                                if (!possesses.get(entry.getKey())
+                                        .equals(entry.getValue())) {
+                                    mismatch = true;
+                                    break;
+                                }
+                            }
+                            if (mismatch)
+                                continue; // Move to the next result
+                        }
+
+                        long pk_found = resultSet.getLong(1);
+                        Artifact[] locArtifacts;
+                        if (artifactMap.containsKey(pk_found)) {
+                            locArtifacts = artifactMap.get(pk_found);
+                        } else {
+                            locArtifacts = new Artifact[name.length];
+                            artifactMap.put(pk_found, locArtifacts);
+                        }
+
+                        Core.DBModule module = null;
+                        if (moduleMap.containsKey(pk_found)) {
+                            module = moduleMap.get(pk_found);
+                        } else {
+                            module = new Core.DBModule(core, pk_found, resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5), resultSet.getString(6), resultSet.getString(7));
+                            moduleMap.put(pk_found, module);
+                        }
+
+                        if (locArtifacts[name_index] == null) {
+                            Artifact A = new Core.DBArtifact(core, resultSet.getLong(8), module, resultSet.getString(9), resultSet.getString(10), resultSet.getInt(11), new Hash(resultSet.getBytes(12)));
+                            locArtifacts[name_index] = A;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                this.log.error("<internal> DtfStorage.createArtifactSet() Continues even though seeing exception msg: " + e.getMessage());
+                this.log.debug("stack trace: ", e);
+            }
+        }
+
+        Collection<Artifact[]> set = new ArrayList<Artifact[]>();
+        for (Map.Entry<Long, Artifact[]> longEntry : artifactMap.entrySet()) {
+            Artifact[] list = longEntry.getValue();
+            int found = 0;
+            for (Artifact artifactElement : list)
+                if (artifactElement != null)
+                    found += 1;
+
+            if (found == name.length)
+                set.add(list);
+        }
+        return set;
+    }
+
 
     @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {

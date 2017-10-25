@@ -210,7 +210,7 @@ public class Generator
     public Iterable<Module> createModuleSet(String organization, String module) {
         Iterable<Module> ret = new ArrayList<Module>();
         try {
-            ret = core.getStorage().createModuleSet(core, organization, module);
+            ret = this.core.getStorage().createModuleSet(this.core, organization, module);
         } catch (SQLException sqle) {
             this.log.error("Generator.createModuleSet(organization, module): Call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
             this.log.debug("stack trace: ", sqle);
@@ -253,7 +253,13 @@ public class Generator
      * as the input parameters.
      */
     public Iterable<Artifact[]> createArtifactSet(Attributes attributes, String configuration, String... name) {
-        return core.createArtifactSet(attributes, configuration, name);
+        Iterable<Artifact[]> ret = null;
+        try {
+            ret = this.core.getStorage().createArtifactSet(this.core, attributes, configuration, name);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> Generator.createArtifactSet() returns null after seeing exception msg: " + sqle);
+        }
+        return ret;
     }
 
     /**

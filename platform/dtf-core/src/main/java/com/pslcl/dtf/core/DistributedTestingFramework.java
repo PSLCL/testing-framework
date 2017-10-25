@@ -307,10 +307,10 @@ public final class DistributedTestingFramework
                                 decompress(h, pkModule, pk_artifact, artifact.getConfiguration(), merge_source, 0);
                             }
                         } else {
-                            LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream");
+                            LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream, name: " + artifact.getName());
                         }
                     } else {
-                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content");
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content, name: " + artifact.getName());
                     }
                 }
             } catch (Exception ignored) {
@@ -386,7 +386,7 @@ public final class DistributedTestingFramework
                             }
                         }
                     } else {
-                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("<internal> .markMergeFromModule(): NOT merge organization/name/version: " + m.getOrganization() + "/" + m.getName() + "/" + m.getVersion());
+//                      LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("<internal> .markMergeFromModule(): NOT merge organization/name/version: " + m.getOrganization() + "/" + m.getName() + "/" + m.getVersion());
                     }
                 }
             }
