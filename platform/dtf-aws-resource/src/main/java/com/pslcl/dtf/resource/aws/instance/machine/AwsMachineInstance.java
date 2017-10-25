@@ -148,9 +148,9 @@ public class AwsMachineInstance implements MachineInstance
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
-        long resourceId = reservedResource.resource.getCoordinates().resourceId;
-        reservedResource.provider.addRunnableProgram(resourceId, rpf);
-        log.debug(getClass().getSimpleName() + ".run addRunnableProgram resourceId: " + resourceId + " provider: " + reservedResource.provider);
+        long templateId = reservedResource.resource.getCoordinates().templateInstanceId;
+        reservedResource.provider.addRunnableProgram(templateId, rpf);
+        log.debug(getClass().getSimpleName() + ".run addRunnableProgram templateInstanceId: " + templateId + " provider: " + reservedResource.provider);
         return rpf;
     }
 
@@ -170,9 +170,9 @@ public class AwsMachineInstance implements MachineInstance
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(cf);
-        long resourceId = reservedResource.resource.getCoordinates().resourceId;
-        reservedResource.provider.addRunnableProgram(resourceId, rpf);
-        log.debug(getClass().getSimpleName() + ".configure addRunnableProgram resourceId: " + resourceId + " provider: " + reservedResource.provider);
+        long templateId = reservedResource.resource.getCoordinates().templateInstanceId;
+        reservedResource.provider.addRunnableProgram(templateId, rpf);
+        log.debug(getClass().getSimpleName() + ".configure addRunnableProgram templateInstanceId: " + templateId + " provider: " + reservedResource.provider);
         return rpf;
     }
 
@@ -190,9 +190,9 @@ public class AwsMachineInstance implements MachineInstance
                         command, rconfig.blockingExecutor, false, windows,
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder,this);
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
-        long resourceId = reservedResource.resource.getCoordinates().resourceId;
-        reservedResource.provider.addRunnableProgram(resourceId, rpf);
-        log.debug(getClass().getSimpleName() + ".start addRunnableProgram resourceId: " + resourceId + " provider: " + reservedResource.provider);
+        long templateId = reservedResource.resource.getCoordinates().templateInstanceId;
+        reservedResource.provider.addRunnableProgram(templateId, rpf);
+        log.debug(getClass().getSimpleName() + ".start addRunnableProgram templateInstanceId: " + templateId + " provider: " + reservedResource.provider);
         return rpf;
     }
 
