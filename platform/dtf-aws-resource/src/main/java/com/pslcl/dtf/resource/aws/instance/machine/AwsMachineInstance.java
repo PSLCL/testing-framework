@@ -38,10 +38,13 @@ import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.network.AwsNetworkInstance;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("javadoc")
 public class AwsMachineInstance implements MachineInstance
 {
+    private final Logger log;
     public volatile MachineReservedResource reservedResource;
     public final Instance ec2Instance;
     public volatile MachineConfigData mconfig;
@@ -53,6 +56,7 @@ public class AwsMachineInstance implements MachineInstance
     
     AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
     {
+        log = LoggerFactory.getLogger(getClass());
         this.reservedResource = reservedResource;
         this.mconfig = mconfig;
         this.rconfig = rconfig;
@@ -144,7 +148,9 @@ public class AwsMachineInstance implements MachineInstance
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
-        reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
+        long resourceId = reservedResource.resource.getCoordinates().resourceId;
+        reservedResource.provider.addRunnableProgram(resourceId, rpf);
+        log.debug(getClass().getSimpleName() + ".run addRunnableProgram resourceId: " + resourceId + " provider: " + reservedResource.provider);
         return rpf;
     }
 
@@ -164,7 +170,9 @@ public class AwsMachineInstance implements MachineInstance
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder, this);
         //@formatter:on
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(cf);
-        reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
+        long resourceId = reservedResource.resource.getCoordinates().resourceId;
+        reservedResource.provider.addRunnableProgram(resourceId, rpf);
+        log.debug(getClass().getSimpleName() + ".configure addRunnableProgram resourceId: " + resourceId + " provider: " + reservedResource.provider);
         return rpf;
     }
 
@@ -182,7 +190,9 @@ public class AwsMachineInstance implements MachineInstance
                         command, rconfig.blockingExecutor, false, windows,
                         reservedResource.resource.getCoordinates(), mconfig.s3Bucket, mconfig.loggingSourceFolder,this);
         Future<RunnableProgram> rpf = reservedResource.provider.config.blockingExecutor.submit(df);
-        reservedResource.provider.addRunnableProgram(reservedResource.resource.getCoordinates().resourceId, rpf);
+        long resourceId = reservedResource.resource.getCoordinates().resourceId;
+        reservedResource.provider.addRunnableProgram(resourceId, rpf);
+        log.debug(getClass().getSimpleName() + ".start addRunnableProgram resourceId: " + resourceId + " provider: " + reservedResource.provider);
         return rpf;
     }
 
