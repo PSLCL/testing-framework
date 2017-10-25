@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -450,8 +451,15 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     {
                         srp.toString(format);
                         format.ttl(" ");
-                        Integer ccode = srp.kill().get();
-                        if (ccode != 0)
+                        Integer ccode = null;
+                        try {
+                            ccode = srp.kill().get();
+                        }
+                        catch(ExecutionException e){
+                            format.ttl("Cleanup of running application threw exception");
+                            log.debug(format.toString(), e);
+                        }
+                        if (ccode != null && ccode != 0)
                         {
                             format.ttl("cleanup of running application failed, nuking instance");
                             machineInstance.destroyed.set(true);
