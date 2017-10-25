@@ -681,7 +681,13 @@ public final class DistributedTestingFramework
                 }
 
                 /* Instantiate the platform and artifact provider. */
-                Map<Long, String> scripts = core.getGenerators();
+                Map<Long, String> scripts = null;
+                try {
+                    scripts = core.getStorage().getGenerators();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error(".synchronize Continues after .getGenerators() throws exception " + sqle);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", sqle);
+                }
                 String shell = core.getConfig().shell();
                 Path currentRelativePath = Paths.get("");
                 String base = currentRelativePath.toAbsolutePath().toString();

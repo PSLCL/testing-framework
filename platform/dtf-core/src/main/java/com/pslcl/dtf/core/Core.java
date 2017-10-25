@@ -680,38 +680,38 @@ public class Core
         }
     }
 
-    /**
-     * Get the list of generators configured for all the tests.
-     * @return A map where the keys are the primary keys of the tests and the values are the string to run the generator.
-     */
-    public Map<Long, String> getGenerators()
-    {
-        Map<Long, String> result = new HashMap<Long, String>();
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            statement = this.storage.getConnect().createStatement();
-            resultSet = statement.executeQuery("SELECT test.pk_test, test.script" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " WHERE test.script != ''");
-            while (resultSet.next())
-            {
-                result.put(resultSet.getLong(1), resultSet.getString(2));
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.getGenerators: getGenerators() exception " + e.getMessage());
-            this.log.debug("stack trace: ", e);
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        return result;
-    }
+//    /**
+//     * Get the list of generators configured for all the tests.
+//     * @return A map where the keys are the primary keys of the tests and the values are the string to run the generator.
+//     */
+//    public Map<Long, String> getGenerators()
+//    {
+//        Map<Long, String> result = new HashMap<Long, String>();
+//        Statement statement = null;
+//        ResultSet resultSet = null;
+//
+//        try
+//        {
+//            statement = this.storage.getConnect().createStatement();
+//            resultSet = statement.executeQuery("SELECT test.pk_test, test.script" + " FROM test" + " JOIN test_plan ON test_plan.pk_test_plan = test.fk_test_plan" + " WHERE test.script != ''");
+//            while (resultSet.next())
+//            {
+//                result.put(resultSet.getLong(1), resultSet.getString(2));
+//            }
+//        } catch (Exception e)
+//        {
+//            this.log.error("<internal> Core.getGenerators: getGenerators() exception " + e.getMessage());
+//            this.log.debug("stack trace: ", e);
+//        } finally
+//        {
+//            safeClose(resultSet);
+//            resultSet = null;
+//            safeClose(statement);
+//            statement = null;
+//        }
+//
+//        return result;
+//    }
 
     /**
      * Update the generator status for a test, setting the last execute time and output.

@@ -10,6 +10,7 @@ import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -191,6 +192,12 @@ public interface DTFStorage {
      * @return The set of artifacts
      */
     Iterable<Artifact[]> createArtifactSet(Core core, Attributes required, String configuration, String... name) throws SQLException;
+
+    /**
+     * Get the list of generators configured for all the tests.
+     * @return A map where the keys are the primary keys of the tests and the values are the string to run the generator.
+     */
+    Map<Long, String> getGenerators() throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

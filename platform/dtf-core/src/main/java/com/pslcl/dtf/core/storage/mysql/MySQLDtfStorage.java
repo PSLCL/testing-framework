@@ -801,6 +801,20 @@ public class MySQLDtfStorage implements DTFStorage {
         return set;
     }
 
+    @Override
+    public Map<Long, String> getGenerators() throws SQLException {
+        Map<Long, String> result = new HashMap<Long, String>();
+        String query = "SELECT test.pk_test, test.script" + " FROM test" +
+                " JOIN test_plan ON test_plan.pk_test_plan=test.fk_test_plan" +
+                " WHERE test.script!=''";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            while (resultSet.next()) {
+                result.put(resultSet.getLong(1), resultSet.getString(2));
+            }
+        }
+        return result;
+    }
 
     @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
