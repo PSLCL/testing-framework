@@ -7,6 +7,7 @@ import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
+import com.pslcl.dtf.core.generator.template.TestInstance;
 import com.pslcl.dtf.core.storage.DTFStorage;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.io.LineIterator;
@@ -23,10 +24,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -946,6 +949,68 @@ public class MySQLDtfStorage implements DTFStorage {
                 preparedStatement.executeUpdate();
             }
         }
+    }
+
+    /**
+     *
+     * @param dt the DescribedTemplate java object
+     * @param pk primary key
+     * @throws SQLException on error
+     */
+    private void addActions(DescribedTemplate dt, long pk) throws Exception {
+        for (int i=0; i<dt.getActionCount(); i++) {
+            TestInstance.Action A = dt.getAction(i);
+            String insertDtLineQuery = "INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)";
+            try (PreparedStatement psInsertDtLine = this.connect.prepareStatement(insertDtLineQuery)) {
+                psInsertDtLine.setLong(1, pk);
+                psInsertDtLine.setInt(2, i);
+
+                DescribedTemplate child = A.getIncludedTemplate(); // throws Exception
+                if (child == null)
+                    psInsertDtLine.setNull(3, Types.NULL);
+                else
+                    psInsertDtLine.setLong(3, child.getPK());
+
+                psInsertDtLine.setString(4,
+                                         A.getDescription()); // throws Exception
+                psInsertDtLine.executeUpdate();
+
+                long linepk = 0;
+                try (ResultSet keys = psInsertDtLine.getGeneratedKeys()) {
+                    if (keys.next())
+                        linepk = keys.getLong(1);
+                }
+
+                // TODO: This doesn't handle dependencies, which need to roll up.
+                String insertDtToDtQuery = "INSERT INTO dt_to_dt (fk_parent,fk_child) VALUES (?,?)";
+                try (PreparedStatement psInsertDtToDt = this.connect.prepareStatement(insertDtToDtQuery)) {
+                    psInsertDtToDt.setLong(1, pk);
+                    psInsertDtToDt.setLong(2, linepk);
+                    psInsertDtToDt.executeUpdate();
+                }
+
+                TestInstance.Action.ArtifactUses au = A.getArtifactUses(); // throws Exception
+                if (au != null) {
+                    Iterator<Artifact> iter = au.getArtifacts();
+                    while (iter.hasNext()) {
+                        Core.DBArtifact artifact = (Core.DBArtifact)iter.next();
+                        String insertArtifactToDtLineQuery = "INSERT INTO artifact_to_dt_line" +
+                                                             "  (fk_artifact, fk_dt_line, is_primary, reason)" +
+                                                             " VALUES (?,?,?,?)";
+                        try (PreparedStatement psInsertArtifactToDtLine = this.connect.prepareStatement(insertArtifactToDtLineQuery)) {
+                            psInsertArtifactToDtLine.setLong(1, artifact.getPK());
+                            psInsertArtifactToDtLine.setLong(2, linepk);
+                            psInsertArtifactToDtLine.setInt(3, au.getPrimary()?1:0);
+                            psInsertArtifactToDtLine.setString(4, au.getReason());
+                            psInsertArtifactToDtLine.executeUpdate();
+                        } catch (SQLException sqle) {
+                            this.log.error("<internal> DTFStorage.addActions() Failed to relate artifact to line, " + sqle);
+                            throw sqle;
+                        }
+                    }
+                }
+            } // end try(psInsertDtLine)
+        } // end for()
     }
 
     @Override

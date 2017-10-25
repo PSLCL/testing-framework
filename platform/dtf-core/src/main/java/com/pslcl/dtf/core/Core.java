@@ -517,8 +517,7 @@ public class Core
             this(core, pk, module, configuration, name, mode, hash, null);
         }
 
-        long getPK()
-        {
+        public long getPK() {
             return pk;
         }
 
