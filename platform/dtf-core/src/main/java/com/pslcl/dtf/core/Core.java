@@ -71,12 +71,13 @@ public class Core
         }
     }
 
-    private final Logger log;
     private static final String singleQuote = "'";
 
-    private final PortalConfig config;
+    private final Logger log;
+
+    public final PortalConfig config;
     private File artifacts = null;
-    private DTFStorage storage;
+    private DTFStorage storage = null;
 
     /**
      * The private key of the test that is being generated.
@@ -91,18 +92,20 @@ public class Core
         return this.config;
     }
 
+    /**
+      * Constructor, must be followed by calling this.init().
+     */
     public Core() {
         this(0L); // 0L is never used for pk_test
     }
 
     /**
-     *
+     * Constructor, must be followed by calling this.init().
      * @param pk_test The test number from table test.
      */
     public Core(long pk_test) {
         this.log = LoggerFactory.getLogger(getClass());
         this.config = new PortalConfig();
-        this.storage = new MySQLDtfStorage(this.config); // opens database
         this.pk_target_test = pk_test;
 
         String dir = config.dirArtifacts();
@@ -117,6 +120,10 @@ public class Core
             //noinspection ResultOfMethodCallIgnored
             this.artifacts.mkdirs();
         }
+    }
+
+    public void init() {
+        this.storage = new MySQLDtfStorage(this); // opens database
     }
 
     private void safeClose(ResultSet r) {
@@ -889,7 +896,7 @@ public class Core
      * @param dt The described template to add.
      * @param result The result to report, if any.
      * @param owner The owner to assign, if any.
-     * @param start The start time, or null.
+     * @param start The init time, or null.
      * @param ready The ready time, or null.
      * @param complete The complete time, or null.
      * @return The key information for the added described template.

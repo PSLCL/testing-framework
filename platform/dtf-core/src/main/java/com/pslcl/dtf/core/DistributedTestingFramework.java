@@ -557,6 +557,7 @@ public final class DistributedTestingFramework
         try {
             /* Instantiate the platform and artifact provider. */
             core = new Core();
+            core.init();
             if (synchronize) {
                 PortalConfig config = core.getConfig();
                 File generators = new File(config.dirGenerators());
@@ -902,6 +903,7 @@ public final class DistributedTestingFramework
         if (!manualTestNumbers.iterator().hasNext()) {
             // we have n testInstanceNumbers, process them then exit
             Core core = new Core();
+            core.init();
             sqs = sqsSetup(core);
             if (sqs != null)
                 storeTestRuns_db_queue(sqs, core, owner, manualTestInstanceNumbers, testRuns);
@@ -912,6 +914,7 @@ public final class DistributedTestingFramework
             while (iterManualTestNumbers.hasNext()) {
                 Long manualTestNumber = iterManualTestNumbers.next();
                 Core core = new Core(manualTestNumber);
+                core.init();
                 if (sqsNeedsSetup) {
                     sqs = sqsSetup(core);
                     sqsNeedsSetup = false;
@@ -977,6 +980,7 @@ public final class DistributedTestingFramework
         }
 
         Core core = new Core();
+        core.init();
         try{
             if(hash != null) {
                 core.reportResult(hash, result, null, null, null, null);
@@ -1387,6 +1391,7 @@ public final class DistributedTestingFramework
             populateHelp();
 
         Core core = new Core();
+        core.init();
         int total_artifacts = orgs * modules * versions * artifacts;
 
         // Populate the modules and artifacts.

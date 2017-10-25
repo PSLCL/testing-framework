@@ -37,6 +37,7 @@ public class MySQLDtfStorage implements DTFStorage {
     private static final String singleQuote = "'";
 
     private final Logger log;
+    private final Core core;
     private final PortalConfig config;
     private boolean read_only;
 
@@ -46,13 +47,14 @@ public class MySQLDtfStorage implements DTFStorage {
     private Connection connect;
 
     /**
-     * Constructor opens database, based on config.
+     * Constructor opens database, based on Core.config.
      *
-     * @param config Configuration of database access.
+     * @param core Core
      */
-    public MySQLDtfStorage(PortalConfig config){
+    public MySQLDtfStorage(Core core){
         this.log = LoggerFactory.getLogger(getClass());
-        this.config = config;
+        this.core = core;
+        this.config = this.core.config;
         this.read_only = false;
         this.connect = null;
         this.openDatabase();
