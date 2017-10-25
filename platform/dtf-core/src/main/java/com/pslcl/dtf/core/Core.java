@@ -692,29 +692,6 @@ public class Core
         }
     }
 
-    void updateModule(long pk_module)
-    {
-        // Mark a module as found.
-        if (this.storage.isReadOnly())
-            return;
-
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement(String.format("UPDATE module SET missing_count=0 WHERE pk_module=%d", pk_module));
-            statement.executeUpdate();
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.updateModule(): Couldn't update module, " + e.getMessage());
-
-            //TODO: handle
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-    }
-
     /*    public void syncGeneratedContent( Content sync ) {
             PreparedStatement find_content = null;
             PreparedStatement create_content = null;

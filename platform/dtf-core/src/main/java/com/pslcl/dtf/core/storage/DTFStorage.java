@@ -223,6 +223,13 @@ public interface DTFStorage {
     boolean isAssociatedWithTest(Module module) throws SQLException;
 
     /**
+     *
+     * @param pk_module private key of table module
+     * @throws SQLException on error
+     */
+    void updateModule(long pk_module) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

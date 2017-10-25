@@ -912,19 +912,6 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
-        String query = "SELECT pk_test_instance FROM test_instance" +
-                       " JOIN described_template ON fk_described_template=pk_described_template" +
-                       " WHERE pk_described_template=?";
-        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
-            preparedStatement.setLong(1, pkDescribedTemplate);
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                return !resultSet.next();
-            }
-        }
-    }
-
-    @Override
     public boolean isAssociatedWithTest(Module module) throws SQLException {
         long pk = 0;
         try {
@@ -948,6 +935,30 @@ public class MySQLDtfStorage implements DTFStorage {
             }
         }
         return false;
+    }
+
+    @Override
+    public void updateModule(long pk_module) throws SQLException {
+        if (!this.read_only) {
+            // Mark a module as found.
+            String query = String.format("UPDATE module SET missing_count=0" + " WHERE pk_module=%d", pk_module);
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.executeUpdate();
+            }
+        }
+    }
+
+    @Override
+    public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
+        String query = "SELECT pk_test_instance FROM test_instance" +
+                " JOIN described_template ON fk_described_template=pk_described_template" +
+                " WHERE pk_described_template=?";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            preparedStatement.setLong(1, pkDescribedTemplate);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                return !resultSet.next();
+            }
+        }
     }
 
     @Override

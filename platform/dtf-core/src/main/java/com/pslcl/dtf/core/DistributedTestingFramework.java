@@ -183,7 +183,7 @@ public final class DistributedTestingFramework
         private void decompress(Hash hash, long pk_version, long pk_parent, String configuration, boolean merge_source, long pk_source_module) {
             TarArchiveInputStream ti = null;
             try  {
-                File f = core.getContentFile(hash);
+                File f = this.core.getContentFile(hash);
                 if (f == null) {
                     String msg = ".getContentFile() returned null";
                     LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).warn(msg);
@@ -208,9 +208,9 @@ public final class DistributedTestingFramework
                         artifact = artifact.substring(2);
 
                     int mode = entry.getMode();
-                    Hash h = core.addContent(ti, entry.getSize());
+                    Hash h = this.core.addContent(ti, entry.getSize());
                     try {
-                        core.getStorage().addArtifact(pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module);
+                        this.core.getStorage().addArtifact(pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module);
                     } catch (SQLException sqle) {
                         LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
                         // fall through to go to the top of the while() loop
@@ -235,13 +235,17 @@ public final class DistributedTestingFramework
                 // If it does not exist then add the module and iterate the artifacts.
                 long pk_module = 0;
                 try {
-                    pk_module = core.getStorage().findModule(module);
+                    pk_module = this.core.getStorage().findModule(module);
                 } catch (Exception sqle) {
                     LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .module(): Continues even though couldn't find module, msg: " + sqle);
                 }
 
                 if (pk_module != 0) {
-                    core.updateModule(pk_module); // clear module.missing_count
+                    try {
+                        this.core.getStorage().updateModule(pk_module); // clear module.missing_count
+                    } catch (SQLException sqle) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("HandleModule.updateModule(): Couldn't update module, msg: " + sqle);
+                    }
                     return;
                 }
 
@@ -280,11 +284,11 @@ public final class DistributedTestingFramework
                 // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED TO TABLS module, BELOW.
                 // IT IS ASSUMED THAT THE MODULE'S BUILD SEQUENCE NUMBER IS LATER THAN ALL EXISTING.
                 if (contains_generator || (merge!=null && merge.length()>0))
-                    core.deletePriorBuildSequenceNumbers(module);
+                    this.core.deletePriorBuildSequenceNumbers(module);
 
                 long pkModule = 0;
                 try {
-                    pkModule = core.getStorage().addModule(module);
+                    pkModule = this.core.getStorage().addModule(module);
                 } catch (SQLException sqle) {
                     LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> module(): Continues even though could not add module, " + sqle);
                 }
@@ -294,10 +298,10 @@ public final class DistributedTestingFramework
                     if (content != null) {
                         InputStream is = content.asStream();
                         if (is != null) {
-                            Hash h = core.addContent(is, -1); // -1: consume stream is until exhausted
+                            Hash h = this.core.addContent(is, -1); // -1: consume stream is until exhausted
                             long pk_artifact = 0;
                             try {
-                                pk_artifact = core.getStorage().addArtifact(pkModule, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
+                                pk_artifact = this.core.getStorage().addArtifact(pkModule, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
                             } catch (SQLException sqle) {
                                 LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
                                 continue;
@@ -326,7 +330,7 @@ public final class DistributedTestingFramework
         private void markMergeFromModule() {
             Iterable<Module> modules = null;
             try {
-                modules = core.getStorage().createModuleSet();
+                modules = this.core.getStorage().createModuleSet();
             } catch (SQLException sqle) {
                 LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.markMergeFromModules(): Continue even though call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
                 LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("stack trace: ", sqle);
@@ -336,7 +340,7 @@ public final class DistributedTestingFramework
                 Module dmod = d.module;
                 long pk_source_module = 0;
                 try {
-                    pk_source_module = core.getStorage().findModule(dmod);
+                    pk_source_module = this.core.getStorage().findModule(dmod);
                 } catch (Exception sqle) {
                     LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .markMergeFromModule(): Continues even though couldn't find module, msg: " + sqle);
                 }
@@ -360,7 +364,7 @@ public final class DistributedTestingFramework
                         LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("<internal> .markMergeFromModule(): merges organization/name/version: " + m.getOrganization() + "/" + m.getName() + "/" + m.getVersion());
                         long pk_module = 0;
                         try {
-                            pk_module = core.getStorage().findModule(m);
+                            pk_module = this.core.getStorage().findModule(m);
                         } catch (Exception sqle) {
                             LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .markMergeFromModule(): Continues even though couldn't find module, msg: " + sqle);
                         }
@@ -369,12 +373,12 @@ public final class DistributedTestingFramework
                         for (Artifact artifact : artifacts) {
                             InputStream is = artifact.getContent().asStream();
                             if (is != null) {
-                                Hash h = core.addContent(is, -1); // -1: consume is stream until exhausted
+                                Hash h = this.core.addContent(is, -1); // -1: consume is stream until exhausted
 
                                 long pk_artifact = 0;
                                 try {
                                     // This line stores artifact with 0 merge_source. Other .addArtifact() callers can submit merge_source as 1. Only 0 merge_source is recognized by a generator to take action.
-                                    pk_artifact = core.getStorage().addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
+                                    pk_artifact = this.core.getStorage().addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
                                 } catch (SQLException sqle) {
                                     LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
                                     continue;
