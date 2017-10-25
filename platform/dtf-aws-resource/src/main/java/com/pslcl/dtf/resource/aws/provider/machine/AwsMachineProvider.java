@@ -424,6 +424,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 instance.taken.set(true);
                 instance.sanitizing.set(false);
                 deletedList.add(instance);
+                log.warn(format.toString(), e);
                 deleteInstances(templateInstanceId, instancesInTemplate, instance.getCoordinates());
             }
         }
@@ -472,9 +473,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                         instance.taken.set(true);
                         instance.sanitizing.set(false);
                     }
-
+                    log.warn(format.toString(), e);
                     deleteInstances(templateInstanceId, instancesInTemplate, null);
-                    log.debug(format.toString(), e);
                     return;
                 }
             }
