@@ -397,7 +397,7 @@ public class Core
         public List<Artifact> getArtifacts(String namePattern, String configuration) {
             List<Artifact> ret = new ArrayList<>();
             try {
-                ret = this.core.getStorage().getArtifacts(this.core, this.pk, namePattern, configuration);
+                ret = this.core.getStorage().getArtifacts(this.pk, namePattern, configuration);
             } catch (SQLException sqle) {
                 this.core.log.error(".getArtifacts() Continues after DTFStorage.getArtifacts() throws exception, msg: " + sqle);
                 this.core.log.debug("stack trace", sqle);

@@ -146,19 +146,17 @@ public interface DTFStorage {
 
     /**
      * Return a set of all modules known to the database.
-     * @param core The core instance.
      * @return The set of modules
      */
-    Iterable<Module> createModuleSet(Core core) throws SQLException;
+    Iterable<Module> createModuleSet() throws SQLException;
 
     /**
      * Create a set of all modules that match the specified organization and module name.
-     * @param core The core instance.
      * @param organization The organizations to filter on.
      * @param name The module name to filter on.
      * @return A set of modules.
      */
-    Iterable<Module> createModuleSet(Core core, String organization, String name) throws SQLException;
+    Iterable<Module> createModuleSet(String organization, String name) throws SQLException;
 
     /**
      * Return a set of all artifacts that the specified artifact depends on. Dependencies are stored in a
@@ -178,7 +176,7 @@ public interface DTFStorage {
      * same module as the artifact (likely by being merged).
      * @return A set of dependent artifacts.
      */
-    Iterable<Artifact> findDependencies(Core core, Artifact artifact) throws SQLException;
+    Iterable<Artifact> findDependencies(Artifact artifact) throws SQLException;
 
     /**
      * Return a set of artifacts given the specified requirements. First, only attributes from modules with at least the specified
@@ -191,7 +189,7 @@ public interface DTFStorage {
      * @param name Artifact names, including MySQL REGEXP patterns.
      * @return The set of artifacts
      */
-    Iterable<Artifact[]> createArtifactSet(Core core, Attributes required, String configuration, String... name) throws SQLException;
+    Iterable<Artifact[]> createArtifactSet(Attributes required, String configuration, String... name) throws SQLException;
 
     /**
      * Get the list of generators configured for all the tests.
@@ -214,7 +212,7 @@ public interface DTFStorage {
      * @param configuration The configuration, or null to include all.
      * @return The list of matching artifacts.
      */
-    List<Artifact> getArtifacts(Core core, long pk_module, String name, String configuration) throws SQLException;
+    List<Artifact> getArtifacts(long pk_module, String name, String configuration) throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

@@ -326,7 +326,7 @@ public final class DistributedTestingFramework
         private void markMergeFromModule() {
             Iterable<Module> modules = null;
             try {
-                modules = core.getStorage().createModuleSet(core);
+                modules = core.getStorage().createModuleSet();
             } catch (SQLException sqle) {
                 LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.markMergeFromModules(): Continue even though call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
                 LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("stack trace: ", sqle);
@@ -619,7 +619,7 @@ public final class DistributedTestingFramework
                 // Extract all generators to new generator (configured) directory
                 Iterable<Module> find_generators = null;
                 try {
-                    find_generators = core.getStorage().createModuleSet(core);
+                    find_generators = core.getStorage().createModuleSet();
                 } catch (SQLException sqle) {
                     LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize(): Continue even though call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
                     LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", sqle);

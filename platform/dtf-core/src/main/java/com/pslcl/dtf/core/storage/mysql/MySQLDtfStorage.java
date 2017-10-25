@@ -538,19 +538,19 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public Iterable<Module> createModuleSet(Core core) throws SQLException {
+    public Iterable<Module> createModuleSet() throws SQLException {
         Collection<Module> set = new ArrayList<Module>();
         String query = "SELECT pk_module, organization, name, attributes, version, status, sequence FROM module";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
              ResultSet resultSet = preparedStatement.executeQuery()) {
             while (resultSet.next()) {
-                Core.DBModule M = new Core.DBModule(core, resultSet.getLong(1),
-                                                          resultSet.getString(2),
-                                                          resultSet.getString(3),
-                                                          resultSet.getString(4),
-                                                          resultSet.getString(5),
-                                                          resultSet.getString(6),
-                                                          resultSet.getString(7));
+                Core.DBModule M = new Core.DBModule(this.core, resultSet.getLong(1),
+                                                               resultSet.getString(2),
+                                                               resultSet.getString(3),
+                                                               resultSet.getString(4),
+                                                               resultSet.getString(5),
+                                                               resultSet.getString(6),
+                                                               resultSet.getString(7));
                 set.add(M);
             }
         }
@@ -558,7 +558,7 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public Iterable<Module> createModuleSet(Core core, String organization, String name) throws SQLException {
+    public Iterable<Module> createModuleSet(String organization, String name) throws SQLException {
         Collection<Module> set = new ArrayList<Module>();
         String query = "SELECT pk_module, organization, name, attributes, version, status, sequence" + " FROM module" +
                        " WHERE organization = " + organization +
@@ -566,13 +566,13 @@ public class MySQLDtfStorage implements DTFStorage {
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
              ResultSet resultSet = preparedStatement.executeQuery()) {
             while (resultSet.next()) {
-                Core.DBModule M = new Core.DBModule(core, resultSet.getLong(1),
-                                                          resultSet.getString(2),
-                                                          resultSet.getString(3),
-                                                          resultSet.getString(4),
-                                                          resultSet.getString(5),
-                                                          resultSet.getString(6),
-                                                          resultSet.getString(7));
+                Core.DBModule M = new Core.DBModule(this.core, resultSet.getLong(1),
+                                                               resultSet.getString(2),
+                                                               resultSet.getString(3),
+                                                               resultSet.getString(4),
+                                                               resultSet.getString(5),
+                                                               resultSet.getString(6),
+                                                               resultSet.getString(7));
                 set.add(M);
             }
         }
@@ -601,13 +601,13 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public Iterable<Artifact> findDependencies(Core core, Artifact artifact) throws SQLException, IllegalArgumentException {
+    public Iterable<Artifact> findDependencies(Artifact artifact) throws SQLException, IllegalArgumentException {
         // Artifact searches are always done from the perspective of merged modules.
         long pk_module = 0;
         try {
             pk_module = this.findModule(artifact.getModule());
         } catch (Exception sqle) {
-            this.log.warn("<internal> Core.findDependencies(): Continues even though couldn't find associated module, msg: " + sqle);
+            this.log.warn("<internal> .findDependencies(): Continues even though couldn't find associated module, msg: " + sqle);
         }
 
         Collection<Artifact> set = new ArrayList<Artifact>();
@@ -622,7 +622,7 @@ public class MySQLDtfStorage implements DTFStorage {
             if (rsContentMatch.next()) {
                 // Look only at first resultSet (we only care about the first match that we find).
                 Hash hash = new Hash(rsContentMatch.getBytes(1));
-                File f = new File(core.getArtifactsDirectory(), hash.toString()); // f: actual file from file system
+                File f = new File(this.core.getArtifactsDirectory(), hash.toString()); // f: actual file from file system
                 try {
                     LineIterator iterator = new LineIterator(new FileReader(f));
 
@@ -643,9 +643,9 @@ public class MySQLDtfStorage implements DTFStorage {
                                         targetName = this.getTargetName(name, fields[1]);
                                     }
                                     Module mod = artifact.getModule();
-                                    Artifact A = new Core.DBArtifact(core, rsArtifactInfo.getLong(1), mod,
-                                                                           rsArtifactInfo.getString(2), name,
-                                                                           rsArtifactInfo.getInt(4),
+                                    Artifact A = new Core.DBArtifact(this.core, rsArtifactInfo.getLong(1), mod,
+                                                                                rsArtifactInfo.getString(2), name,
+                                                                                rsArtifactInfo.getInt(4),
                                                                      new Hash(rsArtifactInfo.getBytes(5)), targetName);
                                     set.add(A);
                                 }
@@ -695,15 +695,15 @@ public class MySQLDtfStorage implements DTFStorage {
                                         targetName = getTargetName(artifact_name, fields[3]);
 
                                     @SuppressWarnings("MagicNumber")
-                                    Core.DBModule dbmod = new Core.DBModule(core, rsModuleInfo.getLong(1),
-                                                                                  rsModuleInfo.getString(2),
-                                                                                  rsModuleInfo.getString(3),
-                                                                                  rsModuleInfo.getString(4),
-                                                                                  rsModuleInfo.getString(5),
-                                                                                  rsModuleInfo.getString(6),
-                                                                                  rsModuleInfo.getString(7));
+                                    Core.DBModule dbmod = new Core.DBModule(this.core, rsModuleInfo.getLong(1),
+                                                                                       rsModuleInfo.getString(2),
+                                                                                       rsModuleInfo.getString(3),
+                                                                                       rsModuleInfo.getString(4),
+                                                                                       rsModuleInfo.getString(5),
+                                                                                       rsModuleInfo.getString(6),
+                                                                                       rsModuleInfo.getString(7));
                                     @SuppressWarnings("MagicNumber")
-                                    Artifact A = new Core.DBArtifact(core,          rsModuleInfo.getLong(8),
+                                    Artifact A = new Core.DBArtifact(this.core,     rsModuleInfo.getLong(8),
                                                                      dbmod,         rsModuleInfo.getString(9),
                                                                      artifact_name, rsModuleInfo.getInt(11),
                                                                      new Hash(rsModuleInfo.getBytes(12)), targetName);
@@ -724,7 +724,7 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public Iterable<Artifact[]> createArtifactSet(Core core, Attributes required, String configuration, String... name) throws SQLException {
+    public Iterable<Artifact[]> createArtifactSet(Attributes required, String configuration, String... name) throws SQLException {
         Map<Long, Artifact[]> artifactMap = new HashMap<Long, Artifact[]>();
 
         Map<Long, Core.DBModule> moduleMap = new HashMap<Long, Core.DBModule>(); // must endure for() and inner while() loops
@@ -775,21 +775,21 @@ public class MySQLDtfStorage implements DTFStorage {
                         if (moduleMap.containsKey(pk_found)) {
                             module = moduleMap.get(pk_found);
                         } else {
-                            module = new Core.DBModule(core, pk_found, resultSet.getString(2),
-                                                                       resultSet.getString(3),
-                                                                       resultSet.getString(4),
-                                                                       resultSet.getString(5),
-                                                                       resultSet.getString(6),
-                                                                       resultSet.getString(7));
+                            module = new Core.DBModule(this.core, pk_found, resultSet.getString(2),
+                                                                            resultSet.getString(3),
+                                                                            resultSet.getString(4),
+                                                                            resultSet.getString(5),
+                                                                            resultSet.getString(6),
+                                                                            resultSet.getString(7));
                             moduleMap.put(pk_found, module);
                         }
 
                         if (locArtifacts[name_index] == null) {
                             @SuppressWarnings("MagicNumber")
-                            Artifact A = new Core.DBArtifact(core,   resultSet.getLong(8),
-                                                             module, resultSet.getString(9),
-                                                                     resultSet.getString(10),
-                                                                     resultSet.getInt(11),
+                            Artifact A = new Core.DBArtifact(this.core, resultSet.getLong(8),
+                                                             module,    resultSet.getString(9),
+                                                                        resultSet.getString(10),
+                                                                        resultSet.getInt(11),
                                                              new Hash(resultSet.getBytes(12)));
                             locArtifacts[name_index] = A;
                         }
@@ -849,7 +849,7 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public List<Artifact> getArtifacts(Core core, long pk_module, String name, String configuration) throws SQLException {
+    public List<Artifact> getArtifacts(long pk_module, String name, String configuration) throws SQLException {
         String name_match = "";
         if (name != null)
             name_match = "artifact.name REGEXP '" + name + singleQuote;
@@ -885,13 +885,12 @@ public class MySQLDtfStorage implements DTFStorage {
                 if (modules.containsKey(pk_found)) {
                     module = modules.get(pk_found);
                 } else {
-                    module = new Core.DBModule(core, pk_found,
-                                               resultSet.getString(2),
-                                               resultSet.getString(3),
-                                               resultSet.getString(4),
-                                               resultSet.getString(5),
-                                               resultSet.getString(6),
-                                               resultSet.getString(7));
+                    module = new Core.DBModule(this.core, pk_found, resultSet.getString(2),
+                                                                    resultSet.getString(3),
+                                                                    resultSet.getString(4),
+                                                                    resultSet.getString(5),
+                                                                    resultSet.getString(6),
+                                                                    resultSet.getString(7));
                     modules.put(pk_found, module);
                 }
 
@@ -901,10 +900,10 @@ public class MySQLDtfStorage implements DTFStorage {
 //                  continue;
 
                 @SuppressWarnings("MagicNumber")
-                Artifact A = new Core.DBArtifact(core,   resultSet.getLong(8),
-                                                 module, resultSet.getString(9),
-                                                         resultSet.getString(10),
-                                                         resultSet.getInt(11),
+                Artifact A = new Core.DBArtifact(this.core, resultSet.getLong(8),
+                                                 module,    resultSet.getString(9),
+                                                            resultSet.getString(10),
+                                                            resultSet.getInt(11),
                                                  new Hash(resultSet.getBytes(12)));
                 set.add(A); // ignored return value is true for "added," false for already in place
             }

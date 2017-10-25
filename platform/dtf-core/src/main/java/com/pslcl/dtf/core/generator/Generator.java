@@ -193,7 +193,7 @@ public class Generator
     public Iterable<Module> createModuleSet() {
         Iterable<Module> ret = new ArrayList<Module>();
         try {
-            ret = core.getStorage().createModuleSet(core);
+            ret = core.getStorage().createModuleSet();
         } catch (SQLException sqle) {
             this.log.error("Generator.createModuleSet(): Call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
             this.log.debug("stack trace: ", sqle);
@@ -210,7 +210,7 @@ public class Generator
     public Iterable<Module> createModuleSet(String organization, String module) {
         Iterable<Module> ret = new ArrayList<Module>();
         try {
-            ret = this.core.getStorage().createModuleSet(this.core, organization, module);
+            ret = this.core.getStorage().createModuleSet(organization, module);
         } catch (SQLException sqle) {
             this.log.error("Generator.createModuleSet(organization, module): Call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
             this.log.debug("stack trace: ", sqle);
@@ -226,7 +226,7 @@ public class Generator
     public Iterable<Artifact> findDependencies(Artifact artifact) {
         Iterable<Artifact> ret = new ArrayList<Artifact>();
         try {
-            ret = this.core.getStorage().findDependencies(this.core, artifact);
+            ret = this.core.getStorage().findDependencies(artifact);
         } catch (SQLException sqle) {
             this.log.error("Generator.findDependencies(): Call to DTFStorage.findDependencies() returns sql exception, msg: " + sqle);
         } catch (IllegalArgumentException iae) {
@@ -255,7 +255,7 @@ public class Generator
     public Iterable<Artifact[]> createArtifactSet(Attributes attributes, String configuration, String... name) {
         Iterable<Artifact[]> ret = null;
         try {
-            ret = this.core.getStorage().createArtifactSet(this.core, attributes, configuration, name);
+            ret = this.core.getStorage().createArtifactSet(attributes, configuration, name);
         } catch (SQLException sqle) {
             this.log.error("<internal> Generator.createArtifactSet() returns null after seeing exception msg: " + sqle);
         }
