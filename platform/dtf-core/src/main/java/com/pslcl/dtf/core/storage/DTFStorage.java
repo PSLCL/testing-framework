@@ -200,6 +200,14 @@ public interface DTFStorage {
     Map<Long, String> getGenerators() throws SQLException;
 
     /**
+     * Update the generator status for a test, setting the last execute time and output.
+     * @param pk_test The primary key of the test.
+     * @param stdout The standard output of the generator run.
+     * @param stderr The standard error of the generator run.
+     */
+    void updateTest(long pk_test, String stdout, String stderr) throws SQLException;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

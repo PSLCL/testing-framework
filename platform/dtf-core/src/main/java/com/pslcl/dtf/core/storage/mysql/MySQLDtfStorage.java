@@ -22,6 +22,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -814,6 +815,23 @@ public class MySQLDtfStorage implements DTFStorage {
             }
         }
         return result;
+    }
+
+    @Override
+    public void updateTest(long pk_test, String stdout, String stderr) throws SQLException {
+        if (!this.read_only) {
+            // Mark a module as found.
+            String query = "UPDATE test" +
+                           " SET last_run=?, last_stdout=?, last_stderr=?" +
+                           " WHERE pk_test=?";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+                preparedStatement.setString(2, stdout);
+                preparedStatement.setString(3, stderr);
+                preparedStatement.setLong(4, pk_test);
+                preparedStatement.executeUpdate();
+            }
+        }
     }
 
     @Override

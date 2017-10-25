@@ -459,20 +459,21 @@ public final class DistributedTestingFramework
             try (ByteArrayOutputStream stdout = new ByteArrayOutputStream();
                  ByteArrayOutputStream stderr = new ByteArrayOutputStream()){
                 try {
-
                     Process run = processBuilder.start();
                     inheritIO(run.getInputStream(), System.out, new PrintStream(stdout));
                     inheritIO(run.getErrorStream(), System.err, new PrintStream(stderr));
 
                     run.waitFor();
-
-                    core.updateTest(id, stdout.toString(), stderr.toString());
                 } catch (Exception e) {
                     String msg = "ERROR: Could not run script '" + script + "', " + e;
                     LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() Script: " + msg);
                     new PrintStream(stderr).println(msg);
                 } finally {
-                    core.updateTest(id, stdout.toString(), stderr.toString());
+                    try {
+                        this.core.getStorage().updateTest(id, stdout.toString(), stderr.toString());
+                    } catch (SQLException sqle) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error(".process() Continues after call to .updateTest() could not update test, with exception msg: " + sqle);    ;
+                    }
                 }
             }  catch(IOException e){
                 String msg = "Could not close output stream for script '" + script + "', " + e;
