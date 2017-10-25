@@ -384,6 +384,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     log.debug(getClass().getSimpleName() + ".deleteInstances queuing ReleaseMachineFuture: " + instance.getCoordinates().toString());
                 deleteInstanceFutures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, null, pdelayData)));
             }
+            synchronized (stalledRelease)
+            {
+                stalledRelease.remove(instance.getCoordinates().resourceId);
+            }
+
             instance.toString(format, true);
             format.ttl(" ");
         }
@@ -736,7 +741,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         public void run()
         {
             TabToLevel format = new TabToLevel();
-            format.ttl("\n", getClass().getSimpleName(), "StaledRelease timout check");
+            format.ttl("\n", getClass().getSimpleName(), "StaledRelease timeout check");
             format.level.incrementAndGet();
             long t1 = System.currentTimeMillis();
             HashMap<Long, AwsMachineInstance> stalledMap = null;
@@ -783,10 +788,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     }
                     if(instancesInTemplate.size() > 0)
                     {
-                        synchronized (stalledRelease)
-                        {
-                            stalledRelease.remove(entry.getKey());
-                        }
                         ResourceCoordinates coord = machineInstance.reservedResource.resource.getCoordinates();
                         deleteInstances(coord.templateInstanceId, instancesInTemplate, null);
                     }
