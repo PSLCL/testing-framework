@@ -62,8 +62,8 @@ public class Core
 {
     // TODO: consider moving this to its own separate class, overcome warning "public inner class"
     public static class DBDescribedTemplate {
-        private long pk;
-        private Hash documentationHash;
+        public long pk;
+        public Hash documentationHash;
 
         public DBDescribedTemplate(long pk, Hash documentationHash) {
             this.pk = pk;
@@ -862,7 +862,7 @@ public class Core
             if (!dbdtAsStored.isPresent())
                 this.add(child, null, null, null, null, null);
             else
-                this.check(child);
+                this.getStorage().check(child);
         }
 
         // proceed with intended .add() behavior
@@ -927,85 +927,6 @@ public class Core
     }
 
     /**
-     * Check that an existing template is correct. If the template exists then the children
-     * may also exist, but their documentation (of template steps) may be out of date, so update that.
-     * @param dt The described template to check. Results are not currently checked.
-     * @return DBDescribedTemplate
-     */
-    private DBDescribedTemplate check(DescribedTemplate dt) throws Exception {
-        // Recursively check all dependent DescribedTemplate's. But .getDependencies() is empty.
-        for (DescribedTemplate child : dt.getDependencies()) {
-            // Original TODO: Figure out if this is correct. Has not been tested, since .getDependencies() is empty.
-            Optional<DBDescribedTemplate> dbdtAsStored;
-            DescribedTemplate.Key matchKey = child.getKey();
-            try {
-                dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
-            } catch (SQLException sqe) {
-                this.log.error("<internal> Core.check() sees exception from one of the dbQuery methods, msg: " + sqe);
-                this.log.debug("stack trace: ", sqe);
-                throw new Exception(".check() exits with exception ", sqe);
-            }
-
-            if (!dbdtAsStored.isPresent())
-                throw new Exception("Parent template exists, child does not.");
-            /*DBDescribedTemplate dbdt =*/ this.check(child); // recursion
-        }
-
-        Optional<DBDescribedTemplate> wrappedMe;
-        DescribedTemplate.Key matchKey = dt.getKey();
-        try {
-            wrappedMe = this.storage.getDBDescribedTemplate(matchKey);
-        } catch (SQLException sqe) {
-            this.log.error("<internal> Core.check() sees exception from one of the dbQuery methods, msg: " + sqe);
-            this.log.debug("stack trace: ", sqe);
-            throw new Exception(".check() exits with exception ", sqe);
-        }
-
-        if (!wrappedMe.isPresent())
-            throw new Exception("Request to check a non-existent described template.");
-
-        DBDescribedTemplate me = wrappedMe.get();
-        if (dt.getDocumentationHash().equals(me.documentationHash))
-            return me;
-
-        // Documentation (of template steps) needs to be recreated.
-        PreparedStatement statement = null;
-        try {
-            statement = this.storage.getConnect().prepareStatement("DELETE FROM dt_line WHERE fk_described_template = ?");
-            statement.setLong(1, me.pk);
-            statement.executeUpdate();
-        } finally {
-            safeClose(statement);
-            statement = null;
-        }
-
-        // Updated documentation (of template steps) is written to db.
-        try {
-            this.storage.getConnect().setAutoCommit(false);
-
-            try {
-                statement = this.storage.getConnect().prepareStatement("UPDATE described_template SET description_hash=? WHERE pk_described_template=?");
-                statement.setBinaryStream(1, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
-                statement.setLong(2, me.pk);
-                statement.executeUpdate();
-            } finally {
-                safeClose(statement);
-                statement = null;
-            }
-
-            addActions(dt, me.pk);
-
-            this.storage.getConnect().commit();
-            this.storage.getConnect().setAutoCommit(true);
-        } catch (Exception ignore) {
-            this.storage.getConnect().rollback();
-            this.storage.getConnect().setAutoCommit(true);
-        }
-
-        return me;
-    }
-
-    /**
      * Compare all described templates, deleting those that should not exist, adding
      * those that need to be created, and updating those that need to be updated.
      * Updates are limited to documentation changes.
@@ -1035,7 +956,7 @@ public class Core
                 ++addedDescribedTemplatesCount;
             } else {
                 // check the stored described template
-                dbdt = this.check(ti.getDescribedTemplate());
+                dbdt = this.getStorage().check(ti.getDescribedTemplate());
                 ++checkedNotAddedDescribedTemplatesCount;
             }
 

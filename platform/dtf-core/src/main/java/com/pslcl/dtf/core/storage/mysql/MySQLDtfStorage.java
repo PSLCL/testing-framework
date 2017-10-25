@@ -1014,6 +1014,72 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
+    public Core.DBDescribedTemplate check(DescribedTemplate dt) throws Exception {
+        // Recursively check all dependent DescribedTemplate's. But .getDependencies() is empty.
+        for (DescribedTemplate child : dt.getDependencies()) {
+            // Original TODO: Figure out if this is correct. Has not been tested, since .getDependencies() is empty.
+            Optional<Core.DBDescribedTemplate> dbdtAsStored;
+            DescribedTemplate.Key matchKey = child.getKey();
+            try {
+                dbdtAsStored = this.core.getStorage().getDBDescribedTemplate(matchKey);
+            } catch (SQLException sqle) {
+                this.log.error("<internal> DTFStorage.check() sees exception from .getDBDescribedTemplate(), msg: " + sqle);
+                this.log.debug("stack trace: ", sqle);
+                throw new Exception(".check() exits with exception ", sqle);
+            }
+
+            if (!dbdtAsStored.isPresent())
+                throw new Exception("Parent template exists, child does not.");
+            /*DBDescribedTemplate dbdt =*/ this.check(child); // recursion
+        }
+
+        Optional<Core.DBDescribedTemplate> wrappedMe;
+        DescribedTemplate.Key matchKey = dt.getKey();
+        try {
+            wrappedMe = this.core.getStorage().getDBDescribedTemplate(matchKey);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> DTFStorage.check() sees exception from .getDBDescribedTemplate(), msg: " + sqle);
+            this.log.debug("stack trace: ", sqle);
+            throw new Exception(".check() exits with exception ", sqle);
+        }
+
+        if (!wrappedMe.isPresent())
+            throw new Exception("Request to check a non-existent described template.");
+
+        Core.DBDescribedTemplate me = wrappedMe.get();
+        if (dt.getDocumentationHash().equals(me.documentationHash))
+            return me;
+
+        // Documentation (of template steps) needs to be recreated.
+        String deleteQuery = "DELETE FROM dt_line WHERE fk_described_template = ?";
+        try (PreparedStatement psDelete = this.connect.prepareStatement(deleteQuery)) {
+            psDelete.setLong(1, me.pk);
+            psDelete.executeUpdate();
+        }
+
+        // Updated documentation (of template steps) is written to db.
+        String updateQuery = "UPDATE described_template SET description_hash=? WHERE pk_described_template=?";
+        try (PreparedStatement psUpdate = this.connect.prepareStatement(updateQuery)) {
+            this.connect.setAutoCommit(false);
+            psUpdate.setBinaryStream(1, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
+            psUpdate.setLong(2, me.pk);
+            psUpdate.executeUpdate();
+
+            this.addActions(dt, me.pk);
+
+            this.connect.commit();
+        } catch (SQLException sqle) {
+            this.connect.rollback();
+            this.log.debug(".check() sees SQLException, rolls back commit, msg: " + sqle);
+            throw sqle;
+        } finally {
+            this.connect.setAutoCommit(true);
+        }
+
+        return me;
+    }
+
+    @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
         String query = "SELECT pk_test_instance FROM test_instance" +
                 " JOIN described_template ON fk_described_template=pk_described_template" +
