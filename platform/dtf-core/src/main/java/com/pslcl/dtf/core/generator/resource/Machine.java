@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.generator.Generator;
@@ -39,7 +40,7 @@ public class Machine extends Resource
 {
     private final Logger log;
     private static final String codename = "machine";
-    private Map<String, Action> deployActions;
+    private final Map<String, Deploy> deployActions;
 
     /**
      * Define a new machine associated with the specified generator and with the given name.
@@ -50,7 +51,7 @@ public class Machine extends Resource
     {
         super(generator, name, codename);
         this.log = LoggerFactory.getLogger(getClass());
-        deployActions = new HashMap<String, Action>();
+        deployActions = new HashMap<>();
     }
 
     /**
@@ -86,13 +87,12 @@ public class Machine extends Resource
         }
     }
 
-    static private class Deploy extends TestInstance.Action
+    static private final class Deploy extends TestInstance.Action
     {
         private Machine m;
         private Artifact a;
         @SuppressWarnings("unused")
         private Template.ResourceParameter me;
-        private Template template;
         private List<Artifact> artifacts;
 
         private Deploy(Machine m, Artifact a, List<Action> actionDependencies)
@@ -111,7 +111,7 @@ public class Machine extends Resource
             }
 
             synchronized(m.deployActions){
-                m.deployActions.put(a.getName(), this);
+                m.deployActions.put(a.getTargetFilePath(), this);
             }
         }
 
@@ -128,12 +128,8 @@ public class Machine extends Resource
             }
             try {
                 String retStr = getSetID() + " deploy " + t.getReference(this.m) + " ";
-                String destName = a.getTargetFilePath();
-                if(destName == null || destName.isEmpty()){
-                    destName = a.getName();
-                }
-                retStr += destName;
-                retStr += (" " + a.getContent().getValue(template));
+                retStr += a.getTargetFilePath();
+                retStr += (" " + a.getContent().getValue(t));
                 return retStr;
             } catch (Exception e) {
                 LoggerFactory.getLogger(getClass()).error("<internal> Machine.Deploy.getCommand(Template) exits after catching exception, msg: " + e);
@@ -227,10 +223,10 @@ public class Machine extends Resource
 
 
         try {
-            List<Action> deploys = new ArrayList<Action>();
             if(!isBound()){
                 throw new IllegalStateException("Cannot deploy to unbound machine.");
             }
+            List<Action> deploys = new ArrayList<>();
             for (Artifact a : artifacts)
             {
                 if (a == null)
@@ -239,7 +235,11 @@ public class Machine extends Resource
                     continue;
                 }
                 synchronized(deployActions){
-                    if(deployActions.containsKey(a.getName())){
+                    if(deployActions.containsKey(a.getTargetFilePath())){
+                        Deploy existing = deployActions.get(a.getTargetFilePath());
+                        if(!Objects.equals(a, existing.a)){
+                            this.log.warn("Possible Deploy Conflict. Multiple artifacts with the same target file path: " + a.getName() + " - " + existing.a.getName());
+                        }
                         continue; //duplicate
                     }
                 }

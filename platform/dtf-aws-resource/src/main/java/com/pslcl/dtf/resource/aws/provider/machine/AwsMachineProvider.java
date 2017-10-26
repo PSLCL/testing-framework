@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -383,6 +384,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     log.debug(getClass().getSimpleName() + ".deleteInstances queuing ReleaseMachineFuture: " + instance.getCoordinates().toString());
                 deleteInstanceFutures.add(config.blockingExecutor.submit(new ReleaseMachineFuture(this, instance.getCoordinates(), instance.ec2Instance, null, null, pdelayData)));
             }
+            synchronized (stalledRelease)
+            {
+                stalledRelease.remove(instance.getCoordinates().resourceId);
+            }
+
             instance.toString(format, true);
             format.ttl(" ");
         }
@@ -424,6 +430,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 instance.taken.set(true);
                 instance.sanitizing.set(false);
                 deletedList.add(instance);
+                log.warn(format.toString(), e);
                 deleteInstances(templateInstanceId, instancesInTemplate, instance.getCoordinates());
             }
         }
@@ -445,12 +452,19 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     StafRunnableProgram srp = (StafRunnableProgram) rp.get();
                     AwsMachineInstance machineInstance = (AwsMachineInstance) srp.getCommandData().getContext();
                     ResourceCoordinates coord = machineInstance.getCoordinates();
+                    srp.toString(format);
                     if (srp.isRunning())
                     {
-                        srp.toString(format);
-                        format.ttl(" ");
-                        Integer ccode = srp.kill().get();
-                        if (ccode != 0)
+                        format.ttl("is running");
+                        Integer ccode = null;
+                        try {
+                            ccode = srp.kill().get();
+                        }
+                        catch(ExecutionException e){
+                            format.ttl("Cleanup of running application threw exception");
+                            log.debug(format.toString(), e);
+                        }
+                        if (ccode != null && ccode != 0)
                         {
                             format.ttl("cleanup of running application failed, nuking instance");
                             machineInstance.destroyed.set(true);
@@ -459,12 +473,12 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                             deletedList.add(machineInstance);
                             deleteInstances(templateInstanceId, instancesInTemplate, coord);
                         }
-                    }
-                    log.debug(format.toString());
+                    }else
+                        format.ttl("is not running");
                     machineInstance.sanitizing.set(false);
                 } catch (Exception e)
                 {
-                    format.ttl("cleanup of running application threw exception, manual cleanup may be required");
+                    format.ttl("cleanup of running application threw exception, manual cleanup may be required - " + e);
                     // nothing further we can really do if this fails, instead of warning for manual cleanup, nuke the whole template's worth
                     for (AwsMachineInstance instance : instancesInTemplate)
                     {
@@ -472,12 +486,15 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                         instance.taken.set(true);
                         instance.sanitizing.set(false);
                     }
-
+                    log.warn(format.toString(), e);
                     deleteInstances(templateInstanceId, instancesInTemplate, null);
-                    log.debug(format.toString());
                     return;
                 }
             }
+            log.debug(format.toString());
+        }else
+        {
+            format.ttl("no runnable programs for templateInstanceId: " + templateInstanceId);
             log.debug(format.toString());
         }
         for (AwsMachineInstance instance : instancesInTemplate)
@@ -494,7 +511,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 mconfig = MachineConfigData.init(pdelayData, instance.reservedResource.resource, format, defaultMachineConfigData);
             } catch (Exception e)
             {
-                log.warn("MachineConfigData.init failed", e);
+                log.warn("MachineConfigData.init failed - " + e, e);
                 format.ttl("MachineConfigData.init failed, continuing anyway");
             }
             
@@ -506,7 +523,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 manager.createIdleNameTag(pdelayData, pdelayData.getIdleName(MachineInstanceFuture.Ec2MidStr), instance.ec2Instance.getInstanceId());
             } catch (FatalResourceException e)
             {
-                log.warn("createIdleNameTag failed", e);
+                log.warn("createIdleNameTag failed - " + e, e);
                 format.ttl("createIdleNameTag failed, continuing anyway");
             }
 //                stalledRelease.put(instance.getCoordinates().resourceId, instance);
@@ -528,7 +545,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 // nothing further we can really do if these fail, futures should have logged error details
                 // could email someone to double check manual clean may be needed.
-                log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required - " + e, e);
             }
         }
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(AwsMachineProvider.this, coordinates);
@@ -611,7 +628,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                                 future.get();
                             } catch (Exception e)
                             {
-                                log.info("release machine code caught a somewhat unexpected exception during cancel cleanup", e);
+                                log.info("release machine code caught a somewhat unexpected exception during cancel cleanup - " + e, e);
                             }
                         }
                     } // if there is an instance future
@@ -724,7 +741,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         public void run()
         {
             TabToLevel format = new TabToLevel();
-            format.ttl("\n", getClass().getSimpleName(), "StaledRelease timout check");
+            format.ttl("\n", getClass().getSimpleName(), "StaledRelease timeout check");
             format.level.incrementAndGet();
             long t1 = System.currentTimeMillis();
             HashMap<Long, AwsMachineInstance> stalledMap = null;
@@ -771,10 +788,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     }
                     if(instancesInTemplate.size() > 0)
                     {
-                        synchronized (stalledRelease)
-                        {
-                            stalledRelease.remove(entry.getKey());
-                        }
                         ResourceCoordinates coord = machineInstance.reservedResource.resource.getCoordinates();
                         deleteInstances(coord.templateInstanceId, instancesInTemplate, null);
                     }
@@ -801,7 +814,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     {
                         // nothing further we can really do if these fail, futures should have logged error details
                         // could email someone to double check manual clean may be needed.
-                        log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required");
+                        log.warn(getClass().getSimpleName() + ".release a release future failed, manual cleanup maybe required - " + e, e);
                     }
                 }
                 for (Future<Void> future : completeList)

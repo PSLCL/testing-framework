@@ -141,39 +141,43 @@ public class AwsNetworkProvider extends AwsResourceProvider implements NetworkPr
             if (coordinates.templateInstanceId == templateInstanceId)
             {
                 Future<NetworkInstance> future = rresource.getInstanceFuture();
-                boolean cancelResult = future.cancel(false);
-                /*
-                    This attempt will fail if the task has already completed, has already been cancelled,
-                    or could not be cancelled for some other reason.
-                    In the NetworkInstanceFuture's case the aws side resources have actually been obtain at reserve time.
-                    Thus we could do the future.cancel(true) here but I wanted to maintain the same cancel policy as the
-                    more complex Machine in case things may change in the future and for consistency.
-                */
-                rresource.bindFutureCanceled.set(true);
-                if(cancelResult)
+                if(future != null)
                 {
-                    try
+                    boolean cancelResult = future.cancel(false);
+                    /*
+                        This attempt will fail if the task has already completed, has already been cancelled,
+                        or could not be cancelled for some other reason.
+                        In the NetworkInstanceFuture's case the aws side resources have actually been obtain at reserve time.
+                        Thus we could do the future.cancel(true) here but I wanted to maintain the same cancel policy as the
+                        more complex Machine in case things may change in the future and for consistency.
+                    */
+                    rresource.bindFutureCanceled.set(true);
+                    if(cancelResult)
                     {
-                        future.get();
-                    } catch (Exception e)
+                        try
+                        {
+                            future.get();
+                        }catch(Exception e)
+                        {
+                            TabToLevel format = new TabToLevel();
+                            format.ttl("\n", getClass().getSimpleName(), ".release cancel pending future handling");
+                            log.debug(rresource.toString(format).toString());
+                            releaseList.add(entry.getKey());
+                            ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
+                            futures.add(config.blockingExecutor.submit(new ReleaseNetworkFuture(this, coordinates, rresource.vpc.getVpcId(), rresource.subnet.getSubnetId(), pdelayData)));
+                        }
+                    }else
                     {
-                        TabToLevel format = new TabToLevel();
-                        format.ttl("\n", getClass().getSimpleName(), ".release cancel pending future handling");
-                        log.debug(rresource.toString(format).toString());
-                        releaseList.add(entry.getKey());
-                        ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, coordinates);
-                        futures.add(config.blockingExecutor.submit(new ReleaseNetworkFuture(this, coordinates, rresource.vpc.getVpcId(), rresource.subnet.getSubnetId(), pdelayData)));
+                        try
+                        {
+                            future.get();
+                        }catch(Exception e)
+                        {
+                            log.info("release network code caught a somewhat unexpected exception during cancel cleanup", e);
+                        }
                     }
                 }else
-                {
-                    try
-                    {
-                        future.get();
-                    } catch (Exception e)
-                    {
-                        log.info("release network code caught a somewhat unexpected exception during cancel cleanup", e);
-                    }
-                }
+                    releaseList.add(entry.getKey());
             }
         }
         for (Long key : releaseList)

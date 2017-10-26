@@ -513,7 +513,7 @@ public class Core
          * @param hash The hash of the artifact contents.
          */
         public DBArtifact(Core core, long pk, Module module, String configuration, String name, int mode, Hash hash) {
-            this(core, pk, module, configuration, name, mode, hash, null);
+            this(core, pk, module, configuration, name, mode, hash, name);
         }
 
         public long getPK() {
