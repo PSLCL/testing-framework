@@ -245,6 +245,14 @@ public interface DTFStorage {
     void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)throws SQLException;
 
     /**
+     *
+     * @param runID The runID
+     * @param result The result
+     * @throws SQLException on failure
+     */
+    void addResultToRun(long runID, boolean result) throws Exception;
+
+    /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *
      * @param pkDescribedTemplate private key to match test_instance.fk_described_template

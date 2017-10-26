@@ -989,7 +989,11 @@ public final class DistributedTestingFramework
                     LoggerFactory.getLogger(DistributedTestingFramework.class).error(".result() Continues after .reportResult() throws exception, msg: " + sqle);
                 }
             } else if (run!=null && result!=null) {
-                core.addResultToRun(run, result);
+                try {
+                    core.getStorage().addResultToRun(run, result);
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error(".result() Continues after .addResultToRun() throws exception, msg: " + e);
+                }
             } else {
                 // result will absolutrely not be null, see above
                 LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): submitted args wrongly give null runId (or result is null)");

@@ -1658,34 +1658,6 @@ public class Core
         }
     }
 
-    /**
-     *
-     * @param runID The runID
-     * @param result The result
-     * @throws Exception on failure
-     */
-    void addResultToRun(long runID, boolean result) throws Exception {
-        if (this.storage.isReadOnly())
-            return;
-
-        Statement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().createStatement();
-            int rowsUpdated = statement.executeUpdate("Update run SET result = " + result + ", end_time = NOW() WHERE pk_run = " + runID);
-            if(rowsUpdated == 0){
-                throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
-            }
-        } catch(Exception e)
-        {
-            this.log.error("<internal> Core.addResultToRun() exception msg: " + e);
-            throw e;
-        } finally
-        {
-            safeClose(statement);
-        }
-    }
-
     // TODO: consider alternative to returning null
 //  @Nullable
 //  @SuppressWarnings("ReturnOfNull")

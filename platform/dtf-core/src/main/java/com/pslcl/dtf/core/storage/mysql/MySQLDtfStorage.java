@@ -1134,6 +1134,21 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
+    public void addResultToRun(long runID, boolean result) throws Exception {
+        if (!this.read_only) {
+            String query = "Update run SET result=" + result +
+                                        ", end_time=NOW()" +
+                           " WHERE pk_run = " + runID;
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                int rowsUpdated = preparedStatement.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
+                }
+            }
+        }
+    }
+
+    @Override
     public Optional<Core.DBDescribedTemplate> getDBDescribedTemplate(DescribedTemplate.Key matchKey) throws SQLException {
         String query = "SELECT pk_described_template, fk_module_set, description_hash, hash" +
                        " FROM described_template JOIN template ON fk_template = pk_template" +
