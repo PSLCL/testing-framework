@@ -795,69 +795,17 @@ public class Core
                 this.getStorage().check(child);
         }
 
-        // proceed with intended .add() behavior
+        // proceed with the "actual" .add() behavior, by calling .addToDB()
         try {
-            /* All described template additions are handled as transactions. */
-            this.storage.getConnect().setAutoCommit(false);
-
-            long pk_template = syncTemplate(dt.getTemplate());
-            if (result!=null || owner!=null) {
-                try {
-                    // call a stored procedure that updates table run
-                    this.storage.reportResult(dt.getTemplate().getHash().toString(), result, owner, start, ready, complete);
-                } catch (SQLException sqle) {
-                    this.log.error("Core.add() Continues after .reportResult() throws exception, msg: " + sqle);
-                }
-            }
-
-            PreparedStatement statement = null;
-            long pk = 0;
-            try {
-                // insert a new row into table described_template, including a newly generated pk_described_template
-                statement = this.storage.getConnect().prepareStatement("INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-                statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
-                statement.setLong(2, pk_template);
-                statement.setBinaryStream(3, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
-                statement.setInt(4, 1); // Default is synchronized.
-                statement.executeUpdate();
-
-                // retrieve the new pk_described_template value
-                try (ResultSet keys = statement.getGeneratedKeys()) {
-                    if (keys.next())
-                        pk = keys.getLong(1);
-                }
-                this.storage.addActions(dt, pk);
-            } catch (SQLException ignore) {
-                //TODO: Figure out that this is a duplicate key or not.
-                safeClose(statement);
-                statement = null;
-
-                statement = this.storage.getConnect().prepareStatement("SELECT pk_described_template FROM described_template WHERE fk_module_set=? AND fk_template=?");
-                statement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
-                statement.setLong(2, pk_template);
-                ResultSet query = statement.executeQuery();
-                if (query.next())
-                    pk = query.getLong(1);
-                safeClose(query);
-            } finally {
-                safeClose(statement);
-            }
-
-            this.storage.getConnect().commit();
-            this.storage.getConnect().setAutoCommit(true);
-
-            return new DBDescribedTemplate(pk,null);
-        } catch (Exception e) {
-            this.log.error("<internal> Core.add(): Failed to add described template: " + e);
-            this.log.debug("stack trace: ", e);
-            try {
-                this.storage.getConnect().rollback();
-                this.storage.getConnect().setAutoCommit(true);
-            } catch (Exception e1) {
-                // TODO: This is really bad - failure to restore state.
-            }
-            return null;
+            Optional<DBDescribedTemplate> optional = this.storage.addToDB(dt, result, owner, start, ready, complete);
+            if (optional.isPresent())
+                return optional.get();
+        } catch (SQLException sqle) {
+            this.log.error("<internal> Core.add() sees exception from .addToDB(), msg: " + sqle);
         }
+
+        // here by SQLException, OR by this.storage.addToDB() returning Optional.empty()
+        throw new Exception(".add() calls .addToDB() and sees that it failed to add to database");
     }
 
     /**

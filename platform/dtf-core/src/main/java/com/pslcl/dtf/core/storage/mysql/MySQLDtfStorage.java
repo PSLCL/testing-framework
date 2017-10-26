@@ -958,8 +958,7 @@ public class MySQLDtfStorage implements DTFStorage {
      * @param pk primary key
      * @throws SQLException on error
      */
-    @Override
-    public void addActions(DescribedTemplate dt, long pk) throws Exception {
+    private void addActions(DescribedTemplate dt, long pk) throws Exception {
         for (int i=0; i<dt.getActionCount(); i++) {
             TestInstance.Action A = dt.getAction(i);
             String insertDtLineQuery = "INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)";
@@ -1081,6 +1080,76 @@ public class MySQLDtfStorage implements DTFStorage {
         return me;
     }
 
+    @Override
+    public Optional<Core.DBDescribedTemplate> addToDB(DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete) throws SQLException {
+        // proceed with intended .add() behavior
+        try {
+            /* All described template additions are handled as transactions. */
+            this.connect.setAutoCommit(false);
+
+            long pk_template = this.core.syncTemplate(dt.getTemplate());
+            if (result!=null || owner!=null) {
+                try {
+                    // call a stored procedure that updates table run
+                    this.reportResult(dt.getTemplate().getHash().toString(), result, owner, start, ready, complete);
+                } catch (SQLException sqle) {
+                    this.log.error("DTFStorage.addToDB() Continues after .reportResult() throws exception, msg: " + sqle);
+                }
+            }
+
+            // insert a new row into table described_template, including a newly generated pk_described_template
+            long pk = 0;
+            String query = "INSERT INTO described_template (fk_module_set, fk_template, description_hash, synchronized)" +
+                           " VALUES (?,?,?,?)";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+                preparedStatement.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
+                preparedStatement.setLong(2, pk_template);
+                preparedStatement.setBinaryStream(3, new ByteArrayInputStream(dt.getDocumentationHash().toBytes()));
+                preparedStatement.setInt(4, 1); // Default is synchronized.
+                preparedStatement.executeUpdate();
+
+                // retrieve the new pk_described_template value
+                try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
+                    if (keys.next())
+                        pk = keys.getLong(1);
+                }
+
+                this.addActions(dt, pk);
+            } catch (SQLException ignore) {
+                //TODO: Figure out that this is a duplicate key or not.
+                String querySelect = "SELECT pk_described_template FROM described_template" +
+                                     " WHERE fk_module_set=?" +
+                                     "   AND fk_template=?";
+                try (PreparedStatement ps = this.connect.prepareStatement(querySelect)) {
+                    ps.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
+                    ps.setLong(2, pk_template);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next())
+                            pk = rs.getLong(1);
+                    }
+                }
+            }
+
+            this.connect.commit();
+            this.connect.setAutoCommit(true);
+
+            return Optional.of(new Core.DBDescribedTemplate(pk,null));
+        } catch (Exception e) {
+            this.log.error("<internal> DTFStorage.add(): Failed to add described template, msg: " + e);
+            this.log.debug("stack trace: ", e);
+            try {
+                this.connect.rollback();
+                this.connect.setAutoCommit(true);
+            } catch (Exception e1) {
+                // TODO: This is really bad - failure to restore state.
+                this.log.error("<internal> DTFStorage.add(): Possible failure to rollback DB state, msg: " + e1);
+            }
+            return Optional.empty();
+        }
+    }
+
+
+
 
 
 
@@ -1145,6 +1214,7 @@ public class MySQLDtfStorage implements DTFStorage {
                 preparedStatement.execute();
             } catch (SQLException sqle) {
                 // TODO: handle
+                int x = 30;
                 throw sqle;
             }
         }

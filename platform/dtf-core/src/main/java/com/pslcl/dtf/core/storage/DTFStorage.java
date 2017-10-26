@@ -238,6 +238,20 @@ public interface DTFStorage {
      */
     Core.DBDescribedTemplate check(DescribedTemplate dt) throws Exception;
 
+    /**
+     * Add a described template to db - it is known to not exist.
+     * @param dt The described template to add.
+     * @param result The result to report, if any.
+     * @param owner The owner to assign, if any.
+     * @param start The init time, or null.
+     * @param ready The ready time, or null.
+     * @param complete The complete time, or null.
+     * @return The key information for the added described template.
+     */
+    Optional<Core.DBDescribedTemplate> addToDB(DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete) throws SQLException;
+
+
+
 
 
     /**
@@ -266,9 +280,6 @@ public interface DTFStorage {
      * @throws SQLException on failure
      */
     void addResultToRun(long runID, boolean result) throws Exception;
-
-    // todo: make it private again
-    void addActions(DescribedTemplate dt, long pk) throws Exception;
 
 
 
