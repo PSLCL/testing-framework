@@ -15,14 +15,6 @@
  */
 package com.pslcl.dtf.resource.aws.instance.machine;
 
-import java.util.Base64;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.Future;
-
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.BlockDeviceMapping;
 import com.amazonaws.services.ec2.model.CreateKeyPairRequest;
@@ -58,13 +50,17 @@ import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanc
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
+import org.slf4j.LoggerFactory;
+
+import java.util.Base64;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.Future;
 
 @SuppressWarnings("javadoc")
 public class MachineInstanceFuture implements Callable<MachineInstance>
 {
-    //FIXME: set me false before commit/push
-    private static final boolean DtfTesting = false;  // do not staf ping if true
-
     public static final String Ec2MidStr = "ec2";
     public static final String KeyPairMidStr = "key";
 
@@ -274,8 +270,6 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     
     private void waitForStaf(ProgressiveDelay pdelay) throws FatalResourceException
     {
-        if(DtfTesting)
-            return;
         ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false, null, null, null, false);
         StafRunnableProgram runnableProgram;
         try
