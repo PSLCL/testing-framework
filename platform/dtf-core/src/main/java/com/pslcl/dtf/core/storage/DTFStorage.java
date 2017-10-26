@@ -241,6 +241,13 @@ public interface DTFStorage {
 
 
 
+    /**
+     * Retrieve test instances held for the given test.
+     * @param pk_test pk_test value in table test.
+     * @return The list.
+     * @throws SQLException on fail
+     */
+    List<Long> getTestInstances(long pk_test) throws SQLException;
 
     void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)throws SQLException;
 

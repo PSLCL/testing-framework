@@ -1386,31 +1386,6 @@ public class Core
     }
 
     /**
-     * Retrieve test instances held for the given test.
-     * @param pk_test pk_test value in table test.
-     * @return The list.
-     * @throws Exception on fail
-     */
-    List<Long> getTestInstances(long pk_test) throws Exception{
-        Statement find_test_instance = null;
-        List<Long> testInstanceList = new ArrayList<Long>();
-
-        try {
-            find_test_instance = this.storage.getConnect().createStatement();
-            try (ResultSet test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance WHERE fk_test = " + pk_test)) {
-                while (test_instances.next())
-                    testInstanceList.add(test_instances.getLong("pk_test_instance"));
-            }
-        } catch(Exception e) {
-            this.log.error("<internal> Core.getTestInstances(pk_test) exception msg: " + e);
-            throw e;
-        } finally {
-            safeClose(find_test_instance);
-        }
-        return testInstanceList;
-    }
-
-    /**
      * Retrieve test instances held for the given test, that also use the given module id.
      * @param pk_test pk_test value in table test.
      * @param idModule pk_module of potentially matching entry in table module.
@@ -1631,32 +1606,33 @@ public class Core
         return pk;
     }
 
-    // TODO: consider alternative to returning null
-//  @Nullable
-//  @SuppressWarnings("ReturnOfNull")
-    public Long getInstanceRun(long testInstanceNumber) throws Exception
-    {
-        Statement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
-            if(resultSet.next()){
-
-                long result = resultSet.getLong("fk_run");
-                if(!resultSet.wasNull())
-                    return result;
-            }
-            return null;
-        } catch(Exception e)
-        {
-            this.log.error("<internal> Core.getInstanceRun() exception msg: " + e);
-            throw e;
-        } finally
-        {
-            safeClose(statement);
-        }
-    }
+    // No caller
+//    // TODO: consider alternative to returning null
+////  @Nullable
+////  @SuppressWarnings("ReturnOfNull")
+//    public Long getInstanceRun(long testInstanceNumber) throws Exception
+//    {
+//        Statement statement = null;
+//        try
+//        {
+//            statement = this.storage.getConnect().createStatement();
+//            ResultSet resultSet = statement.executeQuery("SELECT fk_run FROM test_instance WHERE pk_test_instance = " + testInstanceNumber);
+//            if(resultSet.next()){
+//
+//                long result = resultSet.getLong("fk_run");
+//                if(!resultSet.wasNull())
+//                    return result;
+//            }
+//            return null;
+//        } catch(Exception e)
+//        {
+//            this.log.error("<internal> Core.getInstanceRun() exception msg: " + e);
+//            throw e;
+//        } finally
+//        {
+//            safeClose(statement);
+//        }
+//    }
 
     // TODO: consider alternative to returning null
 //  @Nullable

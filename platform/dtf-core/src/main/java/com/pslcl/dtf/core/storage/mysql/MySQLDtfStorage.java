@@ -1085,6 +1085,18 @@ public class MySQLDtfStorage implements DTFStorage {
 
 
 
+    @Override
+    public List<Long> getTestInstances(long pk_test) throws SQLException {
+        List<Long> retTestInstanceList = new ArrayList<Long>();
+        String query = "SELECT pk_test_instance FROM test_instance" +
+                       " WHERE fk_test=" + pk_test;
+        try (Statement statement = this.connect.createStatement();
+             ResultSet rsTestInstances = statement.executeQuery(query)) {
+            while (rsTestInstances.next())
+                retTestInstanceList.add(rsTestInstances.getLong("pk_test_instance"));
+        }
+        return retTestInstanceList;
+    }
 
     @Override
     public void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete) throws SQLException {
@@ -1121,19 +1133,6 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
-        String query = "SELECT pk_test_instance FROM test_instance" +
-                " JOIN described_template ON fk_described_template=pk_described_template" +
-                " WHERE pk_described_template=?";
-        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
-            preparedStatement.setLong(1, pkDescribedTemplate);
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                return !resultSet.next();
-            }
-        }
-    }
-
-    @Override
     public void addResultToRun(long runID, boolean result) throws Exception {
         if (!this.read_only) {
             String query = "Update run SET result=" + result +
@@ -1144,6 +1143,19 @@ public class MySQLDtfStorage implements DTFStorage {
                 if (rowsUpdated == 0) {
                     throw new Exception("Failed to update run result. Run with id " + runID + " not found.");
                 }
+            }
+        }
+    }
+
+    @Override
+    public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
+        String query = "SELECT pk_test_instance FROM test_instance" +
+                " JOIN described_template ON fk_described_template=pk_described_template" +
+                " WHERE pk_described_template=?";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            preparedStatement.setLong(1, pkDescribedTemplate);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                return !resultSet.next();
             }
         }
     }
