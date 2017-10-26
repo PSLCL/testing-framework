@@ -49,8 +49,7 @@ public class Sqs extends MessageQueueBase {
         super.init(config);
         config.initsb.ttl("Message Queue initialization");
         config.initsb.level.incrementAndGet();
-        queueStoreName = config.properties.getProperty(ResourceNames.MsgQueNameKey, ResourceNames.MsgQueClassDefault);
-        queueStoreName = StrH.trim(queueStoreName);
+        queueStoreName = StrH.trim(config.properties.getProperty(ResourceNames.MsgQueNameKey, ResourceNames.MsgQueClassDefault));
         config.initsb.ttl(ResourceNames.MsgQueNameKey, " = ", queueStoreName);
         if(queueStoreName == null)
             throw new Exception(ResourceNames.MsgQueNameKey + " must be specified in configuration properties file");
@@ -59,7 +58,7 @@ public class Sqs extends MessageQueueBase {
         awsClientConfig = AwsClientConfiguration.getClientConfiguration(config, ClientType.Sqs);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
-        connect(awsClientConfig);
+        connect();
     }
     
     @Override
@@ -77,10 +76,10 @@ public class Sqs extends MessageQueueBase {
     
     // MessageListener interface implementations
     
-    private class GetQueueStoreCallback implements MessageListener {
+    private final class GetQueueStoreCallback implements MessageListener {
         private final Sqs sqs;
         
-        public GetQueueStoreCallback(Sqs sqs) {
+        private GetQueueStoreCallback(Sqs sqs) {
             this.sqs = sqs;
         }
         
@@ -119,7 +118,7 @@ public class Sqs extends MessageQueueBase {
     
     // MessageQueue interface implementation
     
-    private void connect(AwsClientConfig awsClientConfig) throws Exception
+    private void connect() throws Exception
     {
         if (sqsClient == null || !queueStoreExists()) {
             if (connection != null) {
