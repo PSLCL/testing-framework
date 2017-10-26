@@ -54,10 +54,10 @@ public class MySQLDtfStorage implements DTFStorage {
      *
      * @param core Core
      */
-    public MySQLDtfStorage(Core core){
+    public MySQLDtfStorage(Core core, PortalConfig portalConfig){
         this.log = LoggerFactory.getLogger(getClass());
         this.core = core;
-        this.config = this.core.config;
+        this.config = portalConfig;
         this.read_only = false;
         this.connect = null;
         this.openDatabase();

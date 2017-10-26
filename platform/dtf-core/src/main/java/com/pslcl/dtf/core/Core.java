@@ -75,7 +75,7 @@ public class Core
 
     private final Logger log;
 
-    public final PortalConfig config;
+    public PortalConfig config = null;
     private File artifacts = null;
     private DTFStorage storage = null;
 
@@ -105,25 +105,24 @@ public class Core
      */
     public Core(long pk_test) {
         this.log = LoggerFactory.getLogger(getClass());
-        this.config = new PortalConfig();
         this.pk_target_test = pk_test;
+        this.init();
+    }
 
+    private void init() {
+        this.config = new PortalConfig();
         String dir = config.dirArtifacts();
         if (dir != null) {
             this.artifacts = new File(dir);
         } else {
-            this.log.error("<internal> Core constructor: null artifact directory, return with no further action");
+            this.log.error("<internal> Core constructor: null config artifact directory, return with no further action");
             return;
         }
-
         if (!this.artifacts.isDirectory()) {
             //noinspection ResultOfMethodCallIgnored
             this.artifacts.mkdirs();
         }
-    }
-
-    public void init() {
-        this.storage = new MySQLDtfStorage(this); // opens database
+        this.storage = new MySQLDtfStorage(this, this.config); // opens database
     }
 
     private void safeClose(ResultSet r) {
