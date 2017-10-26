@@ -253,6 +253,8 @@ public interface DTFStorage {
 
     long syncTemplate(Template sync) throws SQLException;
 
+    long insertTestInstance(long pkTargetTest, long pkDescribedTemplate) throws SQLException;
+
 
 
 

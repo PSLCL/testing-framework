@@ -859,28 +859,15 @@ public class Core
 
                 if (dbNotHaveTI) {
                     // add our test instance to database
-                    PreparedStatement statement2 = null;
                     try {
-                        statement2 = this.storage.getConnect().prepareStatement("INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-                        statement2.setLong(1, this.pk_target_test);
-                        statement2.setLong(2, dbdt.pk);
-                        //TODO: Determine the phase
-                        statement2.setLong(3, 0);
-                        statement2.setInt(4, 1); // Default is synchronized.
-                        statement2.executeUpdate();
-
-                        try (ResultSet keys = statement2.getGeneratedKeys()) {
-                            if (keys.next())
-                                ti.pk = keys.getLong(1);
-                        }
-                    } catch (Exception e) {
-                        this.log.error("<internal> Core.syncDescribedTemplates(): Could not add described_template to test_instance: " + e.getMessage());
+                        ti.pk = this.storage.insertTestInstance(this.pk_target_test, dbdt.pk);
+                    } catch (SQLException sqle) {
+                        this.log.error(".syncDescribedTemplates(): Exits, could not add described_template to test_instance, msg: " + sqle);
+                        throw sqle;
                     }
 
-                    safeClose(statement2);
-                    statement2 = null;
-
                     // Insert all of the module references
+                    PreparedStatement statement2 = null;
                     List<TestInstance.Action> actions = ti.getActions();
                     for (TestInstance.Action action : actions) {
                         ArtifactUses au = action.getArtifactUses();

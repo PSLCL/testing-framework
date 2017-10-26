@@ -1195,6 +1195,32 @@ public class MySQLDtfStorage implements DTFStorage {
         return pk;
     }
 
+    @Override
+    public long insertTestInstance(long pkTargetTest, long pkDescribedTemplate) throws SQLException {
+        long retPk = 0;
+        String query = "INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized)" +
+                       " VALUES (?,?,?,?)";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+            preparedStatement.setLong(1, pkTargetTest);
+            preparedStatement.setLong(2, pkDescribedTemplate);
+            //TODO: Determine the phase
+            preparedStatement.setLong(3, 0);
+            preparedStatement.setInt(4, 1); // Default is synchronized.
+            preparedStatement.executeUpdate();
+
+            try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
+                if (keys.next())
+                    retPk = keys.getLong(1);
+                else
+                    this.log.debug(".insertTestInstance() failed to obtain generated primary key");
+            }
+        }
+        return retPk;
+    }
+
+
+
+
 
 
 
