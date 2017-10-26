@@ -73,10 +73,39 @@ public class Sqs extends MessageQueueBase {
             LoggerFactory.getLogger(getClass()).error("failed to cleanup Sqs connection", e);
         }
     }
+
+    private void processMessage(Message message) {
+        String prependString = "SQS.processMessage()";
+        if (message != null) {
+            try {
+                // jmsMessageID is set unique by JMS producer, as for example: UUID jmsMessageID = "ID:" + java.util.UUID.randomUUID();
+                String jmsMessageID = message.getJMSMessageID(); // begins with "ID:", by JMS specification
+                String strQueueStoreNumber = ((TextMessage)message).getText();
+                log.debug("\n");
+                prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ".";
+                if (jmsMessageID != null && strQueueStoreNumber != null) {
+                    // design decision: Object message will not, as it could, be stored as key value pair "jmsMessageID/hexStrQueueStoreNumber." Message instead passes out here, as state for eventual ack.
+                    log.debug(prependString + " Submits to RunnerService to form or reject a test run.");
+                    submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
+                    return;
+                }
+                log.debug(prependString + " Drop msg - jmsMessageID or strQueueStoreNumber are null");
+            } catch (JMSException jmse) {
+                log.debug(prependString + " Drop msg - JMS message could not be examined " + jmse, jmse);
+            } catch (Throwable t) {
+                log.debug(prependString + "Drop msg - JMS message rejected by RunnerService - " + t, t);
+            }
+
+            // .submitQueueStoreNumber() failed to be deliver message to dtf-runner
+            log.warn(prependString + " Message not acked");
+        } else {
+            log.debug(prependString + " Dropped - null message cannot be processed");
+        }
+    }
     
     // MessageListener interface implementations
     
-    private final class GetQueueStoreCallback implements MessageListener {
+    private static final class GetQueueStoreCallback implements MessageListener {
         private final Sqs sqs;
         
         private GetQueueStoreCallback(Sqs sqs) {
@@ -85,33 +114,7 @@ public class Sqs extends MessageQueueBase {
         
         @Override
         public void onMessage(Message message) {
-            String prependString = "GetQueueStoreCallback.onMessage()";
-            if (message != null) {
-                try {
-                    // jmsMessageID is set unique by JMS producer, as for example: UUID jmsMessageID = "ID:" + java.util.UUID.randomUUID(); 
-                    String jmsMessageID = message.getJMSMessageID(); // begins with "ID:", by JMS specification
-                    String strQueueStoreNumber = ((TextMessage)message).getText();
-                    log.debug("\n");
-                    prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ". ";
-                    if (jmsMessageID != null && strQueueStoreNumber != null) {
-                        // design decision: Object message will not, as it could, be stored as key value pair "jmsMessageID/hexStrQueueStoreNumber." Message instead passes out here, as state for eventual ack.
-                        log.debug(prependString + "Submits to RunnerService to form or reject a test run.");
-                        sqs.submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
-                        return;
-                    } else {
-                        log.debug(prependString + "Drop msg - jmsMessageID or strQueueStoreNumber are null");
-                    }
-                } catch (JMSException jmse) {
-                    log.debug(prependString + "Drop msg - JMS message could not be examined " + jmse, jmse);
-                } catch (Throwable t) {
-                    log.debug(prependString + "Drop msg - JMS message rejected by RunnerService - " + t, t);
-                }
-                
-                // .submitQueueStoreNumber() failed to be deliver message to dtf-runner
-                log.warn(prependString + "Message not acked");
-            } else {
-                log.debug(prependString + "Dropped - null message cannot be processed");
-            }
+            sqs.processMessage(message);
         }
     }
     
@@ -130,7 +133,7 @@ public class Sqs extends MessageQueueBase {
             // com.amazonaws.services.sqs.AmazonSQS            // required at run time for SQSConnectionFactory.builder()
             // org.joda.time.format.DateTimeFormat             // required at run time for Sqs connect
             // org.apache.http.protocol.HttpContext            // required at run time for Sqs connect, below
-            
+
             SQSConnectionFactory connectionFactory =  SQSConnectionFactory.builder()
                     .withClientConfiguration(awsClientConfig.clientConfig)
                     .withAWSCredentialsProvider(awsClientConfig.providerChain)
