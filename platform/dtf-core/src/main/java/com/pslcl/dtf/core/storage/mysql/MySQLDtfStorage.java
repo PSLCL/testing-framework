@@ -958,7 +958,8 @@ public class MySQLDtfStorage implements DTFStorage {
      * @param pk primary key
      * @throws SQLException on error
      */
-    private void addActions(DescribedTemplate dt, long pk) throws Exception {
+    @Override
+    public void addActions(DescribedTemplate dt, long pk) throws Exception {
         for (int i=0; i<dt.getActionCount(); i++) {
             TestInstance.Action A = dt.getAction(i);
             String insertDtLineQuery = "INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)";
@@ -1079,6 +1080,8 @@ public class MySQLDtfStorage implements DTFStorage {
 
         return me;
     }
+
+
 
 
 

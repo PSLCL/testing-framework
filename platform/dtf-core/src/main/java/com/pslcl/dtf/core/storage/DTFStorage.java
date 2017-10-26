@@ -267,6 +267,13 @@ public interface DTFStorage {
      */
     void addResultToRun(long runID, boolean result) throws Exception;
 
+    // todo: make it private again
+    void addActions(DescribedTemplate dt, long pk) throws Exception;
+
+
+
+
+
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate
      *

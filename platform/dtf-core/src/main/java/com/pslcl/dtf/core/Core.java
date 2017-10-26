@@ -754,72 +754,6 @@ public class Core
 //        }
 //    }
 
-    private void addActions(DescribedTemplate dt, long pk) throws Exception
-    {
-        PreparedStatement statement = null;
-
-        for (int i = 0; i < dt.getActionCount(); i++)
-        {
-            TestInstance.Action A = dt.getAction(i);
-
-            statement = this.storage.getConnect().prepareStatement("INSERT INTO dt_line (fk_described_template,line,fk_child_dt,description) VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            statement.setLong(1, pk);
-            statement.setInt(2, i);
-
-            DescribedTemplate child = A.getIncludedTemplate();
-            if (child == null)
-                statement.setNull(3, Types.NULL);
-            else
-                statement.setLong(3, child.getPK());
-
-            statement.setString(4, A.getDescription());
-            statement.executeUpdate();
-
-            long linepk = 0;
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next())
-                    linepk = keys.getLong(1);
-            }
-
-            safeClose(statement);
-            statement = null;
-
-            //TODO: This doesn't handle dependencies, which need to roll up.
-            statement = this.storage.getConnect().prepareStatement("INSERT INTO dt_to_dt (fk_parent,fk_child) VALUES (?,?)");
-            statement.setLong(1, pk);
-            statement.setLong(2, linepk);
-            statement.executeUpdate();
-            safeClose(statement);
-            statement = null;
-
-            ArtifactUses au = A.getArtifactUses();
-            if (au != null)
-            {
-                Iterator<Artifact> iter = au.getArtifacts();
-                while (iter.hasNext())
-                {
-                    @SuppressWarnings("CastToConcreteClass")
-                    DBArtifact artifact = (DBArtifact) iter.next();
-
-                    try
-                    {
-                        statement = this.storage.getConnect().prepareStatement("INSERT INTO artifact_to_dt_line (fk_artifact, fk_dt_line, is_primary, reason) VALUES (?,?,?,?)");
-                        statement.setLong(1, artifact.getPK());
-                        statement.setLong(2, linepk);
-                        statement.setInt(3, au.getPrimary() ? 1 : 0);
-                        statement.setString(4, au.getReason());
-                        statement.executeUpdate();
-                        safeClose(statement);
-                        statement = null;
-                    } catch (Exception e)
-                    {
-                        this.log.error("<internal> Core.addActions() Failed to relate artifact to line, " + e.getMessage());
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * Add a described template - it is known to not exist.
      * @param dt The described template to add.
@@ -836,10 +770,10 @@ public class Core
             Optional<DBDescribedTemplate> dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
             if (dbdtAsStored.isPresent())
                 return dbdtAsStored.get();
-        } catch (SQLException sqe) {
-            this.log.error("<internal> Core.add() sees exception from one of the dbQuery methods, msg: " + sqe);
-            this.log.debug("stack trace: ", sqe);
-            throw new Exception(".add() exits with exception ", sqe);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> Core.add() sees exception from one of the dbQuery methods, msg: " + sqle);
+            this.log.debug("stack trace: ", sqle);
+            throw new Exception(".add() exits with exception ", sqle);
         }
 
         // Recursively process all dependent DescribedTemplate's (add them or check them). But .getDependencies() is empty.
@@ -849,10 +783,10 @@ public class Core
             Optional<DBDescribedTemplate> dbdtAsStored;
             try {
                 dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
-            } catch (SQLException sqe) {
-                this.log.error("<internal> Core.add() sees exception from one of the dbQuery methods, msg: " + sqe);
-                this.log.debug("stack trace: ", sqe);
-                throw new Exception(".add() exits with exception ", sqe);
+            } catch (SQLException sqle) {
+                this.log.error("<internal> Core.add() sees exception from .getDBDescribedTemplate(), msg: " + sqle);
+                this.log.debug("stack trace: ", sqle);
+                throw new Exception(".add() exits with exception ", sqle);
             }
 
             if (!dbdtAsStored.isPresent())
@@ -892,7 +826,7 @@ public class Core
                     if (keys.next())
                         pk = keys.getLong(1);
                 }
-                addActions(dt, pk);
+                this.storage.addActions(dt, pk);
             } catch (SQLException ignore) {
                 //TODO: Figure out that this is a duplicate key or not.
                 safeClose(statement);
@@ -943,10 +877,10 @@ public class Core
             DescribedTemplate.Key matchKey = ti.getDescribedTemplate().getKey();
             try {
                 dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
-            } catch (SQLException sqe) {
-                this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqe);
-                this.log.debug("stack trace: ", sqe);
-                throw new Exception(".syncDescribedTemplates() exits with exception ", sqe);
+            } catch (SQLException sqle) {
+                this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqle);
+                this.log.debug("stack trace: ", sqle);
+                throw new Exception(".syncDescribedTemplates() exits with exception ", sqle);
             }
 
             DBDescribedTemplate dbdt;
@@ -971,9 +905,9 @@ public class Core
                 boolean dbNotHaveTI = false;
                 try {
                     dbNotHaveTI = this.storage.describedTemplateHasTestInstanceMatch(dbdt.pk);
-                } catch (SQLException sqe) {
-                    this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqe);
-                    this.log.debug("stack trace: ", sqe);
+                } catch (SQLException sqle) {
+                    this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqle);
+                    this.log.debug("stack trace: ", sqle);
                 }
 
                 if (dbNotHaveTI) {
