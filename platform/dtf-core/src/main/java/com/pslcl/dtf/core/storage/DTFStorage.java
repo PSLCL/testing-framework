@@ -6,6 +6,7 @@ import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
+import com.pslcl.dtf.core.generator.template.Template;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -249,6 +250,9 @@ public interface DTFStorage {
      * @return The key information for the added described template.
      */
     Optional<Core.DBDescribedTemplate> addToDB(DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete) throws SQLException;
+
+    long syncTemplate(Template sync) throws SQLException;
+
 
 
 

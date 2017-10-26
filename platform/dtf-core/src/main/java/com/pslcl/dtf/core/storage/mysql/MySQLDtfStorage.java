@@ -7,6 +7,7 @@ import com.pslcl.dtf.core.artifact.Artifact;
 import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
+import com.pslcl.dtf.core.generator.template.Template;
 import com.pslcl.dtf.core.generator.template.TestInstance;
 import com.pslcl.dtf.core.storage.DTFStorage;
 import org.apache.commons.dbcp.BasicDataSource;
@@ -1085,9 +1086,16 @@ public class MySQLDtfStorage implements DTFStorage {
         // proceed with intended .add() behavior
         try {
             /* All described template additions are handled as transactions. */
-            this.connect.setAutoCommit(false);
+            this.connect.setAutoCommit(false); // note: several activities are all handled here, because it is one DB transaction
 
-            long pk_template = this.core.syncTemplate(dt.getTemplate());
+            long pk_template = 0;
+            try {
+                pk_template = this.syncTemplate(dt.getTemplate());
+            } catch (SQLException sqle) {
+                this.log.error("<internal> DTFStorage.addToDB() sees exception thrown by syncTemplate(): Couldn't synchronize template, msg: " + sqle);
+                throw sqle;
+            }
+
             if (result!=null || owner!=null) {
                 try {
                     // call a stored procedure that updates table run
@@ -1147,6 +1155,46 @@ public class MySQLDtfStorage implements DTFStorage {
             return Optional.empty();
         }
     }
+
+    @Override
+    public long syncTemplate(Template sync) throws SQLException {
+        long pk = 0;
+        if (this.read_only) {
+            this.log.error("<internal> DTFStorage.syncTemplate(): database is read-only");
+            this.log.error("<internal> DTFStorage.syncTemplate(): ------------------------");
+            this.log.error("<internal> DTFStorage.syncTemplate(): Template: " + sync.getHash().toString());
+            this.log.error("<internal> DTFStorage.syncTemplate(): Script: " + sync.toStandardString());
+            this.log.error("<internal> DTFStorage.syncTemplate(): ------------------------");
+        } else {
+            String query = "SELECT pk_template FROM template" +
+                           " WHERE hash=?";
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.setBinaryStream(1, new ByteArrayInputStream(sync.getHash().toBytes()));
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    if (!resultSet.isBeforeFirst()) {
+                        String queryInsert = "INSERT INTO template (hash, steps, enabled)" +
+                                             " VALUES (?,?,?)";
+                        try (PreparedStatement ps = this.connect.prepareStatement(queryInsert)) {
+                            ps.setBinaryStream(1, new ByteArrayInputStream(sync.getHash().toBytes()));
+                            ps.setString(2, sync.toStandardString());
+                            ps.setInt(3, 1); // Default is enabled.
+                            ps.executeUpdate();
+                            try (ResultSet keys = ps.getGeneratedKeys()) {
+                                if (keys.next())
+                                    pk = keys.getLong(1);
+                            }
+                        }
+                    } else {
+                        resultSet.next();
+                        pk = resultSet.getLong("pk_template");
+                    }
+                }
+            }
+        }
+
+        return pk;
+    }
+
 
 
 
