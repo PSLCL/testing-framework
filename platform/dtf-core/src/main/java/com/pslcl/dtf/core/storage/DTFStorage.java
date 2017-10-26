@@ -240,6 +240,14 @@ public interface DTFStorage {
 
 
 
+    /**
+     * Retrieve test instances held for the given test, that also use the given module id.
+     * @param pk_test pk_test value in table test.
+     * @param idModule pk_module of potentially matching entry in table module.
+     * @return The list.
+     * @throws SQLException on fail
+     */
+    List<Long> getTestInstances(long pk_test, long idModule) throws SQLException;
 
     /**
      * Retrieve test instances held for the given test.

@@ -924,16 +924,11 @@ public final class DistributedTestingFramework
                     List<Long> testInstanceNumbersFromLookup = null;
                     try {
                         if (idModule != -1)
-                            testInstanceNumbersFromLookup = core.getTestInstances(manualTestNumber, idModule);
-                        else {
-                            try {
-                                testInstanceNumbersFromLookup = core.getStorage().getTestInstances(manualTestNumber);
-                            } catch (SQLException sqle) {
-                                LoggerFactory.getLogger(DistributedTestingFramework.class).error(".runner() Continues after .getTestInstances() throws exception, msg: " + sqle);
-                            }
-                        }
-                    } catch (Exception e) {
-                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to store test run for test number " + manualTestNumber + ", exception msg: " + e);
+                            testInstanceNumbersFromLookup = core.getStorage().getTestInstances(manualTestNumber, idModule);
+                        else
+                            testInstanceNumbersFromLookup = core.getStorage().getTestInstances(manualTestNumber);
+                    } catch (SQLException sqle) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn(".runner() Continues after .getTestInstances() throws exception, msg: " + sqle);
                     }
                     if (testInstanceNumbersFromLookup != null)
                         storeTestRuns_db_queue(sqs, core, owner, testInstanceNumbersFromLookup, testRuns);

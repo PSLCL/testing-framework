@@ -1385,36 +1385,6 @@ public class Core
         }
     }
 
-    /**
-     * Retrieve test instances held for the given test, that also use the given module id.
-     * @param pk_test pk_test value in table test.
-     * @param idModule pk_module of potentially matching entry in table module.
-     * @return The list.
-     * @throws Exception on fail
-     */
-    List<Long> getTestInstances(long pk_test, long idModule) throws Exception{
-        Statement find_test_instance = null;
-        List<Long> testInstanceList = new ArrayList<Long>();
-
-        try {
-            find_test_instance = this.storage.getConnect().createStatement();
-            try (ResultSet test_instances = find_test_instance.executeQuery("SELECT pk_test_instance FROM test_instance" +
-                                                                            " INNER JOIN module_to_test_instance" +
-                                                                            "  ON pk_test_instance = fk_test_instance " +
-                                                                            "WHERE fk_test = " + pk_test +
-                                                                            "  AND fk_module = " + idModule)) {
-                while (test_instances.next())
-                    testInstanceList.add(test_instances.getLong("pk_test_instance"));
-            }
-        } catch(Exception e) {
-            this.log.error("<internal> Core.getTestInstances(pk_test, idModule) exception msg: " + e);
-            throw e;
-        } finally {
-            safeClose(find_test_instance);
-        }
-        return testInstanceList;
-    }
-
     private long findTestInstance(TestInstance sync, long pk_test)
     {
         PreparedStatement find_test_instance = null;

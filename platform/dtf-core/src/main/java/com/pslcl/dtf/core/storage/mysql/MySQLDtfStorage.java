@@ -1084,6 +1084,21 @@ public class MySQLDtfStorage implements DTFStorage {
 
 
 
+    @Override
+    public List<Long> getTestInstances(long pk_test, long idModule) throws SQLException {
+        List<Long> retTestInstanceList = new ArrayList<Long>();
+        String query = "SELECT pk_test_instance FROM test_instance" +
+                       " INNER JOIN module_to_test_instance" +
+                       "  ON pk_test_instance=fk_test_instance" +
+                       " WHERE fk_test=" + pk_test +
+                       "   AND fk_module=" + idModule;
+        try (Statement statement = this.connect.createStatement();
+             ResultSet rsTestInstances = statement.executeQuery(query)) {
+            while (rsTestInstances.next())
+                retTestInstanceList.add(rsTestInstances.getLong("pk_test_instance"));
+        }
+        return retTestInstanceList;
+    }
 
     @Override
     public List<Long> getTestInstances(long pk_test) throws SQLException {
