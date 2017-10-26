@@ -3,7 +3,6 @@ package com.pslcl.dtf.resource.aws;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -34,11 +33,16 @@ public class Sqs extends MessageQueueBase {
     
     private volatile String queueStoreName;
     private volatile AwsClientConfig awsClientConfig;
+    private volatile boolean isDestroyed = false;
     private final Logger log;
     
     private AmazonSQSMessagingClientWrapper sqsClient = null;
     private SQSConnection connection = null;
-    
+    private MessageConsumer consumer = null;
+
+    private static final long queueWaitTime = 5000L;
+    private static final long queuePollTimeout = 5000L;
+
     public Sqs() {
         this.log = LoggerFactory.getLogger(getClass());
     }
@@ -66,6 +70,7 @@ public class Sqs extends MessageQueueBase {
     {
         try
         {
+            isDestroyed = true;
             //TODO: should the cleanupQueueStoreAccess call to connection.stop be on this cycle only? both?
             connection.stop();
         } catch (JMSException e)
@@ -102,22 +107,7 @@ public class Sqs extends MessageQueueBase {
             log.debug(prependString + " Dropped - null message cannot be processed");
         }
     }
-    
-    // MessageListener interface implementations
-    
-    private static final class GetQueueStoreCallback implements MessageListener {
-        private final Sqs sqs;
-        
-        private GetQueueStoreCallback(Sqs sqs) {
-            this.sqs = sqs;
-        }
-        
-        @Override
-        public void onMessage(Message message) {
-            sqs.processMessage(message);
-        }
-    }
-    
+
     
     // MessageQueue interface implementation
     
@@ -152,6 +142,30 @@ public class Sqs extends MessageQueueBase {
         }
     }
 
+    private void startMessageRetrieveProcess(){
+        new Thread(() -> {
+            while(!isDestroyed){
+                if(isAvailableToProcess()){
+                    Message message = null;
+                    try {
+                        message = consumer.receive(queuePollTimeout);
+                    } catch (JMSException e) {
+                        log.debug("Failed to receive message from SQS.", e);
+                    }
+                    if(message != null) {
+                        processMessage(message);
+                    }
+                } else {
+                    try {
+                        Thread.sleep(queueWaitTime);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                }
+            }
+        }).start();
+    }
+
     @Override
     public boolean queueStoreExists() throws JMSException {
         return sqsClient.queueExists(queueStoreName);
@@ -170,12 +184,11 @@ public class Sqs extends MessageQueueBase {
         Queue queueStore = session.createQueue(queueStoreName);
 
         // create our Consumer of the QueueStore message queue (as opposed to other possible message queues that could be accessible)
-        MessageConsumer consumer = session.createConsumer(queueStore);
-        
-        GetQueueStoreCallback getQueueStoreCallback = new GetQueueStoreCallback(this);
-        consumer.setMessageListener(getQueueStoreCallback);
+        consumer = session.createConsumer(queueStore);
 
         connection.start();
+
+        startMessageRetrieveProcess();
         log.debug("Sqs.initQueueStoreGet() successful, for message queue " + queueStoreName);
     }
 
@@ -197,7 +210,5 @@ public class Sqs extends MessageQueueBase {
     @Override
     public void cleanupQueueStoreAccess() throws JMSException {
         connection.stop(); // matches the .start() in initQueueStoreGet()
-        
     }
-    
 }
