@@ -983,7 +983,11 @@ public final class DistributedTestingFramework
         Core core = new Core();
         try{
             if(hash != null) {
-                core.reportResult(hash, result, null, null, null, null);
+                try {
+                    core.getStorage().reportResult(hash, result, null, null, null, null);
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error(".result() Continues after .reportResult() throws exception, msg: " + sqle);
+                }
             } else if (run!=null && result!=null) {
                 core.addResultToRun(run, result);
             } else {

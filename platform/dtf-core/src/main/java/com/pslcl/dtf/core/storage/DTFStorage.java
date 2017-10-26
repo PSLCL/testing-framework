@@ -9,6 +9,7 @@ import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -229,7 +230,6 @@ public interface DTFStorage {
      */
     void updateModule(long pk_module) throws SQLException;
 
-
     /**
      * Check that an existing template is correct. If the template exists then the children
      * may also exist, but their documentation (of template steps) may be out of date, so update that.
@@ -237,6 +237,12 @@ public interface DTFStorage {
      * @return DBDescribedTemplate
      */
     Core.DBDescribedTemplate check(DescribedTemplate dt) throws Exception;
+
+
+
+
+
+    void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)throws SQLException;
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

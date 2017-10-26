@@ -871,8 +871,12 @@ public class Core
 
             long pk_template = syncTemplate(dt.getTemplate());
             if (result!=null || owner!=null) {
-                // call a stored procedure that updates table run
-                reportResult(dt.getTemplate().getHash().toString(), result, owner, start, ready, complete);
+                try {
+                    // call a stored procedure that updates table run
+                    this.storage.reportResult(dt.getTemplate().getHash().toString(), result, owner, start, ready, complete);
+                } catch (SQLException sqle) {
+                    this.log.error("Core.add() Continues after .reportResult() throws exception, msg: " + sqle);
+                }
             }
 
             PreparedStatement statement = null;
@@ -1065,7 +1069,12 @@ public class Core
                     // Check the run status, fix it if the status is known.
                     if (!Objects.equals(dbResult, ti.getResult()) ||
                         (dbOwner==null ? ti.getOwner()!=null : !Objects.equals(dbOwner, ti.getOwner()))) {
-                       reportResult(ti.getDescribedTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                        try {
+                            // call a stored procedure that updates table run
+                            this.storage.reportResult(ti.getDescribedTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+                        } catch (SQLException sqle) {
+                            this.log.error("Core.syncDescribedTemplate() Continues after .reportResult() throws exception, msg: " + sqle);
+                        }
                     }
                 }
             } else {
@@ -1744,53 +1753,6 @@ public class Core
             runStatement = null;
         }
         throw new Exception("Failed to add new run for test instance " + testInstanceNumber);
-    }
-
-    void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)
-    {
-        if (this.storage.isReadOnly())
-            return;
-
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
-            statement.setString(1, hash);
-
-            if (result != null)
-                statement.setBoolean(2, result);
-            else
-                statement.setNull(2, Types.BOOLEAN);
-
-            if (owner != null)
-                statement.setString(3, owner);
-            else
-                statement.setNull(3, Types.VARCHAR);
-
-            if (start != null)
-                statement.setTimestamp(4, new java.sql.Timestamp(start.getTime()));
-            else
-                statement.setNull(4, Types.TIMESTAMP);
-
-            if (ready != null)
-                statement.setTimestamp(5, new java.sql.Timestamp(ready.getTime()));
-            else
-                statement.setNull(5, Types.TIMESTAMP);
-
-            if (complete != null)
-                statement.setTimestamp(6, new java.sql.Timestamp(complete.getTime()));
-            else
-                statement.setNull(6, Types.TIMESTAMP);
-            statement.execute();
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.reportResult() exception msg: " + e);
-            // TODO: handle
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
     }
 
 //    public static class TestTopLevelRelationships

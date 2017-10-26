@@ -27,6 +27,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1077,6 +1078,46 @@ public class MySQLDtfStorage implements DTFStorage {
         }
 
         return me;
+    }
+
+
+
+
+
+
+
+    @Override
+    public void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete) throws SQLException {
+        if (!this.read_only) {
+            String query = "call add_run(?, ?, ?, ?, ?, ?)"; // stored procedure
+            try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+                preparedStatement.setString(1, hash);
+                if (result != null)
+                    preparedStatement.setBoolean(2, result);
+                else
+                    preparedStatement.setNull(2, Types.BOOLEAN);
+                if (owner != null)
+                    preparedStatement.setString(3, owner);
+                else
+                    preparedStatement.setNull(3, Types.VARCHAR);
+                if (start != null)
+                    preparedStatement.setTimestamp(4, new java.sql.Timestamp(start.getTime()));
+                else
+                    preparedStatement.setNull(4, Types.TIMESTAMP);
+                if (ready != null)
+                    preparedStatement.setTimestamp(5, new java.sql.Timestamp(ready.getTime()));
+                else
+                    preparedStatement.setNull(5, Types.TIMESTAMP);
+                if (complete != null)
+                    preparedStatement.setTimestamp(6, new java.sql.Timestamp(complete.getTime()));
+                else
+                    preparedStatement.setNull(6, Types.TIMESTAMP);
+                preparedStatement.execute();
+            } catch (SQLException sqle) {
+                // TODO: handle
+                throw sqle;
+            }
+        }
     }
 
     @Override
