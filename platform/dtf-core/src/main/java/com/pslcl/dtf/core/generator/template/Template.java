@@ -369,8 +369,9 @@ public class Template implements Comparable<Template>
             }
     }
 
-    public void syncRelationships()
-    {
-        core.syncTemplateRelationships(this);
-    }
+    // Not called
+//    public void syncRelationships()
+//    {
+//        core.syncTemplateRelationships(this);
+//    }
 }

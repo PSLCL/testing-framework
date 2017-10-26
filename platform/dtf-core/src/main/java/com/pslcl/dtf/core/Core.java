@@ -29,7 +29,6 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -120,24 +119,6 @@ public class Core
             this.artifacts.mkdirs();
         }
         this.storage = new MySQLDtfStorage(this, this.config); // opens database
-    }
-
-    private void safeClose(ResultSet r) {
-        try {
-            if (r != null)
-                r.close();
-        } catch (Exception ignore) {
-            // Ignore
-        }
-    }
-
-    private void safeClose(Statement s) {
-        try {
-            if (s != null)
-                s.close();
-        } catch (Exception ignore) {
-            // Ignore
-        }
     }
 
     /**
@@ -687,6 +668,24 @@ public class Core
         }
     }
 
+    private void safeClose(ResultSet r) {
+        try {
+            if (r != null)
+                r.close();
+        } catch (Exception ignore) {
+            // Ignore
+        }
+    }
+
+    private void safeClose(Statement s) {
+        try {
+            if (s != null)
+                s.close();
+        } catch (Exception ignore) {
+            // Ignore
+        }
+    }
+
     /*    public void syncGeneratedContent( Content sync ) {
             PreparedStatement find_content = null;
             PreparedStatement create_content = null;
@@ -1086,79 +1085,79 @@ public class Core
 //        }
 //    }
 
-    public void syncTemplateRelationships(Template sync)
-    {
-        if (this.storage.isReadOnly())
-            return;
-
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-        try
-        {
-            for (Template t : sync.allTemplates)
-            {
-                statement = this.storage.getConnect().prepareStatement(String.format("select fk_parent, fk_child from template_to_template where fk_parent='%d' and fk_child='%d'", sync.getPK(), t.getPK()));
-                resultSet = statement.executeQuery();
-                if (!resultSet.isBeforeFirst())
-                {
-                    // There were no matches. Time to insert. Need to determine if the content exists.
-                    safeClose(resultSet);
-                    resultSet = null;
-                    safeClose(statement);
-                    statement = null;
-
-                    statement = this.storage.getConnect().prepareStatement("INSERT INTO template_to_template (fk_parent, fk_child) VALUES (?,?)");
-                    statement.setLong(1, sync.getPK());
-                    statement.setLong(2, t.getPK());
-                    statement.executeUpdate();
-
-                    safeClose(statement);
-                    statement = null;
-                } else
-                {
-                    safeClose(resultSet);
-                    resultSet = null;
-                }
-            }
-
-            for (Content a : sync.artifacts)
-            {
-                statement = this.storage.getConnect().prepareStatement("select fk_template, fk_content from template_to_content where fk_template=? and fk_content=?");
-                statement.setLong(1, sync.getPK());
-                statement.setBinaryStream(2, new ByteArrayInputStream(a.getHash().toBytes()));
-                resultSet = statement.executeQuery();
-                if (!resultSet.isBeforeFirst())
-                {
-                    // There were no matches. Time to insert. Need to determine if the content exists.
-                    safeClose(resultSet);
-                    resultSet = null;
-                    safeClose(statement);
-                    statement = null;
-
-                    statement = this.storage.getConnect().prepareStatement("INSERT INTO template_to_content (fk_template, fk_content) VALUES (?,?)");
-                    statement.setLong(1, sync.getPK());
-                    statement.setBinaryStream(2, new ByteArrayInputStream(a.getHash().toBytes()));
-                    statement.executeUpdate();
-
-                    safeClose(statement);
-                    statement = null;
-                } else
-                {
-                    safeClose(resultSet);
-                    resultSet = null;
-                }
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.syncTemplateRelationships(): Couldn't synchronize template relationships, " + e.getMessage());
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-    }
+//    public void syncTemplateRelationships(Template sync)
+//    {
+//        if (this.storage.isReadOnly())
+//            return;
+//
+//        PreparedStatement statement = null;
+//        ResultSet resultSet = null;
+//        try
+//        {
+//            for (Template t : sync.allTemplates)
+//            {
+//                statement = this.storage.getConnect().prepareStatement(String.format("select fk_parent, fk_child from template_to_template where fk_parent='%d' and fk_child='%d'", sync.getPK(), t.getPK()));
+//                resultSet = statement.executeQuery();
+//                if (!resultSet.isBeforeFirst())
+//                {
+//                    // There were no matches. Time to insert. Need to determine if the content exists.
+//                    safeClose(resultSet);
+//                    resultSet = null;
+//                    safeClose(statement);
+//                    statement = null;
+//
+//                    statement = this.storage.getConnect().prepareStatement("INSERT INTO template_to_template (fk_parent, fk_child) VALUES (?,?)");
+//                    statement.setLong(1, sync.getPK());
+//                    statement.setLong(2, t.getPK());
+//                    statement.executeUpdate();
+//
+//                    safeClose(statement);
+//                    statement = null;
+//                } else
+//                {
+//                    safeClose(resultSet);
+//                    resultSet = null;
+//                }
+//            }
+//
+//            for (Content a : sync.artifacts)
+//            {
+//                statement = this.storage.getConnect().prepareStatement("select fk_template, fk_content from template_to_content where fk_template=? and fk_content=?");
+//                statement.setLong(1, sync.getPK());
+//                statement.setBinaryStream(2, new ByteArrayInputStream(a.getHash().toBytes()));
+//                resultSet = statement.executeQuery();
+//                if (!resultSet.isBeforeFirst())
+//                {
+//                    // There were no matches. Time to insert. Need to determine if the content exists.
+//                    safeClose(resultSet);
+//                    resultSet = null;
+//                    safeClose(statement);
+//                    statement = null;
+//
+//                    statement = this.storage.getConnect().prepareStatement("INSERT INTO template_to_content (fk_template, fk_content) VALUES (?,?)");
+//                    statement.setLong(1, sync.getPK());
+//                    statement.setBinaryStream(2, new ByteArrayInputStream(a.getHash().toBytes()));
+//                    statement.executeUpdate();
+//
+//                    safeClose(statement);
+//                    statement = null;
+//                } else
+//                {
+//                    safeClose(resultSet);
+//                    resultSet = null;
+//                }
+//            }
+//        } catch (Exception e)
+//        {
+//            this.log.error("<internal> Core.syncTemplateRelationships(): Couldn't synchronize template relationships, " + e.getMessage());
+//        } finally
+//        {
+//            safeClose(resultSet);
+//            resultSet = null;
+//            safeClose(statement);
+//            statement = null;
+//        }
+//    }
 
     // Not called
 //    public void startSyncTestInstance(long pk_test)
