@@ -42,15 +42,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 //import javax.annotation.Nullable; // requires an external jar
 
@@ -1153,122 +1150,124 @@ public class Core
         return pk;
     }
 
-    private List<Hash> getExistingTopArtifacts(long pk)
-    {
-        List<Hash> result = new ArrayList<Hash>();
-        PreparedStatement findArtifacts = null;
-        ResultSet foundArtifacts = null;
+//    private List<Hash> getExistingTopArtifacts(long pk)
+//    {
+//        List<Hash> result = new ArrayList<Hash>();
+//        PreparedStatement findArtifacts = null;
+//        ResultSet foundArtifacts = null;
+//
+//        // Read all the related artifacts
+//        try
+//        {
+//            findArtifacts = this.storage.getConnect().prepareStatement(String.format("select fk_content from template_to_all_content where fk_template='%d'", pk));
+//            foundArtifacts = findArtifacts.executeQuery();
+//            while (foundArtifacts.next())
+//            {
+//                Hash hash = new Hash(foundArtifacts.getBytes(1));
+//                result.add(hash);
+//            }
+//        } catch (SQLException ignore)
+//        {
+//            // Ignore
+//        } finally
+//        {
+//            safeClose(foundArtifacts);
+//            foundArtifacts = null;
+//            safeClose(findArtifacts);
+//            findArtifacts = null;
+//        }
+//
+//        return result;
+//    }
 
-        // Read all the related artifacts
-        try
-        {
-            findArtifacts = this.storage.getConnect().prepareStatement(String.format("select fk_content from template_to_all_content where fk_template='%d'", pk));
-            foundArtifacts = findArtifacts.executeQuery();
-            while (foundArtifacts.next())
-            {
-                Hash hash = new Hash(foundArtifacts.getBytes(1));
-                result.add(hash);
-            }
-        } catch (SQLException ignore)
-        {
-            // Ignore
-        } finally
-        {
-            safeClose(foundArtifacts);
-            foundArtifacts = null;
-            safeClose(findArtifacts);
-            findArtifacts = null;
-        }
+    // Not called
+//    private void getRequiredTopArtifacts(long pk, Set<Hash> combined)
+//    {
+//        PreparedStatement findArtifacts = null;
+//        ResultSet foundArtifacts = null;
+//        ResultSet foundChildren = null;
+//
+//        // Read all the related artifacts
+//        try
+//        {
+//            findArtifacts = this.storage.getConnect().prepareStatement(String.format("select fk_content from template_to_content where fk_template='%d'", pk));
+//            foundArtifacts = findArtifacts.executeQuery();
+//            while (foundArtifacts.next())
+//            {
+//                Hash hash = new Hash(foundArtifacts.getBytes(1));
+//                combined.add(hash);
+//            }
+//
+//            PreparedStatement findChildren = this.storage.getConnect().prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
+//            foundChildren = findChildren.executeQuery();
+//            while (foundChildren.next())
+//            {
+//                long fk = foundChildren.getLong("fk_child");
+//                getRequiredTopArtifacts(fk, combined);
+//            }
+//        } catch (Exception ignore)
+//        {
+//            // Ignore
+//        } finally
+//        {
+//            safeClose(foundArtifacts);
+//            foundArtifacts = null;
+//            safeClose(foundChildren);
+//            findArtifacts = null;
+//        }
+//    }
 
-        return result;
-    }
-
-    private void getRequiredTopArtifacts(long pk, Set<Hash> combined)
-    {
-        PreparedStatement findArtifacts = null;
-        ResultSet foundArtifacts = null;
-        ResultSet foundChildren = null;
-
-        // Read all the related artifacts
-        try
-        {
-            findArtifacts = this.storage.getConnect().prepareStatement(String.format("select fk_content from template_to_content where fk_template='%d'", pk));
-            foundArtifacts = findArtifacts.executeQuery();
-            while (foundArtifacts.next())
-            {
-                Hash hash = new Hash(foundArtifacts.getBytes(1));
-                combined.add(hash);
-            }
-
-            PreparedStatement findChildren = this.storage.getConnect().prepareStatement(String.format("select fk_child from template_to_template where fk_parent='%d'", pk));
-            foundChildren = findChildren.executeQuery();
-            while (foundChildren.next())
-            {
-                long fk = foundChildren.getLong("fk_child");
-                getRequiredTopArtifacts(fk, combined);
-            }
-        } catch (Exception ignore)
-        {
-            // Ignore
-        } finally
-        {
-            safeClose(foundArtifacts);
-            foundArtifacts = null;
-            safeClose(foundChildren);
-            findArtifacts = null;
-        }
-    }
-
-    /**
-     * Roll up the artifact relationships for all top-level templates. Top-level templates are those referenced
-     * directly from a test instance. This roll-up allows SQL queries to map from an artifact to a test instance
-     * for artifact result reports.
-     */
-    void syncTopTemplateRelationships()
-    {
-        // Find all top-level templates.
-        if (this.storage.isReadOnly())
-            return;
-
-        /* Templates always have the same "contents" and "relationships" or their hash would change. This
-         * means that the worst synchronization problem can be a crash while we were in the process of adding
-         * relationships. An existing relationship will never be wrong.
-         */
-        ResultSet foundTemplates = null;
-        PreparedStatement insertArtifact = null;
-        try
-        {
-            PreparedStatement findTemplates = this.storage.getConnect().prepareStatement("select distinct fk_template from test_instance");
-            foundTemplates = findTemplates.executeQuery();
-            while (foundTemplates.next())
-            {
-                long pk = foundTemplates.getLong("fk_template");
-                List<Hash> existing = getExistingTopArtifacts(pk);
-                Set<Hash> required = new HashSet<Hash>();
-                getRequiredTopArtifacts(pk, required);
-
-                // Worst case we missed adding some last time.
-                required.removeAll(existing);
-                for (Hash h : required)
-                {
-                    // Need to add the relationship.
-                    insertArtifact = this.storage.getConnect().prepareStatement("INSERT INTO template_to_all_content (fk_template, fk_content) VALUES (?,?)");
-                    insertArtifact.setLong(1, pk);
-                    insertArtifact.setBinaryStream(2, new ByteArrayInputStream(h.toBytes()));
-                    insertArtifact.executeUpdate();
-                }
-            }
-        } catch (Exception ignore)
-        {
-            // Ignore.
-        } finally
-        {
-            safeClose(foundTemplates);
-            foundTemplates = null;
-            safeClose(insertArtifact);
-            insertArtifact = null;
-        }
-    }
+    // Not called
+//    /**
+//     * Roll up the artifact relationships for all top-level templates. Top-level templates are those referenced
+//     * directly from a test instance. This roll-up allows SQL queries to map from an artifact to a test instance
+//     * for artifact result reports.
+//     */
+//    void syncTopTemplateRelationships()
+//    {
+//        // Find all top-level templates.
+//        if (this.storage.isReadOnly())
+//            return;
+//
+//        /* Templates always have the same "contents" and "relationships" or their hash would change. This
+//         * means that the worst synchronization problem can be a crash while we were in the process of adding
+//         * relationships. An existing relationship will never be wrong.
+//         */
+//        ResultSet foundTemplates = null;
+//        PreparedStatement insertArtifact = null;
+//        try
+//        {
+//            PreparedStatement findTemplates = this.storage.getConnect().prepareStatement("select distinct fk_template from test_instance");
+//            foundTemplates = findTemplates.executeQuery();
+//            while (foundTemplates.next())
+//            {
+//                long pk = foundTemplates.getLong("fk_template");
+//                List<Hash> existing = getExistingTopArtifacts(pk);
+//                Set<Hash> required = new HashSet<Hash>();
+//                getRequiredTopArtifacts(pk, required);
+//
+//                // Worst case we missed adding some last time.
+//                required.removeAll(existing);
+//                for (Hash h : required)
+//                {
+//                    // Need to add the relationship.
+//                    insertArtifact = this.storage.getConnect().prepareStatement("INSERT INTO template_to_all_content (fk_template, fk_content) VALUES (?,?)");
+//                    insertArtifact.setLong(1, pk);
+//                    insertArtifact.setBinaryStream(2, new ByteArrayInputStream(h.toBytes()));
+//                    insertArtifact.executeUpdate();
+//                }
+//            }
+//        } catch (Exception ignore)
+//        {
+//            // Ignore.
+//        } finally
+//        {
+//            safeClose(foundTemplates);
+//            foundTemplates = null;
+//            safeClose(insertArtifact);
+//            insertArtifact = null;
+//        }
+//    }
 
     public void syncTemplateRelationships(Template sync)
     {
@@ -1344,239 +1343,242 @@ public class Core
         }
     }
 
-    public void startSyncTestInstance(long pk_test)
-    {
-        // Mark test instances for later cleanup.
-        if (this.storage.isReadOnly())
-            return;
+    // Not called
+//    public void startSyncTestInstance(long pk_test)
+//    {
+//        // Mark test instances for later cleanup.
+//        if (this.storage.isReadOnly())
+//            return;
+//
+//        PreparedStatement statement = null;
+//        try
+//        {
+//            statement = this.storage.getConnect().prepareStatement(String.format("UPDATE test_instance SET synchronized=0 WHERE fk_test=%d", pk_test));
+//            statement.executeUpdate();
+//        } catch (Exception ignore)
+//        {
+//            //TODO: handle
+//        } finally
+//        {
+//            safeClose(statement);
+//            statement = null;
+//        }
+//    }
 
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement(String.format("UPDATE test_instance SET synchronized=0 WHERE fk_test=%d", pk_test));
-            statement.executeUpdate();
-        } catch (Exception ignore)
-        {
-            //TODO: handle
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-    }
+      // Not called
+//    public void stopSyncTestInstance(long pk_test)
+//    {
+//        if (this.storage.isReadOnly())
+//            return;
+//
+//        PreparedStatement statement = null;
+//        try
+//        {
+//            statement = this.storage.getConnect().prepareStatement(String.format("DELETE FROM test_instance WHERE synchronized=0 AND fk_test=%d", pk_test));
+//            statement.executeUpdate();
+//        } catch (Exception e)
+//        {
+//            //TODO: handle
+//        } finally
+//        {
+//            safeClose(statement);
+//            statement = null;
+//        }
+//    }
 
-    public void stopSyncTestInstance(long pk_test)
-    {
-        if (this.storage.isReadOnly())
-            return;
+//    private long findTestInstance(TestInstance sync, long pk_test)
+//    {
+//        PreparedStatement find_test_instance = null;
+//        ResultSet test_instances = null;
+//        PreparedStatement find_versions = null;
+//        ResultSet his_versions = null;
+//
+//        try
+//        {
+//            // TODO: Is this next line broken? Table test_instance does not have column fk_template (does have fk_described_template).
+//            find_test_instance = this.storage.getConnect().prepareStatement("SELECT pk_test_instance FROM test_instance WHERE fk_template=? AND fk_test=?");
+//            find_test_instance.setLong(1, sync.getDescribedTemplate().getPK());
+//            find_test_instance.setLong(2, pk_test);
+//            test_instances = find_test_instance.executeQuery();
+//            while (test_instances.next())
+//            {
+//                long pk = test_instances.getLong("pk_test_instance");
+//
+//                // We found a candidate, but need to verify that its version references exactly match.
+//                find_versions = this.storage.getConnect().prepareStatement("SELECT fk_version FROM test_instance_to_version WHERE fk_test_instance=?");
+//                find_versions.setLong(1, pk);
+//                his_versions = find_versions.executeQuery();
+//                boolean extras = false;
+//
+//                Collection<Long> my_versions = new ArrayList<Long>();
+//                //                for ( Version v : sync.getVersions() )
+//                //                    my_versions.add( v.getPK() );
+//                while (his_versions.next() && !extras)
+//                {
+//                    Long vk = his_versions.getLong("fk_version");
+//                    if (!my_versions.contains(vk))
+//                        extras = true;
+//
+//                    my_versions.remove(vk); // Note, this is remove by object, not index.
+//                }
+//
+//                safeClose(his_versions);
+//                his_versions = null;
+//                safeClose(find_versions);
+//                find_versions = null;
+//
+//                if (extras)
+//                    continue;
+//
+//                if (my_versions.size() == 0)
+//                    return pk; // All versions matched.
+//
+//                // No match, keep searching.
+//            }
+//        } catch (Exception e)
+//        {
+//            this.log.error("<internal> Core.findTestInstance() exception msg: " + e);
+//
+//            // TODO: handle
+//        } finally
+//        {
+//            safeClose(test_instances);
+//            test_instances = null;
+//            safeClose(find_test_instance);
+//            find_test_instance = null;
+//            safeClose(his_versions);
+//            his_versions = null;
+//            safeClose(find_versions);
+//            find_versions = null;
+//        }
+//
+//        return 0;
+//    }
 
-        PreparedStatement statement = null;
-        try
-        {
-            statement = this.storage.getConnect().prepareStatement(String.format("DELETE FROM test_instance WHERE synchronized=0 AND fk_test=%d", pk_test));
-            statement.executeUpdate();
-        } catch (Exception e)
-        {
-            //TODO: handle
-        } finally
-        {
-            safeClose(statement);
-            statement = null;
-        }
-    }
+      // Not called
+//    /**
+//     * Synchronize the specified test instance belonging to the specified test. The test instance
+//     * information itself is verified and the hashes are checked against the loaded information. If
+//     * these match then no further work is done.
+//     * @param sync The test instance to synchronize.
+//     * @param pk_test The test that the instance is related to.
+//     * @return The test instance number
+//     */
+//    public long syncTestInstance(TestInstance sync, long pk_test)
+//    {
+//        long pk = 0;
+//
+//        //TODO: Clean up
+//        if (this.storage.isReadOnly())
+//        {
+//            this.log.error("<internal> Core.syncTestInstance(): database is read-only");
+//            this.log.error("<internal> Core.syncTestInstance(): ------------------------");
+//            //            System.err.println( "Template: " + sync.getDescribedTemplate().getHash().toString() );
+//            this.log.error("<internal> Core.syncTestInstance(): Test Instance for Test \" + Long.toString(pk_test)");
+//            this.log.error("<internal> Core.syncTestInstance(): Versions:");
+//                //            for ( Version v : sync.getVersions() )
+//                //                System.err.println( "\t" + v.getComponent() + ", " + v.getVersion() );
+//            this.log.error("<internal> Core.syncTestInstance(): ------------------------");
+//            return pk;
+//        }
+//
+//        //        sync.getDescribedTemplate().sync();
+//        //        sync.getDescription().sync();
+//        //        for ( Version v : sync.getVersions() )
+//        //            v.sync();
+//
+//        PreparedStatement statement = null;
+//        ResultSet resultSet = null;
+//        try
+//        {
+//            pk = findTestInstance(sync, pk_test);
+//
+//            if (pk == 0)
+//            {
+//                // There were no matches. Time to insert. Need to determine if the content exists.
+//
+//                // Get the component list associated with the test
+//                statement = this.storage.getConnect().prepareStatement(String.format("SELECT distinct pk_component" + " FROM component" + " JOIN component_to_test_plan ON component_to_test_plan.fk_component = component.pk_component" + " JOIN test_plan ON test_plan.pk_test_plan = component_to_test_plan.fk_test_plan" + " JOIN test ON test.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test='%d'", pk_test));
+//                resultSet = statement.executeQuery();
+//
+//                // TODO: See why components here is never read. Is impl incomplete?
+//                List<Long> components = new ArrayList<Long>();
+//                while (resultSet.next())
+//                {
+//                    components.add(resultSet.getLong(1));
+//                }
+//
+//                safeClose(resultSet);
+//                resultSet = null;
+//                safeClose(statement);
+//                statement = null;
+//
+//                statement = this.storage.getConnect().prepareStatement("INSERT INTO test_instance (fk_test, fk_template, fk_description, phase, synchronized) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+//                statement.setLong(1, pk_test);
+//                //                statement.setLong(2, sync.getDescribedTemplate().getPK());
+//                //                statement.setLong(3, sync.getDescription().getPK());
+//                //TODO: Determine the phase
+//                statement.setLong(4, 0);
+//                statement.setInt(5, 1); // Default is synchronized.
+//                statement.executeUpdate();
+//
+//                try (ResultSet keys = statement.getGeneratedKeys()) {
+//                    if (keys.next())
+//                        pk = keys.getLong(1);
+//                }
+//
+//                safeClose(statement);
+//                statement = null;
+//
+//                /*                for ( Version v : sync.getVersions() ) {
+//                    statement = connect.prepareStatement( String.format( "select fk_test_instance, fk_version from test_instance_to_version where fk_test_instance='%d' and fk_version='%d'",
+//                            pk, v.getPK() ) );
+//                    resultSet = statement.executeQuery();
+//                    if ( ! resultSet.isBeforeFirst() ) {
+//                        // There were no matches. Time to insert. Need to determine if the content exists.
+//                        safeClose( resultSet ); resultSet = null;
+//                        safeClose( statement ); statement = null;
+//
+//                        boolean primary = components.contains( v.getComponentPK() );
+//                        statement = connect.prepareStatement( "insert into test_instance_to_version (fk_test_instance, fk_version, is_primary) values (?,?,?)" );
+//                        statement.setLong(1, pk);
+//                        statement.setLong(2, v.getPK());
+//                        statement.setBoolean(3, primary);
+//                        statement.executeUpdate();
+//
+//                        safeClose( statement ); statement = null;
+//                    }
+//                    else {
+//                        safeClose( resultSet ); resultSet = null;
+//                    }
+//                } */
+//            } else
+//            {
+//                // TODO: Validate the due date and phase
+//                statement = this.storage.getConnect().prepareStatement("UPDATE test_instance SET synchronized=1, fk_description=? WHERE pk_test_instance=?");
+//                //                statement.setLong( 1, sync.getDescription().getPK() );
+//                statement.setLong(2, pk);
+//                statement.executeUpdate();
+//            }
+//        } catch (Exception e)
+//        {
+//            this.log.error("<internal> Core.syncTestInstance() exception msg : " + e);
+//            // TODO: handle
+//        } finally
+//        {
+//            safeClose(resultSet);
+//            resultSet = null;
+//            safeClose(statement);
+//            statement = null;
+//        }
+//
+//        //        if ( sync.getResult() != null )
+//        //            reportResult( sync.getDescribedTemplate().getHash().toString(), sync.getResult() );
+//
+//        return pk;
+//    }
 
-    private long findTestInstance(TestInstance sync, long pk_test)
-    {
-        PreparedStatement find_test_instance = null;
-        ResultSet test_instances = null;
-        PreparedStatement find_versions = null;
-        ResultSet his_versions = null;
-
-        try
-        {
-            // TODO: Is this next line broken? Table test_instance does not have column fk_template (does have fk_described_template).
-            find_test_instance = this.storage.getConnect().prepareStatement("SELECT pk_test_instance FROM test_instance WHERE fk_template=? AND fk_test=?");
-            find_test_instance.setLong(1, sync.getDescribedTemplate().getPK());
-            find_test_instance.setLong(2, pk_test);
-            test_instances = find_test_instance.executeQuery();
-            while (test_instances.next())
-            {
-                long pk = test_instances.getLong("pk_test_instance");
-
-                // We found a candidate, but need to verify that its version references exactly match.
-                find_versions = this.storage.getConnect().prepareStatement("SELECT fk_version FROM test_instance_to_version WHERE fk_test_instance=?");
-                find_versions.setLong(1, pk);
-                his_versions = find_versions.executeQuery();
-                boolean extras = false;
-
-                Collection<Long> my_versions = new ArrayList<Long>();
-                //                for ( Version v : sync.getVersions() )
-                //                    my_versions.add( v.getPK() );
-                while (his_versions.next() && !extras)
-                {
-                    Long vk = his_versions.getLong("fk_version");
-                    if (!my_versions.contains(vk))
-                        extras = true;
-
-                    my_versions.remove(vk); // Note, this is remove by object, not index.
-                }
-
-                safeClose(his_versions);
-                his_versions = null;
-                safeClose(find_versions);
-                find_versions = null;
-
-                if (extras)
-                    continue;
-
-                if (my_versions.size() == 0)
-                    return pk; // All versions matched.
-
-                // No match, keep searching.
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.findTestInstance() exception msg: " + e);
-
-            // TODO: handle
-        } finally
-        {
-            safeClose(test_instances);
-            test_instances = null;
-            safeClose(find_test_instance);
-            find_test_instance = null;
-            safeClose(his_versions);
-            his_versions = null;
-            safeClose(find_versions);
-            find_versions = null;
-        }
-
-        return 0;
-    }
-
-    /**
-     * Synchronize the specified test instance belonging to the specified test. The test instance
-     * information itself is verified and the hashes are checked against the loaded information. If
-     * these match then no further work is done.
-     * @param sync The test instance to synchronize.
-     * @param pk_test The test that the instance is related to.
-     * @return The test instance number
-     */
-    public long syncTestInstance(TestInstance sync, long pk_test)
-    {
-        long pk = 0;
-
-        //TODO: Clean up
-        if (this.storage.isReadOnly())
-        {
-            this.log.error("<internal> Core.syncTestInstance(): database is read-only");
-            this.log.error("<internal> Core.syncTestInstance(): ------------------------");
-            //            System.err.println( "Template: " + sync.getDescribedTemplate().getHash().toString() );
-            this.log.error("<internal> Core.syncTestInstance(): Test Instance for Test \" + Long.toString(pk_test)");
-            this.log.error("<internal> Core.syncTestInstance(): Versions:");
-                //            for ( Version v : sync.getVersions() )
-                //                System.err.println( "\t" + v.getComponent() + ", " + v.getVersion() );
-            this.log.error("<internal> Core.syncTestInstance(): ------------------------");
-            return pk;
-        }
-
-        //        sync.getDescribedTemplate().sync();
-        //        sync.getDescription().sync();
-        //        for ( Version v : sync.getVersions() )
-        //            v.sync();
-
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-        try
-        {
-            pk = findTestInstance(sync, pk_test);
-
-            if (pk == 0)
-            {
-                // There were no matches. Time to insert. Need to determine if the content exists.
-
-                // Get the component list associated with the test
-                statement = this.storage.getConnect().prepareStatement(String.format("SELECT distinct pk_component" + " FROM component" + " JOIN component_to_test_plan ON component_to_test_plan.fk_component = component.pk_component" + " JOIN test_plan ON test_plan.pk_test_plan = component_to_test_plan.fk_test_plan" + " JOIN test ON test.fk_test_plan = test_plan.pk_test_plan" + " WHERE test.pk_test='%d'", pk_test));
-                resultSet = statement.executeQuery();
-
-                // TODO: See why components here is never read. Is impl incomplete?
-                List<Long> components = new ArrayList<Long>();
-                while (resultSet.next())
-                {
-                    components.add(resultSet.getLong(1));
-                }
-
-                safeClose(resultSet);
-                resultSet = null;
-                safeClose(statement);
-                statement = null;
-
-                statement = this.storage.getConnect().prepareStatement("INSERT INTO test_instance (fk_test, fk_template, fk_description, phase, synchronized) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-                statement.setLong(1, pk_test);
-                //                statement.setLong(2, sync.getDescribedTemplate().getPK());
-                //                statement.setLong(3, sync.getDescription().getPK());
-                //TODO: Determine the phase
-                statement.setLong(4, 0);
-                statement.setInt(5, 1); // Default is synchronized.
-                statement.executeUpdate();
-
-                try (ResultSet keys = statement.getGeneratedKeys()) {
-                    if (keys.next())
-                        pk = keys.getLong(1);
-                }
-
-                safeClose(statement);
-                statement = null;
-
-                /*                for ( Version v : sync.getVersions() ) {
-                    statement = connect.prepareStatement( String.format( "select fk_test_instance, fk_version from test_instance_to_version where fk_test_instance='%d' and fk_version='%d'",
-                            pk, v.getPK() ) );
-                    resultSet = statement.executeQuery();
-                    if ( ! resultSet.isBeforeFirst() ) {
-                        // There were no matches. Time to insert. Need to determine if the content exists.
-                        safeClose( resultSet ); resultSet = null;
-                        safeClose( statement ); statement = null;
-
-                        boolean primary = components.contains( v.getComponentPK() );
-                        statement = connect.prepareStatement( "insert into test_instance_to_version (fk_test_instance, fk_version, is_primary) values (?,?,?)" );
-                        statement.setLong(1, pk);
-                        statement.setLong(2, v.getPK());
-                        statement.setBoolean(3, primary);
-                        statement.executeUpdate();
-
-                        safeClose( statement ); statement = null;
-                    }
-                    else {
-                        safeClose( resultSet ); resultSet = null;
-                    }
-                } */
-            } else
-            {
-                // TODO: Validate the due date and phase
-                statement = this.storage.getConnect().prepareStatement("UPDATE test_instance SET synchronized=1, fk_description=? WHERE pk_test_instance=?");
-                //                statement.setLong( 1, sync.getDescription().getPK() );
-                statement.setLong(2, pk);
-                statement.executeUpdate();
-            }
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.syncTestInstance() exception msg : " + e);
-            // TODO: handle
-        } finally
-        {
-            safeClose(resultSet);
-            resultSet = null;
-            safeClose(statement);
-            statement = null;
-        }
-
-        //        if ( sync.getResult() != null )
-        //            reportResult( sync.getDescribedTemplate().getHash().toString(), sync.getResult() );
-
-        return pk;
-    }
-
-    // No caller
+    // Not called
 //    // TODO: consider alternative to returning null
 ////  @Nullable
 ////  @SuppressWarnings("ReturnOfNull")
