@@ -609,15 +609,14 @@ public class Core
         //public String getValue( Template template ) {
         //    return module.getOrganization() + "#" + module.getName() + " " + getEncodedName() + " " + hash.toString();
         //}
-    }
 
-    private static class DBContent implements Content
-    {
+    } // end static class DBArtifact
+
+    private static class DBContent implements Content {
         private Core core;
         private Hash hash;
 
-        DBContent(Core core, Hash hash)
-        {
+        DBContent(Core core, Hash hash) {
             this.core = core;
             this.hash = hash;
         }
@@ -666,7 +665,8 @@ public class Core
             }
             return new byte[0]; // this is better than returning null, which poses a null pointer threat to the caller
         }
-    }
+
+    } // end static class DBContent
 
     private void safeClose(ResultSet r) {
         try {

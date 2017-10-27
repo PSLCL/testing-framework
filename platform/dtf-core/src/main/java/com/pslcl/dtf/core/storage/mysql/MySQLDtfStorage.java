@@ -56,7 +56,11 @@ public class MySQLDtfStorage implements DTFStorage {
      *
      * @param core Core
      */
-    public MySQLDtfStorage(Core core, PortalConfig portalConfig){
+    public MySQLDtfStorage(Core core, PortalConfig portalConfig) {
+        // Notes on why Core is passed as parameter here. To overcome this requires some code rewrite.
+        // Five methods here instantiate static DBModule(Core) or static DBArtifact(Core).
+        //    Point 1: They each do use Core.
+        //    Point 2: These instantiations here occur in ResultSet processing: usefully moving code around is not obvious.
         this.log = LoggerFactory.getLogger(getClass());
         this.core = core;
         this.config = portalConfig;
@@ -627,6 +631,7 @@ public class MySQLDtfStorage implements DTFStorage {
             if (rsContentMatch.next()) {
                 // Look only at first resultSet (we only care about the first match that we find).
                 Hash hash = new Hash(rsContentMatch.getBytes(1));
+                // note: to avoid use of core in this line, artifactsDirectory could be a parameter; but this method needs core for other reasons, anyway
                 File f = new File(this.core.getArtifactsDirectory(), hash.toString()); // f: actual file from file system
                 try {
                     LineIterator iterator = new LineIterator(new FileReader(f));
@@ -917,7 +922,7 @@ public class MySQLDtfStorage implements DTFStorage {
     }
 
     @Override
-    public boolean isAssociatedWithTest(Module module) throws SQLException {
+    public boolean isAssociatedWithTest(Core paramCore, Module module) throws SQLException {
         long pk = 0;
         try {
             pk = this.findModule(module);
@@ -932,7 +937,7 @@ public class MySQLDtfStorage implements DTFStorage {
                 " JOIN module_to_test_plan ON module_to_test_plan.fk_test_plan=test_plan.pk_test_plan" +
                 " WHERE test.pk_test=? AND module_to_test_plan.fk_module=?";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
-            preparedStatement.setLong(1, this.core.pk_target_test);
+            preparedStatement.setLong(1, paramCore.pk_target_test);
             preparedStatement.setLong(2, pk);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.isBeforeFirst())
@@ -1023,7 +1028,7 @@ public class MySQLDtfStorage implements DTFStorage {
             Optional<Core.DBDescribedTemplate> dbdtAsStored;
             DescribedTemplate.Key matchKey = child.getKey();
             try {
-                dbdtAsStored = this.core.getStorage().getDBDescribedTemplate(matchKey);
+                dbdtAsStored = this.getDBDescribedTemplate(matchKey);
             } catch (SQLException sqle) {
                 this.log.error("<internal> DTFStorage.check() sees exception from .getDBDescribedTemplate(), msg: " + sqle);
                 this.log.debug("stack trace: ", sqle);
@@ -1038,7 +1043,7 @@ public class MySQLDtfStorage implements DTFStorage {
         Optional<Core.DBDescribedTemplate> wrappedMe;
         DescribedTemplate.Key matchKey = dt.getKey();
         try {
-            wrappedMe = this.core.getStorage().getDBDescribedTemplate(matchKey);
+            wrappedMe = this.getDBDescribedTemplate(matchKey);
         } catch (SQLException sqle) {
             this.log.error("<internal> DTFStorage.check() sees exception from .getDBDescribedTemplate(), msg: " + sqle);
             this.log.debug("stack trace: ", sqle);

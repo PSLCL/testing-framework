@@ -222,7 +222,7 @@ public interface DTFStorage {
      * @param module The module.
      * @return boolean
      */
-    boolean isAssociatedWithTest(Module module) throws SQLException;
+    boolean isAssociatedWithTest(Core paramCore, Module module) throws SQLException;
 
     /**
      *
