@@ -262,12 +262,6 @@ public interface DTFStorage {
 
     Optional<Long> createInstanceRun(long testInstanceNumber, String owner) throws Exception;
 
-
-
-
-
-
-
     /**
      * Retrieve test instances held for the given test, that also use the given module id.
      * @param pk_test pk_test value in table test.

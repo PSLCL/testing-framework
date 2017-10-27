@@ -39,6 +39,20 @@ import java.util.Optional;
 import java.util.Set;
 
 public class MySQLDtfStorage implements DTFStorage {
+    private static final int columnIndex1 = 1;
+    private static final int columnIndex2 = 2;
+    private static final int columnIndex3 = 3;
+    private static final int columnIndex4 = 4;
+    private static final int columnIndex5 = 5;
+    private static final int columnIndex6 = 6;
+    private static final int columnIndex7 = 7;
+    private static final int columnIndex8 = 8;
+    private static final int columnIndex9 = 9;
+    private static final int columnIndex10 = 10;
+    private static final int columnIndex11 = 11;
+    private static final int columnIndex12 = 12;
+    private static final int columnIndex13 = 13;
+
     private static final char forwardSlash = '/';
     private static final String singleQuote = "'";
 
@@ -190,7 +204,7 @@ public class MySQLDtfStorage implements DTFStorage {
                 preparedStatement.executeUpdate();
                 try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
                     if (keys.next())
-                        pk = keys.getLong(1);
+                        pk = keys.getLong(columnIndex1);
                 }
             }
         }
@@ -241,7 +255,7 @@ public class MySQLDtfStorage implements DTFStorage {
                 preparedStatement.executeUpdate();
                 try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
                     if (keys.next())
-                        pk = keys.getLong(1);
+                        pk = keys.getLong(columnIndex1);
                 }
             }
         }
@@ -305,7 +319,7 @@ public class MySQLDtfStorage implements DTFStorage {
                 preparedStatement.executeUpdate();
                 try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
                     if (keys.next())
-                        pk = keys.getLong(1);
+                        pk = keys.getLong(columnIndex1);
                 }
             }
         }
@@ -450,7 +464,7 @@ public class MySQLDtfStorage implements DTFStorage {
             preparedStatement.executeUpdate();
             try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
                 if (keys.next())
-                    pk = keys.getLong(1);
+                    pk = keys.getLong(columnIndex1);
             }
         }
         return pk;
@@ -554,13 +568,13 @@ public class MySQLDtfStorage implements DTFStorage {
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
              ResultSet resultSet = preparedStatement.executeQuery()) {
             while (resultSet.next()) {
-                Core.DBModule M = new Core.DBModule(this.core, resultSet.getLong(1),
-                                                               resultSet.getString(2),
-                                                               resultSet.getString(3),
-                                                               resultSet.getString(4),
-                                                               resultSet.getString(5),
-                                                               resultSet.getString(6),
-                                                               resultSet.getString(7));
+                Core.DBModule M = new Core.DBModule(this.core, resultSet.getLong(columnIndex1),
+                                                               resultSet.getString(columnIndex2),
+                                                               resultSet.getString(columnIndex3),
+                                                               resultSet.getString(columnIndex4),
+                                                               resultSet.getString(columnIndex5),
+                                                               resultSet.getString(columnIndex6),
+                                                               resultSet.getString(columnIndex7));
                 set.add(M);
             }
         }
@@ -576,13 +590,13 @@ public class MySQLDtfStorage implements DTFStorage {
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
              ResultSet resultSet = preparedStatement.executeQuery()) {
             while (resultSet.next()) {
-                Core.DBModule M = new Core.DBModule(this.core, resultSet.getLong(1),
-                                                               resultSet.getString(2),
-                                                               resultSet.getString(3),
-                                                               resultSet.getString(4),
-                                                               resultSet.getString(5),
-                                                               resultSet.getString(6),
-                                                               resultSet.getString(7));
+                Core.DBModule M = new Core.DBModule(this.core, resultSet.getLong(columnIndex1),
+                                                               resultSet.getString(columnIndex2),
+                                                               resultSet.getString(columnIndex3),
+                                                               resultSet.getString(columnIndex4),
+                                                               resultSet.getString(columnIndex5),
+                                                               resultSet.getString(columnIndex6),
+                                                               resultSet.getString(columnIndex7));
                 set.add(M);
             }
         }
@@ -648,16 +662,16 @@ public class MySQLDtfStorage implements DTFStorage {
                             try (PreparedStatement psArtifactInfo = this.connect.prepareStatement(queryArtifactInfo);
                                  ResultSet rsArtifactInfo = psArtifactInfo.executeQuery()) {
                                 while (rsArtifactInfo.next()) {
-                                    String name = rsArtifactInfo.getString(3);
+                                    String name = rsArtifactInfo.getString(columnIndex3);
                                     String targetName = name;
                                     if (fields.length == 2) {
                                         targetName = this.getTargetName(name, fields[1]);
                                     }
                                     Module mod = artifact.getModule();
-                                    Artifact A = new Core.DBArtifact(this.core, rsArtifactInfo.getLong(1), mod,
-                                                                                rsArtifactInfo.getString(2), name,
-                                                                                rsArtifactInfo.getInt(4),
-                                                                     new Hash(rsArtifactInfo.getBytes(5)), targetName);
+                                    Artifact A = new Core.DBArtifact(this.core, rsArtifactInfo.getLong(columnIndex1), mod,
+                                                                                rsArtifactInfo.getString(columnIndex2), name,
+                                                                                rsArtifactInfo.getInt(columnIndex4),
+                                                                     new Hash(rsArtifactInfo.getBytes(columnIndex5)), targetName);
                                     set.add(A);
                                 }
                             }
@@ -697,7 +711,7 @@ public class MySQLDtfStorage implements DTFStorage {
                                  ResultSet rsModuleInfo = psModuleInfo.executeQuery()) {
                                 Collection<String> found = new HashSet<String>();
                                 while (rsModuleInfo.next()) {
-                                    String artifact_name = rsModuleInfo.getString(10);
+                                    String artifact_name = rsModuleInfo.getString(columnIndex10);
                                     if (found.contains(artifact_name))
                                         continue;
 
@@ -705,19 +719,17 @@ public class MySQLDtfStorage implements DTFStorage {
                                     if(fields.length == 4)
                                         targetName = getTargetName(artifact_name, fields[3]);
 
-                                    @SuppressWarnings("MagicNumber")
-                                    Core.DBModule dbmod = new Core.DBModule(this.core, rsModuleInfo.getLong(1),
-                                                                                       rsModuleInfo.getString(2),
-                                                                                       rsModuleInfo.getString(3),
-                                                                                       rsModuleInfo.getString(4),
-                                                                                       rsModuleInfo.getString(5),
-                                                                                       rsModuleInfo.getString(6),
-                                                                                       rsModuleInfo.getString(7));
-                                    @SuppressWarnings("MagicNumber")
-                                    Artifact A = new Core.DBArtifact(this.core,     rsModuleInfo.getLong(8),
-                                                                     dbmod,         rsModuleInfo.getString(9),
-                                                                     artifact_name, rsModuleInfo.getInt(11),
-                                                                     new Hash(rsModuleInfo.getBytes(12)), targetName);
+                                    Core.DBModule dbmod = new Core.DBModule(this.core, rsModuleInfo.getLong(columnIndex1),
+                                                                                       rsModuleInfo.getString(columnIndex2),
+                                                                                       rsModuleInfo.getString(columnIndex3),
+                                                                                       rsModuleInfo.getString(columnIndex4),
+                                                                                       rsModuleInfo.getString(columnIndex5),
+                                                                                       rsModuleInfo.getString(columnIndex6),
+                                                                                       rsModuleInfo.getString(columnIndex7));
+                                    Artifact A = new Core.DBArtifact(this.core,     rsModuleInfo.getLong(columnIndex8),
+                                                                     dbmod,         rsModuleInfo.getString(columnIndex9),
+                                                                     artifact_name, rsModuleInfo.getInt(columnIndex11),
+                                                                     new Hash(rsModuleInfo.getBytes(columnIndex12)), targetName);
                                     set.add(A);
                                     found.add(artifact_name);
                                 }
@@ -759,7 +771,7 @@ public class MySQLDtfStorage implements DTFStorage {
                      ResultSet resultSet = preparedStatement.executeQuery()) {
                     while (resultSet.next()) {
                         // Verify that if requested, the module/version has all required attributes.
-                        Attributes possesses = new Attributes(resultSet.getString(4));
+                        Attributes possesses = new Attributes(resultSet.getString(columnIndex4));
                         if (required != null) {
                             boolean mismatch = false;
                             for (Map.Entry<String, String> entry : required.getAttributes().entrySet()) {
@@ -773,7 +785,7 @@ public class MySQLDtfStorage implements DTFStorage {
                                 continue; // Move to the next result
                         }
 
-                        long pk_found = resultSet.getLong(1);
+                        long pk_found = resultSet.getLong(columnIndex1);
                         Artifact[] locArtifacts;
                         if (artifactMap.containsKey(pk_found)) {
                             locArtifacts = artifactMap.get(pk_found);
@@ -786,22 +798,21 @@ public class MySQLDtfStorage implements DTFStorage {
                         if (moduleMap.containsKey(pk_found)) {
                             module = moduleMap.get(pk_found);
                         } else {
-                            module = new Core.DBModule(this.core, pk_found, resultSet.getString(2),
-                                                                            resultSet.getString(3),
-                                                                            resultSet.getString(4),
-                                                                            resultSet.getString(5),
-                                                                            resultSet.getString(6),
-                                                                            resultSet.getString(7));
+                            module = new Core.DBModule(this.core, pk_found, resultSet.getString(columnIndex2),
+                                                                            resultSet.getString(columnIndex3),
+                                                                            resultSet.getString(columnIndex4),
+                                                                            resultSet.getString(columnIndex5),
+                                                                            resultSet.getString(columnIndex6),
+                                                                            resultSet.getString(columnIndex7));
                             moduleMap.put(pk_found, module);
                         }
 
                         if (locArtifacts[name_index] == null) {
-                            @SuppressWarnings("MagicNumber")
-                            Artifact A = new Core.DBArtifact(this.core, resultSet.getLong(8),
-                                                             module,    resultSet.getString(9),
-                                                                        resultSet.getString(10),
-                                                                        resultSet.getInt(11),
-                                                             new Hash(resultSet.getBytes(12)));
+                            Artifact A = new Core.DBArtifact(this.core, resultSet.getLong(columnIndex8),
+                                                             module,    resultSet.getString(columnIndex9),
+                                                                        resultSet.getString(columnIndex10),
+                                                                        resultSet.getInt(columnIndex11),
+                                                             new Hash(resultSet.getBytes(columnIndex12)));
                             locArtifacts[name_index] = A;
                         }
                     }
@@ -835,8 +846,8 @@ public class MySQLDtfStorage implements DTFStorage {
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
              ResultSet resultSet = preparedStatement.executeQuery()) {
             while (resultSet.next()) {
-                result.put(resultSet.getLong(1),
-                           resultSet.getString(2));
+                result.put(resultSet.getLong(columnIndex1),
+                           resultSet.getString(columnIndex2));
             }
         }
         return result;
@@ -887,21 +898,21 @@ public class MySQLDtfStorage implements DTFStorage {
             Map<Long, Core.DBModule> modules = new HashMap<Long, Core.DBModule>();
             while (resultSet.next()) {
                 // Ignore dtf_test_generator artifacts that are merged from other modules
-                int merged_from_module = resultSet.getInt(13);
+                int merged_from_module = resultSet.getInt(columnIndex13);
                 if (merged_from_module>0 && "dtf_test_generator".equals(configuration))
                     continue;
 
                 Core.DBModule module = null;
-                long pk_found = resultSet.getLong(1);
+                long pk_found = resultSet.getLong(columnIndex1);
                 if (modules.containsKey(pk_found)) {
                     module = modules.get(pk_found);
                 } else {
-                    module = new Core.DBModule(this.core, pk_found, resultSet.getString(2),
-                                                                    resultSet.getString(3),
-                                                                    resultSet.getString(4),
-                                                                    resultSet.getString(5),
-                                                                    resultSet.getString(6),
-                                                                    resultSet.getString(7));
+                    module = new Core.DBModule(this.core, pk_found, resultSet.getString(columnIndex2),
+                                                                    resultSet.getString(columnIndex3),
+                                                                    resultSet.getString(columnIndex4),
+                                                                    resultSet.getString(columnIndex5),
+                                                                    resultSet.getString(columnIndex6),
+                                                                    resultSet.getString(columnIndex7));
                     modules.put(pk_found, module);
                 }
 
@@ -910,12 +921,11 @@ public class MySQLDtfStorage implements DTFStorage {
 //              if (set.contains(resultSet.getString(8)))
 //                  continue;
 
-                @SuppressWarnings("MagicNumber")
-                Artifact A = new Core.DBArtifact(this.core, resultSet.getLong(8),
-                                                 module,    resultSet.getString(9),
-                                                            resultSet.getString(10),
-                                                            resultSet.getInt(11),
-                                                 new Hash(resultSet.getBytes(12)));
+                Artifact A = new Core.DBArtifact(this.core, resultSet.getLong(columnIndex8),
+                                                 module,    resultSet.getString(columnIndex9),
+                                                            resultSet.getString(columnIndex10),
+                                                            resultSet.getInt(columnIndex11),
+                                                 new Hash(resultSet.getBytes(columnIndex12)));
                 set.add(A); // ignored return value is true for "added," false for already in place
             }
         }
@@ -986,7 +996,7 @@ public class MySQLDtfStorage implements DTFStorage {
                 long linepk = 0;
                 try (ResultSet keys = psInsertDtLine.getGeneratedKeys()) {
                     if (keys.next())
-                        linepk = keys.getLong(1);
+                        linepk = keys.getLong(columnIndex1);
                 }
 
                 // TODO: This doesn't handle dependencies, which need to roll up.
@@ -1125,7 +1135,7 @@ public class MySQLDtfStorage implements DTFStorage {
                 // retrieve the new pk_described_template value
                 try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
                     if (keys.next())
-                        pk = keys.getLong(1);
+                        pk = keys.getLong(columnIndex1);
                 }
 
                 this.addActions(dt, pk);
@@ -1135,11 +1145,11 @@ public class MySQLDtfStorage implements DTFStorage {
                                      " WHERE fk_module_set=?" +
                                      "   AND fk_template=?";
                 try (PreparedStatement ps = this.connect.prepareStatement(querySelect)) {
-                    ps.setBinaryStream(1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
-                    ps.setLong(2, pk_template);
+                    ps.setBinaryStream(columnIndex1, new ByteArrayInputStream(dt.getKey().getModuleHash().toBytes()));
+                    ps.setLong(columnIndex2, pk_template);
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next())
-                            pk = rs.getLong(1);
+                            pk = rs.getLong(columnIndex1);
                     }
                 }
             }
@@ -1187,7 +1197,7 @@ public class MySQLDtfStorage implements DTFStorage {
                             ps.executeUpdate();
                             try (ResultSet keys = ps.getGeneratedKeys()) {
                                 if (keys.next())
-                                    pk = keys.getLong(1);
+                                    pk = keys.getLong(columnIndex1);
                             }
                         }
                     } else {
@@ -1216,7 +1226,7 @@ public class MySQLDtfStorage implements DTFStorage {
 
             try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
                 if (keys.next())
-                    retPk = keys.getLong(1);
+                    retPk = keys.getLong(columnIndex1);
                 else
                     this.log.debug(".insertTestInstance() failed to obtain generated primary key");
             }
@@ -1309,14 +1319,6 @@ public class MySQLDtfStorage implements DTFStorage {
         }
     }
 
-
-
-
-
-
-
-
-
     @Override
     public List<Long> getTestInstances(long pk_test, long idModule) throws SQLException {
         List<Long> retTestInstanceList = new ArrayList<Long>();
@@ -1375,7 +1377,7 @@ public class MySQLDtfStorage implements DTFStorage {
                 preparedStatement.execute();
             } catch (SQLException sqle) {
                 // TODO: handle
-                int x = 30;
+                int x;
                 throw sqle;
             }
         }
