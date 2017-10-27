@@ -87,7 +87,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             checkFutureCanceled();
             config = MachineConfigData.init(pdelayData, reservedResource.resource, reservedResource.format, pdelayData.provider.manager.machineProvider.defaultMachineConfigData);
             checkFutureCanceled();
-            AwsMachineInstance machineInstance = ((AwsMachineProvider) pdelayData.provider).checkForReuse(reservedResource);
+            AwsMachineInstance machineInstance = ((AwsMachineProvider) pdelayData.provider).checkForReuse(reservedResource, false, null);
             if (machineInstance == null)
             {
                 pdelayData.preFixMostName = config.resourcePrefixName;

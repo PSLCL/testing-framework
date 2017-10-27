@@ -177,6 +177,8 @@ public class ImageFinder
 
     private String checkTestscriptDeclared(ResourceDescription resource, TabToLevel format) throws ResourceNotFoundException
     {
+        format.ttl(getClass().getSimpleName() + ".checkTestscriptDeclared:");
+        format.inc();
         Map<String, String> customAttrs = new HashMap<String, String>();
         List<String> allKnownKeys = ResourceNames.getProviderKeys();
         allKnownKeys.addAll(ClientNames.getClientKeys());
@@ -184,7 +186,7 @@ public class ImageFinder
         allKnownKeys.addAll(ProviderNames.getMachineKeys());
         allKnownKeys.addAll(ProviderNames.getNetworkKeys());
         format.ttl("custom bind attributes:");
-        format.level.incrementAndGet();
+        format.inc();
         String msg = "Test script specified custom image attributes but no global mappings been configured for them";
         for (Entry<String, String> entry : resource.getAttributes().entrySet())
         {
@@ -199,8 +201,11 @@ public class ImageFinder
         if (customAttrs.size() == 0)
         {
             format.ttl("none");
+            format.dec();
+            format.dec();
             return null;
         }
+        format.dec();
 
         if (globalImageAttrMapData == null)
         {
@@ -212,7 +217,10 @@ public class ImageFinder
         {
             GlobalImageAttrMapData data = globalImageAttrMapData.get(i);
             if (data.isHit(customAttrs))
+            {
+                format.dec();
                 return data.imageId;
+            }
         }
         throw new ResourceNotFoundException(msg);
     }
@@ -224,12 +232,19 @@ public class ImageFinder
      * @return an image ID meeting all the filtering criteria. 
      * @throws ResourceNotFoundException if the criteria can not be meet.
      */
-    public String findImage(AmazonEC2Client ec2Client, ResourceDescription resource) throws ResourceNotFoundException
+    public String findImage(AmazonEC2Client ec2Client, ResourceDescription resource, TabToLevel formatIn) throws ResourceNotFoundException
     {
-        TabToLevel format = new TabToLevel();
-        format.ttl("\n", getClass().getSimpleName(), "findImage:");
+        TabToLevel format = formatIn;
+        if(formatIn == null)
+            format = new TabToLevel();
+
+        format.ttl(getClass().getSimpleName(), ".findImage:");
+        format.inc();
         String imageId = checkTestscriptDeclared(resource, format);
-        if(imageId != null && !imageId.isEmpty()){
+        if(imageId != null && !imageId.isEmpty())
+        {
+            format.ttl("test script not declared, selecting: ", imageId);
+            format.dec();
             return imageId;
         }
         try
@@ -332,7 +347,10 @@ public class ImageFinder
             //            if(locations.size() == 1)
             //                latestImage = image;
             //                return locations.get(0).getImageId();
-            log.debug(getClass().getSimpleName() + ".findImage: " + latestImage.toString());
+            format.ttl("imageId selected: ", latestImage.toString());
+            format.dec();
+            if(formatIn == null)
+                log.debug(format.toString());
             return latestImage.getImageId();
         } catch (ResourceNotFoundException rnfe)
         {

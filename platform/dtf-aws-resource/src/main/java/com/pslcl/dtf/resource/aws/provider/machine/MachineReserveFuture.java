@@ -21,6 +21,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.pslcl.dtf.core.util.TabToLevel;
+import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
@@ -30,12 +33,14 @@ import com.pslcl.dtf.core.runner.resource.ResourceReserveDisposition;
 @SuppressWarnings("javadoc")
 public class MachineReserveFuture implements Callable<List<ResourceReserveDisposition>>
 {
+    private final Logger log;
     private final AwsMachineProvider provider;
     private final List<ResourceDescription> resources;
     private final int timeoutSeconds;
 
     public MachineReserveFuture(AwsMachineProvider provider, List<ResourceDescription> resources, int timeoutSeconds)
     {
+        log = LoggerFactory.getLogger(getClass());
         this.provider = provider;
         this.resources = resources;
         this.timeoutSeconds = timeoutSeconds;
@@ -44,32 +49,60 @@ public class MachineReserveFuture implements Callable<List<ResourceReserveDispos
     @Override
     public List<ResourceReserveDisposition> call() throws Exception
     {
+        TabToLevel format = new TabToLevel();
+        format.ttl("\n"+getClass().getSimpleName() + ".call");
+        format.inc();
+        format.ttl("resources requested: ", resources.size());
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("MachineReserveFuture");
         MachineQueryResult result = new MachineQueryResult();
         List<ResourceReserveDisposition> list = new ArrayList<ResourceReserveDisposition>();
         for (ResourceDescription resource : resources)
         {
+            resource.getCoordinates().toString(format);
+            format.inc();
             try
             {
-                if (provider.internalIsAvailable(resource, result))
+                boolean available = false;
+                if (provider.internalIsAvailable(resource, result, format))
                 {
+                    format.ttl("image and instance type available");
                     resource.getCoordinates().setManager(provider.manager);
                     resource.getCoordinates().setProvider(provider);
-                    //@formatter:off
-                    list.add(new ResourceReserveDisposition(
-                                    resource, 
-                                    new ReservedResource(
-                                                    resource.getCoordinates(), 
-                                                    resource.getAttributes(), 
-                                                    timeoutSeconds)));                    
-                    //@formatter:on
                     MachineReservedResource rresource = new MachineReservedResource(provider, resource, resource.getCoordinates(), result);
-                    ScheduledFuture<?> future = provider.config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
-                    rresource.setTimerFuture(future, timeoutSeconds);
-                    provider.addReservedMachine(resource.getCoordinates().resourceId, rresource);
-                    LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".reserved" + rresource.format.toString());
-                } else
+                    AwsMachineInstance machineInstance = ((AwsMachineProvider) provider).checkForReuse(rresource, true, format);
+                    if(machineInstance == null)
+                    {
+                        format.ttl("no reuse instances available");
+                        available = provider.checkInstanceTypeLimits(result.getInstanceType(), true, format);
+                        format.ttl("typeLimits available: ", available);
+                    }
+                    else
+                    {
+                        format.ttl("reuse instance is available");
+                        available = true;
+                    }
+                    if(available)
+                    {
+
+                        //@formatter:off
+                        list.add(new ResourceReserveDisposition(
+                                        resource,
+                                        new ReservedResource(
+                                                        resource.getCoordinates(),
+                                                        resource.getAttributes(),
+                                                        timeoutSeconds)));
+                        //@formatter:on
+                        ScheduledFuture<?> future = provider.config.scheduledExecutor.schedule(rresource, timeoutSeconds, TimeUnit.SECONDS);
+                        rresource.setTimerFuture(future, timeoutSeconds);
+                        provider.addReservedMachine(resource.getCoordinates().resourceId, rresource);
+                        format.ttl("reserved and reserved timer started");
+                    }else
+                        format.ttl("instance type limit hit, not available");
+                }else
+                    format.ttl("image and/or instance type was not available");
+
+                if(!available)
                     list.add(new ResourceReserveDisposition(resource));
             } catch (Exception e)
             {
@@ -77,9 +110,13 @@ public class MachineReserveFuture implements Callable<List<ResourceReserveDispos
                 ResourceReserveDisposition disposition = new ResourceReserveDisposition(resource);
                 disposition.setInvalidResource();
                 list.add(disposition);
-                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".queryResourceAvailable failed: " + resource.toString(), e);
+                String msg = "unexpected exception, reserve failed";
+                format.ttl(msg);
+                log.debug(msg, e);
             }
+            format.dec();
         }
+        log.trace(format.toString());
         Thread.currentThread().setName(tname);
         return list;
     }

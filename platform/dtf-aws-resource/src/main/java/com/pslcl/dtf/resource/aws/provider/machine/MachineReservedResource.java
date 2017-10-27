@@ -124,7 +124,7 @@ public class MachineReservedResource implements Runnable
     public TabToLevel toString(TabToLevel format, boolean brief)
     {
         format.ttl(getClass().getSimpleName(), ":");
-        format.level.incrementAndGet();
+        format.inc();
         if(!brief)
         {
             if(resource instanceof ResourceDescImpl)
@@ -138,14 +138,17 @@ public class MachineReservedResource implements Runnable
         format.ttl("bindFutureCanceled = ", bindFutureCanceled);
         format.ttl("reusable = ", reusable);
         if(brief)
+        {
+            format.dec();
             return format;
+        }
         format.ttl("vpc = ", vpc);
         format.ttl("subnet = ", subnet);
         format.ttl("net = ", net);
         SimpleDateFormat sdf = new SimpleDateFormat();
         format.ttl("reserved = ", sdf.format((new Date(reservedTimestamp))));
         format.ttl("timeout = ", timeout);
-        format.level.decrementAndGet();
+        format.dec();
         return format;
     }
 }
