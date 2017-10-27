@@ -1223,7 +1223,15 @@ public class MySQLDtfStorage implements DTFStorage {
         return retPk;
     }
 
-
+    @Override
+    public void addModuleToTestInstanceEntry(long pkModule, long pkTestInstance) throws SQLException {
+        String query = "INSERT INTO module_to_test_instance (fk_module, fk_test_instance) VALUES (?,?)";
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
+            preparedStatement.setLong(1, pkModule);
+            preparedStatement.setLong(2, pkTestInstance);
+            preparedStatement.execute();
+        }
+    }
 
 
 

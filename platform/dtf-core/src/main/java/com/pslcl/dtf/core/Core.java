@@ -868,7 +868,6 @@ public class Core
                     }
 
                     // Insert all of the module references
-                    PreparedStatement statement2 = null;
                     List<TestInstance.Action> actions = ti.getActions();
                     for (TestInstance.Action action : actions) {
                         ArtifactUses au = action.getArtifactUses();
@@ -879,28 +878,20 @@ public class Core
                         while (iter.hasNext()) {
                             Artifact artifact = iter.next();
 
+                            long pk_module;
                             try {
-                                long pk_module = 0;
-                                try {
-                                    pk_module = this.storage.findModule(artifact.getModule());
-                                } catch (Exception sqle) {
-                                    this.log.error("<internal> Core.syncDescribedTemplates(): Continues even though couldn't find module, msg: " + sqle);
-                                }
-
-                                statement2 = this.storage.getConnect().prepareStatement("INSERT INTO module_to_test_instance ( fk_module, fk_test_instance ) VALUES (?,?)");
-                                statement2.setLong(1, pk_module);
-                                statement2.setLong(2, ti.pk);
-                                statement2.execute();
-                                safeClose(statement2);
-                                statement2 = null;
-                            } catch (Exception ignore) {
-                                // Ignore, since many times this will be a duplicate.
+                                pk_module = this.storage.findModule(artifact.getModule());
+                            } catch (Exception sqle) {
+                                this.log.error("<internal> Core.syncDescribedTemplates(): Continues even though couldn't find module, msg: " + sqle);
+                                continue;
+                            }
+                            try {
+                                this.storage.addModuleToTestInstanceEntry(pk_module, ti.pk);
+                            } catch (SQLException ignore) {
+                                // Ignore, since many times our new entry will be a duplicate.
                             }
                         }
                     }
-
-                    safeClose(statement2);
-                    statement2 = null;
                     dbdt.pk = ti.pk;
                 }
 

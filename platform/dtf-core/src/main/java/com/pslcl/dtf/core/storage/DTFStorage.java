@@ -255,6 +255,7 @@ public interface DTFStorage {
 
     long insertTestInstance(long pkTargetTest, long pkDescribedTemplate) throws SQLException;
 
+    void addModuleToTestInstanceEntry(long pkModule, long pkTestInstance) throws SQLException;
 
 
 
