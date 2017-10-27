@@ -73,11 +73,13 @@ public class RunnerService implements Runner, RunnerServiceMBean
         //       We use LoggerFactory.getLogger(getClass()), to allow more predictable behavior in the face of the worst failures and the follow-on stop() and destroy() calls.
     }
 
+    @Override
     public RunnerMachine getRunnerMachine()
     {
         return runnerMachine;
     }
 
+    @Override
     public RunnerConfig getConfig()
     {
         return config;
@@ -97,7 +99,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
             this.testInstanceLimitInEffect = limitReached;
             LoggerFactory.getLogger(getClass()).debug("RunnerService.isAvailableToProcess() moves to new state: " + limitReached);
         }
-        return limitReached;
+        return !limitReached;
     }
 
 
