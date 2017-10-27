@@ -825,9 +825,9 @@ public class Core
             try {
                 dbdtAsStored = this.storage.getDBDescribedTemplate(matchKey);
             } catch (SQLException sqle) {
-                this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqle);
+                this.log.error("<internal> Core.syncDescribedTemplate() Continues even though .getDBDescribedTemplate() throws exception, msg: " + sqle);
                 this.log.debug("stack trace: ", sqle);
-                throw new Exception(".syncDescribedTemplates() exits with exception ", sqle);
+                continue;
             }
 
             DBDescribedTemplate dbdt;
@@ -853,8 +853,9 @@ public class Core
                 try {
                     dbNotHaveTI = this.storage.describedTemplateHasTestInstanceMatch(dbdt.pk);
                 } catch (SQLException sqle) {
-                    this.log.error("<internal> Core.syncDescribedTemplate() sees exception from one of the dbQuery methods, msg: " + sqle);
+                    this.log.error("<internal> Core.syncDescribedTemplate() Continues even though .describedTemplateHasTestInstanceMatch() throws exception, msg: " + sqle);
                     this.log.debug("stack trace: ", sqle);
+                    continue;
                 }
 
                 if (dbNotHaveTI) {
@@ -862,8 +863,8 @@ public class Core
                     try {
                         ti.pk = this.storage.insertTestInstance(this.pk_target_test, dbdt.pk);
                     } catch (SQLException sqle) {
-                        this.log.error(".syncDescribedTemplates(): Exits, could not add described_template to test_instance, msg: " + sqle);
-                        throw sqle;
+                        this.log.error("<internal> Core.syncDescribedTemplate() Continues even though .insetTestInstance() throws exception, msg: " + sqle);
+                        continue;
                     }
 
                     // Insert all of the module references
