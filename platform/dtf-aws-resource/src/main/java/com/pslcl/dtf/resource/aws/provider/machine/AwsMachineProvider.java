@@ -607,6 +607,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 coordinates = rresource.resource.getCoordinates();
                 if (coordinates.templateInstanceId == templateInstanceId)
                 {
+                    releaseList.add(entry.getKey());
                     Future<MachineInstance> future = rresource.getInstanceFuture();
                     if (future != null)
                     {
@@ -635,7 +636,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                                 TabToLevel format = new TabToLevel();
                                 format.ttl("\n", getClass().getSimpleName(), ".release cancel pending future handling");
                                 log.debug(rresource.toString(format, true).toString());
-                                releaseList.add(entry.getKey());
                                 if (rresource.ec2Instance != null)
                                 {
                                     // the future made it far enough to trigger aws to startup the instance.
@@ -658,7 +658,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             } // synch on the reserved resource
         }
         for (Long key : releaseList)
-            reservedMachines.remove(key);
+        {
+            MachineReservedResource resource = reservedMachines.remove(key);
+            if(resource != null)
+                resource.run();
+        }
     }
 
     public void releaseReservedResource(long templateInstanceId)
