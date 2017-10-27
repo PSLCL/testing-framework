@@ -15,6 +15,7 @@
  */
 package com.pslcl.dtf.runner.process;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RunEntryStateStore {
@@ -24,7 +25,7 @@ public class RunEntryStateStore {
      *  Neither Long key nor InstanceState value may be null.
      *  Writes by any one thread locks only the relevant element, other threads freely access other elements
      */
-    ConcurrentHashMap<Long, RunEntryState> map;
+    private Map<Long, RunEntryState> map;
 
     public RunEntryStateStore() {
         map = new ConcurrentHashMap<>();
@@ -35,33 +36,32 @@ public class RunEntryStateStore {
      * @param configurationMaxSize The stored, configured max size to compare against the Run Entry State storage map.
      * @return Whether or not the stored max size or limit is reached.
      */
-    public synchronized boolean isMaxSizeReached(int configurationMaxSize) {
-        boolean limitReached = (configurationMaxSize <= map.size());
-        return limitReached;
+    public boolean isMaxSizeReached(int configurationMaxSize) {
+        return configurationMaxSize <= map.size();
     }
 
     /**
      *
      * Note: Put to an existing Long key overwrites previous the previously held InstanceState
-     * @param iNum
-     * @param reState
-     * @return Previously stored InstanceState when put overwrites it, null otherwise.
+     * @param reNum The test run identifier
+     * @param reState The run entry state
      */
-    synchronized RunEntryState put(long reNum, RunEntryState reState) {
-        return map.put(Long.valueOf(reNum), reState);
+    void put(long reNum, RunEntryState reState) {
+        map.put(reNum, reState);
     }
 
     /**
      *
-     * @param iNum
-     * @return
+     * @param reNum The test run identifier
+     * @return The RunEntryState of the specified test run.
      */
-    synchronized RunEntryState get(long reNum) {
-        return map.get(Long.valueOf(reNum));
-    }
+    RunEntryState get(long reNum) { return map.get(reNum); }
 
-    synchronized RunEntryState remove(long reNum) {
-        return map.remove(Long.valueOf(reNum));
-    }
+    /**
+     * Remove the run entry state of the specified test run.
+     *
+     * @param reNum The test run identifier
+     */
+    void remove(long reNum) { map.remove(reNum); }
 
 }

@@ -3,7 +3,6 @@ package com.pslcl.dtf.resource.aws;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -34,11 +33,16 @@ public class Sqs extends MessageQueueBase {
     
     private volatile String queueStoreName;
     private volatile AwsClientConfig awsClientConfig;
+    private volatile boolean isDestroyed = false;
     private final Logger log;
     
     private AmazonSQSMessagingClientWrapper sqsClient = null;
     private SQSConnection connection = null;
-    
+    private MessageConsumer consumer = null;
+
+    private static final long queueWaitTime = 5000L;
+    private static final long queuePollTimeout = 5000L;
+
     public Sqs() {
         this.log = LoggerFactory.getLogger(getClass());
     }
@@ -49,8 +53,7 @@ public class Sqs extends MessageQueueBase {
         super.init(config);
         config.initsb.ttl("Message Queue initialization");
         config.initsb.level.incrementAndGet();
-        queueStoreName = config.properties.getProperty(ResourceNames.MsgQueNameKey, ResourceNames.MsgQueClassDefault);
-        queueStoreName = StrH.trim(queueStoreName);
+        queueStoreName = StrH.trim(config.properties.getProperty(ResourceNames.MsgQueNameKey, ResourceNames.MsgQueClassDefault));
         config.initsb.ttl(ResourceNames.MsgQueNameKey, " = ", queueStoreName);
         if(queueStoreName == null)
             throw new Exception(ResourceNames.MsgQueNameKey + " must be specified in configuration properties file");
@@ -59,7 +62,7 @@ public class Sqs extends MessageQueueBase {
         awsClientConfig = AwsClientConfiguration.getClientConfiguration(config, ClientType.Sqs);
         config.initsb.level.decrementAndGet();
         config.initsb.level.decrementAndGet();
-        connect(awsClientConfig);
+        connect();
     }
     
     @Override
@@ -67,6 +70,7 @@ public class Sqs extends MessageQueueBase {
     {
         try
         {
+            isDestroyed = true;
             //TODO: should the cleanupQueueStoreAccess call to connection.stop be on this cycle only? both?
             connection.stop();
         } catch (JMSException e)
@@ -74,52 +78,40 @@ public class Sqs extends MessageQueueBase {
             LoggerFactory.getLogger(getClass()).error("failed to cleanup Sqs connection", e);
         }
     }
-    
-    // MessageListener interface implementations
-    
-    private class GetQueueStoreCallback implements MessageListener {
-        private final Sqs sqs;
-        
-        public GetQueueStoreCallback(Sqs sqs) {
-            this.sqs = sqs;
-        }
-        
-        @Override
-        public void onMessage(Message message) {
-            String prependString = "GetQueueStoreCallback.onMessage()";
-            if (message != null) {
-                try {
-                    // jmsMessageID is set unique by JMS producer, as for example: UUID jmsMessageID = "ID:" + java.util.UUID.randomUUID(); 
-                    String jmsMessageID = message.getJMSMessageID(); // begins with "ID:", by JMS specification
-                    String strQueueStoreNumber = ((TextMessage)message).getText();
-                    log.debug("\n");
-                    prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ". ";
-                    if (jmsMessageID != null && strQueueStoreNumber != null) {
-                        // design decision: Object message will not, as it could, be stored as key value pair "jmsMessageID/hexStrQueueStoreNumber." Message instead passes out here, as state for eventual ack.
-                        log.debug(prependString + "Submits to RunnerService to form or reject a test run.");
-                        sqs.submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
-                        return;
-                    } else {
-                        log.debug(prependString + "Drop msg - jmsMessageID or strQueueStoreNumber are null");
-                    }
-                } catch (JMSException jmse) {
-                    log.debug(prependString + "Drop msg - JMS message could not be examined " + jmse, jmse);
-                } catch (Throwable t) {
-                    log.debug(prependString + "Drop msg - JMS message rejected by RunnerService - " + t, t);
+
+    private void processMessage(Message message) {
+        String prependString = "SQS.processMessage()";
+        if (message != null) {
+            try {
+                // jmsMessageID is set unique by JMS producer, as for example: UUID jmsMessageID = "ID:" + java.util.UUID.randomUUID();
+                String jmsMessageID = message.getJMSMessageID(); // begins with "ID:", by JMS specification
+                String strQueueStoreNumber = ((TextMessage)message).getText();
+                log.debug("\n");
+                prependString += " msgID " + jmsMessageID + ", strQueueStoreNumber " +  strQueueStoreNumber + ".";
+                if (jmsMessageID != null && strQueueStoreNumber != null) {
+                    // design decision: Object message will not, as it could, be stored as key value pair "jmsMessageID/hexStrQueueStoreNumber." Message instead passes out here, as state for eventual ack.
+                    log.debug(prependString + " Submits to RunnerService to form or reject a test run.");
+                    submitQueueStoreNumber(strQueueStoreNumber, message); // choose to pass message via DAO
+                    return;
                 }
-                
-                // .submitQueueStoreNumber() failed to be deliver message to dtf-runner
-                log.warn(prependString + "Message not acked");
-            } else {
-                log.debug(prependString + "Dropped - null message cannot be processed");
+                log.debug(prependString + " Drop msg - jmsMessageID or strQueueStoreNumber are null");
+            } catch (JMSException jmse) {
+                log.debug(prependString + " Drop msg - JMS message could not be examined " + jmse, jmse);
+            } catch (Throwable t) {
+                log.debug(prependString + "Drop msg - JMS message rejected by RunnerService - " + t, t);
             }
+
+            // .submitQueueStoreNumber() failed to be deliver message to dtf-runner
+            log.warn(prependString + " Message not acked");
+        } else {
+            log.debug(prependString + " Dropped - null message cannot be processed");
         }
     }
-    
+
     
     // MessageQueue interface implementation
     
-    private void connect(AwsClientConfig awsClientConfig) throws Exception
+    private void connect() throws Exception
     {
         if (sqsClient == null || !queueStoreExists()) {
             if (connection != null) {
@@ -131,7 +123,7 @@ public class Sqs extends MessageQueueBase {
             // com.amazonaws.services.sqs.AmazonSQS            // required at run time for SQSConnectionFactory.builder()
             // org.joda.time.format.DateTimeFormat             // required at run time for Sqs connect
             // org.apache.http.protocol.HttpContext            // required at run time for Sqs connect, below
-            
+
             SQSConnectionFactory connectionFactory =  SQSConnectionFactory.builder()
                     .withClientConfiguration(awsClientConfig.clientConfig)
                     .withAWSCredentialsProvider(awsClientConfig.providerChain)
@@ -148,6 +140,30 @@ public class Sqs extends MessageQueueBase {
         } else {
             log.debug("DEBUG: Sqs already connected to message queue " + queueStoreName);
         }
+    }
+
+    private void startMessageRetrieveProcess(){
+        new Thread(() -> {
+            while(!isDestroyed){
+                if(isAvailableToProcess()){
+                    Message message = null;
+                    try {
+                        message = consumer.receive(queuePollTimeout);
+                    } catch (JMSException e) {
+                        log.debug("Failed to receive message from SQS.", e);
+                    }
+                    if(message != null) {
+                        processMessage(message);
+                    }
+                } else {
+                    try {
+                        Thread.sleep(queueWaitTime);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                }
+            }
+        }).start();
     }
 
     @Override
@@ -168,12 +184,11 @@ public class Sqs extends MessageQueueBase {
         Queue queueStore = session.createQueue(queueStoreName);
 
         // create our Consumer of the QueueStore message queue (as opposed to other possible message queues that could be accessible)
-        MessageConsumer consumer = session.createConsumer(queueStore);
-        
-        GetQueueStoreCallback getQueueStoreCallback = new GetQueueStoreCallback(this);
-        consumer.setMessageListener(getQueueStoreCallback);
+        consumer = session.createConsumer(queueStore);
 
         connection.start();
+
+        startMessageRetrieveProcess();
         log.debug("Sqs.initQueueStoreGet() successful, for message queue " + queueStoreName);
     }
 
@@ -195,7 +210,5 @@ public class Sqs extends MessageQueueBase {
     @Override
     public void cleanupQueueStoreAccess() throws JMSException {
         connection.stop(); // matches the .start() in initQueueStoreGet()
-        
     }
-    
 }

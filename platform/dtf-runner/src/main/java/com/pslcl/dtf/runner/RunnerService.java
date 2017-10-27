@@ -73,11 +73,13 @@ public class RunnerService implements Runner, RunnerServiceMBean
         //       We use LoggerFactory.getLogger(getClass()), to allow more predictable behavior in the face of the worst failures and the follow-on stop() and destroy() calls.
     }
 
+    @Override
     public RunnerMachine getRunnerMachine()
     {
         return runnerMachine;
     }
 
+    @Override
     public RunnerConfig getConfig()
     {
         return config;
@@ -85,20 +87,19 @@ public class RunnerService implements Runner, RunnerServiceMBean
 
     /**
      * Determine RunnerService overload, by configuration or otherwise
-     * @param reNum The Runner Service's test instance limit, "this" object's test instance limit is used.
-     * @param reState The Runner Service's entry state, "this" object's configured maximum size of the test instance limit is used.
-     * @return Whether or not the runner service has reached its test instance limit.
+     * @return True if the runner service has not reached its test instance limit. False otherwise.
      */
-    public boolean isOverload(long reNum, RunEntryState reState) {
+    @Override
+    public boolean isAvailableToProcess() {
         // configured parallel test instance limit
         boolean limitReached = false;
         if (this.testInstanceLimit >= 0) // negative: no limit
             limitReached = this.runEntryStateStore.isMaxSizeReached(testInstanceLimit);
         if (this.testInstanceLimitInEffect ^ limitReached) {
             this.testInstanceLimitInEffect = limitReached;
-            LoggerFactory.getLogger(getClass()).debug("RunnerService.isOverload() moves to new state: " + limitReached);
+            LoggerFactory.getLogger(getClass()).debug("RunnerService.isAvailableToProcess() moves to new state: " + limitReached);
         }
-        return limitReached;
+        return !limitReached;
     }
 
 
@@ -262,30 +263,26 @@ public class RunnerService implements Runner, RunnerServiceMBean
      * @param message JMS message associated with reNum, used for eventual message ack
      * @throws Throwable to catch error conditions beyond the Exceptions that are thrown in this method.
      */
+    @Override
     public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Throwable
     {
+        long reNum = Long.parseLong(strRunEntryNumber);
         try
         {
-            long reNum = Long.parseLong(strRunEntryNumber);
-            try
-            {
-                if (ProcessTracker.isResultStored(this.dbConnPool, reNum)) {
-                    LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + " has a non-null result already stored. Acking this reNum now.");
-                    ackRunEntry(message);
-                } else if (processTracker.isRunning(reNum)) {
-                    LoggerFactory.getLogger(getClass()).trace(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
-                } else {
-                    LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() submits reNum " + reNum + " for testRun processing. ");
-                    // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.
-                    runnerMachine.initiateProcessing(reNum, message);
-                }
-            } catch (Throwable t) {
-                // do nothing; reNum remains in InstanceStore, we will see it again
-                LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + t);
-                throw t;
+            if (ProcessTracker.isResultStored(this.dbConnPool, reNum)) {
+                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + " has a non-null result already stored. Acking this reNum now.");
+                ackRunEntry(message);
+            } else if (processTracker.isRunning(reNum)) {
+                LoggerFactory.getLogger(getClass()).trace(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
+            } else {
+                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() submits reNum " + reNum + " for testRun processing. ");
+                // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.
+                runnerMachine.initiateProcessing(reNum, message);
             }
         } catch (Throwable t) {
-            throw t; // the original caller must ack the message
+            // do nothing; reNum remains in InstanceStore, we will see it again
+            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + t);
+            throw t;
         }
     }
 

@@ -67,6 +67,10 @@ public class StafSupport
                 stopResult = new StopResult(result, true);  // currently only byHandle is supported
             }else
                 stopResult = new StopResult();
+            do
+            {
+                qresult = processQuery(runnableProg);
+            }while(qresult.isRunning());
             processFree(runnableProg);
         }finally
         {
