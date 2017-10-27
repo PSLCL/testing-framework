@@ -116,7 +116,7 @@ public class MachineReserveFuture implements Callable<List<ResourceReserveDispos
             }
             format.dec();
         }
-        log.trace(format.toString());
+        log.debug(format.toString());
         Thread.currentThread().setName(tname);
         return list;
     }
