@@ -28,7 +28,7 @@ import com.pslcl.dtf.core.util.TabToLevel;
 public class StafSupport
 {
     //FIXME: set me false before commit/push
-    public static final boolean DtfTesting = true;  // do not actually issue staf requests if true
+    public static final boolean DtfTesting = false;  // do not actually issue staf requests if true
 
     private final static String StafHandleName = "dtf-staf-handle";
     private final static String ProcessService = "process";

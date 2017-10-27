@@ -15,17 +15,8 @@
  */
 package com.pslcl.dtf.resource.aws.provider.machine;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.amazonaws.services.ec2.model.InstanceType;
-import com.pslcl.dtf.core.generator.resource.Machine;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.config.status.StatusTracker;
 import com.pslcl.dtf.core.runner.resource.ReservedResource;
@@ -51,6 +42,14 @@ import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance;
 import com.pslcl.dtf.resource.aws.instance.machine.MachineConfigData;
 import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Reserve, bind, control and release instances of AWS machines.
