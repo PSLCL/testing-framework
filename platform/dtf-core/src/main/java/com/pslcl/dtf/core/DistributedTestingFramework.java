@@ -56,6 +56,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -756,8 +757,16 @@ public final class DistributedTestingFramework
     private static void storeTestRuns_db_queue(SQSTestPublisher sqs, Core core, String owner, Collection<Long> manualTestInstanceNumbers, Collection<Long> testRuns) {
         for (Long manualTestInstanceNumber : manualTestInstanceNumbers) {
             try {
-                Long runID = core.createInstanceRun(manualTestInstanceNumber, owner);
-                if (runID != null) {
+                Optional<Long> optionalRunID;
+                try {
+                    optionalRunID = core.getStorage().createInstanceRun(manualTestInstanceNumber, owner);
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error(".storeTestRuns_db_queue() Failed to add new run entry for test instance " + manualTestInstanceNumber + ", msg: " + e);
+                    return;
+                }
+
+                if (optionalRunID.isPresent()) {
+                    Long runID = optionalRunID.get();
                     testRuns.add(runID);
                     LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
 
@@ -766,10 +775,9 @@ public final class DistributedTestingFramework
                     LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + runID);
                 } else {
                     LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.storeTestRuns_db_queue(): test run NOT stored to db for testInstance number " + manualTestInstanceNumber +
-                            "; test run may already be stored");
+                                                                                    "; test run may already be stored");
                     // in this case the test run number will not be written to the dtf queue- presumably it is there already
                 }
-
             } catch (Exception e) {
                 LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.storeTestRuns_db_queue(): Failed to store test run for testInstance number " + manualTestInstanceNumber + ", exception msg: " + e);
             }

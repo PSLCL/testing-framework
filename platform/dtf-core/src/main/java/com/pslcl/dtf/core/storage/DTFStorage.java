@@ -260,6 +260,10 @@ public interface DTFStorage {
 
     void updateRunResult(TestInstance ti) throws SQLException;
 
+    Optional<Long> createInstanceRun(long testInstanceNumber, String owner) throws Exception;
+
+
+
 
 
 

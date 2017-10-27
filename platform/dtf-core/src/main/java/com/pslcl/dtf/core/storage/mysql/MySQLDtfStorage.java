@@ -1264,9 +1264,50 @@ public class MySQLDtfStorage implements DTFStorage {
            // call a stored procedure that updates table run
            this.reportResult(ti.getDescribedTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
         }
-
     }
 
+    @Override
+    public Optional<Long> createInstanceRun(long testInstanceNumber, String owner) throws Exception {
+        if (this.read_only)
+            throw new Exception("Database connection is read only.");
+
+        String hash;
+        String query = "SELECT hash FROM described_template" +
+                       " JOIN test_instance ON fk_described_template=pk_described_template" +
+                       " JOIN template ON fk_template=pk_template" +
+                       " WHERE pk_test_instance=" + testInstanceNumber;
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery(query)) {
+            if(resultSet.next()){
+                hash = new Hash(resultSet.getBytes("hash")).toString();
+            } else {
+                this.log.error("<internal> .createInstanceRun(): Cannot find template for test instance " + testInstanceNumber);
+                throw new Exception("Cannot find template for test instance " + testInstanceNumber);
+            }
+        }
+
+        String queryAddRun = "call add_run(?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement runStatement = this.connect.prepareStatement(queryAddRun)) {
+            runStatement.setString(1, hash);
+            runStatement.setNull(2, Types.BOOLEAN);
+            if (owner != null)
+                runStatement.setString(3, owner);
+            else
+                runStatement.setNull(3, Types.VARCHAR);
+            runStatement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
+            runStatement.setNull(5, Types.TIMESTAMP);
+            runStatement.setNull(6, Types.TIMESTAMP);
+            if (runStatement.execute()) {
+                // we have a ResultSet; read it and use it
+                try (ResultSet resultSet = runStatement.getResultSet()) {
+                    resultSet.next();
+                    return Optional.of(resultSet.getLong("pk_run"));
+                }
+            } else {
+                return Optional.empty(); // no ResultSet, so no pk_run value
+            }
+        }
+    }
 
 
 
@@ -1358,8 +1399,8 @@ public class MySQLDtfStorage implements DTFStorage {
     @Override
     public boolean describedTemplateHasTestInstanceMatch(long pkDescribedTemplate) throws SQLException {
         String query = "SELECT pk_test_instance FROM test_instance" +
-                " JOIN described_template ON fk_described_template=pk_described_template" +
-                " WHERE pk_described_template=?";
+                       " JOIN described_template ON fk_described_template=pk_described_template" +
+                       " WHERE pk_described_template=?";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
             preparedStatement.setLong(1, pkDescribedTemplate);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {

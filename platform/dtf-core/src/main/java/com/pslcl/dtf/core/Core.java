@@ -35,17 +35,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 //import javax.annotation.Nullable; // requires an external jar
@@ -622,14 +617,12 @@ public class Core
         }
 
         @Override
-        public Hash getHash()
-        {
+        public Hash getHash() {
             return hash;
         }
 
         @Override
-        public String getValue(Template template)
-        {
+        public String getValue(Template template) {
             return getHash().toString();
         }
 
@@ -637,8 +630,7 @@ public class Core
         // TODO: consider acceptable solution to replace null return
 //      @Nullable
 //      @SuppressWarnings("ReturnOfNull")
-        public InputStream asStream()
-        {
+        public InputStream asStream() {
             File f = core.getContentFile(hash);
             if (f != null) {
                 try {
@@ -668,23 +660,23 @@ public class Core
 
     } // end static class DBContent
 
-    private void safeClose(ResultSet r) {
-        try {
-            if (r != null)
-                r.close();
-        } catch (Exception ignore) {
-            // Ignore
-        }
-    }
-
-    private void safeClose(Statement s) {
-        try {
-            if (s != null)
-                s.close();
-        } catch (Exception ignore) {
-            // Ignore
-        }
-    }
+//    private void safeClose(ResultSet r) {
+//        try {
+//            if (r != null)
+//                r.close();
+//        } catch (Exception ignore) {
+//            // Ignore
+//        }
+//    }
+//
+//    private void safeClose(Statement s) {
+//        try {
+//            if (s != null)
+//                s.close();
+//        } catch (Exception ignore) {
+//            // Ignore
+//        }
+//    }
 
     /*    public void syncGeneratedContent( Content sync ) {
             PreparedStatement find_content = null;
@@ -1369,75 +1361,6 @@ public class Core
 //            safeClose(statement);
 //        }
 //    }
-
-    // TODO: consider alternative to returning null
-//  @Nullable
-//  @SuppressWarnings("ReturnOfNull")
-    Long createInstanceRun(long testInstanceNumber, String owner) throws Exception
-    {
-        if (this.storage.isReadOnly())
-            throw new Exception("Database connection is read only.");
-
-        String hash;
-        ResultSet resultSet = null;
-        Statement templateStatement = null;
-        try
-        {
-            templateStatement = this.storage.getConnect().createStatement();
-            resultSet = templateStatement.executeQuery("SELECT hash FROM described_template JOIN test_instance ON fk_described_template = pk_described_template JOIN template ON fk_template = pk_template WHERE pk_test_instance = " + testInstanceNumber);
-            if(resultSet.next()){
-                hash = new Hash(resultSet.getBytes("hash")).toString();
-            }
-            else{
-                this.log.error("<internal> Core.createInstanceRun(): Cannot find template for test instance " + testInstanceNumber);
-                throw new Exception("Cannot find template for test instance " + testInstanceNumber);
-            }
-        } catch(Exception e)
-        {
-            this.log.error("<internal> Core.createInstanceRun() exception msg: " + e);
-            throw e;
-        } finally
-        {
-            safeClose(templateStatement);
-        }
-
-        PreparedStatement runStatement = null;
-        try
-        {
-            runStatement = this.storage.getConnect().prepareStatement("call add_run(?, ?, ?, ?, ?, ?)");
-            runStatement.setString(1, hash);
-            runStatement.setNull(2, Types.BOOLEAN);
-
-            if (owner != null)
-                runStatement.setString(3, owner);
-            else
-                runStatement.setNull(3, Types.VARCHAR);
-
-            runStatement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
-            runStatement.setNull(5, Types.TIMESTAMP);
-            runStatement.setNull(6, Types.TIMESTAMP);
-            if(runStatement.execute()){
-                // we have a ResultSet
-                resultSet = runStatement.getResultSet();
-                boolean result = resultSet.next();
-                if(result){
-                    return resultSet.getLong("pk_run");
-                }
-            }
-            else
-                return null; // no ResultSet
-        } catch (Exception e)
-        {
-            this.log.error("<internal> Core.createInstanceRun() exception msg: " + e);
-            // TODO: handle
-            throw e;
-        } finally
-        {
-            safeClose(runStatement);
-            runStatement = null;
-        }
-        throw new Exception("Failed to add new run for test instance " + testInstanceNumber);
-    }
 
 //    public static class TestTopLevelRelationships
 //    {
