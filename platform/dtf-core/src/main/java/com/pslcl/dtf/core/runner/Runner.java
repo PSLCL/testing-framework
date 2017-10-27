@@ -25,7 +25,7 @@ import com.pslcl.dtf.core.runner.config.RunnerConfig;
 
 public interface Runner extends Daemon, UncaughtExceptionHandler
 {
-    public RunnerConfig getConfig();
+    RunnerConfig getConfig();
 
     /**
      * 
@@ -33,11 +33,18 @@ public interface Runner extends Daemon, UncaughtExceptionHandler
      * @param message JMS message associated with reNum, used for eventual message ack
      * @throws Throwable on submit error
      */
-    public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Throwable;
+    void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Throwable;
+
+    /**
+     * Whether or not the system is available to process additional tests.
+     * @return True if the system is available to process additional tests. False otherwise.
+     */
+    boolean isAvailableToProcess();
 
     /**
      * Test pipeline backdoor
      * @return a RunnerMachine object;
      */
-    public Object getRunnerMachine();
+    Object getRunnerMachine();
+
 }

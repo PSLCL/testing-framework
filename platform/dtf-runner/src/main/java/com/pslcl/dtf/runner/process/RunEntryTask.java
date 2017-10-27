@@ -50,7 +50,7 @@ public class RunEntryTask implements Runnable {
         this.runnerMachine = runnerMachine;
         this.reNum = reNum;
         //this.runInstanceThreadName = new String("runEntry " + reNum);
-        this.reCore = new RunEntryCore(this.runnerMachine.getDBConnPool(), new Long(reNum));
+        this.reCore = new RunEntryCore(this.runnerMachine.getDBConnPool(), reNum);
 
         try {
             runnerMachine.getConfig().blockingExecutor.execute(this); // schedules call to this.run(); this is the full execution of the specified test run

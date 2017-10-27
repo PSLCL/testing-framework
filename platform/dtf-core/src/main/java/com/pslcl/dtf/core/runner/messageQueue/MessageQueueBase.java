@@ -30,10 +30,6 @@ public abstract class MessageQueueBase implements MessageQueue
 {
     private volatile RunnerConfig config;
 
-    public MessageQueueBase()
-    {
-    }
-
     @Override
     public void init(RunnerConfig config) throws Exception
     {
@@ -49,6 +45,14 @@ public abstract class MessageQueueBase implements MessageQueue
     public void submitQueueStoreNumber(String strQueueStoreEntryNumber, Message message) throws Throwable
     {
         config.runnerService.submitQueueStoreNumber(strQueueStoreEntryNumber, message);
+    }
+
+    /**
+     * Whether or not the system is available to process additional tests.
+     * @return True if the system is available to process additional tests. False otherwise.
+     */
+    public boolean isAvailableToProcess() {
+        return config.runnerService.isAvailableToProcess();
     }
 
     @Override

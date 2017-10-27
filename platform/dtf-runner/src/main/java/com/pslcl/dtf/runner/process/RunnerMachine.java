@@ -127,9 +127,8 @@ public class RunnerMachine {
      * @param reNum
      */
     void engageRunEntry(long reNum, RunEntryState reState) throws Exception {
-        // check runnerService overload, by configured limit or otherwise
-        boolean overload = this.getService().isOverload(reNum, reState);
-        if (!overload)
+        // check runnerService availability, by configured limit or otherwise
+        if (this.getService().isAvailableToProcess())
         {
             log.debug(simpleName + "engageRunEntry() processes reNum/action/message " + reNum + "/" + reState.getAction() + "/" + reState.getMessage());
             RunEntryState reStateOld = this.getService().runEntryStateStore.get(reNum);
