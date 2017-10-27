@@ -44,6 +44,7 @@ public class MachineReservedResource implements Runnable
     public final AtomicBoolean bindFutureCanceled;
     public final AtomicBoolean reusable;
     public final TabToLevel format;
+    public final AtomicBoolean released;
     public volatile GroupIdentifier groupIdentifier;
     public volatile String groupId;
     public volatile Vpc vpc;
@@ -68,6 +69,7 @@ public class MachineReservedResource implements Runnable
         imageId = result.getImageId();
         bindFutureCanceled = new AtomicBoolean(false);
         reusable = new AtomicBoolean(true);
+        released = new AtomicBoolean(false);
         format = new TabToLevel();
     }
 
@@ -103,13 +105,17 @@ public class MachineReservedResource implements Runnable
     @Override
     public void run()
     {
+        if(released.get())
+            return;
         HashMap<Long, MachineReservedResource> map = provider.getReservedMachines();
         synchronized (map)
         {
             map.remove(resource.getCoordinates().resourceId);
-            provider.getInstanceFinder().releaseInstance(instanceType);
+            if(ec2Instance == null)
+                provider.getInstanceFinder().releaseInstance(instanceType);
             format.ttl("reserve timed out");
             LoggerFactory.getLogger(getClass()).info(format.toString());
+            released.set(true);
         }
     }
     
@@ -124,7 +130,7 @@ public class MachineReservedResource implements Runnable
     public TabToLevel toString(TabToLevel format, boolean brief)
     {
         format.ttl(getClass().getSimpleName(), ":");
-        format.level.incrementAndGet();
+        format.inc();
         if(!brief)
         {
             if(resource instanceof ResourceDescImpl)
@@ -138,14 +144,17 @@ public class MachineReservedResource implements Runnable
         format.ttl("bindFutureCanceled = ", bindFutureCanceled);
         format.ttl("reusable = ", reusable);
         if(brief)
+        {
+            format.dec();
             return format;
+        }
         format.ttl("vpc = ", vpc);
         format.ttl("subnet = ", subnet);
         format.ttl("net = ", net);
         SimpleDateFormat sdf = new SimpleDateFormat();
         format.ttl("reserved = ", sdf.format((new Date(reservedTimestamp))));
         format.ttl("timeout = ", timeout);
-        format.level.decrementAndGet();
+        format.dec();
         return format;
     }
 }

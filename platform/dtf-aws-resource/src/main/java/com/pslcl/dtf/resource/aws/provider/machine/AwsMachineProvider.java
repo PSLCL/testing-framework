@@ -15,15 +15,6 @@
  */
 package com.pslcl.dtf.resource.aws.provider.machine;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.amazonaws.services.ec2.model.DeleteKeyPairRequest;
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
@@ -52,6 +43,14 @@ import com.pslcl.dtf.resource.aws.instance.machine.MachineConfigData;
 import com.pslcl.dtf.resource.aws.instance.machine.MachineInstanceFuture;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Reserve, bind, control and release instances of AWS machines.
  */
@@ -71,11 +70,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
     public AwsMachineProvider(AwsResourcesManager manager)
     {
         super(manager);
-        reservedMachines = new HashMap<Long, MachineReservedResource>();
-        boundInstances = new HashMap<Long, AwsMachineInstance>();
-        stalledRelease = new HashMap<Long, AwsMachineInstance>();
-        deleteInstanceFutures = new ArrayList<Future<Void>>();
-        runnablePrograms = new HashMap<Long, List<Future<RunnableProgram>>>();
+        reservedMachines = new HashMap<>();
+        boundInstances = new HashMap<>();
+        stalledRelease = new HashMap<>();
+        deleteInstanceFutures = new ArrayList<>();
+        runnablePrograms = new HashMap<>();
         instanceFinder = new InstanceFinder();
         imageFinder = new ImageFinder(this);
         totalReuseAttemps = new AtomicInteger(0);
@@ -89,7 +88,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             List<Future<RunnableProgram>> list = runnablePrograms.get(templateInstanceId);
             if (list == null)
             {
-                list = new ArrayList<Future<RunnableProgram>>();
+                list = new ArrayList<>();
                 runnablePrograms.put(templateInstanceId, list);
             }
             list.add(runnableProgramFuture);
@@ -146,15 +145,16 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
     private final AtomicInteger totalReuseAttemps;
     private final AtomicInteger reuseHits;
-    
-    public AwsMachineInstance checkForReuse(MachineReservedResource reservedResource)
+
+    public AwsMachineInstance checkForReuse(MachineReservedResource reservedResource, boolean reserve, TabToLevel formatIn)
     {
         totalReuseAttemps.incrementAndGet();
-        TabToLevel format = new TabToLevel();
-        format.ttl("\ncheckForReuse:");
-        format.level.incrementAndGet();
+        TabToLevel format = formatIn;
+        if(formatIn == null)
+            format = new TabToLevel();
+        format.ttl(getClass().getSimpleName(), ".checkForReuse:");
+        format.inc();
         reservedResource.toString(format, true);
-        format.level.incrementAndGet();
         HashMap<Long, AwsMachineInstance> stalledMap;
         synchronized (stalledRelease)
         {
@@ -172,12 +172,28 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             
             synchronized (stalledRelease)
             {
-                if (stalledInstance.taken.get())
-                    continue;
-                stalledInstance.taken.set(true);
+                if(reserve)
+                {
+                    if (stalledInstance.reserveTaken.get())
+                        continue;
+                    stalledInstance.reserveTaken.set(true);
+                }else
+                {
+                    if(stalledInstance.bindTaken.get())
+                        continue;
+                    if(!stalledInstance.reserveTaken.get())
+                        continue;
+                    stalledInstance.bindTaken.set(true);
+                }
+            }
+            if(reserve)
+            {
+                format.dec();
+                return stalledInstance;
             }
             format.ttl("found a matching instanceType/imageId may have to wait on sanitization complete");
-            log.debug(format.toString());
+            if(formatIn == null)
+                log.debug(format.toString());
             do
             {
                 if (!stalledInstance.sanitizing.get())
@@ -185,7 +201,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 try
                 {
                     Thread.sleep(100);
-                } catch (InterruptedException e)
+                } catch (InterruptedException ignored)
                 {
                 }
             } while (true);
@@ -194,7 +210,9 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 format.ttl("instance cleanup destroyed the intended, returning null");
                 addStats(format);
-                log.debug(format.toString());
+                if(formatIn == null)
+                    log.debug(format.toString());
+                format.dec();
                 return null;
             }
             ProgressiveDelayData pdelayData = new ProgressiveDelayData(this, reservedResource.resource.getCoordinates());
@@ -205,11 +223,14 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 log.warn("failed to inject the new mconfig", e);
                 format.ttl("failed to inject the new mconfig");
-                log.debug(format.toString());
+                if(formatIn == null)
+                    log.debug(format.toString());
                 synchronized (stalledRelease)
                 {
-                    stalledInstance.taken.set(false);
+                    stalledInstance.bindTaken.set(false);
+                    stalledInstance.reserveTaken.set(false);
                 }
+                format.dec();
                 return null;
             }
             pdelayData.preFixMostName = stalledInstance.mconfig.resourcePrefixName; 
@@ -226,16 +247,20 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             reuseHits.incrementAndGet();
             format.ttl("instance match found");
             addStats(format);
-            log.debug(format.toString());
+            if(formatIn == null)
+                log.debug(format.toString());
             synchronized (stalledRelease)
             {
                 stalledRelease.remove(entry.getKey());
             }
+            format.dec();
             return stalledInstance;
         }
-        format.ttl("no stalled instances to check right now");
+        format.ttl("no stalled instances available right now");
         addStats(format);
-        log.debug(format.toString());
+        if(formatIn == null)
+            log.debug(format.toString());
+        format.dec();
         return null;
     }
 
@@ -408,7 +433,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 // destroy them out from under checkForReuse on failure to clear
                 // they will be waiting on the following flag.
                 instance.destroyed.set(false);
-                instance.taken.set(false);
+                instance.bindTaken.set(false);
+                instance.reserveTaken.set(false);
                 instance.sanitizing.set(true);
                 stalledRelease.put(instance.getCoordinates().resourceId, instance);
                 instance.toString(format, true);
@@ -427,7 +453,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             {
                 format.ttl("delete sandbox failed, nuking this instance");
                 instance.destroyed.set(true);
-                instance.taken.set(true);
+                instance.bindTaken.set(true);
+                instance.reserveTaken.set(true);
                 instance.sanitizing.set(false);
                 deletedList.add(instance);
                 log.warn(format.toString(), e);
@@ -461,7 +488,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                         {
                             format.ttl("cleanup of running application failed, nuking instance");
                             machineInstance.destroyed.set(true);
-                            machineInstance.taken.set(true);
+                            machineInstance.bindTaken.set(true);
+                            machineInstance.reserveTaken.set(true);
                             machineInstance.sanitizing.set(false);
                             deletedList.add(machineInstance);
                             deleteInstances(templateInstanceId, instancesInTemplate, coord);
@@ -476,7 +504,8 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     for (AwsMachineInstance instance : instancesInTemplate)
                     {
                         instance.destroyed.set(true);
-                        instance.taken.set(true);
+                        instance.bindTaken.set(true);
+                        instance.reserveTaken.set(true);
                         instance.sanitizing.set(false);
                     }
                     log.warn(format.toString(), e);
@@ -578,6 +607,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                 coordinates = rresource.resource.getCoordinates();
                 if (coordinates.templateInstanceId == templateInstanceId)
                 {
+                    releaseList.add(entry.getKey());
                     Future<MachineInstance> future = rresource.getInstanceFuture();
                     if (future != null)
                     {
@@ -606,7 +636,6 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                                 TabToLevel format = new TabToLevel();
                                 format.ttl("\n", getClass().getSimpleName(), ".release cancel pending future handling");
                                 log.debug(rresource.toString(format, true).toString());
-                                releaseList.add(entry.getKey());
                                 if (rresource.ec2Instance != null)
                                 {
                                     // the future made it far enough to trigger aws to startup the instance.
@@ -629,7 +658,11 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
             } // synch on the reserved resource
         }
         for (Long key : releaseList)
-            reservedMachines.remove(key);
+        {
+            MachineReservedResource resource = reservedMachines.remove(key);
+            if(resource != null)
+                resource.run();
+        }
     }
 
     public void releaseReservedResource(long templateInstanceId)
@@ -687,19 +720,40 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
 
     public boolean isAvailable(ResourceDescription resource) throws ResourceNotFoundException
     {
-        return internalIsAvailable(resource, new MachineQueryResult());
+        MachineQueryResult result = new MachineQueryResult();
+        if(!internalIsAvailable(resource, result, null))
+            return false;
+        return checkInstanceTypeLimits(result.getInstanceType(), false, null);
     }
 
-    boolean internalIsAvailable(ResourceDescription resource, MachineQueryResult result) throws ResourceNotFoundException
+    boolean checkInstanceTypeLimits(InstanceType instanceType, boolean reserve, TabToLevel format) throws ResourceNotFoundException
     {
+        boolean ok = instanceFinder.checkLimits(instanceType, format);
+        if(ok && reserve)
+            instanceFinder.reserveInstance(instanceType);
+        return ok;
+    }
+
+    boolean internalIsAvailable(ResourceDescription resource, MachineQueryResult result, TabToLevel formatIn) throws ResourceNotFoundException
+    {
+        TabToLevel format = formatIn;
+        if(formatIn == null)
+            formatIn = new TabToLevel();
+        format.ttl(getClass().getSimpleName() + ".internalIsAvailable");
+        format.inc();
         if (!ResourceProvider.MachineName.equals(resource.getName()))
+        {
+            format.ttl("wrong provider: " + resource.getName());
+            format.dec();
             return false;
-        InstanceType instanceType = instanceFinder.findInstance(resource);
-        if (!instanceFinder.checkLimits(instanceType))
-            return false;
-        instanceFinder.reserveInstance(instanceType);
+        }
+        InstanceType instanceType = instanceFinder.findInstance(resource, format);
+//        if (!instanceFinder.checkLimits(instanceType))
+//            return false;
+//        instanceFinder.reserveInstance(instanceType);
         result.setInstanceType(instanceType);
-        result.setImageId(imageFinder.findImage(manager.ec2Client, resource));
+        result.setImageId(imageFinder.findImage(manager.ec2Client, resource, format));
+        format.dec();
         return true;
     }
 
@@ -769,13 +823,14 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
                     List<AwsMachineInstance> instancesInTemplate = new ArrayList<AwsMachineInstance>();
                     synchronized (stalledRelease)
                     {
-                        if (!machineInstance.taken.get())
+                        if (!machineInstance.bindTaken.get())
                         {
                             format.ttl("checkReusable race we won, break any checkreuseable out of its wait loop");
                             machineInstance.toString(format, true);
                             machineInstance.sanitizing.set(false);
                             machineInstance.destroyed.set(true);
-                            machineInstance.taken.set(true);
+                            machineInstance.bindTaken.set(true);
+                            machineInstance.reserveTaken.set(true);
                             instancesInTemplate.add(machineInstance);
                         }
                     }

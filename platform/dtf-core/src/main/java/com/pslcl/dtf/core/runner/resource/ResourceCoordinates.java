@@ -159,14 +159,14 @@ public class ResourceCoordinates
     
     public TabToLevel toString(TabToLevel format)
     {
-        format.ttl("\nresourceId: " + resourceId);
-        format.level.incrementAndGet();
+        format.ttl("resourceId: " + resourceId);
+        format.inc();
         format.ttl("manager: ", (manager == null ? "null" : manager.getClass().getName()));
         format.ttl("provider: ", (provider == null ? "null" : provider.getClass().getName()));
         format.ttl("templateId: " + templateIdToHexString());
         format.ttl("templateInstanceId: " + templateInstanceId);
         format.ttl("runId: " + runId);
-        format.level.decrementAndGet();
+        format.dec();
         return format;
     }
     

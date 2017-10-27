@@ -51,7 +51,8 @@ public class AwsMachineInstance implements MachineInstance
     private final RunnerConfig rconfig;
     public final AtomicBoolean sanitizing;
     public final AtomicBoolean destroyed;
-    public final AtomicBoolean taken;
+    public final AtomicBoolean bindTaken;
+    public final AtomicBoolean reserveTaken;
     public final long instantiationTime;
     
     AwsMachineInstance(MachineReservedResource reservedResource, MachineConfigData mconfig, RunnerConfig rconfig)
@@ -62,7 +63,8 @@ public class AwsMachineInstance implements MachineInstance
         this.rconfig = rconfig;
         sanitizing = new AtomicBoolean(false);
         destroyed = new AtomicBoolean(false);
-        taken = new AtomicBoolean(false);
+        bindTaken = new AtomicBoolean(false);
+        reserveTaken = new AtomicBoolean(false);
         ec2Instance = reservedResource.ec2Instance;
         instantiationTime = System.currentTimeMillis();
     }
@@ -233,7 +235,8 @@ public class AwsMachineInstance implements MachineInstance
         format.level.incrementAndGet();
         format.ttl("sanitizing: ", sanitizing);
         format.ttl("destroyed: ", destroyed);
-        format.ttl("taken: ", taken);
+        format.ttl("bindTaken: ", bindTaken);
+        format.ttl("reserveTaken: ", reserveTaken);
         SimpleDateFormat sdf = new SimpleDateFormat();
         String time = sdf.format(new Date(instantiationTime));
         format.ttl("instantiationTime:", time);

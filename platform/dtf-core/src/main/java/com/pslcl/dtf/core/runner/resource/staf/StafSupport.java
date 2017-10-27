@@ -27,6 +27,9 @@ import com.pslcl.dtf.core.util.TabToLevel;
 @SuppressWarnings("javadoc")
 public class StafSupport
 {
+    //FIXME: set me false before commit/push
+    public static final boolean DtfTesting = false;  // do not actually issue staf requests if true
+
     private final static String StafHandleName = "dtf-staf-handle";
     private final static String ProcessService = "process";
     private final static String PingService = "ping";
@@ -44,6 +47,8 @@ public class StafSupport
 
     public static StopResult processStop(StafRunnableProgram runnableProg) throws Exception
     {
+        if(DtfTesting)
+            return new StopResult();
         String cmd = runnableProg.getProcessStopCommand();
         TabToLevel format = null;
         if (log.isDebugEnabled())
@@ -94,6 +99,8 @@ public class StafSupport
     @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
     public static FreeResult processFree(StafRunnableProgram runnableProg) throws Exception
     {
+        if(DtfTesting)
+            return new FreeResult();
         String cmd = runnableProg.getProcessFreeCommand();
         TabToLevel format = null;
         if (log.isDebugEnabled())
@@ -137,6 +144,8 @@ public class StafSupport
     
     public static QueryResult processQuery(StafRunnableProgram runnableProg) throws Exception
     {
+        if(DtfTesting)
+            return new QueryResult(new STAFResult());
         String cmd = runnableProg.getProcessQueryCommand();
         TabToLevel format = null;
         if (log.isDebugEnabled())
@@ -177,6 +186,8 @@ public class StafSupport
     @SuppressWarnings("null")
     public static STAFResult processPing(StafRunnableProgram runnableProg) throws Exception
     {
+        if(DtfTesting)
+            return new STAFResult();
         TabToLevel format = null;
         if (log.isDebugEnabled())
         {
@@ -276,6 +287,9 @@ public class StafSupport
 
     private static STAFResult request(String host, String service, String request, TabToLevel format) throws Exception
     {
+        if(DtfTesting)
+            return new STAFResult();
+
         STAFResult result = getStafHandle().submit2(host, service, request);
         checkStafResult(result, format);
         return result;

@@ -46,7 +46,7 @@ public class ProgressiveDelay
     private final AtomicBoolean maxDelayHit;
     private final ProgressiveDelayData pdelayData;
 
-    private final long MIN_DELAY = 5000L;
+    private final long MIN_DELAY = 1000L;
     
     public ProgressiveDelay(ProgressiveDelayData pdelayData)
     {

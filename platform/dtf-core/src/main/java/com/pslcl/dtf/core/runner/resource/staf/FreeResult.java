@@ -31,6 +31,14 @@ public class FreeResult
     public final String totalProcesses;
     public final int ccode;
 
+    public FreeResult()
+    {
+        result = null;
+        freedProcesses = "";
+        totalProcesses = "";
+        ccode = 0;
+    }
+
     public FreeResult(STAFResult result, boolean byHandle)
     {
         this.result = result;

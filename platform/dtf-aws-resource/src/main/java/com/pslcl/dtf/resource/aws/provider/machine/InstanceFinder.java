@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.ec2.model.InstanceType;
@@ -38,12 +39,14 @@ import com.pslcl.dtf.resource.aws.attr.ProviderNames;
 public class InstanceFinder
 {
 //    private final Map<String, AtomicInteger> limits;
+    private final Logger log;
     private volatile String instanceType;
     private volatile Map<String, GlobalAttrMapData> globalAttrMapData;
 
     public InstanceFinder()
     {
 //        limits = new HashMap<String, AtomicInteger>();
+        log = LoggerFactory.getLogger(getClass());
     }
 
     public void init(RunnerConfig config) throws Exception
@@ -91,12 +94,15 @@ public class InstanceFinder
         config.initsb.level.decrementAndGet();
     }
 
-    public InstanceType findInstance(ResourceDescription resource) throws ResourceNotFoundException
+    public InstanceType findInstance(ResourceDescription resource, TabToLevel formatIn) throws ResourceNotFoundException
     {
         Map<String, String> attrs = resource.getAttributes();
-        TabToLevel format = new TabToLevel();
-        format.ttl("\n", getClass().getSimpleName() + ".findInstance:");
-        format.level.incrementAndGet();
+        TabToLevel format = formatIn;
+        if(formatIn == null)
+            format = new TabToLevel();
+        format.ttl(getClass().getSimpleName() + ".findInstance:");
+        format.inc();
+        format.ttl("configuration globals");
         String type = attrs.get(ProviderNames.InstanceTypeKey); // globals have priority over aws specific
         format.ttl(ProviderNames.InstanceTypeKey, " = ", type);
         String coresStr = attrs.get(ResourceNames.MachineCoresKey);
@@ -112,7 +118,8 @@ public class InstanceFinder
             if(globalAttrMapData == null)
             {
                 format.ttl(msg);
-                LoggerFactory.getLogger(getClass()).warn(format.toString());
+                if(formatIn == null)
+                    log.warn(format.toString());
                 throw new ResourceNotFoundException(msg);
             }
             boolean found = false;
@@ -128,7 +135,7 @@ public class InstanceFinder
                 itype = data.instanceType;
                 if(!jumpedUp)
                     firstHit = i;
-                if(checkLimits(itype))
+                if(checkLimits(itype, null))
                 {
                     found = true;
                     type = itype.toString();
@@ -143,32 +150,50 @@ public class InstanceFinder
             if(!found)
             {
                 format.ttl(msg);
-                LoggerFactory.getLogger(getClass()).warn(format.toString());
+                if(formatIn == null)
+                    log.warn(format.toString());
                 throw new ResourceNotFoundException(msg);
             }
             if(jumpedUp)
             {
                 format.ttl("jumped past smaller fits because their limits hit: smallest hit index: " + firstHit);
-                LoggerFactory.getLogger(getClass()).info(format.toString());
+                if(formatIn == null)
+                    log.info(format.toString());
             }else
-                LoggerFactory.getLogger(getClass()).debug(format.toString());
-        }
+            {
+                if(formatIn == null)
+                    log.debug(format.toString());
+            }
+        }else
+            format.ttl("cores, memoryRange, diskRange not overridden");
         if(type == null)
         {
+            format.ttl("type is null, being set to: ", instanceType);
             type = instanceType;
             resource.addAttribute(ProviderNames.InstanceTypeKey, type);
         }
         itype = getInstanceType(type);
+        format.ttl("selected itype: ", itype.name());
+        if(formatIn == null)
+            log.debug(format.toString());
+        format.dec();
         return itype;
     }
 
-    public boolean checkLimits(InstanceType instanceType)
+    public boolean checkLimits(InstanceType instanceType, TabToLevel formatIn)
     {
+        TabToLevel format = formatIn;
+        if(formatIn == null)
+            format = new TabToLevel();
+        format.ttl(getClass().getSimpleName() + ".checkLimits:");
+        format.inc();
         int count = globalAttrMapData.get(instanceType.toString()).limit.get();
+        format.ttl(instanceType.name()," has ", count, " available");
+        format.dec();
         if (count == -1)
             return true;
         if (count > 0)
-            return true;
+             return true;
         return false;
     }
 
