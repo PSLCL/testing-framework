@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -1233,6 +1234,38 @@ public class MySQLDtfStorage implements DTFStorage {
         }
     }
 
+    @Override
+    public void updateRunResult(TestInstance ti) throws SQLException {
+        Boolean dbResult = null;
+        String dbOwner = null;
+        String query = "SELECT result, owner FROM run" +
+                       " JOIN test_instance ON test_instance.fk_run=run.pk_run" +
+                       " WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk);
+        try (PreparedStatement preparedStatement = this.connect.prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery(query)) {
+            if (resultSet.next()) {
+                dbResult = resultSet.getBoolean("result");
+                if (resultSet.wasNull())
+                    dbResult = null;
+                dbOwner = resultSet.getString("owner");
+                if (resultSet.wasNull())
+                    dbOwner = null;
+            }
+        } catch (SQLException ignore) {
+            // If here, dbResult and dbOwner are both null.
+            // Our failure to read from the run table is harmless- the next code block will not act.
+        }
+
+        // Check Java object ti's run status against what we just read from the run table.
+        // If a misatch, and ti's status is known, adjust the run table.
+        if (!Objects.equals(dbResult, ti.getResult()) ||
+            (dbOwner==null ? (ti.getOwner() != null) :
+                             !Objects.equals(dbOwner, ti.getOwner()))) {
+           // call a stored procedure that updates table run
+           this.reportResult(ti.getDescribedTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
+        }
+
+    }
 
 
 

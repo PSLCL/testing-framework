@@ -896,42 +896,11 @@ public class Core
                 }
 
                 // If the ti has a result recorded, then make sure it is reflected in the run table.
-                if (ti.getResult() != null || ti.getOwner() != null) {
-                    Statement statement2 = null;
-                    ResultSet resultSet = null;
-                    Boolean dbResult = null;
-                    String dbOwner = null;
+                if (ti.getResult()!=null || ti.getOwner()!=null) {
                     try {
-                        statement2 = this.storage.getConnect().createStatement();
-                        resultSet = statement2.executeQuery("SELECT result, owner FROM run JOIN test_instance ON test_instance.fk_run = run.pk_run WHERE test_instance.pk_test_instance=" + Long.toString(ti.pk));
-
-                        if (resultSet.next()) {
-                            dbResult = resultSet.getBoolean("result");
-                            if (resultSet.wasNull())
-                                dbResult = null;
-
-                            dbOwner = resultSet.getString("owner");
-                            if (resultSet.wasNull())
-                                dbOwner = null;
-                        }
-                    } catch (Exception ignore) {
-                        // Ignore
-                    } finally {
-                        safeClose(resultSet);
-                        resultSet = null;
-                        safeClose(statement2);
-                        statement2 = null;
-                    }
-
-                    // Check the run status, fix it if the status is known.
-                    if (!Objects.equals(dbResult, ti.getResult()) ||
-                        (dbOwner==null ? ti.getOwner()!=null : !Objects.equals(dbOwner, ti.getOwner()))) {
-                        try {
-                            // call a stored procedure that updates table run
-                            this.storage.reportResult(ti.getDescribedTemplate().getTemplate().getHash().toString(), ti.getResult(), ti.getOwner(), ti.getStart(), ti.getReady(), ti.getComplete());
-                        } catch (SQLException sqle) {
-                            this.log.error("Core.syncDescribedTemplate() Continues after .reportResult() throws exception, msg: " + sqle);
-                        }
+                        this.storage.updateRunResult(ti);
+                    } catch (SQLException sqle) {
+                        this.log.error("Core.syncDescribedTemplate() Continues after .updateRunResult() throws exception, msg: " + sqle);
                     }
                 }
             } else {

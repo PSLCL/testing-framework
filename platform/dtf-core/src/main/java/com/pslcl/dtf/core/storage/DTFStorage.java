@@ -7,6 +7,7 @@ import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.DescribedTemplate;
 import com.pslcl.dtf.core.generator.template.Template;
+import com.pslcl.dtf.core.generator.template.TestInstance;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -256,6 +257,8 @@ public interface DTFStorage {
     long insertTestInstance(long pkTargetTest, long pkDescribedTemplate) throws SQLException;
 
     void addModuleToTestInstanceEntry(long pkModule, long pkTestInstance) throws SQLException;
+
+    void updateRunResult(TestInstance ti) throws SQLException;
 
 
 
