@@ -44,14 +44,12 @@ import com.pslcl.dtf.core.runner.resource.instance.MachineInstance;
 import com.pslcl.dtf.core.runner.resource.staf.ProcessCommandData;
 import com.pslcl.dtf.core.runner.resource.staf.futures.PingFuture;
 import com.pslcl.dtf.core.runner.resource.staf.futures.StafRunnableProgram;
-import com.pslcl.dtf.core.util.TabToLevel;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay;
 import com.pslcl.dtf.resource.aws.ProgressiveDelay.ProgressiveDelayData;
 import com.pslcl.dtf.resource.aws.instance.machine.AwsMachineInstance.AwsInstanceState;
 import com.pslcl.dtf.resource.aws.provider.AwsResourceProvider;
 import com.pslcl.dtf.resource.aws.provider.machine.AwsMachineProvider;
 import com.pslcl.dtf.resource.aws.provider.machine.MachineReservedResource;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Base64;
@@ -67,14 +65,12 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     public static final String KeyPairMidStr = "key";
 
     public final MachineReservedResource reservedResource;
-    private final Logger log;
     private final AmazonEC2Client ec2Client;
     private final ProgressiveDelayData pdelayData;
     private volatile MachineConfigData config;
 
     public MachineInstanceFuture(MachineReservedResource reservedResource, ProgressiveDelayData pdelayData)
     {
-        log = LoggerFactory.getLogger(getClass());
         this.reservedResource = reservedResource;
         this.pdelayData = pdelayData;
         ec2Client = pdelayData.provider.manager.ec2Client;
@@ -83,8 +79,6 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
     @Override
     public MachineInstance call() throws FatalResourceException
     {
-        reservedResource.format.ttl(getClass().getSimpleName() + ".call:");
-        reservedResource.format.inc();
         String tname = Thread.currentThread().getName();
         Thread.currentThread().setName("MachineInstanceFuture");
         try
@@ -93,10 +87,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             checkFutureCanceled();
             config = MachineConfigData.init(pdelayData, reservedResource.resource, reservedResource.format, pdelayData.provider.manager.machineProvider.defaultMachineConfigData);
             checkFutureCanceled();
-            AwsMachineInstance machineInstance = ((AwsMachineProvider) pdelayData.provider).checkForReuse(reservedResource, false, reservedResource.format);
+            AwsMachineInstance machineInstance = ((AwsMachineProvider) pdelayData.provider).checkForReuse(reservedResource, false, null);
             if (machineInstance == null)
             {
-                reservedResource.format.ttl("no reuse instance found");
                 pdelayData.preFixMostName = config.resourcePrefixName;
                 reservedResource.vpc = pdelayData.provider.manager.subnetManager.getVpc(pdelayData, config.subnetConfigData);
                 checkFutureCanceled();
@@ -110,32 +103,26 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 //                    pdelayData.provider.manager.subnetManager.getSecureGroup(pdelayData, sgDefaultVpcOverrideId);
 //                    checkFutureCanceled();
 //                }
-                createInstance(reservedResource.subnet.getSubnetId(), sgDefaultVpcOverrideId, reservedResource.format);
+                createInstance(reservedResource.subnet.getSubnetId(), sgDefaultVpcOverrideId);
                 machineInstance = new AwsMachineInstance(reservedResource, config, pdelayData.provider.config);
                 pdelayData.statusTracker.fireResourceStatusChanged(pdelayData.resourceStatusEvent.getNewInstance(pdelayData.resourceStatusEvent, StatusTracker.Status.Ok));
-            }else
-                reservedResource.format.ttl("a reuse instance is being used");
+            }
             ((AwsMachineProvider) pdelayData.provider).addBoundInstance(pdelayData.coord.resourceId, machineInstance);
-            reservedResource.format.ttl("bound: " + reservedResource.format.toString());
-            log.debug(reservedResource.format.toString());
+            LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "- bound: " + reservedResource.format.toString());
             Thread.currentThread().setName(tname);
-            reservedResource.format.dec();
             return machineInstance;
         } catch (CancellationException ie)
         {
-            log.debug(reservedResource.format.toString());
             Thread.currentThread().setName(tname);
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), ie);
         } catch (FatalResourceException e)
         {
-            log.debug(reservedResource.format.toString());
             Thread.currentThread().setName(tname);
             throw e;
         } catch (Throwable t)
         {
-            log.debug(reservedResource.format.toString());
             Thread.currentThread().setName(tname);
-            log.warn(getClass().getSimpleName() + " call method threw a non-FatalResourceException", t);
+            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + " call method threw a non-FatalResourceException", t);
             throw new ProgressiveDelay(pdelayData).handleException(pdelayData.getHumanName("dtf", "call"), t);
         }
     }
@@ -146,23 +133,19 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             throw new CancellationException();
     }
 
-    private void createInstance(String subnetId, String sgDefaultVpcOverrideId, TabToLevel format) throws FatalResourceException
+    private void createInstance(String subnetId, String sgDefaultVpcOverrideId) throws FatalResourceException
     {
-        format.ttl(getClass().getSimpleName() + ".createInstance:");
-        format.inc();
         //http://stackoverflow.com/questions/22365470/launching-instance-vpc-security-groups-may-not-be-used-for-a-non-vpc-launch
         if (config.keyName == null)
             config.keyName = createKeyPair();
-        format.ttl("keyName: ", config.keyName);
 
         Base64.Encoder encoder = Base64.getMimeEncoder();
         String userData = encoder.encodeToString(config.linuxUserData.getBytes());
         if (config.windows)
             userData = encoder.encodeToString(config.winUserData.getBytes());
-        format.ttl("userData: ", userData);
         //@formatter:off
         Placement placement = new Placement().withAvailabilityZone(pdelayData.provider.manager.ec2cconfig.availabilityZone);
-        
+
         pdelayData.maxDelay = config.subnetConfigData.sgMaxDelay;
         pdelayData.maxRetries = config.subnetConfigData.sgMaxRetries;
         ProgressiveDelay pdelay = new ProgressiveDelay(pdelayData);
@@ -172,7 +155,6 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             ++volumeSize;
         if(rootBlockDeviceInfo.minDeviceSize > volumeSize)
             volumeSize = rootBlockDeviceInfo.minDeviceSize;
-        format.ttl("volumeSize: ", volumeSize);
         EbsBlockDevice ebsBlockDevice = new EbsBlockDevice().withVolumeSize(volumeSize);
         BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping().withDeviceName(rootBlockDeviceInfo.deviceName).withEbs(ebsBlockDevice);
 
@@ -188,14 +170,10 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             .withPlacement(placement);
         //@formatter:on
         if(sgDefaultVpcOverrideId != null)
-        {
-            format.ttl("withSecurityGroupIds: ", sgDefaultVpcOverrideId);
             runInstancesRequest.withSecurityGroupIds(sgDefaultVpcOverrideId);
-        }
 
         if (config.iamArn != null)// && config.iamName != null)
         {
-            format.ttl("iamArn: ", config.iamArn);
             IamInstanceProfileSpecification profile = new IamInstanceProfileSpecification().withArn(config.iamArn); //.withName(config.iamName);
             runInstancesRequest.setIamInstanceProfile(profile);
         }
@@ -208,10 +186,9 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
         synchronized (reservedResource)
         {
             // possibility of template release being called before all bind requests for that template have completed.
-            // this synch is required to guarantee that all ec2Client.runInstances success calls are seen by the 
+            // this synch is required to guarantee that all ec2Client.runInstances success calls are seen by the
             // AwsMachineProvider.release code.
             checkFutureCanceled();
-            format.ttl("calling ec2Client.runInstances:");
             do
             {
                 try
@@ -224,9 +201,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
                     FatalResourceException fre = pdelay.handleException(msg, e);
                     if (fre instanceof FatalException)
                     {
-                        String m = "bind failed";
-                        log.warn(m, fre);
-                        format.ttl(m, fre.getClass() + " ", fre.getMessage());
+                        LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + "- bind failed: " + reservedResource.format.toString());
                         throw fre;
                     }
                 }
@@ -235,14 +210,10 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             if (runResult != null) // get rid of possible null warning
                 reservedResource.ec2Instance = runResult.getReservation().getInstances().get(0);
         }
-        format.ttl("waiting for state == running");
         waitForState(pdelay, AwsInstanceState.Running);
-        format.ttl("setting tags");
         pdelayData.provider.manager.createNameTag(pdelayData, pdelayData.getHumanName(Ec2MidStr, null), reservedResource.ec2Instance.getInstanceId());
         reservedResource.resource.getAttributes().put(ResourceNames.DnsHostKey, reservedResource.ec2Instance.getPublicDnsName());
-        format.ttl("waiting for staf ping");
         waitForStaf(pdelay);
-        format.ttl("ec2 instance ready");
     }
 
     private void waitForState(ProgressiveDelay pdelay, AwsInstanceState... states) throws FatalResourceException
@@ -296,7 +267,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             }
         } while (true);
     }
-    
+
     private void waitForStaf(ProgressiveDelay pdelay) throws FatalResourceException
     {
         ProcessCommandData cmdData = new ProcessCommandData(null, null, null, false, false, null, null, null, false);
@@ -316,7 +287,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
 
         //@formatter:off
         ProgressiveDelayData pdelayData = new ProgressiveDelayData(
-                        (AwsResourceProvider)reservedResource.resource.getCoordinates().getProvider(), 
+                        (AwsResourceProvider)reservedResource.resource.getCoordinates().getProvider(),
                         reservedResource.resource.getCoordinates());
         //@formatter:on
 
@@ -331,7 +302,7 @@ public class MachineInstanceFuture implements Callable<MachineInstance>
             try
             {
                 PingFuture pingFuture = new PingFuture(runnableProgram);
-                Future<Integer> future = reservedResource.provider.config.blockingExecutor.submit(pingFuture); 
+                Future<Integer> future = reservedResource.provider.config.blockingExecutor.submit(pingFuture);
                 Integer rc = future.get();
                 if (rc != null && rc == 0)
                     break;
