@@ -746,6 +746,53 @@ public class Core
 //    }
 
     /**
+     * Check that an existing template is correct. If the template exists then the children
+     * may also exist, but their documentation (of template steps) may be out of date, so update that.
+     * @param dt The described template to check. Results are not currently checked.
+     * @return DBDescribedTemplate
+     */
+    private Core.DBDescribedTemplate check(DescribedTemplate dt) throws Exception {
+        // note: dt.getDependencies() is currently always empty
+        for (DescribedTemplate child : dt.getDependencies()) {
+            // Recursively check all dependent DescribedTemplate's.
+            // Original TODO: Figure out if this is correct. Has not been tested, since .getDependencies() is empty.
+            Optional<Core.DBDescribedTemplate> dbdtAsStored;
+            DescribedTemplate.Key matchKey = child.getKey();
+            try {
+                dbdtAsStored = this.getStorage().getDBDescribedTemplate(matchKey);
+            } catch (SQLException sqle) {
+                this.log.error("<internal> Core.check() sees exception from .getDBDescribedTemplate(), msg: " + sqle);
+                this.log.debug("stack trace: ", sqle);
+                throw new Exception(".check() exits with exception ", sqle);
+            }
+
+            if (!dbdtAsStored.isPresent())
+                throw new Exception("Parent template exists, child does not.");
+            /*DBDescribedTemplate dbdt =*/ this.check(child); // recursion
+        } // end for()
+
+        Optional<Core.DBDescribedTemplate> wrappedMe;
+        DescribedTemplate.Key matchKey = dt.getKey();
+        try {
+            wrappedMe = this.getStorage().getDBDescribedTemplate(matchKey);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> Core.check() sees exception from .getDBDescribedTemplate(), msg: " + sqle);
+            this.log.debug("stack trace: ", sqle);
+            throw new Exception(".check() exits with exception ", sqle);
+        }
+
+        if (wrappedMe.isPresent()) {
+            Core.DBDescribedTemplate me = wrappedMe.get();
+            if (!dt.getDocumentationHash().equals(me.documentationHash)) {
+                // Recreate documentation of template steps.
+                this.getStorage().updateDocumentation(me.pk, dt);
+            }
+            return me;
+        }
+        throw new Exception("Request to check a non-existent described template.");
+    }
+
+    /**
      * Add a described template - it is known to not exist.
      * @param dt The described template to add.
      * @param result The result to report, if any.
@@ -783,7 +830,7 @@ public class Core
             if (!dbdtAsStored.isPresent())
                 this.add(child, null, null, null, null, null);
             else
-                this.getStorage().check(child);
+                this.check(child);
         }
 
         // proceed with the "actual" .add() behavior, by calling .addToDB()
@@ -829,7 +876,7 @@ public class Core
                 ++addedDescribedTemplatesCount;
             } else {
                 // check the stored described template
-                dbdt = this.getStorage().check(ti.getDescribedTemplate());
+                dbdt = this.check(ti.getDescribedTemplate());
                 ++checkedNotAddedDescribedTemplatesCount;
             }
 

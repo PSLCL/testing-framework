@@ -233,12 +233,12 @@ public interface DTFStorage {
     void updateModule(long pk_module) throws SQLException;
 
     /**
-     * Check that an existing template is correct. If the template exists then the children
-     * may also exist, but their documentation (of template steps) may be out of date, so update that.
-     * @param dt The described template to check. Results are not currently checked.
-     * @return DBDescribedTemplate
+     * Update documentation of template steps.
+     * @param pkDescribedTemplate The primary key of the described template to update.
+     * @param dt The Java object representatioin of the described template to update.
+     * throws SQLException on error.
      */
-    Core.DBDescribedTemplate check(DescribedTemplate dt) throws Exception;
+    void updateDocumentation(long pkDescribedTemplate, DescribedTemplate dt) throws Exception;
 
     /**
      * Add a described template to db - it is known to not exist.
