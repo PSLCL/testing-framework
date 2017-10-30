@@ -661,7 +661,7 @@ public class AwsMachineProvider extends AwsResourceProvider implements MachinePr
         {
             MachineReservedResource resource = reservedMachines.remove(key);
             if(resource != null)
-                resource.run();
+                resource.release();
         }
     }
 
