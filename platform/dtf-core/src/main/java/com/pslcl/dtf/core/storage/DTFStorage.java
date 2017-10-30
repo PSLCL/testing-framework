@@ -252,14 +252,45 @@ public interface DTFStorage {
      */
     Optional<Core.DBDescribedTemplate> addToDB(DescribedTemplate dt, Boolean result, String owner, Date start, Date ready, Date complete) throws SQLException;
 
+    /**
+     *
+     * @param sync The template to sync.
+     * @return The primary key of new entry in table template.
+     * @throws SQLException on error.
+     */
     long syncTemplate(Template sync) throws SQLException;
 
+    /**
+     *
+     * @param pkTargetTest The primary key of relevant entry in table test.
+     * @param pkDescribedTemplate The primary key of the relevant entry in table described_template.
+     * @return The primary key of new entry in table test_instance.
+     * @throws SQLException on error.
+     */
     long insertTestInstance(long pkTargetTest, long pkDescribedTemplate) throws SQLException;
 
+    /**
+     *
+     * @param pkModule The primary key of relevant entry in table module.
+     * @param pkTestInstance The primary key of relevant entry in table test_instance.
+     * @throws SQLException on error.
+     */
     void addModuleToTestInstanceEntry(long pkModule, long pkTestInstance) throws SQLException;
 
+    /**
+     *
+     * @param ti The TestInstance object that holds information about the relevant entry in the run table.d
+     * @throws SQLException on error.
+     */
     void updateRunResult(TestInstance ti) throws SQLException;
 
+    /**
+     *
+     * @param testInstanceNumber The primary key of the existing entry in table test_instance.
+     * @param owner The owner. This can be null.
+     * @return The primary key of the new entry in table run.
+     * @throws Exception on error.
+     */
     Optional<Long> createInstanceRun(long testInstanceNumber, String owner) throws Exception;
 
     /**
@@ -279,6 +310,16 @@ public interface DTFStorage {
      */
     List<Long> getTestInstances(long pk_test) throws SQLException;
 
+    /**
+     *
+     * @param hash The hash of the relevant entry in table template.
+     * @param result The result in the relevant entry in table template.
+     * @param owner The owner in the relevant entry in table template.
+     * @param start The start_time in the relevant entry in table template.
+     * @param ready The ready_time in the relevant entry in table template.
+     * @param complete The end_time in the relevant entry in table template.
+     * @throws SQLException on error.
+     */
     void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete)throws SQLException;
 
     /**
@@ -288,10 +329,6 @@ public interface DTFStorage {
      * @throws SQLException on failure
      */
     void addResultToRun(long runID, boolean result) throws Exception;
-
-
-
-
 
     /**
      * See if test_instance.fk_described_template exists to match known primary key pkDescribedTemplate

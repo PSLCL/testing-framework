@@ -1186,11 +1186,11 @@ public class MySQLDtfStorage implements DTFStorage {
         String query = "INSERT INTO test_instance (fk_test, fk_described_template, phase, synchronized)" +
                        " VALUES (?,?,?,?)";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setLong(1, pkTargetTest);
-            preparedStatement.setLong(2, pkDescribedTemplate);
+            preparedStatement.setLong(columnIndex1, pkTargetTest);
+            preparedStatement.setLong(columnIndex2, pkDescribedTemplate);
             //TODO: Determine the phase
-            preparedStatement.setLong(3, 0);
-            preparedStatement.setInt(4, 1); // Default is synchronized.
+            preparedStatement.setLong(columnIndex3, 0);
+            preparedStatement.setInt(columnIndex4, 1); // Default is synchronized.
             preparedStatement.executeUpdate();
 
             try (ResultSet keys = preparedStatement.getGeneratedKeys()) {
@@ -1207,8 +1207,8 @@ public class MySQLDtfStorage implements DTFStorage {
     public void addModuleToTestInstanceEntry(long pkModule, long pkTestInstance) throws SQLException {
         String query = "INSERT INTO module_to_test_instance (fk_module, fk_test_instance) VALUES (?,?)";
         try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
-            preparedStatement.setLong(1, pkModule);
-            preparedStatement.setLong(2, pkTestInstance);
+            preparedStatement.setLong(columnIndex1, pkModule);
+            preparedStatement.setLong(columnIndex2, pkTestInstance);
             preparedStatement.execute();
         }
     }
@@ -1265,7 +1265,7 @@ public class MySQLDtfStorage implements DTFStorage {
             }
         }
 
-        String queryAddRun = "call add_run(?, ?, ?, ?, ?, ?)";
+        String queryAddRun = "call add_run(?, ?, ?, ?, ?, ?)"; // add_run: a stored procedure
         try (PreparedStatement runStatement = this.connect.prepareStatement(queryAddRun)) {
             runStatement.setString(1, hash);
             runStatement.setNull(2, Types.BOOLEAN);
@@ -1320,7 +1320,7 @@ public class MySQLDtfStorage implements DTFStorage {
     @Override
     public void reportResult(String hash, Boolean result, String owner, Date start, Date ready, Date complete) throws SQLException {
         if (!this.read_only) {
-            String query = "call add_run(?, ?, ?, ?, ?, ?)"; // stored procedure
+            String query = "call add_run(?, ?, ?, ?, ?, ?)"; // add_run: stored procedure
             try (PreparedStatement preparedStatement = this.connect.prepareStatement(query)) {
                 preparedStatement.setString(1, hash);
                 if (result != null)
@@ -1404,4 +1404,5 @@ public class MySQLDtfStorage implements DTFStorage {
             }
         }
     }
+
 }
