@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CancelTask implements Runnable {
-    private static final int SLEEPTIME = 1000 * 30; // 8 seconds
+    private static final int SLEEPTIME = 1000 * 30; // 30 seconds
     
     private final Logger log;
     private final String simpleName;

@@ -280,9 +280,10 @@ public class TemplateProvider implements ResourceStatusListener {
      * @throws Exception on any error
      */
     public InstancedTemplate getInstancedTemplate(RunEntryCore reCore, DBTemplate dbTemplate, RunnerMachine runnerMachine) throws Exception {
+        // Note: At some future time of dtf-runner shutdown, we release every template. To distinguish them, iT's constructor assigned each iT instance a unique mark number (a Long).
+        // Note: At any one time, there can exist multiple instanced templates of the same templateID string. They differ mainly in which test run (or parent template) had used each of these instanced templates.
+
         // First check our tracking- is a matching reusable template available?
-        // Note: At any one time, there can exist multiple instanced templates of the same templateID string. They differ only, or nearly only, in which test run (or parent template) had used each one.
-        //       At some future time of dtf-runner shutdown, we release every template. To distinguish them, iT's constructor assigned each iT instance a unique mark number (a Long).
         InstancedTemplate iT = null;
         if (!dbTemplate.isTopLevelTemplate()) {
             byte [] templateHash = dbTemplate.hash;
@@ -297,7 +298,7 @@ public class TemplateProvider implements ResourceStatusListener {
             }
         }
         if (iT == null)
-            iT = new InstancedTemplate(reCore, dbTemplate, runnerMachine); // sets internal StepsParser object, assigns a Long unique marker number, and runs template steps
+            iT = new InstancedTemplate(reCore, dbTemplate, runnerMachine); // assigns a Long unique marker number and runs template steps
         return iT;
     }
 
