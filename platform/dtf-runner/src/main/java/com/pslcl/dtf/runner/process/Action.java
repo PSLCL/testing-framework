@@ -86,7 +86,7 @@ public enum Action implements Actions {
             }
             // throwable or not, we remove reNum from active consideration- its test result is stored, UNLESS:
             //    - the test run is canceled. or
-            //    - thetest run is postponed, or
+            //    - the test run is postponed, or
             //    - the throwable is from the database storage call tring to write the result.
             reState.setAction(REMOVE);
             return reState.getAction();

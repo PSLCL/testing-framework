@@ -421,7 +421,7 @@ public class InstancedTemplate {
                                     // bind processing has advanced and may require waiting for Future(s); notification of current progress comes to us below, after we have initiated the processing of other steps of this step set
                                 } catch (ResourceNotReservedException rnre) {
                                     this.postponed = true;
-                                    log.debug("bindHandler() postpones test run while processing steps of setID " + setID + " for templateID " + this.getTemplateID() + ", of templateInstanceID " + this.getTemplateInstanceID());
+                                    log.debug("bindHandler() postpones test run while processing steps of setID " + setID + " for templateID " + this.getTemplateID() + ", of templateInstanceID " + this.getTemplateInstanceID() + ", exception msg: " + rnre);
                                     continue; // out of our step processing while() loop, for our current setId
                                 }
                             } else {
@@ -550,7 +550,7 @@ public class InstancedTemplate {
                             ++setStepOffset;
                             ++currentStepReference;
                             break;
-                        }
+                        } // end switch()
                     } catch (ArrayIndexOutOfBoundsException ae) {
                         log.error(simpleName + "malformed step");
                         throw ae;
@@ -584,7 +584,7 @@ public class InstancedTemplate {
                             bindHandler.proceed();
                         } catch (ResourceNotReservedException rnre) {
                             this.postponed = true;
-                            log.debug("bindHandler() postpones test run while processing steps of setID " + setID + " for templateID " + this.getTemplateID() + ", of templateInstanceID " + this.getTemplateInstanceID());
+                            log.debug("bindHandler() postpones test run while processing steps of setID " + setID + " for templateID " + this.getTemplateID() + ", of templateInstanceID " + this.getTemplateInstanceID() + ", exception msg " + rnre);
                             continue; // out of our step processing do-while() loop for the current setId
                         }
 
@@ -765,38 +765,46 @@ public class InstancedTemplate {
 //                  if (!this.isTestRunCanceled())
 //                      stepsNeedCompletionForThisStepSet = true;
                 } while (stepsNeedCompletionForThisStepSet && !this.isTestRunCanceled() && !this.isTestRunFailed()); // end do/while loop: process all step commands for same setID
+
                 for (RunnableProgram rp : needsLogsCaptured)
                     rp.captureLogsToS3();
             } // end for(): process each step set, in sequence
         } catch (Exception e) {
             // this catches e from this entire .runSteps() method call
-            if (!this.postponed && ResourceNotReservedException.class.isAssignableFrom(e.getClass()))
+            boolean epostpone = ResourceNotReservedException.class.isAssignableFrom(e.getClass());
+            if (epostpone) {
+                log.debug("runSteps() sees ResourceNotReservedException in general Exception catch, testRun postpone " +
+                        (this.postponed ? "already established" : "now engaged") +
+                        "; for templateID " + this.getTemplateID() + ", templateInstanceID " + this.getTemplateInstanceID());
                 this.postponed = true;
-            this.result = false;
-            this.reusable = false;
-            if (this.postponed)
-                log.debug(this.simpleName + "runSteps() cannot reserve one or more resources, for templateID " + this.getTemplateID() + ", templateInstanceID " + this.getTemplateInstanceID());
-            else
-                log.debug(this.simpleName + "runSteps() errors out for templateID " + this.getTemplateID() + ", templateInstanceID " + this.getTemplateInstanceID());
-            try {
-                this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT's resources by informing resource providers
-            } catch (Exception e1) {
-                // swallow this exception, it does not relate to the actual test run
-                log.warn(this.simpleName + "after runSteps() fails out, or is postponed, problem reported for releasing the template, msg: " + e1);
             }
-            if (!this.postponed)
-                throw e; // e is the actual template errors-out exception
-        }
 
-        if (result==null && !waitForInspect)
-            result = true; // TODO: why true?
+            if (!this.postponed) {
+                this.result = false;
+                this.reusable = false;
+                log.debug(this.simpleName + "runSteps() errors out for templateID " + this.getTemplateID() + ", templateInstanceID " + this.getTemplateInstanceID());
+                try {
+                    this.runnerMachine.getTemplateProvider().releaseTemplate(this); // removes mark, cleans up by iT's resources by informing resource providers
+                } catch (Exception e1) {
+                    // swallow this exception, it does not relate to the actual test run
+                    log.warn(this.simpleName + "after runSteps() fails out, or is postponed, problem reported for releasing the template, msg: " + e1);
+                }
+                throw e; // e is the actual template errors-out exception
+            }
+        } // end catch (e)
+
+        // here only for either no exception, or true this.postponed
         String templateID = this.getTemplateID();
-        if (this.isTestRunCanceled())
+        if (this.isTestRunCanceled()) {
             log.debug(".runSteps() CANCELED, for reNum " + this.getRunID() + ", templateID " + templateID);
-        else if (this.postponed)
+        } else if (this.postponed) {
+            this.reusable = false; // certainly not reusable if resources cannot be reserved
             log.debug(".runSteps() POSTPONES test run, for reNum " + this.getRunID() + ", templateID " + templateID);
-        else
+        } else {
             log.debug(".runSteps() COMPLETES without error, for reNum " + this.getRunID() + ", templateID " + templateID);
+            if (result == null && !waitForInspect)
+                result = true; // completed inspect does not fill result, so we label the test run PASS
+        }
     }
 
 //    private void logProgramResults(RunnableProgram runnableProgram, long runID){

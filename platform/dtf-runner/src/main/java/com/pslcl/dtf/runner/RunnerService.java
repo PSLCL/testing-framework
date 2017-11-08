@@ -270,18 +270,27 @@ public class RunnerService implements Runner, RunnerServiceMBean
         try
         {
             if (ProcessTracker.isResultStored(this.dbConnPool, reNum)) {
-                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + " has a non-null result already stored. Acking this reNum now.");
+                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() +
+                                                          ".submitQueueStoreNumber() finds reNum " + reNum +
+                                                          " has a non-null result already stored. Acking reNum now.");
                 ackRunEntry(message);
             } else if (processTracker.isRunning(reNum)) {
-                LoggerFactory.getLogger(getClass()).trace(getClass().getSimpleName() + ".submitQueueStoreNumber() finds reNum " + reNum + ", work already processing. No action taken. ");
+                LoggerFactory.getLogger(getClass()).trace(getClass().getSimpleName() +
+                                                          ".submitQueueStoreNumber() finds reNum " + reNum +
+                                                          ", work already processing. No action taken. ");
             } else {
-                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".submitQueueStoreNumber() submits reNum " + reNum + " for testRun processing. ");
-                // This call must ack the message, or cause it to be acked out in the future. Failure to do so will repeatedly re-introduce this reNum.
+                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() +
+                                                          ".submitQueueStoreNumber() submits reNum " + reNum +
+                                                          " for testRun processing. ");
+                // This call must ack the message, or cause it to be acked out in the future.
+                // Failure to do so will repeatedly re-introduce this reNum.
                 runnerMachine.initiateProcessing(reNum, message);
             }
         } catch (Throwable t) {
             // do nothing; reNum remains in InstanceStore, we will see it again
-            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + ".submitQueueStoreNumber() sees exception for reNum " + reNum + ". Leave reNum in QueueStore. Exception msg: " + t);
+            LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() +
+                                    ".submitQueueStoreNumber() sees exception for reNum " + reNum +
+                                    ". Leave reNum in QueueStore. Exception msg: " + t);
             throw t;
         }
     }

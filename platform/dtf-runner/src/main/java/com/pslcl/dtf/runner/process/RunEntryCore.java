@@ -315,7 +315,7 @@ public class RunEntryCore {
 
     /** constructor
      *
-     *@param dbConnPool The database connection pool
+     * @param dbConnPool The database connection pool
      * @param reNum The run entry number
      * @throws Exception on any area
      */
@@ -495,20 +495,6 @@ public class RunEntryCore {
 
     /**
      *
-     * @param runnerService The RunnerService
-     * @param result Result of the test run
-     * @param postponed test run is postponed
-     * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
-     */
-    private void closeCancelTask_storeResult_ackMessageQueue(RunnerService runnerService, Boolean result, boolean postponed) throws Exception {
-        // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
-        this.closeCancelTask();
-        this.topDBTemplate.result = result;
-        this.storeResultAndAckMessageQueue(runnerService, postponed);
-    }
-
-    /**
-     *
      * @param runnerService
      * @param postponed test run is postponed
      * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
@@ -548,7 +534,21 @@ public class RunEntryCore {
         }
     }
 
-        // unneeded- our real approach involves an api to come to us soon
+    /**
+     *
+     * @param runnerService The RunnerService
+     * @param result Result of the test run
+     * @param postponed test run is postponed
+     * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
+     */
+    private void closeCancelTask_storeResult_ackMessageQueue(RunnerService runnerService, Boolean result, boolean postponed) throws Exception {
+        // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
+        this.closeCancelTask();
+        this.topDBTemplate.result = result;
+        this.storeResultAndAckMessageQueue(runnerService, postponed);
+    }
+
+    // unneeded- our real approach involves an api to come to us soon
 //        // prove that api works to get files from the build machine
 //        String endpoint = null;
 //        QuickBuildArtifactProvider qbap = new QuickBuildArtifactProvider(endpoint);

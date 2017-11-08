@@ -79,7 +79,8 @@ public class RunEntryTask implements Runnable {
             try {
                 Action newAction = reState.getNewAction(); // blocks until action changes to something new
                 Action nextAction = newAction.act(reState, reCore, runnerMachine.getService());
-                log.debug(simpleName + "run() ran Action " + newAction.toString() + " for reNum " + reNum + ", finds next action " + nextAction.toString());
+                log.debug(simpleName + "run() ran Action " + newAction.toString() + " for reNum " + reNum +
+                                       ", finds next action " + nextAction.toString());
                 if (nextAction == Action.DISCARDED)
                     break; // close thread
             } catch (Throwable t) {

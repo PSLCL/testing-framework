@@ -709,7 +709,7 @@ public final class DistributedTestingFramework
     private static void storeTestRuns_db_queue(SQSTestPublisher sqs, Core core, String owner, Collection<Long> manualTestInstanceNumbers, Collection<Long> testRuns) {
         for (Long manualTestInstanceNumber : manualTestInstanceNumbers) {
             try {
-                Long runID = core.createInstanceRun(manualTestInstanceNumber, owner);
+                Long runID = core.createInstanceRun(manualTestInstanceNumber, owner); // calls stored procedure
                 if (runID != null) {
                     testRuns.add(runID);
                     LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
