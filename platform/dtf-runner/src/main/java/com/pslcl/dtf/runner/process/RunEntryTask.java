@@ -37,8 +37,7 @@ public class RunEntryTask implements Runnable {
     /**
      * Constructor: From a given run entry number, initiate execution of its test run.
      *
-     * Note: Step 1 Check to see if first time setup is accomplished; if not, setup our testrunExecutor.
-     * Note: Step 2 Submit this test instance to the testRunExecutorService for future execution.
+     * Note: Submit reNum to the testRun executor service for future execution.
      * Note: Every thread or task created by this class closes itself automatically, whether seconds or days from instantiation.
      * @param runnerMachine The RunnerMachine
      * @param reNum The run entry number
@@ -51,9 +50,11 @@ public class RunEntryTask implements Runnable {
         this.reNum = reNum;
         //this.runInstanceThreadName = new String("runEntry " + reNum);
         this.reCore = new RunEntryCore(this.runnerMachine.getDBConnPool(), reNum);
+        // the above fills in column ready_time of our db run table row, unless ready_time was already filled
 
         try {
-            runnerMachine.getConfig().blockingExecutor.execute(this); // schedules call to this.run(); this is the full execution of the specified test run
+            // schedule call to .run(), which initiates .testRun(); this is the full execution of the specified test run
+            runnerMachine.getConfig().blockingExecutor.execute(this);
         } catch (Exception e) {
             log.error(simpleName + "constructor failed for reNum " + reNum + ", with Exception " + e);
             throw e;
@@ -78,6 +79,7 @@ public class RunEntryTask implements Runnable {
         while(true) {
             try {
                 Action newAction = reState.getNewAction(); // blocks until action changes to something new
+                // goal is to get to Action.TESTRUN, which calls RunEntryCore.testRun()
                 Action nextAction = newAction.act(reState, reCore, runnerMachine.getService());
                 log.debug(simpleName + "run() ran Action " + newAction.toString() + " for reNum " + reNum +
                                        ", finds next action " + nextAction.toString());

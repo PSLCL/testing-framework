@@ -127,10 +127,10 @@ public class RunEntryCore {
     }
 
     /**
-     * load data for reNum in topDBTemplate
+     * from database, load data for reNum in topDBTemplate
      */
     private void loadRunEntryData() throws Exception {
-        // meant to be called once only; if more than once becomes useful, might work but review
+        // meant to be called once only, per test run emitted by msg queue; if more than once becomes useful, might work but review
         Connection connection = null;
         Statement statement = null;
         ResultSet resultSet = null;
@@ -138,6 +138,7 @@ public class RunEntryCore {
             connection = this.dbConnPool.getConnection();
             statement = connection.createStatement();
             if (this.reNum != null) {
+                // REVIEW: start_time appears to be set only at the time that reNum was placed in the msg queue
                 String strRENum = String.valueOf(this.reNum);
 
                 // These table run entries are filled: pk_run, fk_template, start_time, and maybe owner.
@@ -495,33 +496,35 @@ public class RunEntryCore {
 
     /**
      *
-     * @param runnerService
-     * @param postponed test run is postponed
-     * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
+     * @param runnerService The RunnerService that governs our test run.
+     * @param paramPostponed Our test run is postponed.
+     * @throws Exception Swallows all operational exceptions, but still throws things like null pointer exception.
      */
-    private void storeResultAndAckMessageQueue(RunnerService runnerService, boolean postponed) throws Exception {
+    private void storeResultAndAckMessageQueue(RunnerService runnerService, boolean paramPostponed) throws Exception {
         boolean resultNowStored = false;
         Boolean foundResult = RunEntryCore.getResult(this.dbConnPool, reNum);
         // Note: When a test run actually fails or succeeds, this is the only path that writes the result portion of the run entry. To see foundResult not null, right now, might indicate some sort of double run of the test run
 
         if (foundResult == null) {
             // note: we do not get here when test run is canceled
-            try {
-                storeResultRunEntryData();
-                resultNowStored = true;
-                log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
-            } catch (Exception e) {
-                // swallow this exception, it does not relate to the actual test run
-                log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", failed to store to database this result: " + this.topDBTemplate.result + "; message queue not acked"); // result can be null, true, or false
+            if (!paramPostponed) {
+                try {
+                    storeResultRunEntryData();
+                    resultNowStored = true;
+                    log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", stored to database this result: " + this.topDBTemplate.result); // result can be null, true, or false
+                } catch (Exception ignore) {
+                    // swallow this exception, it does not relate to the actual test run
+                    log.debug(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", failed to store to database this result: " + this.topDBTemplate.result + "; message queue not acked"); // result can be null, true, or false
+                }
             }
         } else {
-               log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum);
+            log.debug(simpleName + ".storeResultAndAckMessageQueue() finds result already stored for reNum " + this.topDBTemplate.reNum);
         }
 
-        if (foundResult!=null || resultNowStored) {
-               // ack the message queue
+        if ((foundResult!=null || resultNowStored) && !paramPostponed) {
+            // ack the message queue
 
-            // temporarily, comment out these next 9 lines, to prevent acking the message queue
+            // temporarily: to prevent acking the message queue, comment out these next 9 lines
             try {
                 RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
                 Object message = reState.getMessage();
@@ -538,14 +541,14 @@ public class RunEntryCore {
      *
      * @param runnerService The RunnerService
      * @param result Result of the test run
-     * @param postponed test run is postponed
+     * @param paramPostponed test run is postponed
      * @throws Exception Swallows all operational exceptions, will throw things like null pointer exception.
      */
-    private void closeCancelTask_storeResult_ackMessageQueue(RunnerService runnerService, Boolean result, boolean postponed) throws Exception {
+    private void closeCancelTask_storeResult_ackMessageQueue(RunnerService runnerService, Boolean result, boolean paramPostponed) throws Exception {
         // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
         this.closeCancelTask();
         this.topDBTemplate.result = result;
-        this.storeResultAndAckMessageQueue(runnerService, postponed);
+        this.storeResultAndAckMessageQueue(runnerService, paramPostponed);
     }
 
     // unneeded- our real approach involves an api to come to us soon

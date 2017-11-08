@@ -266,6 +266,9 @@ public class RunnerService implements Runner, RunnerServiceMBean
     @Override
     public void submitQueueStoreNumber(String strRunEntryNumber, Message message) throws Throwable
     {
+        // OVERVIEW: This is called for every msg queue entry that is produced, which can happen multiple times.
+        //              The msg queue, and matching db run table entry, were filled by .storeTestRuns_db_queue().
+        //           Parameter strRunEntryNumber becomes our reNum java long.
         long reNum = Long.parseLong(strRunEntryNumber);
         try
         {
@@ -284,7 +287,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
                                                           " for testRun processing. ");
                 // This call must ack the message, or cause it to be acked out in the future.
                 // Failure to do so will repeatedly re-introduce this reNum.
-                runnerMachine.initiateProcessing(reNum, message);
+                runnerMachine.initiateProcessing(reNum, message); // starts up Action processing for reNum
             }
         } catch (Throwable t) {
             // do nothing; reNum remains in InstanceStore, we will see it again
