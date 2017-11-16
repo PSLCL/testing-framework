@@ -751,10 +751,17 @@ public final class DistributedTestingFramework
      * @param sqs must not be null
      * @param core the relevant Core object
      * @param owner the test run owner
-     * @param manualTestInstanceNumbers the collection of test instances
+     * @param manualTestInstanceNumbers The collection of test instances to request matching test runs.
      * @param testRuns the collection of matching test runs
      */
     private static void storeTestRuns_db_queue(SQSTestPublisher sqs, Core core, String owner, Collection<Long> manualTestInstanceNumbers, Collection<Long> testRuns) {
+        // OVERVIEW: This fills msg queue with a set of new runID's, and adds corresponding entries to the db run table.
+        //              The start_time column of the new run table row is filled with now time.
+        //           This is called one time by DistributedTestingFramework, with its "runner" command-line parameters.
+        //           Thereafter, the msg queue emits the relevant reNum to the dtf runner service,
+        //              repeatedly if needed, until the corresponding test run has completed.
+        //              That works starts at RunnerService.submitQueueStoreNumber().
+        //              Column ready_time of the new run table row is filled with the time of the first msg queue emit.
         for (Long manualTestInstanceNumber : manualTestInstanceNumbers) {
             try {
                 Optional<Long> optionalRunID;
@@ -771,8 +778,8 @@ public final class DistributedTestingFramework
                     LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
 
                     // place just now database-stored test run in dtf's test run queue
-                    sqs.publishTestRunRequest(runID);
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + runID);
+                    sqs.publishTestRunRequest(reNum);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + reNum);
                 } else {
                     LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.storeTestRuns_db_queue(): test run NOT stored to db for testInstance number " + manualTestInstanceNumber +
                                                                                     "; test run may already be stored");

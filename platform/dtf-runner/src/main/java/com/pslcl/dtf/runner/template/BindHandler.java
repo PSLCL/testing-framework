@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import com.pslcl.dtf.core.runner.resource.exception.ResourceNotReservedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,14 +161,17 @@ public class BindHandler {
                     // The pattern is that this first work, accomplished at the first .proceed() call, must not block. We return before performing any blocking work, knowing that .proceed() will be called again.
                     //     reserve loop
                     if (!this.reserveResourceRequests.isEmpty()) {
+                        // reserve a resource
                         if (this.currentRPFutureListOfRRD == null) {
                             // ask next-in-line ResourceProvider to reserve the resources in reserveResourceRequests
                             if (this.nextIndexResourceProvider >= this.listResourceProviders.size()) {
                                 // Note: As an initial working step, proceed() is coded to a safe algorithm:
                                 //       We expect full reserved success and resultant full bind success, and otherwise we back out and release whatever reservations and binds had succeeded along the way.
+                                //       However, for the special case that a resource simply could not be reserved, we do not throw 'Exception', for that would be fail the test run.
+                                //           Instead, we throw 'ResourceNotReservedException', which is interpreted to mean "postpone this test run."
                                 log.debug(simpleName + this.listResourceProviders.size() + " resource providers reserved " + this.reservedResources.size() +
-                                        " resources, but cannot reserve " + this.reserveResourceRequests.size() + " resources");
-                                throw new Exception("resource providers cannot reserve all resources required by template bind steps");
+                                                       " resources, but cannot reserve " + this.reserveResourceRequests.size() + " resources");
+                                throw new ResourceNotReservedException("resource providers could not reserve a resource required by template bind steps, resource may be unavailable");
                             }
                             this.currentRP = this.listResourceProviders.get(this.nextIndexResourceProvider++);
 

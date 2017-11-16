@@ -84,7 +84,10 @@ public enum Action implements Actions {
             } catch (Throwable t) {
                 log.warn("Action.TESTRUN() sees testRun() throwable: " + t, t);
             }
-            // exception or not, we remove reNum from active consideration- its test result is stored (unless the exception is from the database storage call)
+            // throwable or not, we remove reNum from active consideration- its test result is stored, UNLESS:
+            //    - the test run is canceled. or
+            //    - the test run is postponed, or
+            //    - the throwable is from the database storage call tring to write the result.
             reState.setAction(REMOVE);
             return reState.getAction();
         }
@@ -93,6 +96,11 @@ public enum Action implements Actions {
     REMOVE {
         @Override
         Action act(RunEntryState reState, RunEntryCore reCore, RunnerService runnerService) {
+            // Remove reNum from RunEntryStateStore, our map of run actions. Our message queue handling is separate.
+            //    The presence or absence of any entry in our input message queue has nothing to do with this "REMOVE".
+            // Note: Postponing a test run (only happens when a resource cannot currently be reserved) relies
+            //       on the msg queue to present reNum again. We will ignore the re-presented reNum, however,
+            //       until that reNum has been removed from our list of active run entries. Action.REMOVE does that.
             long reNum = reState.getRunEntryNumber();
             log.debug("Action.REMOVE() removes reNum " + reNum);
 

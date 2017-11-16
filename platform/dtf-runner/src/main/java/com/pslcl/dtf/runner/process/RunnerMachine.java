@@ -125,16 +125,20 @@ public class RunnerMachine {
     /**
      * Note: For possible detected conditions, this can potentially drop reNum, the given run entry number.
      * @param reNum
+     * @param reState
+     * @throws Exception
      */
     void engageRunEntry(long reNum, RunEntryState reState) throws Exception {
         // check runnerService availability, by configured limit or otherwise
         if (this.getService().isAvailableToProcess())
         {
-            log.debug(simpleName + "engageRunEntry() processes reNum/action/message " + reNum + "/" + reState.getAction() + "/" + reState.getMessage());
+            log.debug(simpleName + "engageRunEntry() processes reNum/action/message " + reNum + "/" +
+                                   reState.getAction() + "/" + reState.getMessage());
             RunEntryState reStateOld = this.getService().runEntryStateStore.get(reNum);
             if (reStateOld != null) {
-                log.warn(simpleName + "engageRunEntry() finds existing reState while processing reNum/action/message " + reNum + "/" + reState.getAction() +    "/" + reState.getMessage() +
-                                                                        ". reStateOld holds " + reStateOld.getRunEntryNumber() + "/" + reStateOld.getAction() + "/" + reStateOld.getMessage());
+                log.warn("engageRunEntry() finds existing reState while processing reNum/action/message " + reNum +
+                         "/" + reState.getAction() +    "/" + reState.getMessage() + ". reStateOld holds " +
+                         reStateOld.getRunEntryNumber() + "/" + reStateOld.getAction() + "/" + reStateOld.getMessage());
                 throw new Exception("Attempt to launch duplicate runEntry, the new runEntry is dropped");
             }
             this.getService().runEntryStateStore.put(reNum, reState);
@@ -145,11 +149,13 @@ public class RunnerMachine {
                 new RunEntryTask(this, reNum);
             } catch (Exception e) {
                 this.getService().runEntryStateStore.remove(reNum);
-                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".engageRunEntry() failed to engage reNum " + reNum);
+                LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() +
+                                                          ".engageRunEntry() failed to engage reNum " + reNum);
                 throw e;
             }
         } else {
-            LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".engageRunEntry() postpones reNum " + reNum + ": runnerService limit reached");
+            LoggerFactory.getLogger(getClass()).debug(getClass().getSimpleName() + ".engageRunEntry() postpones reNum "
+                                                      + reNum + ": runnerService limit reached");
         }
     }
 
