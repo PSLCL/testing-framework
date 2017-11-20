@@ -778,8 +778,8 @@ public final class DistributedTestingFramework
                     LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
 
                     // place just now database-stored test run in dtf's test run queue
-                    sqs.publishTestRunRequest(reNum);
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + reNum);
+                    sqs.publishTestRunRequest(runID);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + runID);
                 } else {
                     LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.storeTestRuns_db_queue(): test run NOT stored to db for testInstance number " + manualTestInstanceNumber +
                                                                                     "; test run may already be stored");
