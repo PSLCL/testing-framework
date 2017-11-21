@@ -52,7 +52,7 @@ public class InstancedTemplate {
     private Boolean result;
     private boolean waitForInspect;
     private boolean reusable;
-    private boolean postponed;
+    public boolean postponed;
 
     private StepsParser stepsParser;
 

@@ -101,8 +101,6 @@ public class RunEntryCore {
     private DBTemplate topDBTemplate = null; // describes the top-level template only, i.e. the template that is matched to the run table entry known as reNum
     private CancelTask cancelTask;
     private volatile boolean testRunIsCanceled; // volatile fixes a bug where an old and wrong value tends to be returned, caused by other threads are hogging time somewhat
-    private boolean postponed;
-
 
     // private methods
 
@@ -328,7 +326,7 @@ public class RunEntryCore {
         topDBTemplate = new DBTemplate(this.reNum);
         this.cancelTask = null;
         this.testRunIsCanceled = false;
-        this.postponed = false;
+
         try {
               // fill all fields of topDBTemplate from the existing existing database entries
             loadRunEntryData(); // throws Exception for no database entry for this.reNum
@@ -430,6 +428,7 @@ public class RunEntryCore {
         Boolean result = new Boolean(false);
         InstancedTemplate topIT = null;
 
+        boolean postponed = false;
         try {
             // Setup test run cancellation, prior to starting our test run.
             //        While a test run is in progress, a user can cancel it, by entering a fail result in "our" run table entry.
@@ -441,9 +440,11 @@ public class RunEntryCore {
             // Block for the entire test run. This call executes all the template steps of our top level template (represented by this.topDBTemplate).
             topIT = runnerMachine.getTemplateProvider().getInstancedTemplate(this, this.topDBTemplate, runnerMachine);
 
-            boolean canceled = this.testRunIsCanceled;
             this.checkRunCancel(); // last chance to detect cancel and set this.testRunIsCanceled
-            if (!canceled && !this.postponed) {
+            boolean canceled = this.testRunIsCanceled;
+            postponed = topIT.postponed;
+
+            if (!canceled && !postponed) {
                 result = topIT.getResult(); // true = passed, false = failed, null = no result(inspect).
                 log.info("Test run " + reNum + " completed with result " + result);
             } else if (canceled) {
@@ -457,7 +458,7 @@ public class RunEntryCore {
             log.warn(".testRun() failed to execute test run " + reNum + ", throwable msg: " + t,t);
             throw t;
         } finally {
-            this.closeCancelTask_storeResult_ackMessageQueue(runnerMachine.getService(), result, this.postponed);
+            this.closeCancelTask_storeResult_ackMessageQueue(runnerMachine.getService(), result, postponed);
         }
 
         // Note: For the catch Throwable t case, above, the template has already cleaned itself up. It was handled internally, by exception processing code.
@@ -529,11 +530,13 @@ public class RunEntryCore {
                 RunEntryState reState = runnerService.runEntryStateStore.get(this.reNum);
                 Object message = reState.getMessage();
                 runnerService.ackRunEntry(message);
-                log.debug(simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
+                log.debug(".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", acked message queue");
             } catch (Exception e) {
                 // swallow this exception, it does not relate to the actual test run
-                log.warn(this.simpleName + ".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but failed to ack the message queue. The attempt to ack gives this message: " + e.getMessage());
+                log.warn(".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + ", sees stored result but failed to ack the message queue. The attempt to ack gives this message: " + e.getMessage());
             }
+        } else if (paramPostponed) {
+            log.debug(".storeResultAndAckMessageQueue(), for reNum " + this.topDBTemplate.reNum + " is postponed and avoids storing result and acking msg queue");
         }
     }
 
@@ -547,7 +550,8 @@ public class RunEntryCore {
     private void closeCancelTask_storeResult_ackMessageQueue(RunnerService runnerService, Boolean result, boolean paramPostponed) throws Exception {
         // Our input is this.topDBTemplate. It has been filled from our reNum entry in table run and its one linked entry in table template. Its start_time and ready_time are filled and stored to table run.
         this.closeCancelTask();
-        this.topDBTemplate.result = result;
+        if (!paramPostponed)
+            this.topDBTemplate.result = result;
         this.storeResultAndAckMessageQueue(runnerService, paramPostponed);
     }
 
