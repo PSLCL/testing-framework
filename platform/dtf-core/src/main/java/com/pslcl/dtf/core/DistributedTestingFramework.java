@@ -15,6 +15,24 @@
  */
 package com.pslcl.dtf.core;
 
+import com.pslcl.dtf.core.artifact.Artifact;
+import com.pslcl.dtf.core.artifact.ArtifactProvider;
+import com.pslcl.dtf.core.artifact.ArtifactProvider.ModuleNotifier;
+import com.pslcl.dtf.core.artifact.Content;
+import com.pslcl.dtf.core.artifact.Module;
+import com.pslcl.dtf.core.generator.Generator;
+import com.pslcl.dtf.core.generator.resource.Attributes;
+import com.pslcl.dtf.core.generator.resource.Machine;
+import com.pslcl.dtf.core.generator.template.Template;
+import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -27,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,29 +56,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.slf4j.LoggerFactory;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.commons.io.FileUtils;
-
-import com.pslcl.dtf.core.artifact.Artifact;
-import com.pslcl.dtf.core.artifact.ArtifactProvider;
-import com.pslcl.dtf.core.artifact.ArtifactProvider.ModuleNotifier;
-import com.pslcl.dtf.core.artifact.Content;
-import com.pslcl.dtf.core.artifact.Module;
-import com.pslcl.dtf.core.generator.Generator;
-import com.pslcl.dtf.core.generator.resource.Attributes;
-import com.pslcl.dtf.core.generator.resource.Machine;
-import com.pslcl.dtf.core.generator.template.Template;
-import com.pslcl.dtf.core.runner.messageQueue.SQSTestPublisher;
 
 // this "final" class cannot be extended
 public final class DistributedTestingFramework
@@ -167,8 +168,7 @@ public final class DistributedTestingFramework
 
     private static class HandleModule implements ArtifactProvider.ModuleNotifier
     {
-        private static class DelayedModuleMergeAction
-        {
+        private static class DelayedModuleMergeAction {
             private ArtifactProvider source = null;
             private String merge = null;
             private Module module = null;
@@ -177,17 +177,14 @@ public final class DistributedTestingFramework
         private Core core;
         private List<DelayedModuleMergeAction> delayedModuleMergeAction = new ArrayList<DelayedModuleMergeAction>();
 
-        HandleModule(Core core)
-        {
+        HandleModule(Core core) {
             this.core = core;
         }
 
-        private void decompress(Hash hash, long pk_version, long pk_parent, String configuration, boolean merge_source, long pk_source_module)
-        {
+        private void decompress(Hash hash, long pk_version, long pk_parent, String configuration, boolean merge_source, long pk_source_module) {
             TarArchiveInputStream ti = null;
-            try
-            {
-                File f = core.getContentFile(hash);
+            try  {
+                File f = this.core.getContentFile(hash);
                 if (f == null) {
                     String msg = ".getContentFile() returned null";
                     LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).warn(msg);
@@ -198,8 +195,7 @@ public final class DistributedTestingFramework
                 /* Uncompress and unarchive the file, creating entries for each artifact found inside. */
                 InputStream is = new GzipCompressorInputStream(archive);
                 ti = new TarArchiveInputStream(is);
-                while (true)
-                {
+                while (true) {
                     TarArchiveEntry entry = ti.getNextTarEntry();
                     if (entry == null)
                         break;
@@ -213,54 +209,59 @@ public final class DistributedTestingFramework
                         artifact = artifact.substring(2);
 
                     int mode = entry.getMode();
-                    Hash h = core.addContent(ti, entry.getSize());
-                    core.addArtifact(pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module);
+                    Hash h = this.core.addContent(ti, entry.getSize());
+                    try {
+                        this.core.getStorage().addArtifact(pk_version, configuration, artifact, mode, h, merge_source, pk_parent, pk_source_module);
+                    } catch (SQLException sqle) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
+                        // fall through to go to the top of the while() loop
+                    }
                 }
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.decompress(): Failure extracting file, " + e.getMessage());
-            } finally
-            {
+            } finally {
                 if (ti != null)
-                    try
-                    {
+                    try {
                         ti.close();
-                    } catch (IOException ignored)
-                    {
+                    } catch (IOException ignored) {
                         // Ignore
                     }
             }
         }
 
         @Override
-        public void module(ArtifactProvider source, Module module, String merge)
-        {
-            try
-            {
+        public void module(ArtifactProvider source, Module module, String merge) {
+            try {
                 // Check to see if the module exists. If it does then return.
                 // If it does not exist then add the module and iterate the artifacts.
-                long pk_module = core.findModule(module);
-                if (pk_module != 0)
-                {
-                    core.updateModule(pk_module); // clear module.missing_count
+                long pk_module = 0;
+                try {
+                    pk_module = this.core.getStorage().findModule(module);
+                } catch (Exception sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .module(): Continues even though couldn't find module, msg: " + sqle);
+                }
+
+                if (pk_module != 0) {
+                    try {
+                        this.core.getStorage().updateModule(pk_module); // clear module.missing_count
+                    } catch (SQLException sqle) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("HandleModule.updateModule(): Couldn't update module, msg: " + sqle);
+                    }
                     return;
                 }
 
                 // Determine if the module contains a test generator - this triggers deletion of prior stored modules of same version number.
                 List<Artifact> artifacts = module.getArtifacts();
                 boolean contains_generator = false;
-                for (Artifact artifact : artifacts)
-                {
-                    if (artifact.getConfiguration().equals("dtf_test_generator"))
-                    {
+                for (Artifact artifact : artifacts) {
+                    if (artifact.getConfiguration().equals("dtf_test_generator")) {
                         contains_generator = true;
                         break;
                     }
                 }
 
                 boolean merge_source = false;
-                if (merge != null && merge.length() > 0)
-                {
+                if (merge != null && merge.length() > 0) {
                     // this ALSO triggers deletion of prior stored modules of same version number
                     merge_source = true;
                     DelayedModuleMergeAction D = new DelayedModuleMergeAction();
@@ -284,52 +285,68 @@ public final class DistributedTestingFramework
                 // THIS CALL MUST HAPPEN BEFORE THE MODULE IS ADDED TO TABLS module, BELOW.
                 // IT IS ASSUMED THAT THE MODULE'S BUILD SEQUENCE NUMBER IS LATER THAN ALL EXISTING.
                 if (contains_generator || (merge!=null && merge.length()>0))
-                    core.deletePriorBuildSequenceNumbers(module);
+                    this.core.deletePriorBuildSequenceNumbers(module);
 
-                long pkModule = core.addModule(module);
-                for (Artifact artifact : artifacts)
-                {
+                long pkModule = 0;
+                try {
+                    pkModule = this.core.getStorage().addModule(module);
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> module(): Continues even though could not add module, " + sqle);
+                }
+
+                for (Artifact artifact : artifacts) {
                     Content content = artifact.getContent();
-                    if (content != null)
-                    {
+                    if (content != null) {
                         InputStream is = content.asStream();
-                        if (is != null)
-                        {
-                            Hash h = core.addContent(is, -1); // -1: consume stream is until exhausted
-                            long pk_artifact = core.addArtifact(pkModule, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
-                            if (artifact.getName().endsWith(".tar.gz"))
-                            {
+                        if (is != null) {
+                            Hash h = this.core.addContent(is, -1); // -1: consume stream is until exhausted
+                            long pk_artifact = 0;
+                            try {
+                                pk_artifact = this.core.getStorage().addArtifact(pkModule, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, merge_source, 0, 0);
+                            } catch (SQLException sqle) {
+                                LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
+                                continue;
+                            }
+
+                            if (artifact.getName().endsWith(".tar.gz")) {
                                 decompress(h, pkModule, pk_artifact, artifact.getConfiguration(), merge_source, 0);
                             }
                         } else {
-                            LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream");
+                            LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("DistributedTestingFramework.HandleModule.module(): skips one artifact having null InputStream, name: " + artifact.getName());
                         }
                     } else {
-                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content");
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.module() skips one artifact having null Content, name: " + artifact.getName());
                     }
                 }
-            } catch (Exception ignored)
-            {
+            } catch (Exception ignored) {
                 // TODO
             }
         }
 
         @Override
-        protected void finalize() // this overrides java's Object.finalize()
-        {
+        protected void finalize() { // this overrides java's Object.finalize()
             markMergeFromModule();
         }
 
-        private void markMergeFromModule()
-        {
-            Iterable<Module> modules = core.createModuleSet();
-            for (DelayedModuleMergeAction d : delayedModuleMergeAction)
-            {
-                Module dmod = d.module;
-                long pk_source_module = core.findModule(dmod);
+        private void markMergeFromModule() {
+            Iterable<Module> modules = null;
+            try {
+                modules = this.core.getStorage().createModuleSet();
+            } catch (SQLException sqle) {
+                LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("DistributedTestingFramework.HandleModule.markMergeFromModules(): Continue even though call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
+                LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("stack trace: ", sqle);
+            }
 
-                for (Module m : modules)
-                {
+            for (DelayedModuleMergeAction d : delayedModuleMergeAction) {
+                Module dmod = d.module;
+                long pk_source_module = 0;
+                try {
+                    pk_source_module = this.core.getStorage().findModule(dmod);
+                } catch (Exception sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .markMergeFromModule(): Continues even though couldn't find module, msg: " + sqle);
+                }
+
+                for (Module m : modules) {
                     // Since the actual types may differ, we compare fields to determine if they are the same.
                     boolean same = true;
                     if (!m.getOrganization().equals(dmod.getOrganization()))
@@ -344,24 +361,37 @@ public final class DistributedTestingFramework
                     if (same)
                         continue;
 
-                    if (d.source.merge(d.merge, dmod, m))
-                    {
-                        long pk_module = core.findModule(m);
+                    if (d.source.merge(d.merge, dmod, m)) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("<internal> .markMergeFromModule(): merges organization/name/version: " + m.getOrganization() + "/" + m.getName() + "/" + m.getVersion());
+                        long pk_module = 0;
+                        try {
+                            pk_module = this.core.getStorage().findModule(m);
+                        } catch (Exception sqle) {
+                            LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> .markMergeFromModule(): Continues even though couldn't find module, msg: " + sqle);
+                        }
 
                         List<Artifact> artifacts = dmod.getArtifacts();
-                        for (Artifact artifact : artifacts)
-                        {
+                        for (Artifact artifact : artifacts) {
                             InputStream is = artifact.getContent().asStream();
-                            if (is != null)
-                            {
-                                Hash h = core.addContent(is, -1); // -1: consume is stream until exhausted
-                                long pk_artifact = core.addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
-                                if (artifact.getName().endsWith(".tar.gz"))
-                                {
+                            if (is != null) {
+                                Hash h = this.core.addContent(is, -1); // -1: consume is stream until exhausted
+
+                                long pk_artifact = 0;
+                                try {
+                                    // This line stores artifact with 0 merge_source. Other .addArtifact() callers can submit merge_source as 1. Only 0 merge_source is recognized by a generator to take action.
+                                    pk_artifact = this.core.getStorage().addArtifact(pk_module, artifact.getConfiguration(), artifact.getName(), artifact.getPosixMode(), h, false, 0, pk_source_module);
+                                } catch (SQLException sqle) {
+                                    LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).error("<internal> call to DTFStorage.addArtifact(): Continues even though could not add artifact to module, " + sqle);
+                                    continue;
+                                }
+
+                                if (artifact.getName().endsWith(".tar.gz")) {
                                     decompress(h, pk_module, pk_artifact, artifact.getConfiguration(), false, pk_source_module);
                                 }
                             }
                         }
+                    } else {
+//                      LoggerFactory.getLogger(DistributedTestingFramework.HandleModule.class).debug("<internal> .markMergeFromModule(): NOT merge organization/name/version: " + m.getOrganization() + "/" + m.getName() + "/" + m.getVersion());
                     }
                 }
             }
@@ -434,76 +464,55 @@ public final class DistributedTestingFramework
             try (ByteArrayOutputStream stdout = new ByteArrayOutputStream();
                  ByteArrayOutputStream stderr = new ByteArrayOutputStream()){
                 try {
-
                     Process run = processBuilder.start();
                     inheritIO(run.getInputStream(), System.out, new PrintStream(stdout));
                     inheritIO(run.getErrorStream(), System.err, new PrintStream(stderr));
 
                     run.waitFor();
-
-                    core.updateTest(id, stdout.toString(), stderr.toString());
                 } catch (Exception e) {
                     String msg = "ERROR: Could not run script '" + script + "', " + e;
                     LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() Script: " + msg);
                     new PrintStream(stderr).println(msg);
                 } finally {
-                    core.updateTest(id, stdout.toString(), stderr.toString());
+                    try {
+                        this.core.getStorage().updateTest(id, stdout.toString(), stderr.toString());
+                    } catch (SQLException sqle) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error(".process() Continues after call to .updateTest() could not update test, with exception msg: " + sqle);    ;
+                    }
                 }
             }  catch(IOException e){
-                String msg = "ERROR: Could not close output stream for script '" + script + "', " + e;
-                LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() " + msg);
+                String msg = "Could not close output stream for script '" + script + "', " + e;
+                LoggerFactory.getLogger(DistributedTestingFramework.GeneratorExecutor.class).error("DistributedTestingFramework.GeneratorExecutor.process() sees exception, full msg: " + msg);
             }
         }
 
-      @Override
-      public String toString()
-      {
-          return Long.toString(id) + "/" + script;
-      }
+        @Override
+        public String toString() {
+            return Long.toString(id) + "/" + script;
+        }
     }
 
     @SuppressWarnings("MagicNumber")
-    private static Set<PosixFilePermission> toPosixPermissions(int mode)
-    {
+    private static Set<PosixFilePermission> toPosixPermissions(int mode) {
         Set<PosixFilePermission> permissions = EnumSet.noneOf(PosixFilePermission.class);
         if ((mode & 0b001_000) == 0b001_000)
-        {
             permissions.add(PosixFilePermission.GROUP_EXECUTE);
-        }
         if ((mode & 0b100_000) == 0b100_000)
-        {
             permissions.add(PosixFilePermission.GROUP_READ);
-        }
         if ((mode & 0b010_000) == 0b010_000)
-        {
             permissions.add(PosixFilePermission.GROUP_WRITE);
-        }
-
         if ((mode & 0b001) == 0b001)
-        {
             permissions.add(PosixFilePermission.OTHERS_EXECUTE);
-        }
         if ((mode & 0b100) == 0b100)
-        {
             permissions.add(PosixFilePermission.OTHERS_READ);
-        }
         if ((mode & 0b010) == 0b010)
-        {
             permissions.add(PosixFilePermission.OTHERS_WRITE);
-        }
-
         if ((mode & 0b001_000_000) == 0b001_000_000)
-        {
             permissions.add(PosixFilePermission.OWNER_EXECUTE);
-        }
         if ((mode & 0b100_000_000) == 0b100_000_000)
-        {
             permissions.add(PosixFilePermission.OWNER_READ);
-        }
         if ((mode & 0b010_000_000) == 0b010_000_000)
-        {
             permissions.add(PosixFilePermission.OWNER_WRITE);
-        }
 
         return permissions;
     }
@@ -554,7 +563,7 @@ public final class DistributedTestingFramework
             /* Instantiate the platform and artifact provider. */
             core = new Core();
             if (synchronize) {
-                Core.Config config = core.getConfig();
+                PortalConfig config = core.getConfig();
                 File generators = new File(config.dirGenerators());
                 if (generators.exists()) {
                     // TODO: check for false return
@@ -565,17 +574,24 @@ public final class DistributedTestingFramework
 
                 // TODO: check for false return
                 generators.setWritable(true);
-
-                // Get the list of artifact providers from the database, prepare the modules table for updates.
-                List<String> providers = core.readArtifactProviders();
-                core.prepareToLoadModules(); // adds 1 to missing_count of every pk_module row
-                boolean noModuleErrors = true;
+                List<String> providers = null;
+                try {
+                    try {
+                        // Get the list of artifact providers from the database, prepare the modules table for updates.
+                        providers = core.getStorage().getArtifactProviders();
+                    } catch (SQLException e) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> Core.getStorage().getArtifactProviders(): Halt because could not read artifact providers, " + e.getMessage());
+                        return;
+                    }
+                    core.getStorage().updateModulesMissingCount(); // adds 1 to missing_count of every pk_module row
+                } catch (SQLException e) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).warn("<internal> Core.getStorage().updateModulesMissingCount(): Continue even though could not update missing_count, " + e.getMessage());
+                }
 
                 HandleModule handler = new HandleModule(core);
                 List<ArtifactProvider> to_close = new ArrayList<ArtifactProvider>();
-
-                for (String providerName : providers)
-                {
+                boolean noModuleErrors = true;
+                for (String providerName : providers) {
                     try {
                         Class<?> P = Class.forName(providerName);
                         Constructor<?> cons = P.getConstructor();
@@ -596,33 +612,51 @@ public final class DistributedTestingFramework
                     p.close();
 
                 // Finalize module loading
-                if (noModuleErrors && prune > 0)
-                    core.finalizeLoadingModules(prune); // can influence missing_count
+                if (noModuleErrors && prune>0) {
+                    try {
+                        core.getStorage().pruneModules(prune); // can influence missing_count
+                    } catch (Exception e) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("<internal> Core.getStorage().pruneModules(): Continue even though could not prune module, " + e.getMessage());
+                    }
+                }
 
                 // Extract all generators to new generator (configured) directory
-                Iterable<Module> find_generators = core.createModuleSet();
+                Iterable<Module> find_generators = null;
+                try {
+                    find_generators = core.getStorage().createModuleSet();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize(): Continue even though call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", sqle);
+                }
+
+                // generators directory exists and is empty, from above code
                 for (Module M : find_generators) {
                     List<Artifact> artifacts = M.getArtifacts(null, "dtf_test_generator");
                     for (Artifact A : artifacts) {
-                        File f = core.getContentFile(A.getContent().getHash());
-                        File P = new File(generators, A.getName());
-                        FileUtils.copyFile(f, P);
+                        File f = core.getContentFile(A.getContent().getHash()); // f should be creatable
+                        File dest = new File(generators, A.getName());          // dest should be creatable
+                        if (f==null || dest==null) {
+                            LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize(): Continue even though source generator file f cannot be created for copying to destination dest. f/dest: " + f + "/" + dest);
+                            continue;
+                        }
+
+                        FileUtils.copyFile(f, dest);
                         try {
-                            Files.setPosixFilePermissions(P.toPath(), toPosixPermissions(A.getPosixMode()));
+                            Files.setPosixFilePermissions(dest.toPath(), toPosixPermissions(A.getPosixMode()));
                         } catch (UnsupportedOperationException ignored) {
                             // Windows does not support setPosixFilePermissions. Fall back.
                             Set<PosixFilePermission> perms = toPosixPermissions(A.getPosixMode());
 
                             // TODO: check for false return
-                            P.setExecutable(perms.contains(PosixFilePermission.GROUP_EXECUTE) || perms.contains(PosixFilePermission.OTHERS_EXECUTE), false);
-                            P.setExecutable(perms.contains(PosixFilePermission.OWNER_EXECUTE), true);
+                            dest.setExecutable(perms.contains(PosixFilePermission.GROUP_EXECUTE) || perms.contains(PosixFilePermission.OTHERS_EXECUTE), false);
+                            dest.setExecutable(perms.contains(PosixFilePermission.OWNER_EXECUTE), true);
                             // TODO: check for false return
-                            P.setReadable(perms.contains(PosixFilePermission.GROUP_READ) || perms.contains(PosixFilePermission.OTHERS_READ), false);
-                            P.setReadable(perms.contains(PosixFilePermission.OWNER_READ), true);
+                            dest.setReadable(perms.contains(PosixFilePermission.GROUP_READ) || perms.contains(PosixFilePermission.OTHERS_READ), false);
+                            dest.setReadable(perms.contains(PosixFilePermission.OWNER_READ), true);
 
                             try {
                                 // TODO: check for false return
-                                P.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
+                                dest.setWritable(perms.contains(PosixFilePermission.GROUP_WRITE) || perms.contains(PosixFilePermission.OTHERS_WRITE), false);
                             } catch (Exception e) { // TODO: This is where issue #159 is caught, before the workaround was placed (in IvyArtifactsProvider.javas).
                                 //       A workaround gives gen.noarch.tar.gz files 666 permissions instead of 444.
                                 //       This intercept catch code here can potentially allow 444 permissions to
@@ -631,22 +665,35 @@ public final class DistributedTestingFramework
                                 throw e;
                             }
                             // TODO: check for false return
-                            P.setWritable(perms.contains(PosixFilePermission.OWNER_WRITE), true);
+                            dest.setWritable(perms.contains(PosixFilePermission.OWNER_WRITE), true);
                         }
                     }
                 }
 
-                // Remove all unreferenced templates and descriptions
-                core.pruneTemplates();
+                try {
+                    // Remove all unreferenced templates and descriptions
+                    core.getStorage().pruneTemplates();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("\"DistributedTestingFramework.synchronize(): Continue even though couldn't prune templates, " + sqle);
+                }
             }
 
-            if (generate)
-            {
+            if (generate) {
+                try {
                 /* Mark all content as not generated. */
-                core.clearGeneratedContent();
+                    core.getStorage().clearGeneratedContent();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize(): Continue even though could not update 'generated' flags, " + sqle);
+                }
 
                 /* Instantiate the platform and artifact provider. */
-                Map<Long, String> scripts = core.getGenerators();
+                Map<Long, String> scripts = null;
+                try {
+                    scripts = core.getStorage().getGenerators();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error(".synchronize Continues after .getGenerators() throws exception " + sqle);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("stack trace: ", sqle);
+                }
                 String shell = core.getConfig().shell();
                 Path currentRelativePath = Paths.get("");
                 String base = currentRelativePath.toAbsolutePath().toString();
@@ -664,18 +711,19 @@ public final class DistributedTestingFramework
                 }
 
                 executor.shutdown();
-                while (!executor.isTerminated())
-                {
-                    try
-                    {
+                while (!executor.isTerminated()) {
+                    try {
                         Thread.sleep(500);
-                    } catch (InterruptedException ignored)
-                    {
+                    } catch (InterruptedException ignored) {
                     }
                 }
 
-                /* Remove all content that is not referenced or generated. */
-                core.pruneContent();
+                try {
+                    // Remove all content that is not referenced or generated.
+                    core.getStorage().pruneContent();
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("\"DistributedTestingFramework.synchronize(): Continue even though couldn't prune content, " + sqle);
+                }
             }
         } catch (Exception e) {
             LoggerFactory.getLogger(DistributedTestingFramework.class).error("DistributedTestingFramework.synchronize() exception msg: " + e);
@@ -716,20 +764,27 @@ public final class DistributedTestingFramework
         //              Column ready_time of the new run table row is filled with the time of the first msg queue emit.
         for (Long manualTestInstanceNumber : manualTestInstanceNumbers) {
             try {
-                Long reNum = core.createInstanceRun(manualTestInstanceNumber, owner); // calls stored procedure
-                if (reNum != null) {
-                    testRuns.add(reNum); // add this newly generated reNum to the list of existing reNum's
+                Optional<Long> optionalRunID;
+                try {
+                    optionalRunID = core.getStorage().createInstanceRun(manualTestInstanceNumber, owner);
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error(".storeTestRuns_db_queue() Failed to add new run entry for test instance " + manualTestInstanceNumber + ", msg: " + e);
+                    return;
+                }
+
+                if (optionalRunID.isPresent()) {
+                    Long runID = optionalRunID.get();
+                    testRuns.add(runID);
                     LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.storeTestRuns_db_queue(): test run stored to db for testInstance number " + manualTestInstanceNumber);
 
                     // place just now database-stored test run in dtf's test run queue
-                    sqs.publishTestRunRequest(reNum);
-                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + reNum);
+                    sqs.publishTestRunRequest(runID);
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).debug("DistributedTestingFramework.runner(): Queued test run: " + runID);
                 } else {
                     LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.storeTestRuns_db_queue(): test run NOT stored to db for testInstance number " + manualTestInstanceNumber +
-                            "; test run may already be stored");
+                                                                                    "; test run may already be stored");
                     // in this case the test run number will not be written to the dtf queue- presumably it is there already
                 }
-
             } catch (Exception e) {
                 LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.storeTestRuns_db_queue(): Failed to store test run for testInstance number " + manualTestInstanceNumber + ", exception msg: " + e);
             }
@@ -884,11 +939,11 @@ public final class DistributedTestingFramework
                     List<Long> testInstanceNumbersFromLookup = null;
                     try {
                         if (idModule != -1)
-                            testInstanceNumbersFromLookup = core.getTestInstances(manualTestNumber, idModule);
+                            testInstanceNumbersFromLookup = core.getStorage().getTestInstances(manualTestNumber, idModule);
                         else
-                            testInstanceNumbersFromLookup = core.getTestInstances(manualTestNumber);
-                    } catch (Exception e) {
-                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.runner(): Failed to store test run for test number " + manualTestNumber + ", exception msg: " + e);
+                            testInstanceNumbersFromLookup = core.getStorage().getTestInstances(manualTestNumber);
+                    } catch (SQLException sqle) {
+                        LoggerFactory.getLogger(DistributedTestingFramework.class).warn(".runner() Continues after .getTestInstances() throws exception, msg: " + sqle);
                     }
                     if (testInstanceNumbersFromLookup != null)
                         storeTestRuns_db_queue(sqs, core, owner, testInstanceNumbersFromLookup, testRuns);
@@ -943,9 +998,17 @@ public final class DistributedTestingFramework
         Core core = new Core();
         try{
             if(hash != null) {
-                core.reportResult(hash, result, null, null, null, null);
+                try {
+                    core.getStorage().reportResult(hash, result, null, null, null, null);
+                } catch (SQLException sqle) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error(".result() Continues after .reportResult() throws exception, msg: " + sqle);
+                }
             } else if (run!=null && result!=null) {
-                core.addResultToRun(run, result);
+                try {
+                    core.getStorage().addResultToRun(run, result);
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error(".result() Continues after .addResultToRun() throws exception, msg: " + e);
+                }
             } else {
                 // result will absolutrely not be null, see above
                 LoggerFactory.getLogger(DistributedTestingFramework.class).warn("DistributedTestingFramework.result(): submitted args wrongly give null runId (or result is null)");
@@ -976,20 +1039,17 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        public Module getModule()
-        {
+        public Module getModule() {
             return module;
         }
 
         @Override
-        public String getConfiguration()
-        {
+        public String getConfiguration() {
             return "default";
         }
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
@@ -1034,27 +1094,23 @@ public final class DistributedTestingFramework
             }
 
             @Override
-            public String getValue(Template template) throws Exception
-            {
+            public String getValue(Template template) throws Exception {
                 return "";
             }
 
             @Override
-            public Hash getHash()
-            {
+            public Hash getHash() {
                 return hash;
             }
 
             @Override
-            public InputStream asStream()
-            {
+            public InputStream asStream() {
                 return new ByteArrayInputStream(content);
             }
 
             @Override
             @SuppressWarnings("ReturnOfCollectionOrArrayField")
-            public byte[] asBytes()
-            {
+            public byte[] asBytes() {
                 return content;
             }
         }
@@ -1062,8 +1118,7 @@ public final class DistributedTestingFramework
         private TarContent content = null;
 
         @Override
-        public Content getContent()
-        {
+        public Content getContent() {
             if (content != null)
                 return content;
 
@@ -1073,8 +1128,7 @@ public final class DistributedTestingFramework
 
         @Override
         @SuppressWarnings("MagicNumber")
-        public int getPosixMode()
-        {
+        public int getPosixMode() {
             return 0b100_100_100;
         }
 
@@ -1111,58 +1165,49 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        public String getOrganization()
-        {
+        public String getOrganization() {
             return organization;
         }
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @Override
-        public String getVersion()
-        {
+        public String getVersion() {
             return version;
         }
 
         @Override
-        public String getStatus()
-        {
+        public String getStatus() {
             return status;
         }
 
         @Override
-        public String getSequence()
-        {
+        public String getSequence() {
             return String.format("%05d", sequence);
         }
 
         @Override
-        public Map<String, String> getAttributes()
-        {
+        public Map<String, String> getAttributes() {
             return new HashMap<String, String>();
         }
 
         @Override
-        public List<Artifact> getArtifacts()
-        {
+        public List<Artifact> getArtifacts() {
             List<Artifact> result = new ArrayList<Artifact>();
             result.add(new PopulateArtifact(this, organization + "-" + name + "-" + version + ".tar.gz", artifacts, start));
             return result;
         }
 
         @Override
-        public List<Artifact> getArtifacts(String namePattern)
-        {
+        public List<Artifact> getArtifacts(String namePattern) {
             return new ArrayList<Artifact>();
         }
 
         @Override
-        public List<Artifact> getArtifacts(String namePattern, String configuration)
-        {
+        public List<Artifact> getArtifacts(String namePattern, String configuration) {
             return new ArrayList<Artifact>();
         }
     }
@@ -1228,8 +1273,7 @@ public final class DistributedTestingFramework
         }
 
         @Override
-        public boolean merge(String merge, Module module, Module target)
-        {
+        public boolean merge(String merge, Module module, Module target) {
             return false;
         }
 
@@ -1391,19 +1435,29 @@ public final class DistributedTestingFramework
         // We will generate a test instance for each result
         //   A test for each 10 test instances
         //   A test case for each 10 tests.
-        // However, all this command does is populate the test plans and tests.
-        // The rest of the work is done as a generator.
+        // However, all this first command call does is to populate the test plans and tests.
+        // The rest of the work is done by generators, to follow.
         int test_sequence = 0;
         int total_runs = plans * tests * instances;
 
-        for (int test_plan = 0; test_plan < plans; test_plan++)
-        {
-            String test_plan_str = Integer.toString(test_plan + 1);
-            long pk_test_plan = core.addTestPlan("Test Plan " + test_plan_str, "Description for test plan " + test_plan_str);
-            for (int test = 0; test < tests; test++)
-            {
-                String test_str = test_plan_str + "/" + Integer.toString(test + 1);
-                long pk_test = core.addTest(pk_test_plan, "Test " + test_str, "Description for test " + test_str, "");
+        for (int test_plan = 0; test_plan < plans; test_plan++) {
+            String test_plan_str = null;
+            long pk_test_plan = 0;
+            try {
+                test_plan_str = Integer.toString(test_plan + 1);
+                pk_test_plan = core.getStorage().addTestPlan("Test Plan " + test_plan_str, "Description for test plan " + test_plan_str);
+            } catch (SQLException e) {
+                LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> .populate(): Continues, even though could not add test plan, msg: " + e);
+            }
+
+            for (int test = 0; test < tests; test++) {
+                long pk_test = 0;
+                try {
+                    String test_str = test_plan_str + "/" + Integer.toString(test + 1);
+                    pk_test = core.getStorage().addTest(pk_test_plan, "Test " + test_str, "Description for test " + test_str, "");
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(DistributedTestingFramework.class).error("<internal> .populate(): Continues, even though could not add test, msg: " + e);
+                }
 
                 // Create instances by acting as a generator.
                 Generator generator = new Generator(pk_test);

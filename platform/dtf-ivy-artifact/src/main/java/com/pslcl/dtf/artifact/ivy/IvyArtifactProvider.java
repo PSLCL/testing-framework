@@ -622,6 +622,8 @@ public class IvyArtifactProvider implements ArtifactProvider
             orgs.sort(String.CASE_INSENSITIVE_ORDER);
             for (String org : orgs)
             {
+                this.log.debug(".iterateModules() operates on organization: " + org);
+
                 // Determine the modules from the ivy patterns.
                 OrganisationEntry oe = new OrganisationEntry(null, org);
 
@@ -634,6 +636,8 @@ public class IvyArtifactProvider implements ArtifactProvider
                 modules.sort(String.CASE_INSENSITIVE_ORDER);
                 for (String module : modules)
                 {
+                    this.log.trace(".iterateModules() operates on module: " + module);
+
                     // Determine the versions from the ivy patterns.
                     ModuleEntry me = new ModuleEntry(oe, module);
                     RevisionEntry[] res = ivy.listRevisionEntries(me);

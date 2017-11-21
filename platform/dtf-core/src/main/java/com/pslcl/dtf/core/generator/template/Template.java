@@ -16,23 +16,22 @@
 package com.pslcl.dtf.core.generator.template;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.artifact.Content;
 import com.pslcl.dtf.core.generator.resource.Resource;
 import com.pslcl.dtf.core.generator.template.TestInstance.Action;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URLEncoder;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class Template implements Comparable<Template>
 {
@@ -360,14 +359,19 @@ public class Template implements Comparable<Template>
         return pk;
     }
 
-    public void sync()
-    {
-        if (pk == 0)
-            pk = core.syncTemplate(this);
+    public void sync() {
+        if (this.pk == 0)
+            try {
+                this.pk = core.getStorage().syncTemplate(this);
+            } catch (SQLException sqle) {
+                // this.pk remains 0
+                this.log.error(".syncTemplate(): Couldn't synchronize template, msg: " + sqle);
+            }
     }
 
-    public void syncRelationships()
-    {
-        core.syncTemplateRelationships(this);
-    }
+    // Not called
+//    public void syncRelationships()
+//    {
+//        core.syncTemplateRelationships(this);
+//    }
 }

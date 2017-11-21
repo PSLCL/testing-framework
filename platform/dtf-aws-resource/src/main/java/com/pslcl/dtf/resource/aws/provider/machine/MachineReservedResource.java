@@ -105,6 +105,11 @@ public class MachineReservedResource implements Runnable
     @Override
     public void run()
     {
+        cleanup(true);
+    }
+
+    private void cleanup(boolean timedOut)
+    {
         if(released.get())
             return;
         HashMap<Long, MachineReservedResource> map = provider.getReservedMachines();
@@ -113,12 +118,20 @@ public class MachineReservedResource implements Runnable
             map.remove(resource.getCoordinates().resourceId);
             if(ec2Instance == null)
                 provider.getInstanceFinder().releaseInstance(instanceType);
-            format.ttl("reserve timed out");
-            LoggerFactory.getLogger(getClass()).info(format.toString());
+            if(timedOut)
+            {
+                format.ttl("reserve timed out");
+                LoggerFactory.getLogger(getClass()).info(format.toString());
+            }
             released.set(true);
         }
     }
-    
+
+    public void release()
+    {
+        cleanup(false);
+    }
+
     @Override
     public String toString()
     {

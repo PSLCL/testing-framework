@@ -15,15 +15,6 @@
  */
 package com.pslcl.dtf.core.generator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.pslcl.dtf.core.Core;
 import com.pslcl.dtf.core.Hash;
 import com.pslcl.dtf.core.artifact.Artifact;
@@ -32,6 +23,15 @@ import com.pslcl.dtf.core.artifact.Module;
 import com.pslcl.dtf.core.generator.resource.Attributes;
 import com.pslcl.dtf.core.generator.template.Template.Parameter;
 import com.pslcl.dtf.core.generator.template.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Generator
 {
@@ -77,8 +77,7 @@ public class Generator
      * Create a generator, which in turn can be used to generate test instances.
      * @param pk_test The primary key of the test that any generated test instances are related to.
      */
-    public Generator(long pk_test)
-    {
+    public Generator(long pk_test) {
         this.log = LoggerFactory.getLogger(getClass());
         this.pk_target_test = pk_test;
         core = new Core(pk_test);
@@ -189,22 +188,34 @@ public class Generator
 
     /**
      * Create an iterable set of all modules known to the generator.
-     * @return An iterable set of all modules.
+     * @return An iterable set of all modules, may be empty.
      */
-    public Iterable<Module> createModuleSet()
-    {
-        return core.createModuleSet();
+    public Iterable<Module> createModuleSet() {
+        Iterable<Module> ret = new ArrayList<Module>();
+        try {
+            ret = core.getStorage().createModuleSet();
+        } catch (SQLException sqle) {
+            this.log.error("Generator.createModuleSet(): Call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
+            this.log.debug("stack trace: ", sqle);
+        }
+        return ret;
     }
 
     /**
      * Create an iterable set of all modules known to the generator for a specific organization and module name.
      * @param organization The organization of the module.
      * @param module The module name.
-     * @return An iterable set of modules.
+     * @return An iterable set of all modules, may be empty.
      */
-    public Iterable<Module> createModuleSet(String organization, String module)
-    {
-        return core.createModuleSet(organization, module);
+    public Iterable<Module> createModuleSet(String organization, String module) {
+        Iterable<Module> ret = new ArrayList<Module>();
+        try {
+            ret = this.core.getStorage().createModuleSet(organization, module);
+        } catch (SQLException sqle) {
+            this.log.error("Generator.createModuleSet(organization, module): Call to DTFStorage.createModuleSet() returns exception, msg: " + sqle);
+            this.log.debug("stack trace: ", sqle);
+        }
+        return ret;
     }
 
     /**
@@ -212,9 +223,16 @@ public class Generator
      * @param artifact The artifact to find the dependencies of.
      * @return An iterator over the set of dependent artifacts.
      */
-    public Iterable<Artifact> findDependencies(Artifact artifact)
-    {
-        return core.findDependencies(artifact);
+    public Iterable<Artifact> findDependencies(Artifact artifact) {
+        Iterable<Artifact> ret = new ArrayList<Artifact>();
+        try {
+            ret = this.core.getStorage().findDependencies(artifact);
+        } catch (SQLException sqle) {
+            this.log.error("Generator.findDependencies(): Call to DTFStorage.findDependencies() returns sql exception, msg: " + sqle);
+        } catch (IllegalArgumentException iae) {
+            this.log.error("Generator.findDependencies(): Call to DTFStorage.findDependencies() returns exception, msg: " + iae);
+        }
+        return ret;
     }
 
     /**
@@ -234,9 +252,14 @@ public class Generator
      * @return An iterator over the set of artifacts. Each entry contains an array of artifacts in the same order
      * as the input parameters.
      */
-    public Iterable<Artifact[]> createArtifactSet(Attributes attributes, String configuration, String... name)
-    {
-        return core.createArtifactSet(attributes, configuration, name);
+    public Iterable<Artifact[]> createArtifactSet(Attributes attributes, String configuration, String... name) {
+        Iterable<Artifact[]> ret = null;
+        try {
+            ret = this.core.getStorage().createArtifactSet(attributes, configuration, name);
+        } catch (SQLException sqle) {
+            this.log.error("<internal> Generator.createArtifactSet() returns null after seeing exception msg: " + sqle);
+        }
+        return ret;
     }
 
     /**
