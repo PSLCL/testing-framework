@@ -54,5 +54,6 @@
     <dependency org="org.slf4j" name="slf4j-api" rev="[1.7.25,1.8)"/>
     <dependency org="ch.qos.logback" name="logback-core" rev="1.2.3"/>
     <dependency org="org.mariadb.jdbc" name="mariadb-java-client" rev="2.0.2" conf="runtime->default"/>
+    <dependency org="com.google.code.gson" name="gson" rev="[2.6,2.7)"/>
   </dependencies>
 </ivy-module>

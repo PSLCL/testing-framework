@@ -41,6 +41,7 @@ paths:
       security:
       - AccessToken:
         - dtf_read
+
   /api/v1/runrates:
     get:
       tags:
@@ -48,23 +49,44 @@ paths:
       summary: >
         Get the run rates.
       operationId: getRunRates
+      parameters:
+      - name: from
+        in: query
+        description: >
+          The starting date/time in seconds.  Defaults to current time minus one week.
+        required: false
+        type: integer
+        format: int64
+      - name: to
+        in: query
+        description: >
+          The ending date/time in seconds.  Defaults to current time.
+        required: false
+        type: integer
+        format: int64
+      - name: bucket
+        in: query
+        description: The modulus to apply to and subtract from the 'from' and 'to' values.  Defaults to 3600 (1 hour).
+        required: false
+        type: integer
+        format: int64
       responses:
-        200:
-          description: The statistics object.
-          schema:
-            $ref: '#/definitions/RunRates'
-        401:
-          description: Bad or expired token
-          schema:
-            $ref: '#/definitions/OAuth2Error'
-        403:
-          description: Access denied
-          schema:
-            $ref: '#/definitions/OAuth2Error'
-        500:
-          description: An unexpected service error occurred
-          schema:
-            $ref: "#/definitions/Error"
+          200:
+            description: The run rates.
+            schema:
+              $ref: '#/definitions/RunRates'
+          401:
+            description: Bad or expired token
+            schema:
+              $ref: '#/definitions/OAuth2Error'
+          403:
+            description: Access denied
+            schema:
+              $ref: '#/definitions/OAuth2Error'
+          500:
+            description: An unexpected service error occurred
+            schema:
+              $ref: "#/definitions/Error"
       security:
       - AccessToken:
         - dtf_read
@@ -73,7 +95,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the run rates.
+        Get the user tests.
       operationId: getUserTests
       responses:
         200:
@@ -127,7 +149,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the module.
+        Get the requested module.
       operationId: getModule
       parameters:
       - name: id
@@ -139,7 +161,7 @@ paths:
         200:
           description: The module object.
           schema:
-            $ref: '#/definitions/Module'
+            $ref: '#/definitions/ModuleDetail'
         401:
           description: Bad or expired token
           schema:
@@ -164,7 +186,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the module.
+        Get the requested module's artifacts.
       operationId: getModuleArtifacts
       parameters:
       - name: id
@@ -201,7 +223,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the module.
+        Get the requested module's reports.
       operationId: getModuleReport
       parameters:
       - name: id
@@ -213,7 +235,7 @@ paths:
         200:
           description: The module report.
           schema:
-            $ref: '#/definitions/Report'
+            $ref: '#/definitions/Reports'
         401:
           description: Bad or expired token
           schema:
@@ -238,7 +260,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the module.
+        Get the requested module's printable reports.  Note: this returns an html page supported?
       operationId: getModuleReportPrint
       parameters:
       - name: id
@@ -248,9 +270,7 @@ paths:
         type: string
       responses:
         200:
-          description: The module report print.
-          schema:
-            $ref: '#/definitions/ReportPrint'
+          description: html page return not supported?
         401:
           description: Bad or expired token
           schema:
@@ -275,7 +295,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the modules.
+        Get the test plans.
       operationId: getTestPlans
       responses:
         200:
@@ -302,7 +322,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the modules.
+        Get the requested test plan.
       operationId: getTestPlan
       parameters:
       - name: plan
@@ -314,7 +334,7 @@ paths:
         200:
           description: The test plan object.
           schema:
-            $ref: '#/definitions/TestPlan'
+            $ref: '#/definitions/TestPlanDetail'
         401:
           description: Bad or expired token
           schema:
@@ -339,7 +359,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the modules.
+        Get the requested test plan's tests.
       operationId: getPlanTests
       parameters:
       - name: plan
@@ -376,7 +396,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the modules.
+        Get the requested test plan's given test ID.
       operationId: getPlanTest
       parameters:
       - name: plan
@@ -445,13 +465,11 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the report versions.
+        Get the report versions.  Note: this returns an html page supported?
       operationId: getReportVersions
       responses:
         200:
-          description: The report versions object.
-          schema:
-            $ref: '#/definitions/ReportVersions'
+          description: The report versions object. Supported?
         401:
           description: Bad or expired token
           schema:
@@ -472,13 +490,11 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the report versions.
+        Get the report descriptions.  Note: this returns an html page supported?
       operationId: getReportDescriptions
       responses:
         200:
-          description: The report descriptions object.
-          schema:
-            $ref: '#/definitions/ReportDescriptions'
+          description: The report descriptions object.  Supported?
         401:
           description: Bad or expired token
           schema:
@@ -499,13 +515,11 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the report test plans.
+        Get the report test plans.  Note: this returns an html page supported?
       operationId: getReportTestPlans
       responses:
         200:
-          description: The version 1 report test plans object.
-          schema:
-            $ref: '#/definitions/ReportTestPlans'
+          description: The version 1 report test plans object.  Supported?
         401:
           description: Bad or expired token
           schema:
@@ -526,13 +540,11 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the report test plans.
+        Get the report test plans.  Note: this returns an html page supported?
       operationId: getReportTestPlans2
       responses:
         200:
-          description: The version 2 report test plans object.
-          schema:
-            $ref: '#/definitions/ReportTestPlans2'
+          description: The version 2 report test plans object.  Supported?
         401:
           description: Bad or expired token
           schema:
@@ -580,7 +592,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the instance.
+        Get the requested instance ID.
       operationId: getInstance
       parameters:
       - name: id
@@ -617,7 +629,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the instance.
+        Get the requested template ID.
       operationId: getTemplate
       parameters:
       - name: id
@@ -654,7 +666,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the instance.
+        Get the untested artifacts
       operationId: getUntestedArtifacts
       responses:
         200:
@@ -744,15 +756,17 @@ definitions:
       from:
         type: integer
         format: int64
-        description: starting date/time
+        description: >
+          The starting date/time in seconds.  Defaults to current time minus one week.
       to:
         type: integer
         format: int64
-        description: ending date/time
+        description: >
+          The ending date/time in seconds.  Defaults to current time.
       bucket:
         type: integer
-        format: int32
-        description: FIXME
+        format: int64
+        description: The modulus to apply to and subtract from the 'from' and 'to' values.  Defaults to 3600 (1 hour).
       labels:
         type: array
         items:
@@ -769,14 +783,10 @@ definitions:
     properties:
       options:
         type: object
-        description: FIXME The starting->options structure.
-        properties:
-          fixme:
-            type: string
-            description: FIXME the example options was null, parameters unknown.
+        description: The starting/running/complete->options structure.  Always empty in JavaScript implementation thus do not know its possible structure.
       data:
         type: object
-        description: The starting->data structure.
+        description: The starting/running/complete->data structure.
         properties:
           labels:
             type: array
@@ -786,47 +796,68 @@ definitions:
             type: array
             items:
               type: object
-              description: The starting->data->datasets structure array
+              description: The starting/running/complete->data->datasets array
               properties:
                 data:
                   type: array
                   items:
                     type: integer
-                    format: int32
+                    format: int8
   UserTests:
+    type: array
+    description: List of user tests
+    items:
+      $ref: '#/definitions/UserTest'
+
+  UserTest:
     type: object
+    description: Test instance ID and run instance ID
     properties:
-      fixme:
-        type: string
-        description: FIXME the user tests example was null
+      pk_test_instance:
+        type: integer
+        format: int64
+        description: The test instance ID
+      pk_run:
+        type: integer
+        format: int64
+        description: The run ID
+
   Modules:
     type: array
+    description: List of modules
     items:
-      $ref: '#/definitions/ModuleListStructure'
-  ModuleListStructure:
+      $ref: '#/definitions/Module'
+  Module:
     type: object
     properties:
       pk_module:
         type: integer
         format: int64
+        description: The module ID.
       organization:
         type: string
+        description: The organization that owns the module.
       name:
         type: string
+        description: The name of the module.
       attributes:
         type: string
+        description: a set of key-value pairs providing additional information about a module.
       version:
         type: string
+        description: The version of the module.
       sequence:
-        type: integer
-        format: int64
+        type: string
+        description: The sequence of the module, used in addition to the version in order to differentiate versions of a module. Sequences are ordered alphabetically, with the latest being the most recent.
       tests:
         type: integer
         format: int32
+        description: The number of tests.
       plans:
         type: integer
         format: int32
-  Module:
+        description: The number of plans.
+  ModuleDetail:
     type: object
     properties:
         module:
@@ -835,20 +866,27 @@ definitions:
             pk_module:
               type: integer
               format: int64
+              description: The module ID.
             organization:
               type: string
+              description: The organization that owns the module.
             name:
               type: string
+              description: The name of the module.
             version:
               type: string
+              description: The version of the module.
             attributes:
               type: string
+              description: a set of key-value pairs providing additional information about a module.
             scheduled_release:
               type: integer
               format: int64
+              description: The scheduled release date.
             actual_release:
               type: integer
               format: int64
+              description: The actual release date.
   Artifacts:
     type: array
     items:
@@ -859,178 +897,143 @@ definitions:
       pk_artifact:
         type: integer
         format: int64
+        description: The artifact ID.
       name:
         type: string
+        description: The artifact name.
       configuration:
         type: string
+        description: The artifact configuration.
       derived_from_artifact:
         type: integer
         format: int64
+        description: The artifact this is derived from.
       merged_from_module:
         type: string
+        description: The artifact this was merged from.
       tests:
         type: integer
         format: int32
+        description: The number of artifact tests.
       plans:
         type: integer
         format: int64
+        description: The number of artifact plans.
+
+  Reports:
+    type: array
+    items:
+      $ref: '#/definitions/Report'
+    description: The requested module's report list.
 
   Report:
-    type: object
-    properties:
-      plans:
-        type: array
-        items:
-          $ref: '#/definitions/ReportTestPlan'
-      tests:
-        type: array
-        items:
-          $ref: '#/definitions/ReportTest'
-      modules:
-        type: array
-        items:
-          $ref: '#/definitions/ReportModule'
-      totals:
-          $ref: '#/definitions/ReportTotals'
-
-  ReportTestPlan:
     type: object
     properties:
       pk_test_plan:
         type: integer
         format: int64
+        description: The test plan ID.
       pk_test:
         type: integer
-        format: int32
+        format: int64
+        description: The test ID.
       pk_test_instance:
         type: integer
         format: int64
-      name:
-        type: string
+        description: The test instance ID.
       description:
         type: string
+        description: The test report description.
       modules:
         type: string
+        description: The test report description.
       result:
-        type: string
+        type: boolean
+        description: The test result, pass/fail.
       end_time:
         type: integer
         format: int64
-  ReportTest:
+        description: Test end timestamp.
+
+  TestPlans:
+    type: array
+    items:
+      $ref: '#/definitions/TestPlan'
+    description: The list of test plans.
+
+  TestPlan:
+    type: object
+    properties:
+      pk_test_plan:
+        type: integer
+        format: int64
+        description: The test plan ID.
+      name:
+        type: string
+        description: the test plan's name.
+      description:
+        type: string
+        description: The test plan's description.
+
+  TestPlanDetail:
+    type: object
+    properties:
+      plan:
+        $ref: '#/definitions/TestPlan'
+      tests:
+        type: array
+        items:
+          $ref: '#/definitions/Test'
+  Test:
     type: object
     properties:
       pk_test:
         type: integer
         format: int64
+        description: The test ID.
+      fk_test_plan:
+        type: integer
+        format: int64
+        description: The test plan ID.
       name:
         type: string
+        description: The test name.
       description:
         type: string
-  ReportModule:
+        description: the test description.
+      script:
+        type: string
+        description: The script to run the test.
+
+  Tests:
+    type: array
+    items:
+      $ref: '#/definitions/Test'
+
+
+  Versions:
+    type: array
+    items:
+      $ref: '#/definitions/Version'
+
+  Version:
     type: object
     properties:
       pk_module:
         type: integer
         format: int64
-      offest:
-        type: integer
-        format: int32
-      organization:
-        type: string
-      name:
-        type: string
+        description: The associated module ID.
       version:
         type: string
-      sequence:
-        type: string
-      attributes:
-        type: string
-  ReportTotals:
-    type: object
-    properties:
-      fieldCount:
-        type: integer
-        format: int32
-      affectedRows:
-        type: integer
-        format: int32
-      insertId:
+        description: The modules version.
+      scheduled_release:
         type: integer
         format: int64
-      serverStatus:
+        description: The scheduled release date.
+      actual_release:
         type: integer
-        format: int32
-      warningCount:
-        type: integer
-        format: int32
-      message:
-        type: string
-      protocol41:
-        type: boolean
-      changedRows:
-        type: integer
-        format: int32
-
-  ReportPrint:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The report print
-  TestPlans:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The test plans
-  TestPlan:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The test plan
-  Tests:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The tests
-  Test:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The test
-  Versions:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The versions
-  ReportVersions:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The report versions
-  ReportDescriptions:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The report descriptions
-  ReportTestPlans:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The report test plans
-  ReportTestPlans2:
-    type: object
-    properties:
-      version:
-        type: string
-        description: Version 2 of the report test plans
+        format: int64
+        description: The actual release date.
   Instances:
     type: object
     properties:
@@ -1055,54 +1058,3 @@ definitions:
       version:
         type: string
         description: The untested artifacts
-
-
-
-
-  Metadata:
-    type: object
-    description: >
-          A metadata object. Contains a fixed 'metadataID' property identifying the object and a keyspace.
-          Key/value pairs may be included in the values object as needed. Values must be strings.
-    properties:
-      metadataID:
-        type: string
-        description: Required. The metadataID.  The maximum size is 128 characters.
-      keyspace:
-        type: string
-        description: Required. The keyspace.  The maximum size is 128 characters.
-      values:
-        type: object
-        additionalProperties:
-          type: string
-          description: This is a key/value map. The maximum size of the key 128 characters.  The maximum size of the value is 65,535 characters.
-  MetadataPage:
-    type: object
-    properties:
-      metadata:
-        type: array
-        items:
-          $ref: '#/definitions/Metadata'
-      nextToken:
-        type: string
-        description: If non-null the next page token.  If null this was the last page.
-  KeyspacePage:
-    type: object
-    properties:
-      keyspaces:
-        type: array
-        items:
-          type: string
-      nextToken:
-        type: string
-        description: If non-null the next page token.  If null this was the last page.
-  Version:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The full version of the service. E.g. 1.2.1
-      apiVersion:
-        type: string
-        description: If version of the API E.g. 1.2
-
