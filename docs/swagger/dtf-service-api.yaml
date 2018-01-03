@@ -604,7 +604,7 @@ paths:
         200:
           description: The instance object.
           schema:
-            $ref: '#/definitions/Instance'
+            $ref: '#/definitions/InstanceDetail'
         401:
           description: Bad or expired token
           schema:
@@ -1035,26 +1035,119 @@ definitions:
         format: int64
         description: The actual release date.
   Instances:
-    type: object
-    properties:
-      version:
-        type: string
-        description: The instances
+    type: array
+    items:
+      $ref: '#/definitions/Instance'
+    description: The instances
+
   Instance:
     type: object
     properties:
-      version:
+      key:
         type: string
-        description: The instance
+        description: The instance ID.
+      name:
+        type: string
+        description: The instance name.
+      description:
+        type: string
+        description: The description of the instance.
+      summary:
+        $ref: '#/definitions/Summary'
+      failed:
+        type: array
+        items:
+          type: integer
+          format: int64
+  Summary:
+    type: object
+    properties:
+      passed:
+        type: integer
+        format: int32
+        description: Number passed.
+      failed:
+        type: integer
+        format: int32
+        description: Number failed.
+      pending:
+        type: integer
+        format: int32
+        description: Number pending.
+      total:
+        type: integer
+        format: int32
+        description: total runs.
+
+  InstanceDetail:
+    type: object
+    properties:
+      description:
+        type: string
+        description: The instance description.
+      due_date:
+        type: integer
+        format: int64
+        description: The instance due date.
+      fk_described_template:
+        type: integer
+        format: int64
+        description: The described template ID.
+      start_time:
+        type: integer
+        format: int64
+        description: The instance start time.
+      end_time:
+        type: integer
+        format: int64
+        description: The instance end time.
+      result:
+        type: boolean
+        description: The instance run result.
+      steps:
+        type: string
+        description: The instance steps.
+
   Template:
     type: object
     properties:
-      version:
+      pk_dt_line:
+        type: integer
+        format: int64
+        description: The described template line ID.
+      fk_child_dt:
+        type: integer
+        format: int64
+        description: The child described template ID.
+      artifacts:
+        type: array
+        items:
+          $ref: '#/definitions/Artifact'
+      description:
         type: string
-        description: The template
+        description: The template description.
+
+
   UntestedArtifacts:
+    type: array
+    items:
+        $ref: '#/definitions/UntestedArtifact'
+
+  UntestedArtifact:
     type: object
     properties:
+      pk_module:
+        type: integer
+        format: int64
+        description: The associated module ID.
+      pk_artifact:
+        type: integer
+        format: int64
+        description: The artifact ID.
+      name:
+        type: string
+        description: The missing artifact name.
       version:
         type: string
-        description: The untested artifacts
+        description: The missing artifact version.
+
