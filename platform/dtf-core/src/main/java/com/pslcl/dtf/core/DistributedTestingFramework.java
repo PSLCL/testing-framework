@@ -1255,6 +1255,9 @@ public final class DistributedTestingFramework
                             case 1:
                                 status_str = "integration";
                                 break;
+                            case 2: // added by chad to get working for versions == 3
+                                status_str = "pre-release";
+                                break;
                             case 3:
                                 status_str = "unknownBuildStatusString";
                                 break;

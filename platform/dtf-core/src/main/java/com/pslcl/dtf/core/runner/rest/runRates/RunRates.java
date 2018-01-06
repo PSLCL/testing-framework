@@ -17,21 +17,32 @@ package com.pslcl.dtf.core.runner.rest.runRates;
 
 import com.google.gson.Gson;
 
+import java.util.List;
+
 @SuppressWarnings("javadoc")
 public class RunRates
 {
+    public static final String FromParam = "from";
+    public static final String ToParam = "to";
+    public static final String BucketParam = "bucket";
+
     private static final Gson gson = new Gson();
-    public final Long from;
-    public final Long to;
+    public final String from;
+    public final String to;
+    public final Long fromTimestamp;
+    public final Long toTimestamp;
+
     public final Long bucket;
-    public final RunRatesInfo starting;
-    public final RunRatesInfo running;
-    public final RunRatesInfo complete;
+    public final List<RunRate> starting;
+    public final List<RunRate> running;
+    public final List<RunRate> complete;
 
     public RunRates()
     {
         from = null;
         to = null;
+        fromTimestamp = null;
+        toTimestamp = null;
         bucket = null;
         starting = null;
         running = null;
@@ -39,15 +50,19 @@ public class RunRates
     }
 
     public RunRates(
-            Long from,
-            Long to,
+            String from,
+            String to,
+            Long fromTimestamp,
+            Long toTimestamp,
             Long bucket,
-            RunRatesInfo starting,
-            RunRatesInfo running,
-            RunRatesInfo complete)
+            List<RunRate> starting,
+            List<RunRate> running,
+            List<RunRate> complete)
     {
         this.from = from;
         this.to = to;
+        this.fromTimestamp = fromTimestamp;
+        this.toTimestamp = toTimestamp;
         this.bucket = bucket;
         this.starting = starting;
         this.running = running;

@@ -22,6 +22,8 @@ import javax.jms.Message;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import com.pslcl.dtf.core.runner.config.RestServiceConfig;
+import com.pslcl.dtf.runner.rest.RestServiceInstance;
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonInitException;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
     /** the process classes */
     public volatile RunnerMachine runnerMachine = null;
     public volatile RunEntryStateStore runEntryStateStore = null; // holds RunEntryState of each reNum
+    public volatile RestServiceInstance restService = null;
 
     public volatile ProcessTracker processTracker = null;
     private boolean testInstanceLimitInEffect = false;
@@ -147,6 +150,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
             this.dbConnPool.init(config);
             this.runnerMachine = new RunnerMachine(dbConnPool);
             this.runnerMachine.init(config);
+            restService = new RestServiceInstance(config);
+            restService.init(RestServiceConfig.propertiesToConfig(config));
             this.runEntryStateStore = new RunEntryStateStore();
             this.processTracker = new ProcessTracker(this);
             this.qaPortalAccess = new QAPortalAccess();
@@ -180,6 +185,7 @@ public class RunnerService implements Runner, RunnerServiceMBean
                 }
             }
             config.initsb.indentedOk();
+            restService.start();
         } catch (Exception e)
         {
             LoggerFactory.getLogger(getClass()).error(getClass().getSimpleName() + config.initsb.sb.toString(), e);
@@ -197,6 +203,8 @@ public class RunnerService implements Runner, RunnerServiceMBean
         // Destroy the Status Tracker
         if (config != null)
             config.statusTracker.destroy();
+        if(restService != null)
+            restService.destroy();
     }
 
     /**

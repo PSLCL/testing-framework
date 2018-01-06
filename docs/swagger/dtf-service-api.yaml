@@ -53,20 +53,20 @@ paths:
       - name: from
         in: query
         description: >
-          The starting date/time in seconds.  Defaults to current time minus one week.
+          The starting date/time in ms from epoch.  Defaults to current time minus one week.
         required: false
         type: integer
         format: int64
       - name: to
         in: query
         description: >
-          The ending date/time in seconds.  Defaults to current time.
+          The ending date/time in ms from epoch.  Defaults to current time.
         required: false
         type: integer
         format: int64
       - name: bucket
         in: query
-        description: The modulus to apply to and subtract from the 'from' and 'to' values.  Defaults to 3600 (1 hour).
+        description: The modulus in seconds to apply to and subtract from the 'from' and 'to' values.  Defaults to 3600 (1 hr).
         required: false
         type: integer
         format: int64
@@ -97,6 +97,12 @@ paths:
       summary: >
         Get the user tests.
       operationId: getUserTests
+      parameters:
+      - name: user
+        in: query
+        description: The user to return tests for.
+        required: false
+        type: string
       responses:
         200:
           description: The user tests object.
@@ -124,6 +130,28 @@ paths:
       summary: >
         Get the modules.
       operationId: getModules
+      parameters:
+      - name: filter
+        in: query
+        description: A 'like' filter that will be or searched against name, organization, attributes, version and sequence if given.
+        required: false
+        type: string
+      - name: order
+        in: query
+        description: Order by where the value must be one of 'plans', 'tests' or 'name'.  The value may be preceeded by a '<' or '>'  If '<' order is ascending.  If '>' order is decending.  Defaults to "<name".
+        required: false
+        type: string
+      - name: limit
+        in: query
+        description: Maximum number of modules to return. Can be equal to "all"
+        required: false
+        type: string
+      - name: offset
+        in: query
+        description: The offset in the order to list from.
+        required: false
+        type: integer
+        format: init32
       responses:
         200:
           description: The modules object.
@@ -722,87 +750,85 @@ definitions:
     properties:
       module_count:
         type: integer
-        description: The number of modules
         format: int32
+        description: The number of modules
       test_plan_count:
         type: integer
+        format: int32
         description: The number of test plans
       test_count:
         type: integer
-        description: The number of tests
         format: int32
+        description: The number of tests
       artifact_count:
         type: integer
-        description: The number of artifacts
         format: int32
+        description: The number of artifacts
       ti_count:
         type: integer
-        description: The number of test instances
         format: int32
+        description: The number of test instances
       ti_pending:
         type: integer
-        description: The number of pending test instances
         format: int32
+        description: The number of pending test instances
       ti_running:
         type: integer
         description: The number of running test instances
       untested_module_count:
         type: integer
-        description: The number of untested modules
         format: int32
+        description: The number of untested modules
   RunRates:
     type: object
     properties:
       from:
-        type: integer
-        format: int64
+        type: string
         description: >
-          The starting date/time in seconds.  Defaults to current time minus one week.
+          The starting date/time in "yyyy-MM-dd hh:mm:ss" format.
       to:
+        type: string
+        description: >
+          The ending date/time in "yyyy-MM-dd hh:mm:ss" format.
+      fromTimestamp:
         type: integer
         format: int64
         description: >
-          The ending date/time in seconds.  Defaults to current time.
+          The starting date/time in ms from epoch.  Defaults to current time minus one week.
+      toTimestamp:
+        type: integer
+        format: int64
+        description: >
+          The ending date/time in ms from epoch.  Defaults to current time.
       bucket:
         type: integer
         format: int64
-        description: The modulus to apply to and subtract from the 'from' and 'to' values.  Defaults to 3600 (1 hour).
-      labels:
+        description: The modulus in seconds to apply to and subtract from the 'from' and 'to' values.  Defaults to 3600 (1 hour).
+      starting:
         type: array
         items:
-          type: string
-      starting:
-        $ref: '#/definitions/RunRatesStructure'
+          $ref: '#/definitions/RunRate'
       running:
-        $ref: '#/definitions/RunRatesStructure'
+        type: array
+        items:
+          $ref: '#/definitions/RunRate'
       complete:
-        $ref: '#/definitions/RunRatesStructure'
+        type: array
+        items:
+          $ref: '#/definitions/RunRate'
 
-  RunRatesStructure:
+  RunRate:
     type: object
     properties:
-      options:
-        type: object
-        description: The starting/running/complete->options structure.  Always empty in JavaScript implementation thus do not know its possible structure.
-      data:
-        type: object
-        description: The starting/running/complete->data structure.
-        properties:
-          labels:
-            type: array
-            items:
-              type: string
-          datasets:
-            type: array
-            items:
-              type: object
-              description: The starting/running/complete->data->datasets array
-              properties:
-                data:
-                  type: array
-                  items:
-                    type: integer
-                    format: int8
+      timestamp:
+        type: integer
+        format: int64
+        description: The timestamp of the match.
+      total:
+        type: integer
+        format: int32
+        description: The total hits of this timestamp match.
+
   UserTests:
     type: array
     description: List of user tests
@@ -815,11 +841,11 @@ definitions:
     properties:
       pk_test_instance:
         type: integer
-        format: int64
+        format: int32
         description: The test instance ID
       pk_run:
         type: integer
-        format: int64
+        format: int32
         description: The run ID
 
   Modules:

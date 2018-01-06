@@ -43,9 +43,29 @@ public class ResourceNames
     public static final String PortalKeyBase = PslclKeyBase + ".portal";
     public static final String PortalHostKey = PortalKeyBase + ".host";
     public static final String PortalContentDirKey = PortalKeyBase + ".content-dir";
+    public static final String PortalIdServiceKey = PortalKeyBase + ".identity-service-url";
+    public static final String PortalUrlPrefixKey = PortalKeyBase + ".prefix";
 
     public static final String PortalHostDefault = null;
     public static final String PortalContentDirDefault = "content";
+    public static final String PortalIdServiceDefault = null;
+    public static final String PortalUrlPrefixDefault = null;
+
+    /* ****************************************************************************
+     * Database declarations
+    ******************************************************************************/
+    public static final String StorageKeyBase = PslclKeyBase + ".storage";
+    public static final String StorageHostKey = StorageKeyBase + ".host";
+    public static final String StoragePortKey = StorageKeyBase + ".port";
+    public static final String StorageUserKey = StorageKeyBase + ".user";
+    public static final String StoragePasswordKey = StorageKeyBase + ".password";
+    public static final String StorageSchemaKey = StorageKeyBase + ".schema";
+
+    public static final String StorageHostDefault = null;
+    public static final String StoragePortDefault = "3306";
+    public static final String StorageUserDefault = null;
+    public static final String StoragePasswordDefault = null;
+    public static final String StorageSchemaDefault = "qa_portal";
 
     /* ****************************************************************************
      * Message Queue    

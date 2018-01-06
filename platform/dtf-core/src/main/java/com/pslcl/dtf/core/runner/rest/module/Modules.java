@@ -23,6 +23,16 @@ import java.util.List;
 @SuppressWarnings("javadoc")
 public class Modules
 {
+    public static final String FilterParam = "filter";
+    public static final String OrderParam = "order";
+    public static final String OrderNameValue = "name";
+    public static final String OrderPlanValue = "plans";
+    public static final String OrderTestValue = "tests";
+    public static final char AscendingFlag = '<';
+    public static final char DescendingFlag = '>';
+
+    public static final String LimitParam = "limit";
+    public static final String OffsetParam = "offset";
     private static final Gson gson = new Gson();
     public final List<Module> modules;
 

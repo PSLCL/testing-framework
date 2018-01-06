@@ -22,6 +22,8 @@ import java.util.List;
 @SuppressWarnings("javadoc")
 public class UserTests
 {
+    public static final String UserParam = "user";
+
     private static final Gson gson = new Gson();
     public final List<UserTest> tests;
 

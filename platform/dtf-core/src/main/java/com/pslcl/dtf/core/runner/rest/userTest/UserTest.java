@@ -21,8 +21,8 @@ import com.google.gson.Gson;
 public class UserTest
 {
     private static final Gson gson = new Gson();
-    public final Long pk_test_instance;
-    public final Long pk_run;
+    public final Integer pk_test_instance;
+    public final Integer pk_run;
 
     public UserTest()
     {
@@ -30,7 +30,7 @@ public class UserTest
         pk_run = null;
     }
 
-    public UserTest(Long pk_test_instance, Long pk_run)
+    public UserTest(Integer pk_test_instance, Integer pk_run)
     {
         this.pk_test_instance = pk_test_instance;
         this.pk_run = pk_run;

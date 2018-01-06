@@ -17,22 +17,23 @@ package com.pslcl.dtf.core.runner.rest.runRates;
 
 import com.google.gson.Gson;
 
-import java.util.List;
-
 @SuppressWarnings("javadoc")
-public class RunRatesInfoDatasets
+public class RunRate
 {
     private static final Gson gson = new Gson();
-    public final List<Byte> data;
+    public Long timestamp;
+    public Integer total;
 
-    public RunRatesInfoDatasets()
+    public RunRate()
     {
-        data = null;
+        timestamp = null;
+        total = null;
     }
 
-    public RunRatesInfoDatasets(List<Byte> data)
+    public RunRate(Long timestamp, Integer total)
     {
-        this.data = data;
+        this.timestamp = timestamp;
+        this.total = total;
     }
 
     public String toJson()
