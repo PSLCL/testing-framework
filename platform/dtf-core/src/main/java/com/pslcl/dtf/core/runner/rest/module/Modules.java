@@ -30,8 +30,8 @@ public class Modules
     public static final String OrderTestValue = "tests";
     public static final char AscendingFlag = '<';
     public static final char DescendingFlag = '>';
-
     public static final String LimitParam = "limit";
+    public static final String LimitAllValue = "all";
     public static final String OffsetParam = "offset";
     private static final Gson gson = new Gson();
     public final List<Module> modules;

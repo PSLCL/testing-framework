@@ -47,9 +47,10 @@ public final class ModulesHandler implements Handler<RoutingContext>
         try
         {
             String filter = request.getParam(Modules.FilterParam);
-            String order = request.getParam(Modules.FilterParam);
-            String limit = request.getParam(Modules.FilterParam);
-            String offsetStr = request.getParam(Modules.FilterParam);
+            String order = request.getParam(Modules.OrderParam);
+            String limit = request.getParam(Modules.LimitParam);
+            String offsetStr = request.getParam(Modules.OffsetParam);
+
             Integer offset = null;
             if(offsetStr != null)
             {
@@ -75,7 +76,7 @@ public final class ModulesHandler implements Handler<RoutingContext>
                 }
                 catch(IllegalArgumentException ignored)
                 {
-                    VertxUtil.errorResponse(context, HttpStatus.BAD_REQUEST, ErrorCodes.INVALID_REQUEST_PARAMETER, "Invalid limit parameter");
+                    VertxUtil.errorResponse(context, HttpStatus.BAD_REQUEST, ErrorCodes.INVALID_REQUEST_PARAMETER, ignored.getMessage());
                     //noinspection ReturnOfNull
                     return null;
                 }

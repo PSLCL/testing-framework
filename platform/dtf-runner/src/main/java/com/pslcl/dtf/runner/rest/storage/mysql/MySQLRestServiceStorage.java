@@ -30,8 +30,11 @@ import java.util.concurrent.ExecutorService;
 
 public class MySQLRestServiceStorage implements RestServiceStorage
 {
+    private static final int MaxiumItemsPerPage = 100000;
     private static final int NotFoundErrorCode = 1054;
     private static final int AlreadyExistsErrorCode = 1062;
+    private static final String Ascending = "asc";
+    private static final String Descending = "desc";
 
     private final Logger logger;
     private volatile MySQLConnectionPool connectionPool;
@@ -47,6 +50,15 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     private volatile String getCompletedCountStatement;
     private volatile String getModulesNoFilterStatement;
     private volatile String getModulesFilterStatement;
+
+    private volatile String getModulesStartSegmentStatement;
+    private volatile String getModulesWhereSegmentStatement;
+    private volatile String getModulesGroupByStatement;
+    private volatile String getModulesOrderByNameStatement;
+    private volatile String getModulesOrderByTestsStatement;
+    private volatile String getModulesOrderByPlansStatement;
+    private volatile String getModulesLimitStatement;
+    private volatile String getModulesOffsetStatement;
 
     public MySQLRestServiceStorage()
     {
@@ -87,17 +99,24 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             "select floor(unix_timestamp(end_time) + ?) as t," +
 	        "count(*) as total from " + database + ".run where end_time is not null group by t";
 
-        getModulesNoFilterStatement =
-            "select module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence, " +
-	        "count(distinct fk_test) as tests, count(distinct fk_test_plan) as plans " +
-	        "from " + database + ".module " +
-		    "left join " + database + ".module_to_test_instance on module.pk_module = module_to_test_instance.fk_module " +
-		    "left join " + database + ".test_instance on test_instance.pk_test_instance = module_to_test_instance.fk_test_instance " +
-		    "left join " + database + ".test on test.pk_test = test_instance.fk_test " +
-		    "left join " + database + ".test_plan on test_plan.pk_test_plan = test.fk_test_plan ";
-        getModulesFilterStatement = getModulesNoFilterStatement +
-            "where module.name like ? or organization like ? or attributes like ? or version like ? or sequence like ?";
-        //@formatter:on
+        getModulesStartSegmentStatement =
+            "select module.pk_module, module.organization, module.name, module.attributes, module.version, module.sequence," +
+            "count(distinct fk_test) as tests, count(distinct fk_test_plan) as plans " +
+            "from " + database + ".module " +
+            "left join " + database + ".module_to_test_instance on (module.pk_module = module_to_test_instance.fk_module) " +
+            "left join " + database + ".test_instance on (test_instance.pk_test_instance = module_to_test_instance.fk_test_instance) " +
+            "left join " + database + ".test on (test.pk_test = test_instance.fk_test) " +
+            "left join " + database + ".test_plan on (test_plan.pk_test_plan = test.fk_test_plan) ";
+        getModulesWhereSegmentStatement =
+            "where (module.name like '%?%' or organization like '%?%' or attributes like '%?%' or version like '%?%' or sequence like '%?%') ";
+        getModulesGroupByStatement = "group by module.pk_module ";
+        getModulesOrderByNameStatement =
+            "order by module.organization ?, module.name ?, module.attributes ?, module.version ?, module.sequence ?, module.pk_module asc ";
+        getModulesOrderByTestsStatement = "order by tests ? ";
+        getModulesOrderByPlansStatement = "order by tests ? ";
+        getModulesLimitStatement = "limit ? ";
+        getModulesOffsetStatement = "offset ?";
+       //@formatter:on
     }
 
     @Override
@@ -273,41 +292,82 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     }
 
     @Override
-    public CompletableFuture<Modules> getModules(String filter, String order, String limit, Integer offset)
+    public CompletableFuture<Modules> getModules(String filter, final String order, String limit, Integer offset)
     {
         CompletableFuture<Modules> future = new CompletableFuture<>();
         executor.submit(() ->
         {
             if(logger.isTraceEnabled())
                 logger.trace("getModules({})", filter);
-            Connection conn = null;
-            PreparedStatement stmt = null;
-            ResultSet rs = null;
-            try
+
+            String theOrder = order;
+            String direction = Ascending;
+            if(order != null)
             {
-                conn = connectionPool.getConnection();
-                int limitValue = 100000;
-                if(!limit.equals("all"))
+                int idx = order.indexOf(Modules.AscendingFlag);
+                if(idx != -1)
+                    theOrder = order.substring(1);
+                idx = order.indexOf(Modules.DescendingFlag);
+                if(idx != -1)
+                {
+                    theOrder = order.substring(1);
+                    direction = Descending;
+                }
+                if(!theOrder.equals(Modules.OrderNameValue) && !theOrder.equals(Modules.OrderTestValue) && !theOrder.equals(Modules.OrderPlanValue))
+                    return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + " is not a valid value"));
+            }else
+                theOrder = Modules.OrderNameValue;
+            int theLimit = sconfig.maxPageItems;
+            if(limit != null)
+            {
+                if(limit.equals(Modules.LimitAllValue))
+                {
+                    theLimit = -1;      // don't append sql limit flag
+                    if(offset != null)
+                        theLimit = MaxiumItemsPerPage;
+                }else
                 {
                     try
                     {
-                        limitValue = Integer.parseInt(limit);
+                        theLimit = Integer.parseInt(limit);
                     }catch(Exception e)
                     {
                         return future.completeExceptionally(new IllegalArgumentException(Modules.LimitParam + " is not an integer value, or all"));
                     }
                 }
-                if(filter == null)
-                    stmt = conn.prepareStatement(getModulesNoFilterStatement);
-                else
-                {
-                    stmt = conn.prepareStatement(getModulesFilterStatement);
-                    stmt.setString(1, filter);
-                    stmt.setString(2, filter);
-                    stmt.setString(3, filter);
-                    stmt.setString(4, filter);
-                    stmt.setString(5, filter);
-                }
+            }
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            String sql = getModulesStartSegmentStatement;
+            if(filter != null)
+            {
+                sql += getModulesWhereSegmentStatement;
+                sql = sql.replace("?", filter);
+            }
+            sql += getModulesGroupByStatement;
+            if(theOrder.equals(Modules.OrderNameValue))
+                sql += getModulesOrderByNameStatement;
+            else if(theOrder.equals(Modules.OrderTestValue))
+                sql += getModulesOrderByTestsStatement;
+            else
+                sql += getModulesOrderByPlansStatement;
+            sql = sql.replace("?", direction);
+            if(theLimit != -1)
+            {
+                sql += getModulesLimitStatement;
+                sql = sql.replace("?", ""+theLimit);
+            }
+            if(offset != null)
+            {
+                sql += getModulesOffsetStatement;
+                sql = sql.replace("?", ""+offset);
+            }
+
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(sql);
                 rs = stmt.executeQuery();
                 List<Module> list = new ArrayList<>();
                 while(rs.next())

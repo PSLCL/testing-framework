@@ -60,12 +60,14 @@ public class ResourceNames
     public static final String StorageUserKey = StorageKeyBase + ".user";
     public static final String StoragePasswordKey = StorageKeyBase + ".password";
     public static final String StorageSchemaKey = StorageKeyBase + ".schema";
+    public static final String StorageMaxItemsPerPageKey = StorageKeyBase + ".max-page-items";
 
     public static final String StorageHostDefault = null;
     public static final String StoragePortDefault = "3306";
     public static final String StorageUserDefault = null;
     public static final String StoragePasswordDefault = null;
     public static final String StorageSchemaDefault = "qa_portal";
+    public static final String StorageMaxItemsPerPageDefault = "200";
 
     /* ****************************************************************************
      * Message Queue    

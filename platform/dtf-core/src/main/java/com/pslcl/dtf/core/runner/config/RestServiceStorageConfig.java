@@ -10,14 +10,16 @@ public class RestServiceStorageConfig
     public final String user;
     public final String password;
     public final String schema;
+    public final int maxPageItems;
 
-    private RestServiceStorageConfig(String host, int port, String user, String password, String schema)
+    private RestServiceStorageConfig(String host, int port, String user, String password, String schema, int maxPageItems)
     {
         this.host = host;
         this.port = port;
         this.user = user;
         this.password = password;
         this.schema = schema;
+        this.maxPageItems = maxPageItems;
     }
 
     public static RestServiceStorageConfig propertiesToConfig(RunnerConfig config) throws Exception
@@ -32,6 +34,7 @@ public class RestServiceStorageConfig
             config.initsb.ttl(ResourceNames.StorageHostKey, "=", host);
             String value = config.properties.getProperty(ResourceNames.StoragePortKey, ResourceNames.StoragePortDefault);
             value = StrH.trim(value);
+            msg = ResourceNames.StoragePortKey + " is not an integer";
             int port = Integer.parseInt(value);
             config.initsb.ttl(ResourceNames.StoragePortKey, "=", value);
             String user = config.properties.getProperty(ResourceNames.StorageUserKey, ResourceNames.StorageUserDefault);
@@ -46,15 +49,20 @@ public class RestServiceStorageConfig
 
             String schema = config.properties.getProperty(ResourceNames.StorageSchemaKey, ResourceNames.StorageSchemaDefault);
             schema = StrH.trim(schema);
-           config.initsb.ttl(ResourceNames.StorageSchemaKey, "=", schema);
+            config.initsb.ttl(ResourceNames.StorageSchemaKey, "=", schema);
+
+            value = config.properties.getProperty(ResourceNames.StorageMaxItemsPerPageKey, ResourceNames.StorageMaxItemsPerPageDefault);
+            value = StrH.trim(value);
+            msg = ResourceNames.StorageMaxItemsPerPageKey + " is not an integer";
+            int maxPageItems = Integer.parseInt(value);
 
             config.properties.remove(ResourceNames.StorageHostKey);
             config.properties.remove(ResourceNames.StoragePortKey);
             config.properties.remove(ResourceNames.StorageUserKey);
             config.properties.remove(ResourceNames.StoragePasswordKey);
             config.properties.remove(ResourceNames.StorageSchemaKey);
-            return new RestServiceStorageConfig(host, port, user, password, schema);
-
+            config.properties.remove(ResourceNames.StorageMaxItemsPerPageKey);
+            return new RestServiceStorageConfig(host, port, user, password, schema, maxPageItems);
         }catch(Exception e)
         {
             config.initsb.ttl(msg);
