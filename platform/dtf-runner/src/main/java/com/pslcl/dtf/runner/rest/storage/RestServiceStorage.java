@@ -2,7 +2,6 @@ package com.pslcl.dtf.runner.rest.storage;
 
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.rest.module.Artifacts;
-import com.pslcl.dtf.core.runner.rest.module.Module;
 import com.pslcl.dtf.core.runner.rest.module.ModuleDetail;
 import com.pslcl.dtf.core.runner.rest.module.Modules;
 import com.pslcl.dtf.core.runner.rest.module.Reports;
@@ -75,5 +74,5 @@ public interface RestServiceStorage
      * @param moduleId the desired module ID.
      * @return the report structure for the requested module
      */
-    CompletableFuture<Reports> getReportForModule(String moduleId);
+    CompletableFuture<Reports> getReportsForModule(String moduleId);
 }

@@ -204,7 +204,7 @@ public final class ModulesHandler implements Handler<RoutingContext>
         HttpServerRequest request = context.request();
         try
         {
-            storage.getReportForModule(moduleId).handle((report, t) ->
+            storage.getReportsForModule(moduleId).handle((report, t) ->
             {
                 try
                 {

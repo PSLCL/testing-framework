@@ -222,6 +222,27 @@ paths:
         description: The module id.
         required: true
         type: string
+      - name: filter
+        in: query
+        description: A 'like' filter that will be or searched against name and configuration if given.
+        required: false
+        type: string
+      - name: order
+        in: query
+        description: Order by where the value must be one of 'plans', 'tests', 'configuration' or 'name'.  The value may be preceeded by a '<' or '>'  If '<' order is ascending.  If '>' order is decending.  Defaults to "<name".  Note that pk_artifact is always returned in ascending order regardless of the '>' flag.
+        required: false
+        type: string
+      - name: limit
+        in: query
+        description: Maximum number of artifacts to return. Can be equal to "all".  Defaults to the portals configuration 'page_limit' parameter (200).  If limit is given and set to "all" and the 'offset' parameter is also given, the limit is set to 100000.
+        required: false
+        type: string
+      - name: offset
+        in: query
+        description: The offset in the order to list from.
+        required: false
+        type: integer
+        format: init32
       responses:
         200:
           description: The module artifacts object.
@@ -947,12 +968,30 @@ definitions:
         description: The number of artifact plans.
 
   Reports:
-    type: array
-    items:
-      $ref: '#/definitions/Report'
-    description: The requested module's report list.
+    type: object
+    properties:
+      results:
+        type: array
+        items:
+          $ref: '#/definitions/ReportResult'
+        description: The requested module's results list.
+      plans:
+        type: array
+        items:
+          $ref: '#/definitions/ReportPlan'
+        description: The requested module's plans list.
+      tests:
+        type: array
+        items:
+          $ref: '#/definitions/ReportTest'
+        description: The requested module's tests list.
+      modules:
+        type: array
+        items:
+          $ref: '#/definitions/ReportModule'
+        description: The requested module's module list.
 
-  Report:
+  ReportResult:
     type: object
     properties:
       pk_test_plan:
@@ -980,6 +1019,58 @@ definitions:
         type: integer
         format: int64
         description: Test end timestamp.
+  ReportPlan:
+    type: object
+    properties:
+      pk_test_plan:
+        type: integer
+        format: int64
+        description: The test plan ID.
+      name:
+        type: string
+        description: The plan name.
+      description:
+        type: string
+        description: The plan description.
+  ReportTest:
+    type: object
+    properties:
+      pk_test:
+        type: integer
+        format: int64
+        description: The test ID.
+      name:
+        type: string
+        description: The test name.
+      description:
+        type: string
+        description: The test description.
+  ReportModule:
+    type: object
+    properties:
+      pk_module:
+        type: integer
+        format: int64
+        description: The module's ID.
+      offset:
+        type: integer
+        format: int64
+        description: The module's offset.
+      organization:
+        type: string
+        description: The module's organization.
+      name:
+        type: string
+        description: The module's name.
+      version:
+        type: string
+        description: The module's version.
+      sequence:
+        type: string
+        description: The module's sequence.
+      attributes:
+        type: string
+        description: The module's attributes.
 
   TestPlans:
     type: array

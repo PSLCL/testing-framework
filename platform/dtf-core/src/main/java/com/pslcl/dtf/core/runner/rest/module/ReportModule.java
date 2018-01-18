@@ -17,31 +17,38 @@ package com.pslcl.dtf.core.runner.rest.module;
 
 import com.google.gson.Gson;
 
-import java.util.List;
-
 @SuppressWarnings("javadoc")
-public class Reports
+public class ReportModule
 {
     private static final Gson gson = new Gson();
-    public final List<ReportResult> results;
-    public final List<ReportPlan> plans;
-    public final List<ReportTest> tests;
-    public final List<ReportModule> modules;
+    public final Long pk_module;
+    public final Long offset;
+    public final String organization;
+    public final String name;
+    public final String version;
+    public String sequence;
+    public String attributes;
 
-    public Reports()
+    public ReportModule()
     {
-        results = null;
-        plans = null;
-        tests = null;
-        modules = null;
+        pk_module = null;
+        offset = null;
+        organization = null;
+        name = null;
+        version = null;
+        sequence = null;
+        attributes = null;
     }
 
-    public Reports(List<ReportResult> reportResults, List<ReportPlan> reportPlans, List<ReportTest> reportTests, List<ReportModule> reportModules)
+    public ReportModule(Long pk_module, Long offset, String organization, String name, String version, String sequence, String attributes)
     {
-        this.results = reportResults;
-        this.plans = reportPlans;
-        this.tests = reportTests;
-        this.modules = reportModules;
+        this.pk_module = pk_module;
+        this.offset = offset;
+        this.organization = organization;
+        this.name = name;
+        this.version = version;
+        this.sequence = sequence;
+        this.attributes = attributes;
     }
 
     public String toJson()

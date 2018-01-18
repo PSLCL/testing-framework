@@ -1,6 +1,7 @@
 package com.pslcl.dtf.runner.rest.storage.mysql;
 
 import com.cstkit.common.mysql.MySQLConnectionPool;
+import com.google.gson.Gson;
 import com.pslcl.dtf.core.runner.config.RestServiceStorageConfig;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.rest.module.Artifact;
@@ -8,7 +9,10 @@ import com.pslcl.dtf.core.runner.rest.module.Artifacts;
 import com.pslcl.dtf.core.runner.rest.module.Module;
 import com.pslcl.dtf.core.runner.rest.module.ModuleDetail;
 import com.pslcl.dtf.core.runner.rest.module.Modules;
-import com.pslcl.dtf.core.runner.rest.module.Report;
+import com.pslcl.dtf.core.runner.rest.module.ReportModule;
+import com.pslcl.dtf.core.runner.rest.module.ReportPlan;
+import com.pslcl.dtf.core.runner.rest.module.ReportResult;
+import com.pslcl.dtf.core.runner.rest.module.ReportTest;
 import com.pslcl.dtf.core.runner.rest.module.Reports;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRate;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRates;
@@ -25,8 +29,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,8 +44,8 @@ import java.util.concurrent.ExecutorService;
 public class MySQLRestServiceStorage implements RestServiceStorage
 {
     private static final int MaxiumItemsPerPage = 100000;
-    private static final int NotFoundErrorCode = 1054;
-    private static final int AlreadyExistsErrorCode = 1062;
+//    private static final int NotFoundErrorCode = 1054;
+//    private static final int AlreadyExistsErrorCode = 1062;
     private static final String Ascending = "asc";
     private static final String Descending = "desc";
 
@@ -45,7 +53,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     private volatile MySQLConnectionPool connectionPool;
     private volatile ExecutorService executor;
     private volatile RestServiceStorageConfig sconfig;
-    private volatile String database;
+//    private volatile String database;
 
     private volatile String getStatisticsStatement;
     private volatile String getUserTestsNoOwnerStatement;
@@ -53,8 +61,8 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     private volatile String getStartingCountStatement;
     private volatile String getRunningCountStatement;
     private volatile String getCompletedCountStatement;
-    private volatile String getModulesNoFilterStatement;
-    private volatile String getModulesFilterStatement;
+//    private volatile String getModulesNoFilterStatement;
+//    private volatile String getModulesFilterStatement;
     private volatile String getModulesStartSegmentStatement;
     private volatile String getModulesWhereSegmentStatement;
     private volatile String getModulesGroupByStatement;
@@ -226,7 +234,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             else
                 endTime = to;
             if(bucket == null)
-                bucketValue = new Long(3600);
+                bucketValue = 3600L;
             else
                 bucketValue = bucket;
 
@@ -389,12 +397,18 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 sql = sql.replace("?", filter);
             }
             sql += getModulesGroupByStatement;
-            if(theOrder.equals(Modules.OrderNameValue))
-                sql += getModulesOrderByNameStatement;
-            else if(theOrder.equals(Modules.OrderTestValue))
-                sql += getModulesOrderByTestsStatement;
-            else
-                sql += getModulesOrderByPlansStatement;
+            switch(theOrder)
+            {
+                case Modules.OrderNameValue:
+                    sql += getModulesOrderByNameStatement;
+                    break;
+                case Modules.OrderTestValue:
+                    sql += getModulesOrderByTestsStatement;
+                    break;
+                default:
+                    sql += getModulesOrderByPlansStatement;
+                    break;
+            }
             sql = sql.replace("?", direction);
             if(theLimit != -1)
             {
@@ -552,14 +566,21 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 sql = sql.replace("?", filter);
             }
             sql += getModuleArtifactsGroupByStatement;
-            if(theOrder.equals(Modules.OrderNameValue))
-                sql += getModuleArtifactsOrderByNameStatement;
-            else if(theOrder.equals(Modules.OrderTestValue))
-                sql += getModuleArtifactsOrderByTestsStatement;
-            else if(theOrder.equals(Modules.OrderPlanValue))
-                sql += getModuleArtifactsOrderByPlansStatement;
-            else
-                sql += getModuleArtifactsOrderByConfigurationStatement;
+            switch(theOrder)
+            {
+                case Modules.OrderNameValue:
+                    sql += getModuleArtifactsOrderByNameStatement;
+                    break;
+                case Modules.OrderTestValue:
+                    sql += getModuleArtifactsOrderByTestsStatement;
+                    break;
+                case Modules.OrderPlanValue:
+                    sql += getModuleArtifactsOrderByPlansStatement;
+                    break;
+                default:
+                    sql += getModuleArtifactsOrderByConfigurationStatement;
+                    break;
+            }
             sql = sql.replace("?", direction);
             if(theLimit != -1)
             {
@@ -609,13 +630,13 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     }
 
     @Override
-    public CompletableFuture<Reports> getReportForModule(String moduleId)
+    public CompletableFuture<Reports> getReportsForModule(String moduleId)
     {
         CompletableFuture<Reports> future = new CompletableFuture<>();
         executor.submit(() ->
         {
             if(logger.isTraceEnabled())
-                logger.trace("getReportForModule({})", moduleId);
+                logger.trace("getReportsForModule({})", moduleId);
             if(moduleId == null)
                 return future.completeExceptionally(new IllegalArgumentException("module id is null"));
             Connection conn = null;
@@ -631,73 +652,71 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 boolean hasNext = rs.next();
                 if(!hasNext)
                     return future.completeExceptionally(new NotFoundException("Module ID: " + moduleId + " not found"));
-                int count = 1;
+                List<ReportResult> resultList = new ArrayList<>();
+                List<ReportPlan> planList = new ArrayList<>();
+                List<ReportTest> testList = new ArrayList<>();
+                List<ReportModule> moduleList = new ArrayList<>();
                 do
                 {
-                    ++count;
+                    long testPlan = rs.getLong(1);
+                    long test = rs.getLong(2);
+                    long instance = rs.getLong(3);
+                    String desc = rs.getString(4);
+                    String modules = rs.getString(5);
+                    Boolean result = rs.getBoolean(6);
+                    if(rs.wasNull())
+                        result = null;
+                    ZonedDateTime utcDateTime = null;
+                    Timestamp ts = rs.getTimestamp(7);
+                    if(!rs.wasNull())
+                        utcDateTime = ZonedDateTime.ofInstant(ts.toInstant(), ZoneId.of("UTC"));
+                    resultList.add(new ReportResult(testPlan, test, instance, desc, modules, result, utcDateTime));
                 }while(rs.next());
-                logger.info(count + " rows in the first resultSet");
                 rs.close();
                 hasNext = stmt.getMoreResults();
-                if(!hasNext)
-                    logger.info("There is not a second resultSet");
-                rs = stmt.getResultSet();
-                hasNext = rs.next();
-                if(!hasNext)
-                    logger.info("2nd result set is empty");
-                count = 1;
-                do
+                if(hasNext)
                 {
-                    ++count;
-                }while(rs.next());
-                logger.info(count + " rows in the second resultSet");
-                rs.close();
-
-                hasNext = stmt.getMoreResults();
-                if(!hasNext)
-                    logger.info("There is not a third resultSet");
-                rs = stmt.getResultSet();
-                hasNext = rs.next();
-                if(!hasNext)
-                    logger.info("3rd result set is empty");
-                count = 1;
-                do
-                {
-                    ++count;
-                }while(rs.next());
-                logger.info(count + " rows in the third resultSet");
-                rs.close();
-
-
-                hasNext = stmt.getMoreResults();
-                if(!hasNext)
-                    logger.info("There is not a forth resultSet");
-                rs = stmt.getResultSet();
-                hasNext = rs.next();
-                if(!hasNext)
-                    logger.info("4th result set is empty");
-                count = 1;
-                do
-                {
-                    ++count;
-                }while(rs.next());
-                logger.info(count + " rows in the forth resultSet");
-                rs.close();
-
-                hasNext = stmt.getMoreResults();
-                if(!hasNext)
-                    logger.info("There is not a 5th resultSet");
-                rs = stmt.getResultSet();
-                if(rs == null)
-                    logger.info("There are no 5th resultSet rows");
-                else
-                    logger.info("Did not expect any 5th resultSet rows");
-
-                List<Report> list = new ArrayList<>();
-//                boolean found = rs.next();
-//                if(!found)
-//                    return future.completeExceptionally(new NotFoundException("Module ID: " + moduleId + " not found"));
-                return future.complete(new Reports(list));
+                    rs = stmt.getResultSet();
+                    while(rs.next())
+                    {
+                        long testPlan = rs.getLong(1);
+                        String name = rs.getString(2);
+                        String desc = rs.getString(3);
+                        planList.add(new ReportPlan(testPlan, name, desc));
+                    }
+                    rs.close();
+                    hasNext = stmt.getMoreResults();
+                    if(hasNext)
+                    {
+                        rs = stmt.getResultSet();
+                        while(rs.next())
+                        {
+                            long test = rs.getLong(1);
+                            String name = rs.getString(2);
+                            String desc = rs.getString(3);
+                            testList.add(new ReportTest(test, name, desc));
+                        }
+                        rs.close();
+                        hasNext = stmt.getMoreResults();
+                        if(hasNext)
+                        {
+                            rs = stmt.getResultSet();
+                            while(rs.next())
+                            {
+                                long module = rs.getLong(1);
+                                long offset = rs.getLong(2);
+                                String org = rs.getString(3);
+                                String name = rs.getString(4);
+                                String version = rs.getString(5);
+                                String sequence = rs.getString(6);
+                                String attributes = rs.getString(7);
+                                moduleList.add(new ReportModule(module, offset, org, name, version, sequence, attributes));
+                            }
+                            rs.close();
+                        }
+                    }
+                }
+                return future.complete(new Reports(resultList, planList, testList, moduleList));
             }catch(SQLException e)
             {
                 if(logger.isWarnEnabled())
@@ -755,14 +774,15 @@ public class MySQLRestServiceStorage implements RestServiceStorage
 
     private String dateFromLong(long timestamp)
     {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
         Date date = new Date(timestamp);
         return sdf.format(date);
     }
 
+    @SuppressWarnings("unused")
     private long timestampFromString(String dateStr) throws ParseException
     {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
         Date date = sdf.parse(dateStr);
         return date.getTime();
     }
