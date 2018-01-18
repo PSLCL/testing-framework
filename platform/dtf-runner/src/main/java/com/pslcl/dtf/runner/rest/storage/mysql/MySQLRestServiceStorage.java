@@ -1,16 +1,21 @@
 package com.pslcl.dtf.runner.rest.storage.mysql;
 
 import com.cstkit.common.mysql.MySQLConnectionPool;
-import com.cstkit.metadata.objects.KeyspacePage;
 import com.pslcl.dtf.core.runner.config.RestServiceStorageConfig;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
+import com.pslcl.dtf.core.runner.rest.module.Artifact;
+import com.pslcl.dtf.core.runner.rest.module.Artifacts;
 import com.pslcl.dtf.core.runner.rest.module.Module;
+import com.pslcl.dtf.core.runner.rest.module.ModuleDetail;
 import com.pslcl.dtf.core.runner.rest.module.Modules;
+import com.pslcl.dtf.core.runner.rest.module.Report;
+import com.pslcl.dtf.core.runner.rest.module.Reports;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRate;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRates;
 import com.pslcl.dtf.core.runner.rest.stats.Statistics;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTest;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTests;
+import com.pslcl.dtf.runner.rest.storage.NotFoundException;
 import com.pslcl.dtf.runner.rest.storage.RestServiceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,15 +55,26 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     private volatile String getCompletedCountStatement;
     private volatile String getModulesNoFilterStatement;
     private volatile String getModulesFilterStatement;
-
     private volatile String getModulesStartSegmentStatement;
     private volatile String getModulesWhereSegmentStatement;
     private volatile String getModulesGroupByStatement;
     private volatile String getModulesOrderByNameStatement;
     private volatile String getModulesOrderByTestsStatement;
     private volatile String getModulesOrderByPlansStatement;
-    private volatile String getModulesLimitStatement;
-    private volatile String getModulesOffsetStatement;
+    private volatile String limitStatement;
+    private volatile String OffsetStatement;
+    private volatile String getModuleStatement;
+
+    private volatile String getModuleArtifactsStartSegmentStatement;
+    private volatile String getModuleArtifactsWhereAndSegmentStatement;
+
+    private volatile String getModuleArtifactsGroupByStatement;
+    private volatile String getModuleArtifactsOrderByNameStatement;
+    private volatile String getModuleArtifactsOrderByTestsStatement;
+    private volatile String getModuleArtifactsOrderByPlansStatement;
+    private volatile String getModuleArtifactsOrderByConfigurationStatement;
+
+    private volatile String getModuleReportStatement;
 
     public MySQLRestServiceStorage()
     {
@@ -112,10 +128,37 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         getModulesGroupByStatement = "group by module.pk_module ";
         getModulesOrderByNameStatement =
             "order by module.organization ?, module.name ?, module.attributes ?, module.version ?, module.sequence ?, module.pk_module asc ";
-        getModulesOrderByTestsStatement = "order by tests ? ";
-        getModulesOrderByPlansStatement = "order by tests ? ";
-        getModulesLimitStatement = "limit ? ";
-        getModulesOffsetStatement = "offset ?";
+        getModulesOrderByTestsStatement = "order by tests ?, module.pk_module asc ";
+        getModulesOrderByPlansStatement = "order by plans ?, module.pk_module asc ";
+        limitStatement = "limit ? ";
+        OffsetStatement = "offset ?";
+
+        getModuleStatement =
+                "select pk_module, organization, name, version, sequence, attributes, scheduled_release, actual_release " +
+                "from " + database + ".module where pk_module = ?";
+
+
+        getModuleArtifactsStartSegmentStatement =
+            "select artifact.pk_artifact, artifact.name, artifact.configuration, artifact.derived_from_artifact, artifact.merged_from_module, " +
+            "count(distinct fk_test) as tests, count(distinct fk_test_plan) as plans " +
+	        "from " + database + ".artifact " +
+		    "left join " + database + ".artifact_to_dt_line on (artifact.pk_artifact = artifact_to_dt_line.fk_artifact) " +
+            "left join " + database + ".dt_line on (dt_line.pk_dt_line = artifact_to_dt_line.fk_dt_line) " +
+            "left join " + database + ".described_template on (described_template.pk_described_template = dt_line.fk_described_template) " +
+            "left join " + database + ".test_instance on (test_instance.fk_described_template = described_template.pk_described_template) " +
+            "left join " + database + ".test on (test.pk_test = test_instance.fk_test) " +
+            "left join " + database + ".test_plan on (test_plan.pk_test_plan =  test.fk_test_plan) " +
+            "where artifact.fk_module=? ";
+        getModuleArtifactsWhereAndSegmentStatement =
+            "and (artifact.name like '%?%' or artifact.configuration like '%?%') ";
+        getModuleArtifactsGroupByStatement = "group by artifact.pk_artifact ";
+        getModuleArtifactsOrderByNameStatement =
+            "order by artifact.name ?, artifact.pk_artifact asc ";
+        getModuleArtifactsOrderByTestsStatement = "order by tests ?, artifact.pk_artifact asc ";
+        getModuleArtifactsOrderByPlansStatement = "order by plans ?, artifact.pk_artifact asc ";
+        getModuleArtifactsOrderByConfigurationStatement = "order by configuration ?, artifact.pk_artifact asc";
+
+        getModuleReportStatement = "call qa_portal.get_instance_list(null, null, ?, null)";
        //@formatter:on
     }
 
@@ -298,7 +341,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         executor.submit(() ->
         {
             if(logger.isTraceEnabled())
-                logger.trace("getModules({})", filter);
+                logger.trace("getArtifactsForModule({},{},{},{})", filter, order, limit, offset);
 
             String theOrder = order;
             String direction = Ascending;
@@ -314,7 +357,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                     direction = Descending;
                 }
                 if(!theOrder.equals(Modules.OrderNameValue) && !theOrder.equals(Modules.OrderTestValue) && !theOrder.equals(Modules.OrderPlanValue))
-                    return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + " is not a valid value"));
+                    return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + theOrder + " is not a valid value"));
             }else
                 theOrder = Modules.OrderNameValue;
             int theLimit = sconfig.maxPageItems;
@@ -355,12 +398,12 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             sql = sql.replace("?", direction);
             if(theLimit != -1)
             {
-                sql += getModulesLimitStatement;
+                sql += limitStatement;
                 sql = sql.replace("?", ""+theLimit);
             }
             if(offset != null)
             {
-                sql += getModulesOffsetStatement;
+                sql += OffsetStatement;
                 sql = sql.replace("?", ""+offset);
             }
 
@@ -401,6 +444,277 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         return future;
     }
 
+    @Override
+    public CompletableFuture<ModuleDetail> getModule(String moduleId)
+    {
+        CompletableFuture<ModuleDetail> future = new CompletableFuture<>();
+        executor.submit(() ->
+        {
+            if(logger.isTraceEnabled())
+                logger.trace("getUserTests({})", moduleId);
+            if(moduleId == null)
+                return future.completeExceptionally(new IllegalArgumentException("module id is null"));
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(getModuleStatement);
+                stmt.setString(1, moduleId);
+                rs = stmt.executeQuery();
+                boolean found = rs.next();
+                if(!found)
+                    return future.completeExceptionally(new NotFoundException("Module ID: " + moduleId + " not found"));
+                long pk_module = rs.getLong(1);
+                String organization = rs.getString(2);
+                String name = rs.getString(3);
+                String version = rs.getString(4);
+                String sequence = rs.getString(5);
+                String attributes = rs.getString(6);
+                String scheduled_release = rs.getString(7);
+                String actual_release = rs.getString(8);
+                return future.complete(new ModuleDetail(pk_module, organization, name, attributes, version, sequence, scheduled_release, actual_release));
+            }catch(SQLException e)
+            {
+                if(logger.isWarnEnabled())
+                    logger.warn("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }catch(Exception e)
+            {
+                if(logger.isErrorEnabled())
+                    logger.error("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }finally
+            {
+                stmtCleanup(stmt, conn, rs);
+            }
+        });
+        return future;
+    }
+
+
+    public CompletableFuture<Artifacts> getArtifactsForModule(String moduleId, String filter, String order, String limit, Integer offset)
+    {
+        CompletableFuture<Artifacts> future = new CompletableFuture<>();
+        executor.submit(() ->
+        {
+            if(logger.isTraceEnabled())
+                logger.trace("getArtifactsForModule({},{},{},{},{})", moduleId, filter, order, limit, offset);
+            if(moduleId == null)
+                return future.completeExceptionally(new IllegalArgumentException("module id is null"));
+
+            String theOrder = order;
+            String direction = Ascending;
+            if(order != null)
+            {
+                int idx = order.indexOf(Modules.AscendingFlag);
+                if(idx != -1)
+                    theOrder = order.substring(1);
+                idx = order.indexOf(Modules.DescendingFlag);
+                if(idx != -1)
+                {
+                    theOrder = order.substring(1);
+                    direction = Descending;
+                }
+                if(!theOrder.equals(Modules.OrderNameValue) && !theOrder.equals(Modules.OrderTestValue) && !theOrder.equals(Modules.OrderPlanValue) && !theOrder.equals(Artifacts.OrderConfigurationValue))
+                    return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + theOrder + " is not a valid value"));
+            }else
+                theOrder = Modules.OrderNameValue;
+            int theLimit = sconfig.maxPageItems;
+            if(limit != null)
+            {
+                if(limit.equals(Modules.LimitAllValue))
+                {
+                    theLimit = -1;      // don't append sql limit flag
+                    if(offset != null)
+                        theLimit = MaxiumItemsPerPage;
+                }else
+                {
+                    try
+                    {
+                        theLimit = Integer.parseInt(limit);
+                    }catch(Exception e)
+                    {
+                        return future.completeExceptionally(new IllegalArgumentException(Modules.LimitParam + " is not an integer value, or all"));
+                    }
+                }
+            }
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            String sql = getModuleArtifactsStartSegmentStatement;
+            sql = sql.replace("?", moduleId);
+
+            if(filter != null)
+            {
+                sql += getModuleArtifactsWhereAndSegmentStatement;
+                sql = sql.replace("?", filter);
+            }
+            sql += getModuleArtifactsGroupByStatement;
+            if(theOrder.equals(Modules.OrderNameValue))
+                sql += getModuleArtifactsOrderByNameStatement;
+            else if(theOrder.equals(Modules.OrderTestValue))
+                sql += getModuleArtifactsOrderByTestsStatement;
+            else if(theOrder.equals(Modules.OrderPlanValue))
+                sql += getModuleArtifactsOrderByPlansStatement;
+            else
+                sql += getModuleArtifactsOrderByConfigurationStatement;
+            sql = sql.replace("?", direction);
+            if(theLimit != -1)
+            {
+                sql += limitStatement;
+                sql = sql.replace("?", ""+theLimit);
+            }
+            if(offset != null)
+            {
+                sql += OffsetStatement;
+                sql = sql.replace("?", ""+offset);
+            }
+
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(sql);
+                rs = stmt.executeQuery();
+                List<Artifact> list = new ArrayList<>();
+                while(rs.next())
+                {
+                    long artifactId = rs.getLong(1);
+                    String name = rs.getString(2);
+                    String config = rs.getString(3);
+                    long derived = rs.getLong(4);
+                    long mergedFrom = rs.getLong(5);
+                    int tests = rs.getInt(6);
+                    int plans = rs.getInt(7);
+                    list.add(new Artifact(artifactId, name, config, derived, mergedFrom, tests, plans));
+                }
+                return future.complete(new Artifacts(list));
+            }catch(SQLException e)
+            {
+                if(logger.isWarnEnabled())
+                    logger.warn("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }catch(Exception e)
+            {
+                if(logger.isErrorEnabled())
+                    logger.error("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }finally
+            {
+                stmtCleanup(stmt, conn, rs);
+            }
+        });
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Reports> getReportForModule(String moduleId)
+    {
+        CompletableFuture<Reports> future = new CompletableFuture<>();
+        executor.submit(() ->
+        {
+            if(logger.isTraceEnabled())
+                logger.trace("getReportForModule({})", moduleId);
+            if(moduleId == null)
+                return future.completeExceptionally(new IllegalArgumentException("module id is null"));
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(getModuleReportStatement);
+                stmt.setString(1, moduleId);
+                rs = stmt.executeQuery();
+//                rs = stmt.getResultSet();
+                boolean hasNext = rs.next();
+                if(!hasNext)
+                    return future.completeExceptionally(new NotFoundException("Module ID: " + moduleId + " not found"));
+                int count = 1;
+                do
+                {
+                    ++count;
+                }while(rs.next());
+                logger.info(count + " rows in the first resultSet");
+                rs.close();
+                hasNext = stmt.getMoreResults();
+                if(!hasNext)
+                    logger.info("There is not a second resultSet");
+                rs = stmt.getResultSet();
+                hasNext = rs.next();
+                if(!hasNext)
+                    logger.info("2nd result set is empty");
+                count = 1;
+                do
+                {
+                    ++count;
+                }while(rs.next());
+                logger.info(count + " rows in the second resultSet");
+                rs.close();
+
+                hasNext = stmt.getMoreResults();
+                if(!hasNext)
+                    logger.info("There is not a third resultSet");
+                rs = stmt.getResultSet();
+                hasNext = rs.next();
+                if(!hasNext)
+                    logger.info("3rd result set is empty");
+                count = 1;
+                do
+                {
+                    ++count;
+                }while(rs.next());
+                logger.info(count + " rows in the third resultSet");
+                rs.close();
+
+
+                hasNext = stmt.getMoreResults();
+                if(!hasNext)
+                    logger.info("There is not a forth resultSet");
+                rs = stmt.getResultSet();
+                hasNext = rs.next();
+                if(!hasNext)
+                    logger.info("4th result set is empty");
+                count = 1;
+                do
+                {
+                    ++count;
+                }while(rs.next());
+                logger.info(count + " rows in the forth resultSet");
+                rs.close();
+
+                hasNext = stmt.getMoreResults();
+                if(!hasNext)
+                    logger.info("There is not a 5th resultSet");
+                rs = stmt.getResultSet();
+                if(rs == null)
+                    logger.info("There are no 5th resultSet rows");
+                else
+                    logger.info("Did not expect any 5th resultSet rows");
+
+                List<Report> list = new ArrayList<>();
+//                boolean found = rs.next();
+//                if(!found)
+//                    return future.completeExceptionally(new NotFoundException("Module ID: " + moduleId + " not found"));
+                return future.complete(new Reports(list));
+            }catch(SQLException e)
+            {
+                if(logger.isWarnEnabled())
+                    logger.warn("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }catch(Exception e)
+            {
+                if(logger.isErrorEnabled())
+                    logger.error("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }finally
+            {
+                stmtCleanup(stmt, conn, rs);
+            }
+        });
+        return future;
+    }
 
     public void start()
     {

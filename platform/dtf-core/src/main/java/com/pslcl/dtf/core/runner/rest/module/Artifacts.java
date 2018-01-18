@@ -23,7 +23,10 @@ import java.util.List;
 @SuppressWarnings("javadoc")
 public class Artifacts
 {
+    public static final String OrderConfigurationValue = "configuration";
+
     private static final Gson gson = new Gson();
+
     public final List<Artifact> artifacts;
 
     public Artifacts()

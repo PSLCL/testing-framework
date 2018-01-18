@@ -24,8 +24,8 @@ public class Artifact
     public final Long pk_artifact;
     public final String name;
     public final String configuration;
-    public final String derived_from_artifact;
-    public final String merged_from_module;
+    public final Long derived_from_artifact;
+    public final Long merged_from_module;
     public final Integer tests;
     public final Integer plans;
 
@@ -40,7 +40,7 @@ public class Artifact
         plans = null;
     }
 
-    public Artifact(Long pk_artifact, String name, String configuration, String derived_from_artifact, String merged_from_module, Integer tests, Integer plans)
+    public Artifact(Long pk_artifact, String name, String configuration, Long derived_from_artifact, Long merged_from_module, Integer tests, Integer plans)
     {
         this.pk_artifact = pk_artifact;
         this.name = name;

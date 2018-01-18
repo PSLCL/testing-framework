@@ -19,14 +19,12 @@ import org.slf4j.LoggerFactory;
 public final class TestPlansHandler implements Handler<RoutingContext>
 {
     private final Logger logger;
-    private final BlockingExecutor executor;
     private final RestServiceStorage storage;
 
-    public TestPlansHandler(BlockingExecutor executor, RestServiceStorage storage)
+    public TestPlansHandler(RestServiceStorage storage)
     {
         logger = LoggerFactory.getLogger(this.getClass());
         this.storage = storage;
-        this.executor = executor;
     }
 
     @Override

@@ -32,7 +32,7 @@ public class RestServiceInstance
     private static final String ApiVersion = "v1";
     private static final String ApiReportVersion = "1.0";
     private static final String VersionPrefix = "/" + ApiVersion;
-//    private static final char PathSeparator = '/';
+    public static final char PathSeparator = '/';
     private static final String PrefixPath = "/api/" + ApiVersion + "/";
 
     public static final String RestVersionPath = "/api/version";
@@ -43,8 +43,10 @@ public class RestServiceInstance
     public static final String UserTestsPath = PrefixPath + "user_tests";
     public static final String ModulesPath = PrefixPath + "modules";
     public static final String ModulePath = ModulesPath + "/:id";
-    public static final String ModuleArtifactsPath = ModulePath + "/artifacts";
-    public static final String ModuleReportPath = ModulePath + "/report";
+    public static final String Artifacts = "artifacts";
+    public static final String ModuleArtifactsPath = ModulePath + "/"+Artifacts;
+    public static final String Report = "report";
+    public static final String ModuleReportPath = ModulePath + "/"+Report;
     public static final String TestPlansPath = PrefixPath + "test_plans";
     public static final String TestPlanPath = TestPlansPath + "/:plan";
     public static final String TestPlanTestsPath = TestPlanPath + "/tests";
@@ -118,7 +120,7 @@ public class RestServiceInstance
                 throw new Exception("Configuration was given a URI prefix that does not start with '/'");
             configPrefix = restConfig.prefix;
         }
-        StatisticsHandler statisticsHandler = new StatisticsHandler(config.blockingExecutor, storage, new RestVersion(ServiceVersion, ApiReportVersion));
+        StatisticsHandler statisticsHandler = new StatisticsHandler(storage, new RestVersion(ServiceVersion, ApiReportVersion));
         router.route(configPrefix + RestVersionPath).handler(getCors);
         router.route(configPrefix + RestVersionPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + RestVersionPath).handler(statisticsHandler);
@@ -127,17 +129,17 @@ public class RestServiceInstance
         router.route(configPrefix + StatsPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + StatsPath).handler(statisticsHandler);
 
-        RunRatesHandler runratesHandler = new RunRatesHandler(config.blockingExecutor, storage);
+        RunRatesHandler runratesHandler = new RunRatesHandler(storage);
         router.route(configPrefix + RunratesPath).handler(getCors);
         router.route(configPrefix + RunratesPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + RunratesPath).handler(runratesHandler);
 
-        UserTestsHandler userTestsHandler = new UserTestsHandler(config.blockingExecutor, storage);
+        UserTestsHandler userTestsHandler = new UserTestsHandler(storage);
         router.route(configPrefix + UserTestsPath).handler(getCors);
         router.route(configPrefix + UserTestsPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + UserTestsPath).handler(userTestsHandler);
 
-        ModulesHandler modulesHandler = new ModulesHandler(config.blockingExecutor, storage);
+        ModulesHandler modulesHandler = new ModulesHandler(storage);
         router.route(configPrefix + ModulesPath).handler(getCors);
         router.route(configPrefix + ModulesPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + ModulesPath).handler(modulesHandler);
@@ -154,7 +156,7 @@ public class RestServiceInstance
         router.route(configPrefix + ModuleReportPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + ModuleReportPath).handler(modulesHandler);
 
-        TestPlansHandler testPlansHandler = new TestPlansHandler(config.blockingExecutor, storage);
+        TestPlansHandler testPlansHandler = new TestPlansHandler(storage);
         router.route(configPrefix + TestPlansPath).handler(getCors);
         router.route(configPrefix + TestPlansPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + TestPlansPath).handler(testPlansHandler);
@@ -176,7 +178,7 @@ public class RestServiceInstance
         router.route(configPrefix + VersionsPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + VersionsPath).handler(versionsHandler);
 
-        InstancesHandler instancesHandler = new InstancesHandler(config.blockingExecutor, storage);
+        InstancesHandler instancesHandler = new InstancesHandler(storage);
         router.route(configPrefix + InstancesPath).handler(getCors);
         router.route(configPrefix + InstancesPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + InstancesPath).handler(instancesHandler);
@@ -185,12 +187,12 @@ public class RestServiceInstance
         router.route(configPrefix + InstancePath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + InstancePath).handler(instancesHandler);
 
-        TemplateHandler templateHandler = new TemplateHandler(config.blockingExecutor, storage);
+        TemplateHandler templateHandler = new TemplateHandler(storage);
         router.route(configPrefix + TemplatePath).handler(getCors);
         router.route(configPrefix + TemplatePath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + TemplatePath).handler(templateHandler);
 
-        ArtifactsHandler artifactsHandler = new ArtifactsHandler(config.blockingExecutor, storage);
+        ArtifactsHandler artifactsHandler = new ArtifactsHandler(storage);
         router.route(configPrefix + UntestedArtifactsPath).handler(getCors);
         router.route(configPrefix + UntestedArtifactsPath).handler(BadMethodHandler.create(HttpMethod.GET, HttpMethod.OPTIONS));
         router.route(configPrefix + UntestedArtifactsPath).handler(artifactsHandler);
@@ -216,6 +218,43 @@ public class RestServiceInstance
         int port = Integer.parseInt(restConfig.host.split(":")[1]);
         vertx.createHttpServer().requestHandler(router::accept).listen(port, host);
         logger.info(getClass().getSimpleName() + " RestServiceInstance started");
+    }
+
+    public static String getModuleIdFromRequestPath(String requestPath)
+    {
+        // /api/v1/modules/29
+        if(!requestPath.startsWith(ModulesPath))
+            return null;
+        int idx = ModulesPath.length();
+        if(requestPath.length() == idx)
+            return null;
+        if(requestPath.charAt(idx) != PathSeparator)
+            return null;
+        String moduleId = requestPath.substring(++idx);
+        idx = moduleId.indexOf(PathSeparator);
+        if(idx != -1)
+            moduleId = moduleId.substring(0, idx);
+        return moduleId;
+    }
+
+    public static boolean isArtifactsFromModule(String requestPath)
+    {
+        // /api/v1/modules/29/artifacts
+        if(!requestPath.startsWith(ModulesPath))
+            return false;
+        int idx = ModulesPath.length();
+        if(requestPath.length() == idx)
+            return false;
+        if(requestPath.charAt(idx) != PathSeparator)
+            return false;
+        String remainder = requestPath.substring(++idx);
+        idx = remainder.indexOf(PathSeparator);
+        if(idx == -1)
+            return false;
+        remainder = remainder.substring(++idx);
+        if(remainder.equals(Artifacts))
+            return true;
+        return false;
     }
 
     public void destroy()

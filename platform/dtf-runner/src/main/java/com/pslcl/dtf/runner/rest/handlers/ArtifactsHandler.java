@@ -19,14 +19,12 @@ import org.slf4j.LoggerFactory;
 public final class ArtifactsHandler implements Handler<RoutingContext>
 {
     private final Logger logger;
-    private final BlockingExecutor executor;
     private final RestServiceStorage storage;
 
-    public ArtifactsHandler(BlockingExecutor executor, RestServiceStorage storage)
+    public ArtifactsHandler(RestServiceStorage storage)
     {
         logger = LoggerFactory.getLogger(this.getClass());
         this.storage = storage;
-        this.executor = executor;
     }
 
     @Override

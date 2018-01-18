@@ -27,8 +27,8 @@ public class ModuleDetail
     public final String version;
     public final String sequence;
     public final String attributes;
-    public final Long scheduled_release;
-    public final Long actual_release;
+    public final String scheduled_release;  // TODO: these two will likely move to either Date or long, not going to decide now
+    public final String actual_release;
 
     public ModuleDetail()
     {
@@ -42,7 +42,7 @@ public class ModuleDetail
         actual_release = null;
     }
 
-    public ModuleDetail(Long pk_module, String organization, String name, String attributes, String version, String sequence, Long scheduled_release, Long actual_release)
+    public ModuleDetail(Long pk_module, String organization, String name, String attributes, String version, String sequence, String scheduled_release, String actual_release)
     {
         this.pk_module = pk_module;
         this.organization = organization;
@@ -50,8 +50,8 @@ public class ModuleDetail
         this.attributes = attributes;
         this.version = version;
         this.sequence = sequence;
-        this.scheduled_release = null;
-        this.actual_release = null;
+        this.scheduled_release = scheduled_release;
+        this.actual_release = actual_release;
     }
 
     public String toJson()
