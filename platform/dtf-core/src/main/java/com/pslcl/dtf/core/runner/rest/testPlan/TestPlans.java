@@ -23,6 +23,8 @@ import java.util.List;
 public class TestPlans
 {
     private static final Gson gson = new Gson();
+    public static final String OrderDescriptionValue = "description";
+
     public final List<TestPlan> plans;
 
     public TestPlans()

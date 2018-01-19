@@ -21,7 +21,7 @@ import com.google.gson.Gson;
 public class Module
 {
     private static final Gson gson = new Gson();
-    public final Integer pk_module;
+    public final Long pk_module;
     public final String organization;
     public final String name;
     public final String attributes;
@@ -42,7 +42,7 @@ public class Module
         plans = null;
     }
 
-    public Module(Integer pk_module, String organization, String name, String attributes, String version, String sequence, Integer tests, Integer plans)
+    public Module(Long pk_module, String organization, String name, String attributes, String version, String sequence, Integer tests, Integer plans)
     {
         this.pk_module = pk_module;
         this.organization = organization;

@@ -16,6 +16,12 @@
 package com.pslcl.dtf.core.runner.rest.module;
 
 import com.google.gson.Gson;
+import com.google.gson.annotations.JsonAdapter;
+import com.pslcl.dtf.core.runner.rest.InstantAdaptor;
+import com.pslcl.dtf.core.runner.rest.LocalDateAdaptor;
+
+import java.time.Instant;
+import java.time.LocalDate;
 
 @SuppressWarnings("javadoc")
 public class ModuleDetail
@@ -27,8 +33,10 @@ public class ModuleDetail
     public final String version;
     public final String sequence;
     public final String attributes;
-    public final String scheduled_release;  // TODO: these two will likely move to either Date or long, not going to decide now
-    public final String actual_release;
+    @JsonAdapter(LocalDateAdaptor.class)
+    public final LocalDate scheduled_release;
+    @JsonAdapter(LocalDateAdaptor.class)
+    public final LocalDate actual_release;
 
     public ModuleDetail()
     {
@@ -42,7 +50,7 @@ public class ModuleDetail
         actual_release = null;
     }
 
-    public ModuleDetail(Long pk_module, String organization, String name, String attributes, String version, String sequence, String scheduled_release, String actual_release)
+    public ModuleDetail(Long pk_module, String organization, String name, String attributes, String version, String sequence, LocalDate scheduled_release, LocalDate actual_release)
     {
         this.pk_module = pk_module;
         this.organization = organization;

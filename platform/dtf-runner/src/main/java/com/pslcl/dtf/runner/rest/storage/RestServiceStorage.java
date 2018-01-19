@@ -7,6 +7,8 @@ import com.pslcl.dtf.core.runner.rest.module.Modules;
 import com.pslcl.dtf.core.runner.rest.module.Reports;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRates;
 import com.pslcl.dtf.core.runner.rest.stats.Statistics;
+import com.pslcl.dtf.core.runner.rest.testPlan.TestPlan;
+import com.pslcl.dtf.core.runner.rest.testPlan.TestPlans;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTests;
 
 import java.util.concurrent.CompletableFuture;
@@ -75,4 +77,26 @@ public interface RestServiceStorage
      * @return the report structure for the requested module
      */
     CompletableFuture<Reports> getReportsForModule(String moduleId);
+
+    /**
+     * Return the test plans.
+     * @param filter a 'like' filter that will be or searched against name and description.  May be null.
+     * @param order Order by where the value must be one of 'description', 'tests' or 'name'.  May be null.
+     *              The value may be preceeded by a '<' or '>'  If '<' order is ascending.  If '>' order is decending.  Defaults to "<name".
+     *              Note that pk_module is always returned in ascending order regardless of the '>' flag.
+     * @param limit Maximum number of modules to return. Can be equal to "all". Defaults to the portals configuration ‘page_limit’ parameter (200).
+     *              If limit is given and set to “all” and the ‘offset’ parameter is also given, the limit is set to 100000.
+     * @param offset The offset in the order to list from.
+     * @return the requested test plans list
+     */
+    CompletableFuture<TestPlans> getTestPlans(String filter, String order, String limit, Integer offset);
+
+    /**
+     * Return the requested test plan
+     * @param planId the test plan ID.
+     * @return the requested test plan
+     */
+    CompletableFuture<TestPlan> getTestPlan(String planId);
+
+
 }

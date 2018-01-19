@@ -1,7 +1,6 @@
 package com.pslcl.dtf.runner.rest.storage.mysql;
 
 import com.cstkit.common.mysql.MySQLConnectionPool;
-import com.google.gson.Gson;
 import com.pslcl.dtf.core.runner.config.RestServiceStorageConfig;
 import com.pslcl.dtf.core.runner.config.RunnerConfig;
 import com.pslcl.dtf.core.runner.rest.module.Artifact;
@@ -17,6 +16,9 @@ import com.pslcl.dtf.core.runner.rest.module.Reports;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRate;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRates;
 import com.pslcl.dtf.core.runner.rest.stats.Statistics;
+import com.pslcl.dtf.core.runner.rest.testPlan.TestPlan;
+import com.pslcl.dtf.core.runner.rest.testPlan.TestPlanDetail;
+import com.pslcl.dtf.core.runner.rest.testPlan.TestPlans;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTest;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTests;
 import com.pslcl.dtf.runner.rest.storage.NotFoundException;
@@ -32,9 +34,8 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -72,17 +73,23 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     private volatile String limitStatement;
     private volatile String OffsetStatement;
     private volatile String getModuleStatement;
-
     private volatile String getModuleArtifactsStartSegmentStatement;
     private volatile String getModuleArtifactsWhereAndSegmentStatement;
-
     private volatile String getModuleArtifactsGroupByStatement;
     private volatile String getModuleArtifactsOrderByNameStatement;
     private volatile String getModuleArtifactsOrderByTestsStatement;
     private volatile String getModuleArtifactsOrderByPlansStatement;
     private volatile String getModuleArtifactsOrderByConfigurationStatement;
-
     private volatile String getModuleReportStatement;
+
+    private volatile String getPlansStartSegmentStatement;
+    private volatile String getPlansWhereSegmentStatement;
+    private volatile String getPlansGroupByStatement;
+    private volatile String getPlansOrderByNameStatement;
+    private volatile String getPlansOrderByTestsStatement;
+    private volatile String getPlansOrderByDescriptionStatement;
+
+    private volatile String getPlanStatement;
 
     public MySQLRestServiceStorage()
     {
@@ -145,7 +152,6 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 "select pk_module, organization, name, version, sequence, attributes, scheduled_release, actual_release " +
                 "from " + database + ".module where pk_module = ?";
 
-
         getModuleArtifactsStartSegmentStatement =
             "select artifact.pk_artifact, artifact.name, artifact.configuration, artifact.derived_from_artifact, artifact.merged_from_module, " +
             "count(distinct fk_test) as tests, count(distinct fk_test_plan) as plans " +
@@ -167,6 +173,28 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         getModuleArtifactsOrderByConfigurationStatement = "order by configuration ?, artifact.pk_artifact asc";
 
         getModuleReportStatement = "call qa_portal.get_instance_list(null, null, ?, null)";
+
+        getPlansStartSegmentStatement =
+            "select test_plan.pk_test_plan, test_plan.name, test_plan.description, " +
+            "count(distinct test.pk_test) as tests " +
+            "from " + database + ".test_plan " +
+            "left join " + database + ".test on (test.fk_test_plan = test_plan.pk_test_plan) ";
+        getPlansWhereSegmentStatement = "where (test_plan.name like '%?%' or test_plan.description like '%?%') ";
+        getPlansGroupByStatement = "group by test_plan.pk_test_plan ";
+        getPlansOrderByNameStatement = "order by name ?, pk_test_plan asc ";
+        getPlansOrderByTestsStatement =  "order by tests ?, pk_test_plan asc ";
+        getPlansOrderByDescriptionStatement =  "order by description ?, pk_test_plan asc ";
+
+//select test_plan.pk_test_plan, test_plan.name, test_plan.description,
+//count(distinct test.pk_test) as tests
+//	from qa_portal.test_plan
+//		left join qa_portal.test on (test.fk_test_plan = test_plan.pk_test_plan)
+//
+//			where (test_plan.name like '%Description%' or test_plan.description like '%Description%')
+//				group by test_plan.pk_test_plan
+//                order by tests desc, pk_test_plan asc
+//                limit 3 offset 2;
+
        //@formatter:on
     }
 
@@ -349,44 +377,12 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         executor.submit(() ->
         {
             if(logger.isTraceEnabled())
-                logger.trace("getArtifactsForModule({},{},{},{})", filter, order, limit, offset);
+                logger.trace("getModules({},{},{},{})", filter, order, limit, offset);
 
-            String theOrder = order;
-            String direction = Ascending;
-            if(order != null)
-            {
-                int idx = order.indexOf(Modules.AscendingFlag);
-                if(idx != -1)
-                    theOrder = order.substring(1);
-                idx = order.indexOf(Modules.DescendingFlag);
-                if(idx != -1)
-                {
-                    theOrder = order.substring(1);
-                    direction = Descending;
-                }
-                if(!theOrder.equals(Modules.OrderNameValue) && !theOrder.equals(Modules.OrderTestValue) && !theOrder.equals(Modules.OrderPlanValue))
-                    return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + theOrder + " is not a valid value"));
-            }else
-                theOrder = Modules.OrderNameValue;
-            int theLimit = sconfig.maxPageItems;
-            if(limit != null)
-            {
-                if(limit.equals(Modules.LimitAllValue))
-                {
-                    theLimit = -1;      // don't append sql limit flag
-                    if(offset != null)
-                        theLimit = MaxiumItemsPerPage;
-                }else
-                {
-                    try
-                    {
-                        theLimit = Integer.parseInt(limit);
-                    }catch(Exception e)
-                    {
-                        return future.completeExceptionally(new IllegalArgumentException(Modules.LimitParam + " is not an integer value, or all"));
-                    }
-                }
-            }
+            ParametersInfo params = null;
+            try{params = handleParameters(filter, order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
+            if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(Modules.OrderPlanValue))
+                return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
             Connection conn = null;
             PreparedStatement stmt = null;
             ResultSet rs = null;
@@ -397,7 +393,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 sql = sql.replace("?", filter);
             }
             sql += getModulesGroupByStatement;
-            switch(theOrder)
+            switch(params.order)
             {
                 case Modules.OrderNameValue:
                     sql += getModulesOrderByNameStatement;
@@ -409,11 +405,11 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                     sql += getModulesOrderByPlansStatement;
                     break;
             }
-            sql = sql.replace("?", direction);
-            if(theLimit != -1)
+            sql = sql.replace("?", params.direction);
+            if(params.limit != -1)
             {
                 sql += limitStatement;
-                sql = sql.replace("?", ""+theLimit);
+                sql = sql.replace("?", "" + params.limit);
             }
             if(offset != null)
             {
@@ -429,7 +425,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 List<Module> list = new ArrayList<>();
                 while(rs.next())
                 {
-                    int module = rs.getInt(1);
+                    long module = rs.getLong(1);
                     String org = rs.getString(2);
                     String name = rs.getString(3);
                     String attrs = rs.getString(4);
@@ -465,7 +461,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         executor.submit(() ->
         {
             if(logger.isTraceEnabled())
-                logger.trace("getUserTests({})", moduleId);
+                logger.trace("getModule({})", moduleId);
             if(moduleId == null)
                 return future.completeExceptionally(new IllegalArgumentException("module id is null"));
             Connection conn = null;
@@ -486,8 +482,14 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 String version = rs.getString(4);
                 String sequence = rs.getString(5);
                 String attributes = rs.getString(6);
-                String scheduled_release = rs.getString(7);
-                String actual_release = rs.getString(8);
+                java.sql.Date date = rs.getDate(7);
+                java.time.LocalDate scheduled_release = null;
+                if(!rs.wasNull())
+                    scheduled_release = date.toLocalDate();
+                date = rs.getDate(8);
+                LocalDate actual_release = null;
+                if(!rs.wasNull())
+                    actual_release = date.toLocalDate();
                 return future.complete(new ModuleDetail(pk_module, organization, name, attributes, version, sequence, scheduled_release, actual_release));
             }catch(SQLException e)
             {
@@ -507,7 +509,6 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         return future;
     }
 
-
     public CompletableFuture<Artifacts> getArtifactsForModule(String moduleId, String filter, String order, String limit, Integer offset)
     {
         CompletableFuture<Artifacts> future = new CompletableFuture<>();
@@ -518,42 +519,10 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             if(moduleId == null)
                 return future.completeExceptionally(new IllegalArgumentException("module id is null"));
 
-            String theOrder = order;
-            String direction = Ascending;
-            if(order != null)
-            {
-                int idx = order.indexOf(Modules.AscendingFlag);
-                if(idx != -1)
-                    theOrder = order.substring(1);
-                idx = order.indexOf(Modules.DescendingFlag);
-                if(idx != -1)
-                {
-                    theOrder = order.substring(1);
-                    direction = Descending;
-                }
-                if(!theOrder.equals(Modules.OrderNameValue) && !theOrder.equals(Modules.OrderTestValue) && !theOrder.equals(Modules.OrderPlanValue) && !theOrder.equals(Artifacts.OrderConfigurationValue))
-                    return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + theOrder + " is not a valid value"));
-            }else
-                theOrder = Modules.OrderNameValue;
-            int theLimit = sconfig.maxPageItems;
-            if(limit != null)
-            {
-                if(limit.equals(Modules.LimitAllValue))
-                {
-                    theLimit = -1;      // don't append sql limit flag
-                    if(offset != null)
-                        theLimit = MaxiumItemsPerPage;
-                }else
-                {
-                    try
-                    {
-                        theLimit = Integer.parseInt(limit);
-                    }catch(Exception e)
-                    {
-                        return future.completeExceptionally(new IllegalArgumentException(Modules.LimitParam + " is not an integer value, or all"));
-                    }
-                }
-            }
+            ParametersInfo params = null;
+            try{params = handleParameters(filter, order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
+            if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(Modules.OrderPlanValue) && !params.order.equals(Artifacts.OrderConfigurationValue))
+                return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
             Connection conn = null;
             PreparedStatement stmt = null;
             ResultSet rs = null;
@@ -566,7 +535,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 sql = sql.replace("?", filter);
             }
             sql += getModuleArtifactsGroupByStatement;
-            switch(theOrder)
+            switch(params.order)
             {
                 case Modules.OrderNameValue:
                     sql += getModuleArtifactsOrderByNameStatement;
@@ -581,11 +550,11 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                     sql += getModuleArtifactsOrderByConfigurationStatement;
                     break;
             }
-            sql = sql.replace("?", direction);
-            if(theLimit != -1)
+            sql = sql.replace("?", params.direction);
+            if(params.limit != -1)
             {
                 sql += limitStatement;
-                sql = sql.replace("?", ""+theLimit);
+                sql = sql.replace("?", ""+params.limit);
             }
             if(offset != null)
             {
@@ -666,11 +635,11 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                     Boolean result = rs.getBoolean(6);
                     if(rs.wasNull())
                         result = null;
-                    ZonedDateTime utcDateTime = null;
+                    Instant instant = null;
                     Timestamp ts = rs.getTimestamp(7);
                     if(!rs.wasNull())
-                        utcDateTime = ZonedDateTime.ofInstant(ts.toInstant(), ZoneId.of("UTC"));
-                    resultList.add(new ReportResult(testPlan, test, instance, desc, modules, result, utcDateTime));
+                        instant = ts.toInstant();
+                    resultList.add(new ReportResult(testPlan, test, instance, desc, modules, result, instant));
                 }while(rs.next());
                 rs.close();
                 hasNext = stmt.getMoreResults();
@@ -735,6 +704,181 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         return future;
     }
 
+    @Override
+    public CompletableFuture<TestPlans> getTestPlans(String filter, final String order, String limit, Integer offset)
+    {
+        CompletableFuture<TestPlans> future = new CompletableFuture<>();
+        executor.submit(() ->
+        {
+            if(logger.isTraceEnabled())
+                logger.trace("getTestPlans({},{},{},{})", filter, order, limit, offset);
+
+            ParametersInfo params = null;
+            try{params = handleParameters(filter, order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
+            if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(TestPlans.OrderDescriptionValue))
+                return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            String sql = getPlansStartSegmentStatement;
+            if(filter != null)
+            {
+                sql += getPlansWhereSegmentStatement;
+                sql = sql.replace("?", filter);
+            }
+            sql += getPlansGroupByStatement;
+            switch(params.order)
+            {
+                case Modules.OrderNameValue:
+                    sql += getPlansOrderByNameStatement;
+                    break;
+                case Modules.OrderTestValue:
+                    sql += getPlansOrderByTestsStatement;
+                    break;
+                default:
+                    sql += getPlansOrderByDescriptionStatement;
+                    break;
+            }
+            sql = sql.replace("?", params.direction);
+            if(params.limit != -1)
+            {
+                sql += limitStatement;
+                sql = sql.replace("?", ""+params.limit);
+            }
+            if(offset != null)
+            {
+                sql += OffsetStatement;
+                sql = sql.replace("?", ""+offset);
+            }
+
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(sql);
+                rs = stmt.executeQuery();
+                List<TestPlan> list = new ArrayList<>();
+                while(rs.next())
+                {
+                    long plan = rs.getLong(1);
+                    String name = rs.getString(2);
+                    String desc = rs.getString(3);
+                    int plans = rs.getInt(4);
+                    list.add(new TestPlan(plan, name, desc, plans));
+                }
+                return future.complete(new TestPlans(list));
+            }catch(SQLException e)
+            {
+                if(logger.isWarnEnabled())
+                    logger.warn("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }catch(Exception e)
+            {
+                if(logger.isErrorEnabled())
+                    logger.error("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }finally
+            {
+                stmtCleanup(stmt, conn, rs);
+            }
+        });
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<TestPlan> getTestPlan(String planId)
+    {
+        CompletableFuture<TestPlan> future = new CompletableFuture<>();
+        executor.submit(() ->
+        {
+            if(logger.isTraceEnabled())
+                logger.trace("getTestPlan({})", planId);
+            if(planId == null)
+                return future.completeExceptionally(new IllegalArgumentException("plan id is null"));
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(getPlanStatement);
+                stmt.setString(1, planId);
+                rs = stmt.executeQuery();
+                boolean found = rs.next();
+                if(!found)
+                    return future.completeExceptionally(new NotFoundException("Module ID: " + planId + " not found"));
+                long pk_module = rs.getLong(1);
+                String organization = rs.getString(2);
+                String name = rs.getString(3);
+                String version = rs.getString(4);
+                String sequence = rs.getString(5);
+                String attributes = rs.getString(6);
+                java.sql.Date date = rs.getDate(7);
+                java.time.LocalDate scheduled_release = null;
+                if(!rs.wasNull())
+                    scheduled_release = date.toLocalDate();
+                date = rs.getDate(8);
+                LocalDate actual_release = null;
+                if(!rs.wasNull())
+                    actual_release = date.toLocalDate();
+                return future.complete(new TestPlan(null, null, null, null));
+            }catch(SQLException e)
+            {
+                if(logger.isWarnEnabled())
+                    logger.warn("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }catch(Exception e)
+            {
+                if(logger.isErrorEnabled())
+                    logger.error("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }finally
+            {
+                stmtCleanup(stmt, conn, rs);
+            }
+        });
+        return future;
+    }
+
+    public ParametersInfo handleParameters(String filter, final String order, String limit, Integer offset) throws IllegalArgumentException
+    {
+        String theOrder = order;
+        String direction = Ascending;
+        if(order != null)
+        {
+            int idx = order.indexOf(Modules.AscendingFlag);
+            if(idx != -1)
+                theOrder = order.substring(1);
+            idx = order.indexOf(Modules.DescendingFlag);
+            if(idx != -1)
+            {
+                theOrder = order.substring(1);
+                direction = Descending;
+            }
+        }else
+            theOrder = Modules.OrderNameValue;
+
+        int theLimit = sconfig.maxPageItems;
+        if(limit != null)
+        {
+            if(limit.equals(Modules.LimitAllValue))
+            {
+                theLimit = -1;      // don't append sql limit flag
+                if(offset != null)
+                    theLimit = MaxiumItemsPerPage;
+            }else
+            {
+                try
+                {
+                    theLimit = Integer.parseInt(limit);
+                }catch(Exception e)
+                {
+                    throw new IllegalArgumentException(Modules.LimitParam + " is not an integer value, or all");
+                }
+            }
+        }
+        return new ParametersInfo(theOrder, direction, theLimit);
+    }
+
     public void start()
     {
         connectionPool = new MySQLConnectionPool(sconfig.host, sconfig.port, sconfig.schema, sconfig.user, sconfig.password, logger);
@@ -785,5 +929,20 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
         Date date = sdf.parse(dateStr);
         return date.getTime();
+    }
+
+    private class ParametersInfo
+    {
+        private final String order;
+        private final String direction;
+        private final int limit;
+
+        private ParametersInfo(String order, String direction, int limit)
+        {
+            this.order = order;
+            this.direction = direction;
+            this.limit = limit;
+        }
+
     }
 }
