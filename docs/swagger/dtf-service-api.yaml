@@ -346,6 +346,28 @@ paths:
       summary: >
         Get the test plans.
       operationId: getTestPlans
+      parameters:
+      - name: filter
+        in: query
+        description: A 'like' filter that will be or searched against name, and description if given.
+        required: false
+        type: string
+      - name: order
+        in: query
+        description: Order by where the value must be one of 'name', 'tests' or 'description'.  The value may be preceeded by a '<' or '>'  If '<' order is ascending.  If '>' order is decending.  Defaults to "<name".  Note that pk_test_plan is always returned in ascending order regardless of the '>' flag.
+        required: false
+        type: string
+      - name: limit
+        in: query
+        description: Maximum number of modules to return. Can be equal to "all".  Defaults to the portals configuration 'page_limit' parameter (200).  If limit is given and set to "all" and the 'offset' parameter is also given, the limit is set to 100000.
+        required: false
+        type: string
+      - name: offset
+        in: query
+        description: The offset in the order to list from.
+        required: false
+        type: integer
+        format: init32
       responses:
         200:
           description: The test plans object.
@@ -371,13 +393,23 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the requested test plan.
+        Get the requested test plan.  The number of tests returned are limited to the portals configuration 'page_limit' parameter (200).
       operationId: getTestPlan
       parameters:
       - name: plan
         in: path
         description: The plan primary key.
         required: true
+        type: string
+      - name: filter
+        in: query
+        description: A 'like' filter that will be or searched against 'name' if given.
+        required: false
+        type: string
+      - name: after
+        in: query
+        description: List 'pk_test's that are greater than the given value.  Defaults to "0".
+        required: false
         type: string
       responses:
         200:

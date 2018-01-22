@@ -16,6 +16,7 @@ import com.pslcl.dtf.core.runner.rest.module.Reports;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRate;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRates;
 import com.pslcl.dtf.core.runner.rest.stats.Statistics;
+import com.pslcl.dtf.core.runner.rest.testPlan.Test;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlan;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlanDetail;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlans;
@@ -90,6 +91,9 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     private volatile String getPlansOrderByDescriptionStatement;
 
     private volatile String getPlanStatement;
+    private volatile String getPlanStartStatement;
+    private volatile String getPlanWhereStatement;
+    private volatile String getPlanWhereWithLikeStatement;
 
     public MySQLRestServiceStorage()
     {
@@ -185,16 +189,16 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         getPlansOrderByTestsStatement =  "order by tests ?, pk_test_plan asc ";
         getPlansOrderByDescriptionStatement =  "order by description ?, pk_test_plan asc ";
 
-//select test_plan.pk_test_plan, test_plan.name, test_plan.description,
-//count(distinct test.pk_test) as tests
-//	from qa_portal.test_plan
-//		left join qa_portal.test on (test.fk_test_plan = test_plan.pk_test_plan)
-//
-//			where (test_plan.name like '%Description%' or test_plan.description like '%Description%')
-//				group by test_plan.pk_test_plan
-//                order by tests desc, pk_test_plan asc
-//                limit 3 offset 2;
+        getPlanStatement =
+            "select pk_test_plan, name, description " +
+	        "from " + database + ".test_plan " +
+		    "where pk_test_plan = ?";
 
+        getPlanStartStatement =
+            "select pk_test, fk_test_plan, name, description, script " +
+            "from " + database + ".test ";
+        getPlanWhereStatement = "where fk_test_plan = ? AND pk_test > ? ";
+        getPlanWhereWithLikeStatement = "where fk_test_plan = ? and name like '%~%' and pk_test > ?";
        //@formatter:on
     }
 
@@ -380,7 +384,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 logger.trace("getModules({},{},{},{})", filter, order, limit, offset);
 
             ParametersInfo params = null;
-            try{params = handleParameters(filter, order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
+            try{params = handleParameters(order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
             if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(Modules.OrderPlanValue))
                 return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
             Connection conn = null;
@@ -520,7 +524,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 return future.completeExceptionally(new IllegalArgumentException("module id is null"));
 
             ParametersInfo params = null;
-            try{params = handleParameters(filter, order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
+            try{params = handleParameters(order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
             if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(Modules.OrderPlanValue) && !params.order.equals(Artifacts.OrderConfigurationValue))
                 return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
             Connection conn = null;
@@ -714,7 +718,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 logger.trace("getTestPlans({},{},{},{})", filter, order, limit, offset);
 
             ParametersInfo params = null;
-            try{params = handleParameters(filter, order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
+            try{params = handleParameters(order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
             if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(TestPlans.OrderDescriptionValue))
                 return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
             Connection conn = null;
@@ -785,9 +789,9 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     }
 
     @Override
-    public CompletableFuture<TestPlan> getTestPlan(String planId)
+    public CompletableFuture<TestPlanDetail> getTestPlan(String planId, String filter, String after)
     {
-        CompletableFuture<TestPlan> future = new CompletableFuture<>();
+        CompletableFuture<TestPlanDetail> future = new CompletableFuture<>();
         executor.submit(() ->
         {
             if(logger.isTraceEnabled())
@@ -795,32 +799,56 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             if(planId == null)
                 return future.completeExceptionally(new IllegalArgumentException("plan id is null"));
             Connection conn = null;
-            PreparedStatement stmt = null;
-            ResultSet rs = null;
+            PreparedStatement planStmt = null;
+            ResultSet planRs = null;
+            PreparedStatement testsStmt = null;
+            ResultSet testsRs = null;
             try
             {
                 conn = connectionPool.getConnection();
-                stmt = conn.prepareStatement(getPlanStatement);
-                stmt.setString(1, planId);
-                rs = stmt.executeQuery();
-                boolean found = rs.next();
+                planStmt = conn.prepareStatement(getPlanStatement);
+                planStmt.setString(1, planId);
+                planRs = planStmt.executeQuery();
+                boolean found = planRs.next();
                 if(!found)
-                    return future.completeExceptionally(new NotFoundException("Module ID: " + planId + " not found"));
-                long pk_module = rs.getLong(1);
-                String organization = rs.getString(2);
-                String name = rs.getString(3);
-                String version = rs.getString(4);
-                String sequence = rs.getString(5);
-                String attributes = rs.getString(6);
-                java.sql.Date date = rs.getDate(7);
-                java.time.LocalDate scheduled_release = null;
-                if(!rs.wasNull())
-                    scheduled_release = date.toLocalDate();
-                date = rs.getDate(8);
-                LocalDate actual_release = null;
-                if(!rs.wasNull())
-                    actual_release = date.toLocalDate();
-                return future.complete(new TestPlan(null, null, null, null));
+                    return future.completeExceptionally(new NotFoundException("Plan ID: " + planId + " not found"));
+                long pk_test_plan = planRs.getLong(1);
+                String planName = planRs.getString(2);
+                String planDesc = planRs.getString(3);
+
+                long afterValue = 0L;
+                if(after != null)
+                {
+                    try
+                    {
+                        afterValue = Long.parseLong(after);
+                    }catch(NumberFormatException ignored)
+                    {
+                        return future.completeExceptionally(new IllegalArgumentException(TestPlan.AfterParam + ": " + after + " is not a valid value, must be an integer"));
+                    }
+                }
+                String sql = getPlanStartStatement;
+                if(filter != null)
+                {
+                    sql += getPlanWhereWithLikeStatement;
+                    sql = sql.replace("~", filter);
+                }
+                else
+                    sql += getPlanWhereStatement;
+                testsStmt = conn.prepareStatement(sql);
+                testsStmt.setString(1, planId);
+                testsStmt.setLong(2, afterValue);
+                testsRs = testsStmt.executeQuery();
+                List<Test> list = new ArrayList<>();
+                while (testsRs.next())
+                {
+                    long pk_test = testsRs.getLong(1);
+                    long fk_test_plan = testsRs.getLong(2);
+                    String name = testsRs.getString(3);
+                    String desc = testsRs.getString(4);
+                    list.add(new Test(pk_test, fk_test_plan, name, desc, null));
+                }
+                return future.complete(new TestPlanDetail(pk_test_plan, planName, planDesc, list));
             }catch(SQLException e)
             {
                 if(logger.isWarnEnabled())
@@ -833,13 +861,14 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 return future.completeExceptionally(e);
             }finally
             {
-                stmtCleanup(stmt, conn, rs);
+                stmtCleanup(planStmt, null, planRs);
+                stmtCleanup(testsStmt, conn, testsRs);
             }
         });
         return future;
     }
 
-    public ParametersInfo handleParameters(String filter, final String order, String limit, Integer offset) throws IllegalArgumentException
+    public ParametersInfo handleParameters(final String order, String limit, Integer offset) throws IllegalArgumentException
     {
         String theOrder = order;
         String direction = Ascending;

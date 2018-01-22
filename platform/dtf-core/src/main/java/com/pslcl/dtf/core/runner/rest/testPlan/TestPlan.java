@@ -17,10 +17,14 @@ package com.pslcl.dtf.core.runner.rest.testPlan;
 
 import com.google.gson.Gson;
 
+import java.util.List;
+
 @SuppressWarnings("javadoc")
 public class TestPlan
 {
     private static final Gson gson = new Gson();
+    public static final String AfterParam = "after";
+
     public final Long pk_test_plan;
     public final String name;
     public final String description;

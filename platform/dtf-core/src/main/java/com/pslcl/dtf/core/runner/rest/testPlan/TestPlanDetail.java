@@ -23,18 +23,25 @@ import java.util.List;
 public class TestPlanDetail
 {
     private static final Gson gson = new Gson();
-    public final TestPlan plan;
+
+    public final Long pk_test_plan;
+    public final String name;
+    public final String description;
     public final List<Test> tests;
 
     public TestPlanDetail()
     {
-        plan = null;
+        pk_test_plan = null;
+        name = null;
+        description = null;
         tests = null;
     }
 
-    public TestPlanDetail(TestPlan plan, List<Test> tests)
+    public TestPlanDetail(Long planId, String name, String description, List<Test> tests)
     {
-        this.plan = plan;
+        pk_test_plan = planId;
+        this.name = name;
+        this.description = description;
         this.tests = tests;
     }
 

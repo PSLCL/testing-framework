@@ -8,6 +8,7 @@ import com.pslcl.dtf.core.runner.rest.module.Reports;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRates;
 import com.pslcl.dtf.core.runner.rest.stats.Statistics;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlan;
+import com.pslcl.dtf.core.runner.rest.testPlan.TestPlanDetail;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlans;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTests;
 
@@ -96,7 +97,7 @@ public interface RestServiceStorage
      * @param planId the test plan ID.
      * @return the requested test plan
      */
-    CompletableFuture<TestPlan> getTestPlan(String planId);
+    CompletableFuture<TestPlanDetail> getTestPlan(String planId, String filter, String after);
 
 
 }
