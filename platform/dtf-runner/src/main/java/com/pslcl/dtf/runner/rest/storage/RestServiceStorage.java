@@ -7,11 +7,14 @@ import com.pslcl.dtf.core.runner.rest.module.Modules;
 import com.pslcl.dtf.core.runner.rest.module.Reports;
 import com.pslcl.dtf.core.runner.rest.runRates.RunRates;
 import com.pslcl.dtf.core.runner.rest.stats.Statistics;
+import com.pslcl.dtf.core.runner.rest.testPlan.Test;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlan;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlanDetail;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlans;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTests;
+import com.pslcl.dtf.core.runner.rest.version.Version;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface RestServiceStorage
@@ -95,9 +98,33 @@ public interface RestServiceStorage
     /**
      * Return the requested test plan
      * @param planId the test plan ID.
+     * @param filter a 'like' filter that will be searched against name.  May be null.
+     * @param after only return tests that are greater than the given pk_test value.
      * @return the requested test plan
      */
     CompletableFuture<TestPlanDetail> getTestPlan(String planId, String filter, String after);
 
+    /**
+     * Return the tests for the requested test plan
+     * @param planId the test plan ID.
+     * @return the tests for the requested test plan
+     */
+    CompletableFuture<List<Test>> getTestsForTestPlan(String planId);
+
+    /**
+     * Return the test for the requested planId and testId
+     * @param planId the test plan ID.
+     * @param testId the test ID.
+     * @return the test for the requested planId and testId
+     */
+    CompletableFuture<Test> getTestForTestPlan(String planId, String testId);
+
+    /**
+     * Return the requested versions list
+     * @param filter a 'like' filter that will be searched against version.  May be null.
+     * @param after only return versions that are greater than the given pk_module value.
+     * @return the requested test plan
+     */
+    CompletableFuture<List<Version>> getVersions(String filter, String after);
 
 }

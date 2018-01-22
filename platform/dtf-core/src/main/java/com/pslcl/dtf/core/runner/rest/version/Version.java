@@ -16,6 +16,10 @@
 package com.pslcl.dtf.core.runner.rest.version;
 
 import com.google.gson.Gson;
+import com.google.gson.annotations.JsonAdapter;
+import com.pslcl.dtf.core.runner.rest.LocalDateAdaptor;
+
+import java.time.LocalDate;
 
 @SuppressWarnings("javadoc")
 public class Version
@@ -23,8 +27,10 @@ public class Version
     private static final Gson gson = new Gson();
     public final Long pk_module;
     public final String version;
-    public final String scheduled_release;
-    public final String actual_release;
+    @JsonAdapter(LocalDateAdaptor.class)
+    public final LocalDate scheduled_release;
+    @JsonAdapter(LocalDateAdaptor.class)
+    public final LocalDate actual_release;
 
     public Version()
     {
@@ -34,7 +40,7 @@ public class Version
         actual_release = null;
     }
 
-    public Version(Long pk_module, String version, String scheduled_release, String actual_release)
+    public Version(Long pk_module, String version, LocalDate scheduled_release, LocalDate actual_release)
     {
         this.pk_module = pk_module;
         this.version = version;

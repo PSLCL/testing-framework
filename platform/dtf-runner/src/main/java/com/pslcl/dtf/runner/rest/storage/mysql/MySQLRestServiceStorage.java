@@ -22,6 +22,7 @@ import com.pslcl.dtf.core.runner.rest.testPlan.TestPlanDetail;
 import com.pslcl.dtf.core.runner.rest.testPlan.TestPlans;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTest;
 import com.pslcl.dtf.core.runner.rest.userTest.UserTests;
+import com.pslcl.dtf.core.runner.rest.version.Version;
 import com.pslcl.dtf.runner.rest.storage.NotFoundException;
 import com.pslcl.dtf.runner.rest.storage.RestServiceStorage;
 import org.slf4j.Logger;
@@ -63,8 +64,6 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     private volatile String getStartingCountStatement;
     private volatile String getRunningCountStatement;
     private volatile String getCompletedCountStatement;
-//    private volatile String getModulesNoFilterStatement;
-//    private volatile String getModulesFilterStatement;
     private volatile String getModulesStartSegmentStatement;
     private volatile String getModulesWhereSegmentStatement;
     private volatile String getModulesGroupByStatement;
@@ -94,6 +93,14 @@ public class MySQLRestServiceStorage implements RestServiceStorage
     private volatile String getPlanStartStatement;
     private volatile String getPlanWhereStatement;
     private volatile String getPlanWhereWithLikeStatement;
+
+    private volatile String getTestsForPlanStatement;
+    private volatile String getTestForPlanStatement;
+
+    private volatile String getVersionsStartStatement;
+    private volatile String getVersionsWhereStatement;
+    private volatile String getVersionsWhereWithLikeStatement;
+    private volatile String getVersionsGroupByStatement;
 
     public MySQLRestServiceStorage()
     {
@@ -199,6 +206,24 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             "from " + database + ".test ";
         getPlanWhereStatement = "where fk_test_plan = ? AND pk_test > ? ";
         getPlanWhereWithLikeStatement = "where fk_test_plan = ? and name like '%~%' and pk_test > ?";
+
+        getTestsForPlanStatement =
+            "select pk_test, name, description, script, fk_test_plan " +
+	        "from " + database + ".test " +
+            "where fk_test_plan = ?";
+
+        getTestForPlanStatement =
+            "select pk_test, name, description, script " +
+	        "from " + database + ".test " +
+			"where fk_test_plan=? and pk_test=?";
+
+        getVersionsStartStatement =
+            "select pk_module, version, scheduled_release, actual_release " +
+	        "from " + database + ".module ";
+        getVersionsWhereStatement = "where pk_module > ? ";
+        getVersionsWhereWithLikeStatement = "where pk_module > ? and version like '%~%' ";
+        getVersionsGroupByStatement = "group by pk_module";
+
        //@formatter:on
     }
 
@@ -383,7 +408,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             if(logger.isTraceEnabled())
                 logger.trace("getModules({},{},{},{})", filter, order, limit, offset);
 
-            ParametersInfo params = null;
+            ParametersInfo params;
             try{params = handleParameters(order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
             if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(Modules.OrderPlanValue))
                 return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
@@ -523,7 +548,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             if(moduleId == null)
                 return future.completeExceptionally(new IllegalArgumentException("module id is null"));
 
-            ParametersInfo params = null;
+            ParametersInfo params;
             try{params = handleParameters(order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
             if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(Modules.OrderPlanValue) && !params.order.equals(Artifacts.OrderConfigurationValue))
                 return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
@@ -717,7 +742,7 @@ public class MySQLRestServiceStorage implements RestServiceStorage
             if(logger.isTraceEnabled())
                 logger.trace("getTestPlans({},{},{},{})", filter, order, limit, offset);
 
-            ParametersInfo params = null;
+            ParametersInfo params;
             try{params = handleParameters(order, limit, offset);}catch(IllegalArgumentException e){return future.completeExceptionally(e);}
             if(!params.order.equals(Modules.OrderNameValue) && !params.order.equals(Modules.OrderTestValue) && !params.order.equals(TestPlans.OrderDescriptionValue))
                 return future.completeExceptionally(new IllegalArgumentException(Modules.OrderParam + ": " + params.order + " is not a valid value"));
@@ -835,9 +860,12 @@ public class MySQLRestServiceStorage implements RestServiceStorage
                 }
                 else
                     sql += getPlanWhereStatement;
+                sql += limitStatement;
+
                 testsStmt = conn.prepareStatement(sql);
                 testsStmt.setString(1, planId);
                 testsStmt.setLong(2, afterValue);
+                testsStmt.setInt(3, sconfig.maxPageItems);
                 testsRs = testsStmt.executeQuery();
                 List<Test> list = new ArrayList<>();
                 while (testsRs.next())
@@ -868,7 +896,179 @@ public class MySQLRestServiceStorage implements RestServiceStorage
         return future;
     }
 
-    public ParametersInfo handleParameters(final String order, String limit, Integer offset) throws IllegalArgumentException
+    @Override
+    public CompletableFuture<List<Test>> getTestsForTestPlan(String planId)
+    {
+        CompletableFuture<List<Test>> future = new CompletableFuture<>();
+        executor.submit(() ->
+        {
+            if(logger.isTraceEnabled())
+                logger.trace("getTestsForTestPlan({})", planId);
+            if(planId == null)
+                return future.completeExceptionally(new IllegalArgumentException("plan id is null"));
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(getTestsForPlanStatement);
+                stmt.setString(1, planId);
+                rs = stmt.executeQuery();
+                boolean found = rs.next();
+                if(!found)
+                    return future.completeExceptionally(new NotFoundException("Plan ID: " + planId + " not found"));
+                List<Test> list = new ArrayList<>();
+                do
+                {
+                    long testId = rs.getLong(1);
+                    String name = rs.getString(2);
+                    String desc = rs.getString(3);
+                    String script = rs.getString(4);
+                    long testPlanId = rs.getLong(5);
+                    list.add(new Test(testId, testPlanId, name, desc, script));
+                }while(rs.next());
+                return future.complete(list);
+            }catch(SQLException e)
+            {
+                if(logger.isWarnEnabled())
+                    logger.warn("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }catch(Exception e)
+            {
+                if(logger.isErrorEnabled())
+                    logger.error("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }finally
+            {
+                stmtCleanup(stmt, conn, rs);
+            }
+        });
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Test> getTestForTestPlan(String planId, String testId)
+    {
+        CompletableFuture<Test> future = new CompletableFuture<>();
+        executor.submit(() ->
+        {
+            if(logger.isTraceEnabled())
+                logger.trace("getTestForTestPlan({},{})", planId, testId);
+            if(planId == null)
+                return future.completeExceptionally(new IllegalArgumentException("plan id is null"));
+            if(testId == null)
+                return future.completeExceptionally(new IllegalArgumentException("test id is null"));
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(getTestForPlanStatement);
+                stmt.setString(1, planId);
+                stmt.setString(2, testId);
+                rs = stmt.executeQuery();
+                boolean found = rs.next();
+                if(!found)
+                    return future.completeExceptionally(new NotFoundException("Plan ID: " + planId + " Test ID: " + testId + " not found"));
+                long tstId = rs.getLong(1);
+                String name = rs.getString(2);
+                String desc = rs.getString(3);
+                String script = rs.getString(4);
+                return future.complete(new Test(tstId, null, name, desc, script));
+            }catch(SQLException e)
+            {
+                if(logger.isWarnEnabled())
+                    logger.warn("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }catch(Exception e)
+            {
+                if(logger.isErrorEnabled())
+                    logger.error("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }finally
+            {
+                stmtCleanup(stmt, conn, rs);
+            }
+        });
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<List<Version>> getVersions(String filter, String after)
+    {
+        CompletableFuture<List<Version>> future = new CompletableFuture<>();
+        executor.submit(() ->
+        {
+            if(logger.isTraceEnabled())
+                logger.trace("getVersions({},{})", filter, after);
+            String sql = getVersionsStartStatement;
+            if(filter != null)
+            {
+                sql += getVersionsWhereWithLikeStatement;
+                sql = sql.replace("~", filter);
+            }
+            else
+                sql += getVersionsWhereStatement;
+            sql += getVersionsGroupByStatement;
+
+            long afterValue = 0L;
+            if(after != null)
+            {
+                try
+                {
+                    afterValue = Long.parseLong(after);
+                }catch(NumberFormatException ignored)
+                {
+                    return future.completeExceptionally(new IllegalArgumentException(TestPlan.AfterParam + ": " + after + " is not a valid value, must be an integer"));
+                }
+            }
+
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            try
+            {
+                conn = connectionPool.getConnection();
+                stmt = conn.prepareStatement(sql);
+                stmt.setLong(1, afterValue);
+                rs = stmt.executeQuery();
+                List<Version> list = new ArrayList<>();
+                while(rs.next())
+                {
+                    long moduleId = rs.getLong(1);
+                    String version = rs.getString(2);
+                    java.sql.Date date = rs.getDate(3);
+                    java.time.LocalDate scheduled_release = null;
+                    if(!rs.wasNull())
+                        scheduled_release = date.toLocalDate();
+                    date = rs.getDate(4);
+                    LocalDate actual_release = null;
+                    if(!rs.wasNull())
+                        actual_release = date.toLocalDate();
+                    list.add(new Version(moduleId, version, scheduled_release, actual_release));
+                }
+                return future.complete(list);
+            }catch(SQLException e)
+            {
+                if(logger.isWarnEnabled())
+                    logger.warn("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }catch(Exception e)
+            {
+                if(logger.isErrorEnabled())
+                    logger.error("Exception querying database: ", e);
+                return future.completeExceptionally(e);
+            }finally
+            {
+                stmtCleanup(stmt, conn, rs);
+            }
+        });
+        return future;
+    }
+
+    private ParametersInfo handleParameters(final String order, String limit, Integer offset) throws IllegalArgumentException
     {
         String theOrder = order;
         String direction = Ascending;

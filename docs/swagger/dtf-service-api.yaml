@@ -477,7 +477,7 @@ paths:
       tags:
       - DTF
       summary: >
-        Get the requested test plan's given test ID.
+        Get the test for the given planId and testId.
       operationId: getPlanTest
       parameters:
       - name: plan
@@ -521,6 +521,17 @@ paths:
       summary: >
         Get the versions.
       operationId: getVersions
+      parameters:
+      - name: filter
+        in: query
+        description: A 'like' filter that will be searched against 'version' if given.
+        required: false
+        type: string
+      - name: after
+        in: query
+        description: List 'pk_test's that are greater than the given value.  Defaults to "0".
+        required: false
+        type: string
       responses:
         200:
           description: The versions object.

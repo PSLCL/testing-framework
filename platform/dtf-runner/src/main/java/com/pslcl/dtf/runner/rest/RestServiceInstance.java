@@ -49,7 +49,8 @@ public class RestServiceInstance
     public static final String ModuleReportPath = ModulePath + "/"+Report;
     public static final String TestPlansPath = PrefixPath + "test_plans";
     public static final String TestPlanPath = TestPlansPath + "/:plan";
-    public static final String TestPlanTestsPath = TestPlanPath + "/tests";
+    public static final String Tests = "tests";
+    public static final String TestPlanTestsPath = TestPlanPath + "/" + Tests;
     public static final String TestPlanTestPath = TestPlanTestsPath + "/:id";
     public static final String VersionsPath = PrefixPath + "versions";
     public static final String InstancesPath = PrefixPath + "instances";
